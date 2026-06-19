@@ -1,2 +1,5 @@
 .DS_Store
 
+
+# Lokaler Kosmos-Generator – bewusst nicht im Repo, wird direkt an den Nutzer geliefert
+cosmos-generator/
