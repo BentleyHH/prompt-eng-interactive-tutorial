@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kosmos-Generator</title>
+<style>
+  :root {
+    --panel-bg: rgba(18, 20, 32, 0.92);
+    --panel-border: rgba(120, 140, 200, 0.25);
+    --text: #e8ecf6;
+    --text-dim: #9aa3c0;
+    --accent: #6aa8ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; font-family: "Segoe UI", system-ui, sans-serif;
+    color: var(--text); background: #05060d;
+  }
+  #stage { position: fixed; inset: 0; display: block; cursor: grab; }
+  #stage.dragging { cursor: grabbing; }
+
+  /* ---- Toolbar ---- */
+  #toolbar {
+    position: fixed; top: 12px; left: 12px; z-index: 20;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .btn {
+    background: var(--panel-bg); border: 1px solid var(--panel-border);
+    color: var(--text); padding: 8px 12px; border-radius: 8px;
+    font-size: 13px; cursor: pointer; backdrop-filter: blur(8px);
+    transition: background .15s, border-color .15s;
+  }
+  .btn:hover { background: rgba(40,46,72,0.95); border-color: var(--accent); }
+  .btn.primary { background: linear-gradient(135deg, #3b6fd4, #5a3bd4); border-color: transparent; }
+
+  /* ---- Side panels ---- */
+  .panel {
+    position: fixed; z-index: 20; background: var(--panel-bg);
+    border: 1px solid var(--panel-border); border-radius: 12px;
+    backdrop-filter: blur(12px); box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    width: 320px; max-height: calc(100vh - 90px); overflow-y: auto;
+  }
+  #settings { top: 60px; left: 12px; display: none; }
+  #detail   { top: 60px; right: 12px; display: none; }
+  .panel h2 { margin: 0; padding: 14px 16px; font-size: 15px;
+    border-bottom: 1px solid var(--panel-border); display: flex;
+    justify-content: space-between; align-items: center; }
+  .panel .close { cursor: pointer; color: var(--text-dim); font-size: 18px; line-height: 1; }
+  .panel .body { padding: 14px 16px; }
+  .row { margin-bottom: 14px; }
+  .row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .row input[type=color] { width: 100%; height: 34px; border: 1px solid var(--panel-border); border-radius: 6px; background: none; cursor: pointer; padding: 2px; }
+  .row input[type=range] { width: 100%; }
+  .swatches { display: flex; gap: 8px; }
+  .swatch { flex: 1; height: 34px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; }
+  .swatch.active { border-color: #fff; }
+  textarea {
+    width: 100%; height: 180px; background: rgba(0,0,0,0.35); color: var(--text);
+    border: 1px solid var(--panel-border); border-radius: 8px; padding: 10px;
+    font-family: ui-monospace, monospace; font-size: 12px; resize: vertical;
+  }
+  .group-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .group-item input[type=color] { width: 34px; height: 28px; padding: 1px; border-radius: 5px; border: 1px solid var(--panel-border); }
+  .group-item span { flex: 1; font-size: 13px; }
+  .detail-conn { font-size: 13px; padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,0.04); margin-bottom: 5px; cursor: pointer; }
+  .detail-conn:hover { background: rgba(106,168,255,0.15); }
+  .hint { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 6px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; background: rgba(255,255,255,0.08); margin-right: 4px; }
+
+  /* ---- Modal (import) ---- */
+  #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 30; display: none; align-items: center; justify-content: center; }
+  #importModal { width: min(560px, 92vw); background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 14px; }
+  #importModal .body { padding: 18px; }
+  .tabbar { display: flex; gap: 6px; margin-bottom: 12px; }
+  .tab { padding: 6px 12px; border-radius: 7px; cursor: pointer; font-size: 13px; background: rgba(255,255,255,0.05); }
+  .tab.active { background: var(--accent); color: #06101f; }
+  #legend { position: fixed; bottom: 12px; left: 12px; z-index: 15; font-size: 11px; color: var(--text-dim); background: var(--panel-bg); border:1px solid var(--panel-border); padding: 8px 12px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<div id="toolbar">
+  <button class="btn primary" id="btnImport">＋ Importieren</button>
+  <button class="btn" id="btnSettings">⚙ Einstellungen</button>
+  <button class="btn" id="btnExport">⬇ Als HTML exportieren</button>
+  <button class="btn" id="btnReset">⟳ Zentrieren</button>
+</div>
+
+<!-- Settings panel -->
+<div class="panel" id="settings">
+  <h2>Einstellungen <span class="close" data-close="settings">×</span></h2>
+  <div class="body">
+    <div class="row">
+      <label>Hintergrundfarbe</label>
+      <input type="color" id="bgColor" value="#05060d">
+    </div>
+    <div class="row">
+      <label>Kosmos-Farbe</label>
+      <div class="swatches" id="themeSwatches">
+        <div class="swatch" data-theme="blue"  style="background:linear-gradient(135deg,#4f8cff,#6a5bff)"></div>
+        <div class="swatch" data-theme="red"   style="background:linear-gradient(135deg,#ff5a72,#ff8e3b)"></div>
+        <div class="swatch" data-theme="green" style="background:linear-gradient(135deg,#34d399,#4fd1ff)"></div>
+      </div>
+      <input type="color" id="customColor" value="#6aa8ff" style="margin-top:8px;width:100%;height:30px;border-radius:6px;border:1px solid var(--panel-border);background:none;cursor:pointer">
+      <div class="hint">Wähle eine Voreinstellung oder eine eigene Grundfarbe.</div>
+    </div>
+    <div class="row">
+      <label>Gruppen-Farben (oberste Ebene)</label>
+      <div id="groupList"></div>
+      <div class="hint">Jeder Hauptzweig (1, 2, 3 …) ist eine Gruppe. Kinder erben die Farbe ihrer Gruppe.</div>
+    </div>
+    <div class="row">
+      <label>Bewegung / Lebendigkeit</label>
+      <input type="range" id="liveliness" min="0" max="100" value="35">
+    </div>
+    <div class="row">
+      <label>Knoten-Abstand</label>
+      <input type="range" id="spacing" min="40" max="220" value="110">
+    </div>
+  </div>
+</div>
+
+<!-- Detail panel -->
+<div class="panel" id="detail">
+  <h2 id="detailTitle">Knoten <span class="close" data-close="detail">×</span></h2>
+  <div class="body" id="detailBody"></div>
+</div>
+
+<!-- Import modal -->
+<div id="overlay">
+  <div id="importModal">
+    <h2 style="padding:14px 18px;margin:0;border-bottom:1px solid var(--panel-border)">Daten importieren
+      <span class="close" style="float:right;cursor:pointer;color:var(--text-dim)" data-close="overlay">×</span></h2>
+    <div class="body">
+      <div class="tabbar">
+        <div class="tab active" data-tab="paste">Text einfügen</div>
+        <div class="tab" data-tab="file">Datei (.docx / .txt)</div>
+      </div>
+      <div id="tab-paste">
+        <textarea id="pasteArea" placeholder="1 Universum&#10;1.1 Galaxie&#10;1.1.1 Stern&#10;1.2 Nebel&#10;2 Multiversum&#10;2.1 Paralleluniversum"></textarea>
+        <div class="hint">Nummerierte Gliederung wie <b>1.2.1</b> bestimmt die Hierarchie automatisch. Einrückung (Tabs/Leerzeichen) funktioniert auch.</div>
+      </div>
+      <div id="tab-file" style="display:none">
+        <input type="file" id="fileInput" accept=".docx,.txt,.md" style="margin-bottom:10px">
+        <div class="hint">Word-Dateien (.docx) werden direkt im Browser gelesen — komplett offline. Die nummerierte Reihenfolge (1, 1.2, Kinder und Kindeskinder) wird in den Kosmos übersetzt.</div>
+        <div id="fileStatus" class="hint"></div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn" data-close="overlay">Abbrechen</button>
+        <button class="btn primary" id="btnDoImport">Kosmos erzeugen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="legend">Mausrad: Zoom · Ziehen: Verschieben · Knoten ziehen: bewegen · Klick: Details</div>
+
+<script>
+/* =====================================================================
+   KOSMOS-GENERATOR  —  eigenständig, offline, exportierbar
+   ===================================================================== */
+
+const App = (() => {
+  // ---------- State ----------
+  const state = {
+    nodes: [],          // {id, label, level, parent, group, x, y, vx, vy, r}
+    edges: [],          // {a, b}
+    settings: {
+      bg: "#05060d",
+      theme: "blue",
+      custom: "#6aa8ff",
+      groupColors: {},  // groupId -> hex
+      liveliness: 0.35,
+      spacing: 110
+    },
+    view: { x: 0, y: 0, scale: 1 },
+    selected: null,
+    hover: null
+  };
+
+  const THEMES = {
+    blue:  ["#4f8cff", "#6a5bff", "#3bd4ff", "#8a6bff"],
+    red:   ["#ff5a72", "#ff8e3b", "#ff5ab0", "#ffb13b"],
+    green: ["#34d399", "#4fd1ff", "#7ee06a", "#2dd4bf"]
+  };
+
+  // ---------- Parsing ----------
+  // Turns an outline into nodes+edges. Supports "1.2.3 Label" numbering
+  // and/or indentation. Builds parent/child relations and groups by top branch.
+  function parseOutline(text) {
+    const lines = text.split(/\r?\n/).map(l => l.replace(/\s+$/,"")).filter(l => l.trim().length);
+    const nodes = [];
+    const edges = [];
+    const stack = []; // {level, id} per depth
+    let autoId = 0;
+
+    for (const raw of lines) {
+      const indentMatch = raw.match(/^(\s*)/);
+      const indent = indentMatch[1].replace(/\t/g, "    ").length;
+      let line = raw.trim();
+
+      // numeric prefix like "1.2.3" or "1)" or "1."
+      const numMatch = line.match(/^(\d+(?:\.\d+)*)[\.\)]?\s+(.*)$/);
+      let depth, label;
+      if (numMatch) {
+        const num = numMatch[1];
+        depth = num.split(".").length - 1; // 0-based
+        label = numMatch[2].trim() || num;
+      } else {
+        depth = Math.floor(indent / 2); // fall back to indentation
+        // strip bullet markers
+        label = line.replace(/^[-*•·–—]\s*/, "").trim();
+      }
+      if (!label) continue;
+
+      // find parent from stack
+      while (stack.length && stack[stack.length - 1].level >= depth) stack.pop();
+      const parent = stack.length ? stack[stack.length - 1].id : null;
+      const group = parent === null ? autoId : nodes.find(n => n.id === parent).group;
+
+      const node = { id: autoId, label, level: depth, parent, group };
+      nodes.push(node);
+      if (parent !== null) edges.push({ a: parent, b: autoId });
+      stack.push({ level: depth, id: autoId });
+      autoId++;
+    }
+    return { nodes, edges };
+  }
+
+  // ---------- .docx reading (pure browser, offline) ----------
+  // A .docx is a ZIP. We locate word/document.xml, inflate it with the
+  // built-in DecompressionStream, then pull paragraph text + list levels.
+  async function readDocx(file) {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const entries = readZip(buf);
+    const docEntry = entries.find(e => e.name === "word/document.xml");
+    if (!docEntry) throw new Error("Keine word/document.xml gefunden.");
+    let xmlBytes;
+    if (docEntry.method === 0) {
+      xmlBytes = docEntry.data;
+    } else if (docEntry.method === 8) {
+      xmlBytes = await inflateRaw(docEntry.data);
+    } else {
+      throw new Error("Unbekannte Komprimierung in der .docx.");
+    }
+    const xml = new TextDecoder("utf-8").decode(xmlBytes);
+    return docxXmlToOutline(xml);
+  }
+
+  // Convert document.xml -> outline text using numbering levels (w:ilvl) and
+  // any literal "1.2" numbering inside the paragraph text.
+  function docxXmlToOutline(xml) {
+    const paraRegex = /<w:p\b[\s\S]*?<\/w:p>/g;
+    const out = [];
+    let m;
+    while ((m = paraRegex.exec(xml)) !== null) {
+      const p = m[0];
+      // text runs
+      const texts = [...p.matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map(t => decodeXml(t[1]));
+      const text = texts.join("").trim();
+      if (!text) continue;
+      // list level
+      const ilvl = p.match(/<w:ilvl\s+w:val="(\d+)"/);
+      const lvl = ilvl ? parseInt(ilvl[1], 10) : null;
+      if (lvl !== null) {
+        out.push("  ".repeat(lvl) + text);
+      } else {
+        out.push(text);
+      }
+    }
+    return out.join("\n");
+  }
+
+  function decodeXml(s) {
+    return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&")
+            .replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+  }
+
+  // Minimal ZIP central-directory reader
+  function readZip(buf) {
+    const dv = new DataView(buf.buffer);
+    // find End Of Central Directory (signature 0x06054b50) scanning from end
+    let eocd = -1;
+    for (let i = buf.length - 22; i >= 0; i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error("Keine gültige ZIP/.docx-Datei.");
+    const cdOffset = dv.getUint32(eocd + 16, true);
+    const cdCount = dv.getUint16(eocd + 10, true);
+    const entries = [];
+    let p = cdOffset;
+    for (let i = 0; i < cdCount; i++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const method = dv.getUint16(p + 10, true);
+      const compSize = dv.getUint32(p + 20, true);
+      const nameLen = dv.getUint16(p + 28, true);
+      const extraLen = dv.getUint16(p + 30, true);
+      const commentLen = dv.getUint16(p + 32, true);
+      const localOffset = dv.getUint32(p + 42, true);
+      const name = new TextDecoder().decode(buf.subarray(p + 46, p + 46 + nameLen));
+      // read local header to find data start
+      const lhNameLen = dv.getUint16(localOffset + 26, true);
+      const lhExtraLen = dv.getUint16(localOffset + 28, true);
+      const dataStart = localOffset + 30 + lhNameLen + lhExtraLen;
+      const data = buf.subarray(dataStart, dataStart + compSize);
+      entries.push({ name, method, data });
+      p += 46 + nameLen + extraLen + commentLen;
+    }
+    return entries;
+  }
+
+  async function inflateRaw(bytes) {
+    const ds = new DecompressionStream("deflate-raw");
+    const stream = new Blob([bytes]).stream().pipeThrough(ds);
+    const ab = await new Response(stream).arrayBuffer();
+    return new Uint8Array(ab);
+  }
+
+  // ---------- Layout ----------
+  function initPositions() {
+    const W = innerWidth, H = innerHeight;
+    state.nodes.forEach((n, i) => {
+      if (n.x === undefined) {
+        const a = i * 2.399963; // golden angle spread
+        const rad = 40 + Math.sqrt(i) * 40;
+        n.x = W / 2 + Math.cos(a) * rad;
+        n.y = H / 2 + Math.sin(a) * rad;
+        n.vx = 0; n.vy = 0;
+      }
+      n.r = Math.max(6, 22 - n.level * 4);
+    });
+  }
+
+  // simple force-directed step
+  function physics() {
+    const nodes = state.nodes;
+    const k = state.settings.spacing;
+    const live = state.settings.liveliness;
+    for (let i = 0; i < nodes.length; i++) {
+      const a = nodes[i];
+      for (let j = i + 1; j < nodes.length; j++) {
+        const b = nodes[j];
+        let dx = a.x - b.x, dy = a.y - b.y;
+        let d2 = dx*dx + dy*dy || 0.01;
+        let d = Math.sqrt(d2);
+        const rep = (k * k) / d2 * 0.9;
+        const fx = (dx / d) * rep, fy = (dy / d) * rep;
+        a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+      }
+    }
+    for (const e of state.edges) {
+      const a = nodes[e.a], b = nodes[e.b];
+      if (!a || !b) continue;
+      let dx = b.x - a.x, dy = b.y - a.y;
+      let d = Math.sqrt(dx*dx + dy*dy) || 0.01;
+      const f = (d - k) * 0.02;
+      const fx = (dx / d) * f, fy = (dy / d) * f;
+      a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+    }
+    const cx = innerWidth / 2, cy = innerHeight / 2;
+    for (const n of nodes) {
+      n.vx += (cx - n.x) * 0.0009;
+      n.vy += (cy - n.y) * 0.0009;
+      // perpetual gentle drift -> "moves a bit"
+      n.vx += (Math.random() - 0.5) * live;
+      n.vy += (Math.random() - 0.5) * live;
+      n.vx *= 0.86; n.vy *= 0.86;
+      if (n !== dragNode) { n.x += n.vx; n.y += n.vy; }
+    }
+  }
+
+  // ---------- Colors ----------
+  function nodeColor(n) {
+    const s = state.settings;
+    if (s.groupColors[n.group]) return s.groupColors[n.group];
+    if (s.theme === "custom") return s.custom;
+    const pal = THEMES[s.theme] || THEMES.blue;
+    return pal[n.group % pal.length];
+  }
+
+  // ---------- Rendering ----------
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d");
+  function resize() {
+    canvas.width = innerWidth * devicePixelRatio;
+    canvas.height = innerHeight * devicePixelRatio;
+    canvas.style.width = innerWidth + "px";
+    canvas.style.height = innerHeight + "px";
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  function draw() {
+    const v = state.view;
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    ctx.fillStyle = state.settings.bg;
+    ctx.fillRect(0, 0, innerWidth, innerHeight);
+    // starfield
+    ctx.save();
+    ctx.translate(v.x, v.y); ctx.scale(v.scale, v.scale);
+
+    // edges
+    ctx.lineWidth = 1 / v.scale;
+    for (const e of state.edges) {
+      const a = state.nodes[e.a], b = state.nodes[e.b];
+      if (!a || !b) continue;
+      const c = nodeColor(a);
+      const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+      grad.addColorStop(0, hexA(c, 0.55));
+      grad.addColorStop(1, hexA(nodeColor(b), 0.15));
+      ctx.strokeStyle = grad;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+
+    // nodes (cloud glow + core)
+    for (const n of state.nodes) {
+      const c = nodeColor(n);
+      const isSel = state.selected === n.id;
+      const isHov = state.hover === n.id;
+      const glowR = n.r * (isSel || isHov ? 4 : 2.8);
+      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
+      g.addColorStop(0, hexA(c, 0.55));
+      g.addColorStop(1, hexA(c, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(n.x, n.y, glowR, 0, Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2); ctx.fill();
+      if (isSel || isHov) {
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 2 / v.scale;
+        ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 3/v.scale, 0, Math.PI*2); ctx.stroke();
+      }
+      // labels for shallow levels or hovered/selected
+      if (n.level <= 1 || isSel || isHov) {
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.font = `${Math.max(11, 14 - n.level*1.5)/v.scale * v.scale}px Segoe UI, sans-serif`;
+        ctx.font = `${Math.max(10, 14 - n.level*1.5)}px Segoe UI, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.fillText(n.label, n.x, n.y - n.r - 4/v.scale);
+      }
+    }
+    ctx.restore();
+  }
+
+  function hexA(hex, a) {
+    const h = hex.replace("#","");
+    const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  function loop() {
+    if (state.nodes.length) physics();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- Interaction ----------
+  let dragNode = null, panning = false, last = {x:0,y:0}, moved = false;
+
+  function screenToWorld(sx, sy) {
+    return { x: (sx - state.view.x) / state.view.scale, y: (sy - state.view.y) / state.view.scale };
+  }
+  function nodeAt(sx, sy) {
+    const w = screenToWorld(sx, sy);
+    for (let i = state.nodes.length - 1; i >= 0; i--) {
+      const n = state.nodes[i];
+      const dx = w.x - n.x, dy = w.y - n.y;
+      if (dx*dx + dy*dy <= (n.r + 6) * (n.r + 6)) return n;
+    }
+    return null;
+  }
+
+  canvas.addEventListener("mousedown", e => {
+    moved = false; last = { x: e.clientX, y: e.clientY };
+    const n = nodeAt(e.clientX, e.clientY);
+    if (n) { dragNode = n; } else { panning = true; canvas.classList.add("dragging"); }
+  });
+  window.addEventListener("mousemove", e => {
+    const dx = e.clientX - last.x, dy = e.clientY - last.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+    if (dragNode) {
+      const w = screenToWorld(e.clientX, e.clientY);
+      dragNode.x = w.x; dragNode.y = w.y; dragNode.vx = 0; dragNode.vy = 0;
+    } else if (panning) {
+      state.view.x += dx; state.view.y += dy;
+    } else {
+      const n = nodeAt(e.clientX, e.clientY);
+      state.hover = n ? n.id : null;
+      canvas.style.cursor = n ? "pointer" : "grab";
+    }
+    last = { x: e.clientX, y: e.clientY };
+  });
+  window.addEventListener("mouseup", e => {
+    if (dragNode && !moved) selectNode(dragNode.id);
+    dragNode = null; panning = false; canvas.classList.remove("dragging");
+  });
+  canvas.addEventListener("wheel", e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    const wx = (e.clientX - state.view.x) / state.view.scale;
+    const wy = (e.clientY - state.view.y) / state.view.scale;
+    state.view.scale = Math.min(5, Math.max(0.15, state.view.scale * factor));
+    state.view.x = e.clientX - wx * state.view.scale;
+    state.view.y = e.clientY - wy * state.view.scale;
+  }, { passive: false });
+
+  // ---------- Detail panel ----------
+  function selectNode(id) {
+    state.selected = id;
+    const n = state.nodes.find(x => x.id === id);
+    if (!n) return;
+    document.getElementById("detailTitle").firstChild.textContent = n.label + " ";
+    const children = state.nodes.filter(x => x.parent === id);
+    const parent = n.parent !== null ? state.nodes.find(x => x.id === n.parent) : null;
+    const c = nodeColor(n);
+    let html = `<div class="row">
+        <span class="pill" style="background:${hexA(c,0.25)};color:${c}">Ebene ${n.level}</span>
+        <span class="pill">Gruppe ${n.group + 1}</span>
+      </div>`;
+    if (parent) html += `<div class="row"><label>Übergeordnet</label>
+        <div class="detail-conn" data-goto="${parent.id}">↑ ${parent.label}</div></div>`;
+    html += `<div class="row"><label>Verbindungen (${children.length})</label>`;
+    if (children.length) {
+      for (const ch of children) html += `<div class="detail-conn" data-goto="${ch.id}">↳ ${ch.label}</div>`;
+    } else {
+      html += `<div class="hint">Keine untergeordneten Knoten.</div>`;
+    }
+    html += `</div>`;
+    document.getElementById("detailBody").innerHTML = html;
+    show("detail");
+    document.querySelectorAll("#detailBody [data-goto]").forEach(el => {
+      el.onclick = () => { selectNode(parseInt(el.dataset.goto, 10)); focusNode(parseInt(el.dataset.goto, 10)); };
+    });
+  }
+
+  function focusNode(id) {
+    const n = state.nodes.find(x => x.id === id);
+    if (!n) return;
+    state.view.scale = 1.3;
+    state.view.x = innerWidth/2 - n.x * state.view.scale;
+    state.view.y = innerHeight/2 - n.y * state.view.scale;
+  }
+
+  // ---------- Panels / UI ----------
+  function show(id) { document.getElementById(id).style.display = "block"; }
+  function hide(id) { document.getElementById(id).style.display = "none"; }
+
+  document.querySelectorAll("[data-close]").forEach(el => {
+    el.onclick = () => hide(el.dataset.close);
+  });
+  document.getElementById("btnSettings").onclick = () => {
+    const s = document.getElementById("settings");
+    s.style.display = s.style.display === "block" ? "none" : "block";
+    buildGroupList();
+  };
+  document.getElementById("btnReset").onclick = () => {
+    state.view = { x: 0, y: 0, scale: 1 };
+  };
+
+  // import modal
+  document.getElementById("btnImport").onclick = () => { document.getElementById("overlay").style.display = "flex"; };
+  document.querySelectorAll(".tab").forEach(t => {
+    t.onclick = () => {
+      document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+      t.classList.add("active");
+      document.getElementById("tab-paste").style.display = t.dataset.tab === "paste" ? "block" : "none";
+      document.getElementById("tab-file").style.display  = t.dataset.tab === "file"  ? "block" : "none";
+    };
+  });
+
+  let pendingFileText = null;
+  document.getElementById("fileInput").onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const status = document.getElementById("fileStatus");
+    status.textContent = "Lese " + file.name + " …";
+    try {
+      if (file.name.toLowerCase().endsWith(".docx")) {
+        pendingFileText = await readDocx(file);
+      } else {
+        pendingFileText = await file.text();
+      }
+      const count = pendingFileText.split(/\r?\n/).filter(l => l.trim()).length;
+      status.textContent = `✓ ${count} Zeilen gelesen. Klicke „Kosmos erzeugen".`;
+    } catch (err) {
+      status.textContent = "Fehler: " + err.message;
+      pendingFileText = null;
+    }
+  };
+
+  document.getElementById("btnDoImport").onclick = () => {
+    const fileTabActive = document.querySelector('.tab[data-tab="file"]').classList.contains("active");
+    const text = fileTabActive ? pendingFileText : document.getElementById("pasteArea").value;
+    if (!text || !text.trim()) { alert("Bitte zuerst Text einfügen oder eine Datei wählen."); return; }
+    loadOutline(text);
+    hide("overlay");
+  };
+
+  function loadOutline(text) {
+    const parsed = parseOutline(text);
+    state.nodes = parsed.nodes;
+    state.edges = parsed.edges;
+    state.selected = null;
+    state.settings.groupColors = {};
+    state.nodes.forEach(n => { n.x = undefined; });
+    initPositions();
+    buildGroupList();
+    state.view = { x: 0, y: 0, scale: 1 };
+  }
+
+  // settings bindings
+  const bgColor = document.getElementById("bgColor");
+  bgColor.oninput = () => { state.settings.bg = bgColor.value; };
+  document.getElementById("customColor").oninput = (e) => {
+    state.settings.custom = e.target.value; state.settings.theme = "custom";
+    document.querySelectorAll(".swatch").forEach(s => s.classList.remove("active"));
+  };
+  document.querySelectorAll("#themeSwatches .swatch").forEach(sw => {
+    sw.onclick = () => {
+      state.settings.theme = sw.dataset.theme;
+      document.querySelectorAll(".swatch").forEach(s => s.classList.remove("active"));
+      sw.classList.add("active");
+    };
+  });
+  document.getElementById("liveliness").oninput = (e) => { state.settings.liveliness = e.target.value / 100 * 1.2; };
+  document.getElementById("spacing").oninput = (e) => { state.settings.spacing = +e.target.value; };
+
+  function buildGroupList() {
+    const groups = [...new Set(state.nodes.map(n => n.group))];
+    const list = document.getElementById("groupList");
+    list.innerHTML = "";
+    groups.forEach(g => {
+      const root = state.nodes.find(n => n.group === g && n.parent === null) || state.nodes.find(n => n.group === g);
+      const color = state.settings.groupColors[g] || (THEMES[state.settings.theme] || THEMES.blue)[g % 4] || "#6aa8ff";
+      const div = document.createElement("div");
+      div.className = "group-item";
+      div.innerHTML = `<input type="color" value="${color}"><span>${root ? root.label : "Gruppe " + (g+1)}</span>`;
+      div.querySelector("input").oninput = (e) => { state.settings.groupColors[g] = e.target.value; };
+      list.appendChild(div);
+    });
+  }
+
+  // ---------- Export ----------
+  document.getElementById("btnExport").onclick = exportHTML;
+  function exportHTML() {
+    const payload = {
+      nodes: state.nodes.map(n => ({ id:n.id, label:n.label, level:n.level, parent:n.parent, group:n.group, x:n.x, y:n.y })),
+      edges: state.edges,
+      settings: state.settings
+    };
+    // Grab this very document and inject saved data at the boot marker.
+    // Markers are built by concatenation so the literal appears only once
+    // (inside boot), preventing this code from matching itself.
+    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const mA = "/*__" + "EXPORT_DATA__*" + "/";
+    const mB = "/*__" + "END_EXPORT_DATA__*" + "/";
+    const re = new RegExp(esc(mA) + "[\\s\\S]*?" + esc(mB));
+    const docHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+    const injected = docHtml.replace(re,
+      mA + " window.__KOSMOS_DATA__ = " + JSON.stringify(payload) + "; " + mB);
+    const blob = new Blob([injected], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "mein-kosmos.html"; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- Boot ----------
+  function boot() {
+    /*__EXPORT_DATA__*/ /*__END_EXPORT_DATA__*/
+    const saved = window.__KOSMOS_DATA__;
+    if (saved) {
+      state.nodes = saved.nodes.map(n => ({...n, vx:0, vy:0}));
+      state.edges = saved.edges;
+      Object.assign(state.settings, saved.settings);
+      initPositions();
+      // restore saved positions
+      saved.nodes.forEach((sn, i) => { state.nodes[i].x = sn.x; state.nodes[i].y = sn.y; });
+    } else {
+      // default sample cosmos
+      loadOutline(
+`1 Universum
+1.1 Galaxie Andromeda
+1.1.1 Sonnensystem
+1.1.2 Schwarzes Loch
+1.2 Milchstraße
+1.2.1 Erde
+1.2.2 Mars
+2 Wissen
+2.1 Naturwissenschaft
+2.1.1 Physik
+2.1.2 Chemie
+2.2 Kunst
+2.2.1 Malerei
+2.2.2 Musik
+3 Ideen
+3.1 Projekte
+3.2 Träume`);
+    }
+    // sync UI to settings
+    document.getElementById("bgColor").value = state.settings.bg;
+    document.querySelectorAll(".swatch").forEach(s => s.classList.toggle("active", s.dataset.theme === state.settings.theme));
+    buildGroupList();
+    loop();
+  }
+
+  boot();
+  return state;
+})();
+</script>
+</body>
+</html>
