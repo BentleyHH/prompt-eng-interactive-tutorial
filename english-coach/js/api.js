@@ -53,5 +53,7 @@ const API = (() => {
     getProfile:  () => call('profile.php', { query: { action: 'get' } }),
     saveProfile: (p) => call('profile.php', { method: 'POST', query: { action: 'save' }, body: p }),
     forgetMemory:() => call('profile.php', { method: 'POST', query: { action: 'forget' } }),
+
+    ttsInfo: () => call('tts.php', { query: { action: 'info' } }),
   };
 })();

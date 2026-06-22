@@ -3,189 +3,201 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
 <title>English Coach — Vorschau (Demo)</title>
 <style>
-/* English Coach — Apple-like Light Theme + Sprach-Orb
-   System-Font = SF auf Apple-Geräten. Viel Weißraum, weiche Schatten,
-   Frosted-Glass-Leisten, ein lebendiger Siri-artiger Orb. */
+/* English Coach — modernes, ikonisches Design.
+   Weiß als Hauptfarbe, Rot als Akzent, feine Strich-Icons, viel Luft. */
 :root{
-  --bg:#f2f2f7; --bg2:#e9e9ef; --surface:#ffffff; --surface2:#f5f5f7;
-  --line:#e3e3e8; --text:#1d1d1f; --muted:#86868b;
-  --accent:#5e5ce6; --accent2:#0a84ff; --pink:#ff375f; --teal:#30d5c8;
-  --good:#34c759; --warn:#ff9f0a; --bad:#ff3b30;
-  --radius:22px; --radius-sm:16px;
-  --shadow:0 10px 40px rgba(20,20,40,.10); --shadow-sm:0 4px 16px rgba(20,20,40,.07);
-  --grad:linear-gradient(135deg,#6a5cff 0%,#0a84ff 45%,#30d5c8 100%);
-}
-@media (prefers-color-scheme: dark){
-  :root{ --bg:#000000; --bg2:#0b0b0f; --surface:#1c1c1e; --surface2:#2c2c2e;
-    --line:#3a3a3c; --text:#f5f5f7; --muted:#98989f; --shadow:0 10px 40px rgba(0,0,0,.5);
-    --shadow-sm:0 4px 16px rgba(0,0,0,.4); }
+  --bg:#ffffff; --bg2:#fbfbfc; --surface:#ffffff; --surface2:#f6f6f7;
+  --line:#ececef; --line-strong:#e0e0e4;
+  --ink:#18181b; --ink-soft:#3a3a40; --muted:#9a9aa1;
+  --accent:#e11d2a; --accent-ink:#ffffff; --accent-soft:#fdeceae0; --accent-soft2:#fbe3e1;
+  --good:#1f9d55; --warn:#d98a00;
+  --radius:20px; --radius-sm:14px;
+  --shadow:0 12px 40px rgba(20,20,30,.08); --shadow-sm:0 2px 12px rgba(20,20,30,.05);
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{
-  background:var(--bg); color:var(--text);
+  background:var(--bg2); color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  -webkit-font-smoothing:antialiased; letter-spacing:-.01em;
+  -webkit-font-smoothing:antialiased; letter-spacing:-.011em;
 }
 .hidden{display:none !important}
-.muted{color:var(--muted)} .small{font-size:.85rem} .note{margin-top:1.2rem;line-height:1.5}
-.error{color:var(--bad);min-height:1.2em;margin:.4rem 0 0}
-h1,h2,h3,h4{letter-spacing:-.02em}
+.muted{color:var(--muted)} .small{font-size:.85rem} .note{margin-top:1.2rem;line-height:1.55}
+.error{color:var(--accent);min-height:1.2em;margin:.4rem 0 0}
+h1,h2,h3,h4{letter-spacing:-.025em;color:var(--ink)}
+svg{display:block}
 
 /* Buttons */
-.btn{border:0;border-radius:14px;padding:.85rem 1.2rem;font-size:1rem;font-weight:600;cursor:pointer;color:#fff;transition:transform .12s,filter .15s}
-.btn:active{transform:scale(.97)}
-.btn.primary{background:var(--grad);box-shadow:0 6px 18px rgba(94,92,230,.35)}
-.btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--text);box-shadow:var(--shadow-sm)}
-.btn.full{width:100%;margin-top:.8rem}
-.link{background:none;border:0;color:var(--muted);text-decoration:none;cursor:pointer;font-size:.85rem;font-weight:500}
+.btn{border:0;border-radius:13px;padding:.85rem 1.2rem;font-size:1rem;font-weight:650;cursor:pointer;transition:transform .12s,background .15s,border-color .15s}
+.btn:active{transform:scale(.975)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary:active{background:#c5121e}
+.btn.ghost{background:var(--surface);border:1px solid var(--line-strong);color:var(--ink)}
+.btn.ghost:active{border-color:var(--accent);color:var(--accent)}
+.btn.full{width:100%;margin-top:.7rem}
+.link{background:none;border:0;color:var(--muted);cursor:pointer;font-size:.85rem;font-weight:600}
 .link:active{color:var(--accent)}
 
 /* Login */
-.login{position:fixed;inset:0;display:grid;place-items:center;padding:1.5rem;background:radial-gradient(900px 500px at 50% -5%,#dfe0ff,var(--bg))}
-.login-card{background:var(--surface);border-radius:28px;padding:2.4rem 2rem;width:100%;max-width:360px;text-align:center;box-shadow:var(--shadow)}
-.login-card .logo{font-size:3rem} .login-card h1{margin:.4rem 0 .2rem;font-size:1.7rem}
-.login-card input{width:100%;margin:1.2rem 0 .8rem;padding:.95rem 1rem;border-radius:14px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-size:1rem}
+.login{position:fixed;inset:0;display:grid;place-items:center;padding:1.5rem;background:var(--bg)}
+.login-card{background:var(--surface);border:1px solid var(--line);border-radius:26px;padding:2.6rem 2rem;width:100%;max-width:360px;text-align:center;box-shadow:var(--shadow)}
+.login-card .logo{width:64px;height:64px;margin:0 auto;border-radius:20px;background:var(--accent);color:#fff;display:grid;place-items:center}
+.login-card .logo svg{width:34px;height:34px;stroke-width:1.8}
+.login-card h1{margin:1rem 0 .2rem;font-size:1.7rem}
+.login-card input{width:100%;margin:1.2rem 0 .8rem;padding:.95rem 1rem;border-radius:13px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font-size:1rem}
+.login-card input:focus{outline:none;border-color:var(--accent)}
 .login-card .btn{width:100%}
 
 /* App shell */
-.app{display:flex;flex-direction:column;height:100dvh;max-width:720px;margin:0 auto}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:.85rem 1.2rem;
-  position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 72%,transparent);
-  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
-.topbar .title{font-weight:700;font-size:1.25rem}
-.streak{color:var(--warn);font-weight:600;font-size:.9rem}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:720px;margin:0 auto;background:var(--bg2)}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:.9rem 1.2rem;
+  position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:saturate(160%) blur(18px);-webkit-backdrop-filter:saturate(160%) blur(18px);
+  border-bottom:1px solid var(--line)}
+.topbar .title{font-weight:750;font-size:1.3rem}
+.streak{color:var(--accent);font-weight:700;font-size:.9rem;display:inline-flex;align-items:center;gap:.3rem}
+.streak svg{width:16px;height:16px}
 .content{flex:1;overflow-y:auto;padding:1.1rem 1.1rem calc(1.1rem + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
 .view{animation:fade .25s ease}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
 
-/* Tabbar — frosted */
-.tabbar{display:flex;padding-bottom:env(safe-area-inset-bottom);
-  background:color-mix(in srgb,var(--surface) 80%,transparent);
-  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
-.tab{flex:1;background:none;border:0;color:var(--muted);padding:.55rem 0 .65rem;font-size:.68rem;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:.2rem;cursor:pointer;transition:color .15s}
-.tab span{font-size:1.35rem;line-height:1}
+/* Tabbar */
+.tabbar{display:flex;background:color-mix(in srgb,var(--surface) 86%,transparent);
+  backdrop-filter:saturate(160%) blur(18px);-webkit-backdrop-filter:saturate(160%) blur(18px);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.tab{flex:1;background:none;border:0;color:var(--muted);padding:.55rem 0 .6rem;font-size:.68rem;font-weight:650;display:flex;flex-direction:column;align-items:center;gap:.2rem;cursor:pointer;transition:color .15s}
+.tab svg{width:24px;height:24px;stroke-width:1.7}
 .tab.active{color:var(--accent)}
 
 /* Topic picker */
-.hero h2{margin:.2rem 0;font-size:1.6rem} .hero{margin-bottom:1.2rem}
-.hero .muted{font-size:.98rem;line-height:1.4}
-.level-row{display:inline-flex;gap:.5rem;align-items:center;margin-top:.8rem;color:var(--muted);font-weight:500}
-.level-row select{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:.5rem .7rem;font-size:.95rem;box-shadow:var(--shadow-sm)}
+.hero h2{margin:.2rem 0;font-size:1.65rem} .hero{margin-bottom:1.3rem}
+.hero .muted{font-size:.98rem;line-height:1.45}
+.level-row{display:inline-flex;gap:.5rem;align-items:center;margin-top:.9rem;color:var(--muted);font-weight:600}
+.level-row select{background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:11px;padding:.5rem .7rem;font-size:.95rem}
 .topic-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
-.topic-card{position:relative;background:var(--surface);border-radius:var(--radius);padding:1.1rem;cursor:pointer;text-align:left;color:var(--text);box-shadow:var(--shadow-sm);border:1px solid color-mix(in srgb,var(--line) 50%,transparent);transition:transform .14s,box-shadow .14s}
-.topic-card:active{transform:scale(.97);box-shadow:var(--shadow)}
-.topic-card .emo{font-size:1.9rem} .topic-card .t{font-weight:700;margin:.5rem 0 .2rem;font-size:1.02rem}
-.topic-card .d{font-size:.8rem;color:var(--muted);line-height:1.35}
-.topic-card .del{position:absolute;top:.45rem;right:.55rem;background:none;border:0;color:var(--muted);font-size:1rem;cursor:pointer}
+.topic-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.15rem;cursor:pointer;text-align:left;color:var(--ink);box-shadow:var(--shadow-sm);transition:transform .14s,border-color .14s,box-shadow .14s}
+.topic-card:active{transform:scale(.975);border-color:var(--accent)}
+.topic-card .ic{width:48px;height:48px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:.7rem}
+.topic-card .ic svg{width:26px;height:26px}
+.topic-card .t{font-weight:700;margin:0 0 .2rem;font-size:1.03rem}
+.topic-card .d{font-size:.8rem;color:var(--muted);line-height:1.4}
+.topic-card .del{position:absolute;top:.5rem;right:.55rem;background:none;border:0;color:var(--muted);cursor:pointer;padding:.2rem}
+.topic-card .del svg{width:16px;height:16px}
+.add-card{display:flex;align-items:center;justify-content:center;gap:.5rem;color:var(--muted);border-style:dashed;font-weight:650}
+.add-card svg{width:20px;height:20px}
 
-/* ---- Avatar / Sprach-Orb ---- */
-.avatar-stage{display:flex;flex-direction:column;align-items:center;gap:.7rem;padding:1.4rem 0 1rem}
-.orb{position:relative;width:128px;height:128px;border-radius:50%;
-  background:var(--grad);background-size:200% 200%;
-  box-shadow:0 14px 50px rgba(94,92,230,.45),inset 0 0 30px rgba(255,255,255,.35);
-  display:grid;place-items:center;animation:orbFloat 6s ease-in-out infinite,orbHue 12s linear infinite}
-.orb::before{content:"";position:absolute;inset:-6px;border-radius:50%;
-  background:var(--grad);filter:blur(22px);opacity:.55;z-index:-1;animation:orbHue 12s linear infinite}
-.orb .orb-emoji{font-size:2.6rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.2))}
-.orb.speaking{animation:orbFloat 6s ease-in-out infinite,orbHue 12s linear infinite,orbPulse 1.1s ease-in-out infinite}
-.orb.listening{box-shadow:0 14px 50px rgba(48,213,200,.5),0 0 0 0 rgba(48,213,200,.5);animation:orbFloat 6s ease-in-out infinite,orbHue 12s linear infinite,orbRing 1.4s ease-out infinite}
-@keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-@keyframes orbHue{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-@keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
-@keyframes orbRing{0%{box-shadow:0 14px 50px rgba(48,213,200,.5),0 0 0 0 rgba(48,213,200,.45)}100%{box-shadow:0 14px 50px rgba(48,213,200,.5),0 0 0 26px rgba(48,213,200,0)}}
-.orb-status{color:var(--muted);font-size:.9rem;font-weight:500;min-height:1.2em;text-align:center}
-.goal-chip{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);color:var(--text);border-radius:999px;padding:.4rem .9rem;font-size:.85rem;font-weight:600;box-shadow:var(--shadow-sm)}
-.goal-chip.met{background:color-mix(in srgb,var(--good) 16%,var(--surface));border-color:color-mix(in srgb,var(--good) 45%,transparent)}
-.share-bar{position:relative;width:200px;max-width:70%;height:8px;background:var(--surface2);border-radius:999px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
-.share-fill{height:100%;width:50%;background:var(--grad);border-radius:999px;transition:width .4s ease}
+/* Avatar / Sprach-Orb */
+.avatar-stage{display:flex;flex-direction:column;align-items:center;gap:.75rem;padding:1.5rem 0 1.1rem}
+.orb{position:relative;width:128px;height:128px;border-radius:50%;background:var(--surface);
+  border:2px solid var(--line-strong);box-shadow:var(--shadow);display:grid;place-items:center}
+.orb .wave{display:flex;gap:5px;align-items:center;height:36px}
+.orb .wave i{width:4px;height:9px;background:var(--accent);border-radius:3px;display:block;transition:height .15s}
+.orb.speaking .wave i{animation:eq .9s ease-in-out infinite}
+.orb.speaking .wave i:nth-child(2){animation-delay:.12s}
+.orb.speaking .wave i:nth-child(3){animation-delay:.24s}
+.orb.speaking .wave i:nth-child(4){animation-delay:.36s}
+.orb.speaking .wave i:nth-child(5){animation-delay:.48s}
+.orb.listening{border-color:var(--accent);animation:ring 1.5s ease-out infinite}
+.orb.listening .wave i{background:var(--accent);height:7px}
+@keyframes eq{0%,100%{height:8px}50%{height:30px}}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(225,29,42,.30)}100%{box-shadow:0 0 0 22px rgba(225,29,42,0)}}
+.orb-status{color:var(--muted);font-size:.9rem;font-weight:600;min-height:1.2em;text-align:center}
+.goal-chip{background:var(--surface);border:1px solid var(--accent-soft2);color:var(--ink);border-radius:999px;padding:.42rem .95rem;font-size:.85rem;font-weight:650;box-shadow:var(--shadow-sm)}
+.goal-chip.met{background:#eefaf2;border-color:#bfe6cd;color:var(--good)}
+.share-bar{position:relative;width:210px;max-width:72%;height:7px;background:var(--surface2);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.share-fill{height:100%;width:50%;background:var(--accent);border-radius:999px;transition:width .4s ease}
 .share-label{position:absolute;top:12px;left:0;right:0;text-align:center;font-size:.72rem;color:var(--muted)}
-.form-card{background:var(--surface);border-radius:var(--radius);padding:1.1rem;box-shadow:var(--shadow-sm);margin-bottom:1rem}
-.form-card input,.form-card select{width:100%;margin:.35rem 0;padding:.75rem .9rem;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-size:1rem}
-.field{display:block;color:var(--muted);font-size:.85rem;font-weight:500;margin:.5rem 0}
-.field input[type=range]{margin-top:.4rem}
 
 /* Chat */
 .chat{display:flex;flex-direction:column;gap:.7rem;padding-bottom:.5rem}
-.bubble{max-width:86%;padding:.8rem 1rem;border-radius:22px;line-height:1.5;font-size:1.02rem;animation:fade .25s;box-shadow:var(--shadow-sm)}
-.bubble.coach{background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 60%,transparent);border-bottom-left-radius:7px;align-self:flex-start}
-.bubble.me{background:var(--grad);color:#fff;border-bottom-right-radius:7px;align-self:flex-end}
-.bubble .de{margin-top:.55rem;padding-top:.55rem;border-top:1px dashed var(--line);color:var(--muted);font-size:.92rem}
-.bubble .speak{background:none;border:0;color:var(--accent);cursor:pointer;font-size:.85rem;font-weight:600;margin-top:.4rem;padding:0}
-.feedback{align-self:flex-start;max-width:92%;background:color-mix(in srgb,var(--warn) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);border-radius:16px;padding:.7rem .9rem;font-size:.9rem;box-shadow:var(--shadow-sm)}
+.bubble{max-width:86%;padding:.8rem 1rem;border-radius:20px;line-height:1.5;font-size:1.02rem;animation:fade .25s}
+.bubble.coach{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:7px;align-self:flex-start;box-shadow:var(--shadow-sm)}
+.bubble.me{background:var(--accent);color:#fff;border-bottom-right-radius:7px;align-self:flex-end}
+.bubble .de{margin-top:.55rem;padding-top:.55rem;border-top:1px dashed var(--line-strong);color:var(--muted);font-size:.92rem}
+.bubble.me .de{border-top-color:rgba(255,255,255,.35);color:rgba(255,255,255,.85)}
+.bubble .speak{background:none;border:0;color:var(--accent);cursor:pointer;font-size:.85rem;font-weight:650;margin-top:.4rem;padding:0;display:inline-flex;align-items:center;gap:.3rem}
+.bubble .speak svg{width:15px;height:15px}
+.feedback{align-self:flex-start;max-width:92%;background:var(--accent-soft);border:1px solid var(--accent-soft2);border-radius:15px;padding:.7rem .9rem;font-size:.9rem}
 .feedback .fb{margin:.3rem 0}
-.feedback .o{color:var(--bad);text-decoration:line-through} .feedback .b{color:var(--good);font-weight:600}
-.feedback .n{color:var(--muted);font-size:.82rem;margin-top:.15rem}
+.feedback .o{color:var(--accent);text-decoration:line-through} .feedback .b{color:var(--good);font-weight:650}
+.feedback .n{color:var(--ink-soft);font-size:.82rem;margin-top:.15rem}
 .vocab-chiprow{display:flex;flex-wrap:wrap;gap:.45rem;align-self:flex-start;max-width:96%}
-.vchip{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:.35rem .8rem;font-size:.82rem;box-shadow:var(--shadow-sm)}
+.vchip{background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:.35rem .8rem;font-size:.82rem;box-shadow:var(--shadow-sm)}
 .vchip b{color:var(--accent)}
-.encourage{align-self:center;color:var(--warn);font-size:.88rem;font-weight:500;text-align:center;padding:.2rem 1rem}
+.encourage{align-self:center;color:var(--muted);font-size:.86rem;font-weight:600;text-align:center;padding:.2rem 1rem}
 .typing{align-self:flex-start;color:var(--muted);font-style:italic;padding:.4rem .2rem}
 
 /* Composer */
 .composer{position:sticky;bottom:0;padding-top:.6rem;
-  background:color-mix(in srgb,var(--bg) 80%,transparent);
-  backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px)}
+  background:color-mix(in srgb,var(--bg2) 85%,transparent);
+  backdrop-filter:saturate(160%) blur(14px);-webkit-backdrop-filter:saturate(160%) blur(14px)}
 .composer-row{display:flex;gap:.55rem;align-items:flex-end}
-.composer textarea{flex:1;resize:none;background:var(--surface);border:1px solid var(--line);color:var(--text);border-radius:20px;padding:.8rem 1rem;font-size:1rem;max-height:120px;box-shadow:var(--shadow-sm)}
-.mic{width:54px;height:54px;border-radius:50%;border:0;background:var(--grad);color:#fff;font-size:1.4rem;cursor:pointer;flex:0 0 auto;box-shadow:0 8px 22px rgba(94,92,230,.4);transition:transform .12s}
+.composer textarea{flex:1;resize:none;background:var(--surface);border:1px solid var(--line-strong);color:var(--ink);border-radius:18px;padding:.8rem 1rem;font-size:1rem;max-height:120px}
+.composer textarea:focus{outline:none;border-color:var(--accent)}
+.mic,.send{width:52px;height:52px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;cursor:pointer;border:0;transition:transform .12s}
+.mic{background:var(--surface);border:1px solid var(--line-strong);color:var(--ink)}
+.mic svg{width:24px;height:24px}
 .mic:active{transform:scale(.94)}
-.mic.rec{background:linear-gradient(135deg,#ff375f,#ff3b30);animation:pulse 1.1s infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.5)}50%{box-shadow:0 0 0 12px rgba(255,59,48,0)}}
-.send{width:54px;height:54px;border-radius:50%;flex:0 0 auto;padding:0;font-size:1.2rem}
+.mic.rec{background:var(--accent);border-color:var(--accent);color:#fff;animation:pulse 1.1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(225,29,42,.45)}50%{box-shadow:0 0 0 12px rgba(225,29,42,0)}}
+.send{background:var(--accent);color:#fff}.send svg{width:22px;height:22px;margin-left:-2px}
 .composer-tools{display:flex;gap:1.1rem;align-items:center;padding:.6rem .3rem;flex-wrap:wrap}
-.switch{font-size:.82rem;color:var(--muted);display:inline-flex;gap:.4rem;align-items:center;cursor:pointer;font-weight:500}
+.switch{font-size:.82rem;color:var(--muted);display:inline-flex;gap:.4rem;align-items:center;cursor:pointer;font-weight:600}
+.switch input{accent-color:var(--accent)}
 
 /* Segmented */
-.seg{display:flex;background:var(--surface2);border-radius:14px;padding:.25rem;margin-bottom:1.2rem;box-shadow:inset 0 0 0 1px var(--line)}
-.seg-btn{flex:1;background:none;border:0;color:var(--muted);padding:.6rem;border-radius:11px;cursor:pointer;font-weight:600;transition:.15s}
-.seg-btn.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm)}
+.seg{display:flex;background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:.25rem;margin-bottom:1.2rem}
+.seg-btn{flex:1;background:none;border:0;color:var(--muted);padding:.6rem;border-radius:10px;cursor:pointer;font-weight:650;transition:.15s}
+.seg-btn.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow-sm)}
 
 /* Flashcards */
-.flashcard{background:var(--surface);border-radius:var(--radius);padding:2.2rem 1.2rem;text-align:center;min-height:170px;display:flex;flex-direction:column;justify-content:center;gap:.6rem;box-shadow:var(--shadow)}
-.flashcard .en{font-size:1.7rem;font-weight:700}
-.flashcard .de{font-size:1.25rem;color:var(--accent);font-weight:600}
+.flashcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:2.2rem 1.2rem;text-align:center;min-height:170px;display:flex;flex-direction:column;justify-content:center;gap:.6rem;box-shadow:var(--shadow-sm)}
+.flashcard .en{font-size:1.7rem;font-weight:750}
+.flashcard .de{font-size:1.25rem;color:var(--accent);font-weight:700}
 .flashcard .ex{color:var(--muted);font-style:italic}
 .grade-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-top:1.1rem}
-.grade{padding:.8rem;border-radius:14px;border:0;color:#fff;font-weight:600;cursor:pointer}
-.g-bad{background:var(--bad)} .g-ok{background:var(--warn)} .g-good{background:var(--good)}
-.vocab-item{display:flex;justify-content:space-between;gap:.6rem;background:var(--surface);border-radius:14px;padding:.8rem 1rem;margin-bottom:.55rem;box-shadow:var(--shadow-sm)}
-.vocab-item .en{font-weight:600} .vocab-item .de{color:var(--muted);font-size:.9rem}
-.empty{text-align:center;color:var(--muted);padding:2.5rem 1rem;line-height:1.5}
+.grade{padding:.8rem;border-radius:13px;border:1px solid var(--line-strong);color:var(--ink);background:var(--surface);font-weight:650;cursor:pointer}
+.g-bad{border-color:var(--accent);color:var(--accent)} .g-ok{border-color:var(--warn);color:var(--warn)} .g-good{border-color:var(--good);color:var(--good)}
+.vocab-item{display:flex;justify-content:space-between;gap:.6rem;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:.8rem 1rem;margin-bottom:.55rem;box-shadow:var(--shadow-sm)}
+.vocab-item .en{font-weight:650} .vocab-item .de{color:var(--muted);font-size:.9rem}
+.empty{text-align:center;color:var(--muted);padding:2.5rem 1rem;line-height:1.55}
 
 /* Plan */
-.plan-summary{background:var(--grad);color:#fff;border-radius:var(--radius);padding:1.2rem;margin-bottom:1.1rem;line-height:1.5;box-shadow:var(--shadow)}
-.week{background:var(--surface);border-radius:16px;padding:1rem;margin-bottom:.7rem;box-shadow:var(--shadow-sm)}
+.plan-summary{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:var(--radius-sm);padding:1.1rem 1.2rem;margin-bottom:1.1rem;line-height:1.55;box-shadow:var(--shadow-sm)}
+.week{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1rem;margin-bottom:.7rem;box-shadow:var(--shadow-sm)}
 .week h4{margin:0 0 .4rem;color:var(--accent)}
-.week ul{margin:.3rem 0 0;padding-left:1.1rem;color:var(--muted);line-height:1.5}
-.daily{background:var(--surface2);border-radius:16px;padding:1rem;margin-top:.5rem}
+.week ul{margin:.3rem 0 0;padding-left:1.1rem;color:var(--ink-soft);line-height:1.55}
+.daily{background:var(--accent-soft);border:1px solid var(--accent-soft2);border-radius:14px;padding:1rem;margin-top:.5rem}
 
 /* Progress */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1.2rem}
-.stat{background:var(--surface);border-radius:var(--radius);padding:1.2rem;text-align:center;box-shadow:var(--shadow-sm)}
-.stat .num{font-size:2rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem;text-align:center;box-shadow:var(--shadow-sm)}
+.stat .num{font-size:2rem;font-weight:800;color:var(--accent)}
 .stat .lbl{color:var(--muted);font-size:.8rem;margin-top:.2rem}
 .bars{display:flex;gap:4px;align-items:flex-end;height:90px;margin:.6rem 0 1.6rem}
-.bar{flex:1;background:var(--grad);border-radius:5px 5px 0 0;min-height:3px;opacity:.85}
+.bar{flex:1;background:var(--accent);border-radius:4px 4px 0 0;min-height:3px;opacity:.85}
+.form-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem;box-shadow:var(--shadow-sm);margin-bottom:1rem}
+.form-card input,.form-card select{width:100%;margin:.35rem 0;padding:.78rem .9rem;border-radius:12px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font-size:1rem}
+.form-card input:focus,.form-card select:focus{outline:none;border-color:var(--accent)}
+.field{display:block;color:var(--muted);font-size:.85rem;font-weight:600;margin:.5rem 0}
+.field input[type=range]{accent-color:var(--accent);margin-top:.4rem}
 
 /* Modal + toast */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:grid;place-items:center;padding:1.2rem;z-index:20;backdrop-filter:blur(4px)}
-.modal-card{background:var(--surface);border-radius:24px;padding:1.6rem;width:100%;max-width:420px;box-shadow:var(--shadow)}
-.modal-card input,.modal-card textarea{width:100%;margin:.55rem 0;padding:.8rem;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-size:1rem}
+.modal{position:fixed;inset:0;background:rgba(20,20,30,.32);display:grid;place-items:center;padding:1.2rem;z-index:20;backdrop-filter:blur(4px)}
+.modal-card{background:var(--surface);border-radius:22px;padding:1.6rem;width:100%;max-width:420px;box-shadow:var(--shadow)}
+.modal-card input,.modal-card textarea{width:100%;margin:.55rem 0;padding:.8rem;border-radius:12px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font-size:1rem}
 .modal-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:.6rem}
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:.75rem 1.2rem;border-radius:14px;box-shadow:var(--shadow);z-index:30;max-width:90%;font-weight:500}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.75rem 1.2rem;border-radius:13px;box-shadow:var(--shadow);z-index:30;max-width:90%;font-weight:600}
 
-.demo-banner{background:linear-gradient(135deg,#6a5cff,#0a84ff);color:#fff;text-align:center;font-size:.78rem;padding:.4rem;line-height:1.3}
+.demo-banner{background:#e11d2a;color:#fff;text-align:center;font-size:.76rem;padding:.4rem;line-height:1.3}
 </style></head><body>
-<div class="demo-banner">🔍 VORSCHAU / DEMO — Coach-Antworten sind Beispieltexte (kein echter KI-/Server-Betrieb)</div>
+<div class="demo-banner">VORSCHAU / DEMO — Coach-Antworten sind Beispieltexte (kein echter KI-/Server-Betrieb)</div>
 
 
   <!-- Login -->
   <div id="login" class="login hidden">
     <div class="login-card">
-      <div class="logo">🗣️</div>
+      <div class="logo" data-icon="talk"></div>
       <h1>English Coach</h1>
       <p class="muted">Dein persönlicher Sprach-Partner von B nach C.</p>
       <input id="login-pw" type="password" placeholder="Passwort" autocomplete="current-password" />
@@ -216,13 +228,13 @@ h1,h2,h3,h4{letter-spacing:-.02em}
             </label>
           </div>
           <div id="topic-grid" class="topic-grid"></div>
-          <button id="add-topic-btn" class="btn ghost full">＋ Eigenes Thema hinzufügen</button>
+          <button id="add-topic-btn" class="btn ghost full"><span data-icon="plus"></span> Eigenes Thema hinzufügen</button>
         </div>
 
         <!-- Aktives Gespräch -->
         <div id="conversation" class="hidden">
           <div class="avatar-stage">
-            <div class="orb" id="orb"><span class="orb-emoji">🙂</span></div>
+            <div class="orb" id="orb"><div class="wave"><i></i><i></i><i></i><i></i><i></i></div></div>
             <div class="orb-status" id="orb-status">Bereit, wenn du es bist.</div>
             <div id="goal-chip" class="goal-chip hidden"></div>
             <div id="share-bar" class="share-bar hidden">
@@ -233,9 +245,9 @@ h1,h2,h3,h4{letter-spacing:-.02em}
           <div id="chat" class="chat"></div>
           <div class="composer">
             <div class="composer-row">
-              <button id="mic-btn" class="mic" title="Sprechen">🎙️</button>
-              <textarea id="msg-input" rows="1" placeholder="Schreiben oder 🎙️ antippen…"></textarea>
-              <button id="send-btn" class="btn primary send">➤</button>
+              <button id="mic-btn" class="mic" data-icon="mic" title="Sprechen"></button>
+              <textarea id="msg-input" rows="1" placeholder="Schreiben oder Mikro antippen…"></textarea>
+              <button id="send-btn" class="send" data-icon="send" title="Senden"></button>
             </div>
             <div class="composer-tools">
               <label class="switch"><input type="checkbox" id="auto-speak" checked /> Vorlesen</label>
@@ -280,13 +292,18 @@ h1,h2,h3,h4{letter-spacing:-.02em}
 
         <h3>Stimme</h3>
         <div class="form-card">
-          <label class="field">Stimme
+          <label class="switch" style="margin:.2rem 0 .6rem"><input type="checkbox" id="premium-voice" /> Natürliche Stimme (Premium)</label>
+          <label class="field" id="pvoice-field" style="display:none">Premium-Stimme
+            <select id="pvoice-select"></select>
+          </label>
+          <label class="field" id="bvoice-field">Browser-Stimme
             <select id="voice-select"></select>
           </label>
           <label class="field">Tempo <span id="rate-val" class="muted small"></span>
             <input id="rate-range" type="range" min="0.7" max="1.2" step="0.02" />
           </label>
-          <button id="voice-test" class="btn ghost full">Stimme testen 🔊</button>
+          <button id="voice-test" class="btn ghost full">Stimme testen</button>
+          <p class="muted small" id="premium-info"></p>
         </div>
 
         <h3>Einstellungen</h3>
@@ -300,10 +317,10 @@ h1,h2,h3,h4{letter-spacing:-.02em}
     </main>
 
     <nav class="tabbar">
-      <button class="tab active" data-view="talk"><span>💬</span>Reden</button>
-      <button class="tab" data-view="vocab"><span>📇</span>Vokabeln</button>
-      <button class="tab" data-view="plan"><span>🗺️</span>Plan</button>
-      <button class="tab" data-view="progress"><span>📈</span>Fortschritt</button>
+      <button class="tab active" data-view="talk"><span data-icon="talk"></span>Reden</button>
+      <button class="tab" data-view="vocab"><span data-icon="cards"></span>Vokabeln</button>
+      <button class="tab" data-view="plan"><span data-icon="map"></span>Plan</button>
+      <button class="tab" data-view="progress"><span data-icon="chart"></span>Fortschritt</button>
     </nav>
   </div>
 
@@ -334,6 +351,23 @@ const Speech = (() => {
   let chosenURI = localStorage.getItem('ec_voice') || '';
   let rate = parseFloat(localStorage.getItem('ec_rate') || '0.96');
   let wakeLock = null;
+  let curAudio = null;
+
+  // Premium-/Server-Stimme (OpenAI o. Ä. via PHP-Backend)
+  const premium = {
+    enabled: localStorage.getItem('ec_premium') === '1',
+    available: false,
+    voice: localStorage.getItem('ec_pvoice') || 'alloy',
+    voices: [],
+  };
+  function setPremiumInfo(info) {
+    premium.available = !!(info && info.available);
+    if (info && Array.isArray(info.voices)) premium.voices = info.voices;
+    if (info && info.default && !localStorage.getItem('ec_pvoice')) premium.voice = info.default;
+  }
+  function usePremium(b) { premium.enabled = !!b; localStorage.setItem('ec_premium', b ? '1' : '0'); }
+  function setPremiumVoice(v) { premium.voice = v; localStorage.setItem('ec_pvoice', v); }
+  const premiumState = () => ({ ...premium });
 
   function refreshVoices() {
     if (!('speechSynthesis' in window)) return;
@@ -357,7 +391,7 @@ const Speech = (() => {
   function getRate() { return rate; }
   function currentVoiceURI() { return voice ? voice.voiceURI : ''; }
 
-  function speak(text, { onend } = {}) {
+  function speakBrowser(text, onend) {
     if (!('speechSynthesis' in window) || !text) { onend && onend(); return; }
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
@@ -369,7 +403,34 @@ const Speech = (() => {
     u.onend = finish; u.onerror = finish;
     speechSynthesis.speak(u);
   }
-  function stopSpeaking() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+  async function speakServer(text, onend) {
+    try {
+      stopAudio();
+      const res = await fetch('api/tts.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': localStorage.getItem('ec_token') || '' },
+        body: JSON.stringify({ text, voice: premium.voice }),
+      });
+      if (!res.ok) throw new Error('tts http ' + res.status);
+      const blob = await res.blob();
+      curAudio = new Audio(URL.createObjectURL(blob));
+      curAudio.playbackRate = Math.min(1.2, Math.max(0.8, rate + 0.04));
+      let done = false;
+      const finish = () => { if (!done) { done = true; onend && onend(); } };
+      curAudio.onended = finish; curAudio.onerror = finish;
+      await curAudio.play();
+    } catch (e) {
+      // Bei Problemen sauber auf die Browser-Stimme zurückfallen
+      speakBrowser(text, onend);
+    }
+  }
+  function speak(text, { onend } = {}) {
+    if (!text) { onend && onend(); return; }
+    if (premium.enabled && premium.available) speakServer(text, onend);
+    else speakBrowser(text, onend);
+  }
+  function stopAudio() { if (curAudio) { try { curAudio.pause(); } catch (_) {} curAudio = null; } }
+  function stopSpeaking() { if ('speechSynthesis' in window) speechSynthesis.cancel(); stopAudio(); }
 
   // --- STT ---
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -410,8 +471,54 @@ const Speech = (() => {
   return {
     speak, stopSpeaking, listen, stopListening, keepAwake, releaseAwake,
     listVoices, useVoice, setRate, getRate, currentVoiceURI,
+    setPremiumInfo, usePremium, setPremiumVoice, premiumState,
     sttSupported, ttsSupported: 'speechSynthesis' in window,
   };
+})();
+
+</script>
+<script>
+// Feine Strich-Icons (Line-Art) — ein einheitliches, ikonisches Set.
+// stroke = currentColor, damit Farbe per CSS gesteuert wird (Ink/Rot).
+const ICONS = (() => {
+  const P = {
+    // --- UI / Navigation ---
+    talk:    '<path d="M5 5h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>',
+    cards:   '<rect x="3.5" y="7.5" width="13" height="11" rx="2"/><path d="M7.5 5.5h11a2 2 0 0 1 2 2v9"/>',
+    map:     '<path d="M5 18V6l5 2 4-2 5 2v12l-5-2-4 2-5-2z"/><path d="M10 8v8M14 6v8"/>',
+    chart:   '<path d="M4 4v16h16"/><path d="M7 15l3.5-4 3 2.5L20 7"/>',
+    mic:     '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/>',
+    send:    '<path d="M5 12l15-7-6 15-3-6-6-2z"/>',
+    plus:    '<path d="M12 5v14M5 12h14"/>',
+    close:   '<path d="M6 6l12 12M18 6L6 18"/>',
+    spark:   '<path d="M12 4l1.6 4.8L18 10l-4.4 1.2L12 16l-1.6-4.8L6 10l4.4-1.2z"/>',
+    sound:   '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8 8 0 0 1 0 12"/>',
+    flame:   '<path d="M12 3c2 3-1 4 0 7 .6 1.7 2 1.5 2 3a2 2 0 1 1-4 0c0-1-1-1.5-1-3 0 0-3 1-3 4a5 5 0 0 0 10 0c0-4-4-6-4-11z"/>',
+    // --- Themen ---
+    cup:     '<path d="M5 8h11v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8z"/><path d="M16 9h2.5a2 2 0 0 1 0 4H16"/><path d="M8 3v2M11 3v2"/>',
+    briefcase:'<rect x="3.5" y="8" width="17" height="11" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3.5 13h17"/>',
+    plane:   '<path d="M10 4.5a1.5 1.5 0 0 1 3 0V10l8 4.5v2l-8-2.5V19l2 1.5v1.5l-3.5-1-3.5 1V20.5L9 19v-5L1 16.5v-2L9 10V4.5z" transform="scale(0.9) translate(1.2 0.5)"/>',
+    fork:    '<path d="M7 3v7a2 2 0 0 0 4 0V3M9 10v11M16 3c-1.5 0-2.5 2-2.5 5S15 13 16 13s2.5 0 2.5-5S17.5 3 16 3zM16 13v8"/>',
+    heart:   '<path d="M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 7a3.5 3.5 0 0 1 7 3.5C19 15.5 12 20 12 20z"/>',
+    bulb:    '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.3 1 2.5h6c0-1.2.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+    phone:   '<path d="M6 3h3l2 5-2.5 1.5a11 11 0 0 0 5 5L16 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 3-2z"/>',
+  };
+  function icon(name, size = 24) {
+    const p = P[name] || P.talk;
+    return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  }
+  // Passendes Themen-Icon anhand Slug/Kategorie wählen.
+  const BY_SLUG = {
+    'smalltalk-cafe':'cup', 'job-interview':'briefcase', 'office-meeting':'briefcase',
+    'travel-airport':'plane', 'restaurant':'fork', 'doctor':'heart',
+    'opinion-debate':'bulb', 'phone-call':'phone',
+  };
+  const BY_CAT = { everyday:'cup', work:'briefcase', travel:'plane', health:'heart', advanced:'bulb' };
+  function topicIcon(topic, size = 26) {
+    const name = BY_SLUG[topic.slug] || BY_CAT[topic.category] || 'talk';
+    return icon(name, size);
+  }
+  return { icon, topicIcon, P };
 })();
 
 </script>
@@ -559,6 +666,7 @@ const API = (() => {
     getProfile:  () => wait(120, { profile:{name:'',job:'',interests:'',goals:''}, memory:[] }),
     saveProfile: (p) => wait(120, { ok:true, profile:p }),
     forgetMemory:() => wait(120, { ok:true }),
+    ttsInfo:     () => wait(80, { available:false, voices:[], default:'alloy' }),
   };
 })();
 
@@ -603,11 +711,12 @@ const API = (() => {
     }
   }
 
-  function enterApp() {
+  async function enterApp() {
     $('#login').classList.add('hidden');
     $('#app').classList.remove('hidden');
     loadTopics();
     refreshStreak();
+    try { Speech.setPremiumInfo(await API.ttsInfo()); } catch (_) {}
   }
 
   function logout() {
@@ -630,7 +739,7 @@ const API = (() => {
   async function refreshStreak() {
     try {
       const s = await API.stats();
-      $('#topbar-streak').textContent = s.streak > 0 ? `🔥 ${s.streak} Tage` : '';
+      $('#topbar-streak').innerHTML = s.streak > 0 ? `${ICONS.icon('flame', 16)} ${s.streak} Tage` : '';
     } catch (_) {}
   }
 
@@ -642,8 +751,8 @@ const API = (() => {
       const grid = $('#topic-grid');
       grid.innerHTML = topics.map(t => `
         <button class="topic-card" data-id="${t.id}">
-          ${Number(t.is_custom) ? `<button class="del" data-del="${t.id}" title="Löschen">✕</button>` : ''}
-          <div class="emo">${esc(t.emoji)}</div>
+          ${Number(t.is_custom) ? `<button class="del" data-del="${t.id}" title="Löschen">${ICONS.icon('close', 16)}</button>` : ''}
+          <div class="ic">${ICONS.topicIcon(t)}</div>
           <div class="t">${esc(t.title)}</div>
           <div class="d">${esc(t.description || '')}</div>
         </button>`).join('');
@@ -695,7 +804,7 @@ const API = (() => {
     b.className = 'bubble coach';
     b.innerHTML = `<div class="reply">${esc(reply)}</div>
       ${m.reply_de ? `<div class="de ${state.showDe ? '' : 'hidden'}">${esc(m.reply_de)}</div>` : ''}
-      <button class="speak">🔊 Vorlesen</button>`;
+      <button class="speak">${ICONS.icon('sound', 15)} Vorlesen</button>`;
     b.querySelector('.speak').onclick = () => speakCoach(reply);
     $('#chat').appendChild(b);
 
@@ -896,11 +1005,29 @@ const API = (() => {
   function populateVoices() {
     const sel = $('#voice-select');
     const voices = Speech.listVoices();
-    if (!voices.length) { sel.innerHTML = '<option>Keine englische Stimme gefunden</option>'; return; }
-    const cur = Speech.currentVoiceURI();
-    sel.innerHTML = voices.map(v => `<option value="${esc(v.uri)}" ${v.uri === cur ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('');
+    if (!voices.length) sel.innerHTML = '<option>Keine englische Stimme gefunden</option>';
+    else {
+      const cur = Speech.currentVoiceURI();
+      sel.innerHTML = voices.map(v => `<option value="${esc(v.uri)}" ${v.uri === cur ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('');
+    }
     const r = Speech.getRate();
     $('#rate-range').value = r; $('#rate-val').textContent = r.toFixed(2) + '×';
+
+    // Premium-Stimme
+    const ps = Speech.premiumState();
+    const cb = $('#premium-voice');
+    cb.checked = ps.enabled && ps.available;
+    cb.disabled = !ps.available;
+    $('#premium-info').textContent = ps.available
+      ? 'Premium-Stimme verfügbar — klingt deutlich natürlicher.'
+      : 'Premium-Stimme aus (kein OpenAI-Key in config.php). Es wird die Browser-Stimme genutzt.';
+    const psel = $('#pvoice-select');
+    psel.innerHTML = (ps.voices || []).map(v => `<option value="${esc(v)}" ${v === ps.voice ? 'selected' : ''}>${esc(v)}</option>`).join('');
+    reflectVoiceMode(cb.checked);
+  }
+  function reflectVoiceMode(premiumOn) {
+    $('#pvoice-field').style.display = premiumOn ? 'block' : 'none';
+    $('#bvoice-field').style.display = premiumOn ? 'none' : 'block';
   }
 
   /* ---------------- Modal Thema ---------------- */
@@ -916,7 +1043,10 @@ const API = (() => {
   }
 
   /* ---------------- Events ---------------- */
+  function renderIcons() { $$('[data-icon]').forEach(el => { el.innerHTML = ICONS.icon(el.dataset.icon); }); }
+
   function bind() {
+    renderIcons();
     $('#login-btn').onclick = doLogin;
     $('#login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
     $('#logout').onclick = logout;
@@ -950,6 +1080,8 @@ const API = (() => {
     // Profil & Stimme
     $('#pf-save').onclick = saveProfile;
     $('#voice-select').onchange = e => { Speech.useVoice(e.target.value); };
+    $('#premium-voice').onchange = e => { Speech.usePremium(e.target.checked); reflectVoiceMode(e.target.checked); };
+    $('#pvoice-select').onchange = e => { Speech.setPremiumVoice(e.target.value); };
     $('#rate-range').oninput = e => { const r = parseFloat(e.target.value); Speech.setRate(r); $('#rate-val').textContent = r.toFixed(2) + '×'; };
     $('#voice-test').onclick = () => Speech.speak("Hi! This is how I sound. Let's practise together — you're doing great.");
     $('#forget-mem').onclick = async () => { if (confirm('Soll der Coach alles über dich vergessen?')) { try { await API.forgetMemory(); toast('Gedächtnis geleert.'); } catch (e) { toast(e.message); } } };

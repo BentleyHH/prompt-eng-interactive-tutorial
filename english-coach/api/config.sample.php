@@ -25,4 +25,13 @@ return [
         'version'    => '2023-06-01',
         'max_tokens' => 1100,
     ],
+
+    // --- Optional: natürliche Premium-Stimme (OpenAI Text-to-Speech) ---
+    // Leer lassen = App nutzt die kostenlose Browser-Stimme.
+    // Key von https://platform.openai.com/api-keys. Sehr günstig pro Satz.
+    'openai' => [
+        'api_key'   => '',                 // z. B. 'sk-...'  (leer = aus)
+        'tts_model' => 'gpt-4o-mini-tts',  // natürliche, günstige Stimme
+        'voice'     => 'alloy',            // alloy, echo, fable, nova, onyx, shimmer, …
+    ],
 ];

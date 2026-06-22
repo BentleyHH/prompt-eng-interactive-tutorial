@@ -141,5 +141,6 @@ const API = (() => {
     getProfile:  () => wait(120, { profile:{name:'',job:'',interests:'',goals:''}, memory:[] }),
     saveProfile: (p) => wait(120, { ok:true, profile:p }),
     forgetMemory:() => wait(120, { ok:true }),
+    ttsInfo:     () => wait(80, { available:false, voices:[], default:'alloy' }),
   };
 })();

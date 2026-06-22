@@ -37,11 +37,12 @@
     }
   }
 
-  function enterApp() {
+  async function enterApp() {
     $('#login').classList.add('hidden');
     $('#app').classList.remove('hidden');
     loadTopics();
     refreshStreak();
+    try { Speech.setPremiumInfo(await API.ttsInfo()); } catch (_) {}
   }
 
   function logout() {
@@ -64,7 +65,7 @@
   async function refreshStreak() {
     try {
       const s = await API.stats();
-      $('#topbar-streak').textContent = s.streak > 0 ? `🔥 ${s.streak} Tage` : '';
+      $('#topbar-streak').innerHTML = s.streak > 0 ? `${ICONS.icon('flame', 16)} ${s.streak} Tage` : '';
     } catch (_) {}
   }
 
@@ -76,8 +77,8 @@
       const grid = $('#topic-grid');
       grid.innerHTML = topics.map(t => `
         <button class="topic-card" data-id="${t.id}">
-          ${Number(t.is_custom) ? `<button class="del" data-del="${t.id}" title="Löschen">✕</button>` : ''}
-          <div class="emo">${esc(t.emoji)}</div>
+          ${Number(t.is_custom) ? `<button class="del" data-del="${t.id}" title="Löschen">${ICONS.icon('close', 16)}</button>` : ''}
+          <div class="ic">${ICONS.topicIcon(t)}</div>
           <div class="t">${esc(t.title)}</div>
           <div class="d">${esc(t.description || '')}</div>
         </button>`).join('');
@@ -129,7 +130,7 @@
     b.className = 'bubble coach';
     b.innerHTML = `<div class="reply">${esc(reply)}</div>
       ${m.reply_de ? `<div class="de ${state.showDe ? '' : 'hidden'}">${esc(m.reply_de)}</div>` : ''}
-      <button class="speak">🔊 Vorlesen</button>`;
+      <button class="speak">${ICONS.icon('sound', 15)} Vorlesen</button>`;
     b.querySelector('.speak').onclick = () => speakCoach(reply);
     $('#chat').appendChild(b);
 
@@ -330,11 +331,29 @@
   function populateVoices() {
     const sel = $('#voice-select');
     const voices = Speech.listVoices();
-    if (!voices.length) { sel.innerHTML = '<option>Keine englische Stimme gefunden</option>'; return; }
-    const cur = Speech.currentVoiceURI();
-    sel.innerHTML = voices.map(v => `<option value="${esc(v.uri)}" ${v.uri === cur ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('');
+    if (!voices.length) sel.innerHTML = '<option>Keine englische Stimme gefunden</option>';
+    else {
+      const cur = Speech.currentVoiceURI();
+      sel.innerHTML = voices.map(v => `<option value="${esc(v.uri)}" ${v.uri === cur ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('');
+    }
     const r = Speech.getRate();
     $('#rate-range').value = r; $('#rate-val').textContent = r.toFixed(2) + '×';
+
+    // Premium-Stimme
+    const ps = Speech.premiumState();
+    const cb = $('#premium-voice');
+    cb.checked = ps.enabled && ps.available;
+    cb.disabled = !ps.available;
+    $('#premium-info').textContent = ps.available
+      ? 'Premium-Stimme verfügbar — klingt deutlich natürlicher.'
+      : 'Premium-Stimme aus (kein OpenAI-Key in config.php). Es wird die Browser-Stimme genutzt.';
+    const psel = $('#pvoice-select');
+    psel.innerHTML = (ps.voices || []).map(v => `<option value="${esc(v)}" ${v === ps.voice ? 'selected' : ''}>${esc(v)}</option>`).join('');
+    reflectVoiceMode(cb.checked);
+  }
+  function reflectVoiceMode(premiumOn) {
+    $('#pvoice-field').style.display = premiumOn ? 'block' : 'none';
+    $('#bvoice-field').style.display = premiumOn ? 'none' : 'block';
   }
 
   /* ---------------- Modal Thema ---------------- */
@@ -350,7 +369,10 @@
   }
 
   /* ---------------- Events ---------------- */
+  function renderIcons() { $$('[data-icon]').forEach(el => { el.innerHTML = ICONS.icon(el.dataset.icon); }); }
+
   function bind() {
+    renderIcons();
     $('#login-btn').onclick = doLogin;
     $('#login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
     $('#logout').onclick = logout;
@@ -384,6 +406,8 @@
     // Profil & Stimme
     $('#pf-save').onclick = saveProfile;
     $('#voice-select').onchange = e => { Speech.useVoice(e.target.value); };
+    $('#premium-voice').onchange = e => { Speech.usePremium(e.target.checked); reflectVoiceMode(e.target.checked); };
+    $('#pvoice-select').onchange = e => { Speech.setPremiumVoice(e.target.value); };
     $('#rate-range').oninput = e => { const r = parseFloat(e.target.value); Speech.setRate(r); $('#rate-val').textContent = r.toFixed(2) + '×'; };
     $('#voice-test').onclick = () => Speech.speak("Hi! This is how I sound. Let's practise together — you're doing great.");
     $('#forget-mem').onclick = async () => { if (confirm('Soll der Coach alles über dich vergessen?')) { try { await API.forgetMemory(); toast('Gedächtnis geleert.'); } catch (e) { toast(e.message); } } };

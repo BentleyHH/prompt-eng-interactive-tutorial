@@ -58,6 +58,9 @@ Deshalb:
    - **session_secret**: eine lange zufällige Zeichenkette (z. B. 40+ Zeichen).
    - **anthropic.api_key**: dein Key von <https://console.anthropic.com>.
    - **anthropic.model**: `claude-sonnet-4-6` (schnell & stark) oder `claude-opus-4-8` (beste Qualität).
+   - **openai.api_key** *(optional)*: für die **natürliche Premium-Stimme** (Modell
+     `gpt-4o-mini-tts`). Leer lassen = kostenlose Browser-Stimme. Aktivieren später
+     in der App unter *Fortschritt → Stimme → „Natürliche Stimme (Premium)"*.
 
 ### 3. Dateien hochladen
 Den **Inhalt** des Ordners `english-coach/` per FTP in dein Webverzeichnis legen

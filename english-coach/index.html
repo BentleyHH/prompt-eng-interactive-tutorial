@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-  <meta name="theme-color" content="#0f766e" />
+  <meta name="theme-color" content="#ffffff" />
   <title>English Coach</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
@@ -17,7 +17,7 @@
   <!-- Login -->
   <div id="login" class="login hidden">
     <div class="login-card">
-      <div class="logo">🗣️</div>
+      <div class="logo" data-icon="talk"></div>
       <h1>English Coach</h1>
       <p class="muted">Dein persönlicher Sprach-Partner von B nach C.</p>
       <input id="login-pw" type="password" placeholder="Passwort" autocomplete="current-password" />
@@ -48,13 +48,13 @@
             </label>
           </div>
           <div id="topic-grid" class="topic-grid"></div>
-          <button id="add-topic-btn" class="btn ghost full">＋ Eigenes Thema hinzufügen</button>
+          <button id="add-topic-btn" class="btn ghost full"><span data-icon="plus"></span> Eigenes Thema hinzufügen</button>
         </div>
 
         <!-- Aktives Gespräch -->
         <div id="conversation" class="hidden">
           <div class="avatar-stage">
-            <div class="orb" id="orb"><span class="orb-emoji">🙂</span></div>
+            <div class="orb" id="orb"><div class="wave"><i></i><i></i><i></i><i></i><i></i></div></div>
             <div class="orb-status" id="orb-status">Bereit, wenn du es bist.</div>
             <div id="goal-chip" class="goal-chip hidden"></div>
             <div id="share-bar" class="share-bar hidden">
@@ -65,9 +65,9 @@
           <div id="chat" class="chat"></div>
           <div class="composer">
             <div class="composer-row">
-              <button id="mic-btn" class="mic" title="Sprechen">🎙️</button>
-              <textarea id="msg-input" rows="1" placeholder="Schreiben oder 🎙️ antippen…"></textarea>
-              <button id="send-btn" class="btn primary send">➤</button>
+              <button id="mic-btn" class="mic" data-icon="mic" title="Sprechen"></button>
+              <textarea id="msg-input" rows="1" placeholder="Schreiben oder Mikro antippen…"></textarea>
+              <button id="send-btn" class="send" data-icon="send" title="Senden"></button>
             </div>
             <div class="composer-tools">
               <label class="switch"><input type="checkbox" id="auto-speak" checked /> Vorlesen</label>
@@ -112,13 +112,18 @@
 
         <h3>Stimme</h3>
         <div class="form-card">
-          <label class="field">Stimme
+          <label class="switch" style="margin:.2rem 0 .6rem"><input type="checkbox" id="premium-voice" /> Natürliche Stimme (Premium)</label>
+          <label class="field" id="pvoice-field" style="display:none">Premium-Stimme
+            <select id="pvoice-select"></select>
+          </label>
+          <label class="field" id="bvoice-field">Browser-Stimme
             <select id="voice-select"></select>
           </label>
           <label class="field">Tempo <span id="rate-val" class="muted small"></span>
             <input id="rate-range" type="range" min="0.7" max="1.2" step="0.02" />
           </label>
-          <button id="voice-test" class="btn ghost full">Stimme testen 🔊</button>
+          <button id="voice-test" class="btn ghost full">Stimme testen</button>
+          <p class="muted small" id="premium-info"></p>
         </div>
 
         <h3>Einstellungen</h3>
@@ -132,10 +137,10 @@
     </main>
 
     <nav class="tabbar">
-      <button class="tab active" data-view="talk"><span>💬</span>Reden</button>
-      <button class="tab" data-view="vocab"><span>📇</span>Vokabeln</button>
-      <button class="tab" data-view="plan"><span>🗺️</span>Plan</button>
-      <button class="tab" data-view="progress"><span>📈</span>Fortschritt</button>
+      <button class="tab active" data-view="talk"><span data-icon="talk"></span>Reden</button>
+      <button class="tab" data-view="vocab"><span data-icon="cards"></span>Vokabeln</button>
+      <button class="tab" data-view="plan"><span data-icon="map"></span>Plan</button>
+      <button class="tab" data-view="progress"><span data-icon="chart"></span>Fortschritt</button>
     </nav>
   </div>
 
@@ -156,6 +161,7 @@
   <div id="toast" class="toast hidden"></div>
 
   <script src="js/api.js"></script>
+  <script src="js/icons.js"></script>
   <script src="js/speech.js"></script>
   <script src="js/app.js"></script>
 </body>
