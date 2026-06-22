@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>English Coach — Vorschau (Demo)</title>
+<style>
+:root{
+  --bg:#0b1220; --surface:#131c2e; --surface2:#1b263b; --line:#26344d;
+  --text:#e8eef7; --muted:#93a3bd; --teal:#14b8a6; --teal-d:#0f766e;
+  --user:#1f7a8c; --warn:#f59e0b; --good:#22c55e; --bad:#ef4444;
+  --radius:16px; --shadow:0 6px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.hidden{display:none !important}
+.muted{color:var(--muted)} .small{font-size:.85rem} .note{margin-top:1.2rem;line-height:1.5}
+.error{color:var(--bad);min-height:1.2em;margin:.4rem 0 0}
+
+/* Buttons */
+.btn{border:0;border-radius:12px;padding:.8rem 1.1rem;font-size:1rem;font-weight:600;cursor:pointer;color:#fff;transition:.15s}
+.btn.primary{background:var(--teal-d)} .btn.primary:active{background:var(--teal)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn.full{width:100%;margin-top:.8rem}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.85rem}
+
+/* Login */
+.login{position:fixed;inset:0;display:grid;place-items:center;padding:1.5rem;background:radial-gradient(1200px 600px at 50% -10%,#15314a,var(--bg))}
+.login-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:2rem;width:100%;max-width:360px;text-align:center;box-shadow:var(--shadow)}
+.login-card .logo{font-size:2.6rem} .login-card h1{margin:.3rem 0}
+.login-card input{width:100%;margin:1rem 0 .8rem;padding:.85rem;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-size:1rem}
+.login-card .btn{width:100%}
+
+/* App shell */
+.app{display:flex;flex-direction:column;height:100dvh;max-width:720px;margin:0 auto}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:.9rem 1.1rem;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+.topbar .title{font-weight:700;font-size:1.1rem}
+.streak{color:var(--warn);font-weight:600;font-size:.9rem}
+.content{flex:1;overflow-y:auto;padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom))}
+.view{animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+
+/* Tabbar */
+.tabbar{display:flex;border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom)}
+.tab{flex:1;background:none;border:0;color:var(--muted);padding:.6rem 0 .7rem;font-size:.72rem;display:flex;flex-direction:column;align-items:center;gap:.15rem;cursor:pointer}
+.tab span{font-size:1.25rem;line-height:1}
+.tab.active{color:var(--teal)}
+
+/* Topic picker */
+.hero h2{margin:.2rem 0} .hero{margin-bottom:1rem}
+.level-row{display:inline-flex;gap:.5rem;align-items:center;margin-top:.6rem;color:var(--muted)}
+.level-row select{background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:.4rem .6rem}
+.topic-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.topic-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;cursor:pointer;text-align:left;color:var(--text);transition:.15s}
+.topic-card:active{transform:scale(.98);border-color:var(--teal)}
+.topic-card .emo{font-size:1.6rem} .topic-card .t{font-weight:700;margin:.4rem 0 .15rem}
+.topic-card .d{font-size:.8rem;color:var(--muted);line-height:1.35}
+.topic-card .del{position:absolute;top:.4rem;right:.5rem;background:none;border:0;color:var(--muted);font-size:1rem;cursor:pointer}
+
+/* Chat */
+.chat{display:flex;flex-direction:column;gap:.7rem;padding-bottom:.5rem}
+.bubble{max-width:85%;padding:.7rem .9rem;border-radius:16px;line-height:1.45;font-size:1rem;animation:fade .2s}
+.bubble.coach{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px;align-self:flex-start}
+.bubble.me{background:var(--user);border-bottom-right-radius:4px;align-self:flex-end}
+.bubble .de{margin-top:.5rem;padding-top:.5rem;border-top:1px dashed var(--line);color:var(--muted);font-size:.9rem}
+.bubble .speak{background:none;border:0;color:var(--teal);cursor:pointer;font-size:.85rem;margin-top:.35rem;padding:0}
+.feedback{align-self:flex-start;max-width:90%;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:.6rem .8rem;font-size:.88rem}
+.feedback .fb{margin:.25rem 0}
+.feedback .o{color:var(--bad);text-decoration:line-through} .feedback .b{color:var(--good)}
+.feedback .n{color:var(--muted);font-size:.82rem}
+.vocab-chiprow{display:flex;flex-wrap:wrap;gap:.4rem;align-self:flex-start;max-width:95%}
+.vchip{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:.3rem .7rem;font-size:.82rem}
+.vchip b{color:var(--teal)}
+.encourage{align-self:center;color:var(--warn);font-size:.85rem;text-align:center;padding:.2rem 1rem}
+.typing{align-self:flex-start;color:var(--muted);font-style:italic;padding:.4rem .2rem}
+
+/* Composer */
+.composer{position:sticky;bottom:0;background:var(--bg);padding-top:.5rem;border-top:1px solid var(--line)}
+.composer-row{display:flex;gap:.5rem;align-items:flex-end}
+.composer textarea{flex:1;resize:none;background:var(--surface2);border:1px solid var(--line);color:var(--text);border-radius:14px;padding:.7rem .8rem;font-size:1rem;max-height:120px}
+.mic{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:1.3rem;cursor:pointer;flex:0 0 auto}
+.mic.rec{background:var(--bad);border-color:var(--bad);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+.send{width:46px;height:46px;border-radius:50%;flex:0 0 auto;padding:0}
+.composer-tools{display:flex;gap:1rem;align-items:center;padding:.5rem .2rem;flex-wrap:wrap}
+.switch{font-size:.82rem;color:var(--muted);display:inline-flex;gap:.35rem;align-items:center;cursor:pointer}
+
+/* Segmented */
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.25rem;margin-bottom:1rem}
+.seg-btn{flex:1;background:none;border:0;color:var(--muted);padding:.55rem;border-radius:9px;cursor:pointer;font-weight:600}
+.seg-btn.active{background:var(--teal-d);color:#fff}
+
+/* Vocab card / review */
+.flashcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:2rem 1.2rem;text-align:center;min-height:160px;display:flex;flex-direction:column;justify-content:center;gap:.6rem;box-shadow:var(--shadow)}
+.flashcard .en{font-size:1.6rem;font-weight:700}
+.flashcard .de{font-size:1.2rem;color:var(--teal)}
+.flashcard .ex{color:var(--muted);font-style:italic}
+.grade-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-top:1rem}
+.grade{padding:.7rem;border-radius:12px;border:0;color:#fff;font-weight:600;cursor:pointer}
+.g-bad{background:var(--bad)} .g-ok{background:var(--warn)} .g-good{background:var(--good)}
+.vocab-item{display:flex;justify-content:space-between;gap:.6rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.7rem .9rem;margin-bottom:.5rem}
+.vocab-item .en{font-weight:600} .vocab-item .de{color:var(--muted);font-size:.9rem}
+.empty{text-align:center;color:var(--muted);padding:2.5rem 1rem}
+
+/* Plan */
+.plan-summary{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;line-height:1.5}
+.week{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.9rem;margin-bottom:.7rem}
+.week h4{margin:0 0 .4rem;color:var(--teal)}
+.week ul{margin:.3rem 0 0;padding-left:1.1rem;color:var(--muted)}
+.daily{background:var(--surface2);border-radius:12px;padding:.9rem;margin-top:.5rem}
+
+/* Progress */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1rem}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat .num{font-size:1.8rem;font-weight:800;color:var(--teal)}
+.stat .lbl{color:var(--muted);font-size:.8rem}
+.bars{display:flex;gap:4px;align-items:flex-end;height:80px;margin:.5rem 0 1.5rem}
+.bar{flex:1;background:var(--teal-d);border-radius:4px 4px 0 0;min-height:3px}
+
+/* Modal + toast */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:1.2rem;z-index:20}
+.modal-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.4rem;width:100%;max-width:420px}
+.modal-card input,.modal-card textarea{width:100%;margin:.5rem 0;padding:.7rem;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-size:1rem}
+.modal-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:.6rem}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--line);color:var(--text);padding:.7rem 1.1rem;border-radius:12px;box-shadow:var(--shadow);z-index:30;max-width:90%}
+
+.demo-banner{background:#0f766e;color:#fff;text-align:center;font-size:.8rem;padding:.4rem;line-height:1.3}
+</style>
+</head>
+<body>
+<div class="demo-banner">🔍 VORSCHAU / DEMO — Coach-Antworten sind Beispieltexte (kein echter KI-/Server-Betrieb)</div>
+
+
+  <!-- Login -->
+  <div id="login" class="login hidden">
+    <div class="login-card">
+      <div class="logo">🗣️</div>
+      <h1>English Coach</h1>
+      <p class="muted">Dein persönlicher Sprach-Partner von B nach C.</p>
+      <input id="login-pw" type="password" placeholder="Passwort" autocomplete="current-password" />
+      <button id="login-btn" class="btn primary">Einloggen</button>
+      <p id="login-err" class="error"></p>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <span class="title" id="topbar-title">Reden</span>
+      <span class="streak" id="topbar-streak"></span>
+    </header>
+
+    <main class="content">
+      <!-- TALK -->
+      <section id="view-talk" class="view">
+        <!-- Themenauswahl -->
+        <div id="topic-picker">
+          <div class="hero">
+            <h2>Worüber möchtest du reden?</h2>
+            <p class="muted">Wähle ein Thema. Keine Angst vor Fehlern — der Coach hilft dir sanft weiter.</p>
+            <label class="level-row">Dein Level:
+              <select id="level-select">
+                <option>B1</option><option selected>B2</option><option>C1</option>
+              </select>
+            </label>
+          </div>
+          <div id="topic-grid" class="topic-grid"></div>
+          <button id="add-topic-btn" class="btn ghost full">＋ Eigenes Thema hinzufügen</button>
+        </div>
+
+        <!-- Aktives Gespräch -->
+        <div id="conversation" class="hidden">
+          <div id="chat" class="chat"></div>
+          <div class="composer">
+            <div class="composer-row">
+              <button id="mic-btn" class="mic" title="Sprechen">🎙️</button>
+              <textarea id="msg-input" rows="1" placeholder="Schreiben oder 🎙️ antippen…"></textarea>
+              <button id="send-btn" class="btn primary send">➤</button>
+            </div>
+            <div class="composer-tools">
+              <label class="switch"><input type="checkbox" id="auto-speak" checked /> Vorlesen</label>
+              <label class="switch"><input type="checkbox" id="show-de" /> Deutsch zeigen</label>
+              <button id="end-conv" class="link">Gespräch beenden</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VOCAB -->
+      <section id="view-vocab" class="view hidden">
+        <div class="seg">
+          <button class="seg-btn active" data-vocab="review">Wiederholen</button>
+          <button class="seg-btn" data-vocab="all">Alle Vokabeln</button>
+        </div>
+        <div id="vocab-review"></div>
+        <div id="vocab-all" class="hidden"></div>
+      </section>
+
+      <!-- PLAN -->
+      <section id="view-plan" class="view hidden">
+        <div id="plan-content"></div>
+        <button id="make-plan" class="btn primary full">Lernplan (neu) erstellen</button>
+        <p class="muted small">Der Coach baut einen 4-Wochen-Plan aus deinem Level und deinen Vokabeln.</p>
+      </section>
+
+      <!-- PROGRESS -->
+      <section id="view-progress" class="view hidden">
+        <div id="progress-content"></div>
+        <h3>Einstellungen</h3>
+        <p class="muted small" id="caps-info"></p>
+        <button id="logout" class="btn ghost full">Ausloggen</button>
+        <p class="muted small note">Hinweis: Bei gesperrtem Bildschirm pausieren Mikrofon &amp;
+        App auf dem Handy (Browser-Limit). Mit „Vorlesen" läuft die Audio-Ausgabe weiter; für
+        echtes Weiterlaufen bei dunklem Display bräuchte es eine native App.</p>
+      </section>
+    </main>
+
+    <nav class="tabbar">
+      <button class="tab active" data-view="talk"><span>💬</span>Reden</button>
+      <button class="tab" data-view="vocab"><span>📇</span>Vokabeln</button>
+      <button class="tab" data-view="plan"><span>🗺️</span>Plan</button>
+      <button class="tab" data-view="progress"><span>📈</span>Fortschritt</button>
+    </nav>
+  </div>
+
+  <!-- Modal: Thema hinzufügen -->
+  <div id="topic-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Eigenes Thema</h3>
+      <input id="nt-emoji" placeholder="Emoji (z. B. 🎬)" maxlength="4" />
+      <input id="nt-title" placeholder="Titel, z. B. „Über Filme reden"" />
+      <textarea id="nt-desc" rows="2" placeholder="Kurz: worum geht es?"></textarea>
+      <div class="modal-actions">
+        <button id="nt-cancel" class="btn ghost">Abbrechen</button>
+        <button id="nt-save" class="btn primary">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  
+<script>
+// Sprachausgabe (TTS), Spracherkennung (STT) und Wake-Lock.
+// Hinweis: Spracherkennung läuft am zuverlässigsten in Chrome/Edge/Safari.
+const Speech = (() => {
+  let voice = null;
+  let wakeLock = null;
+
+  // --- TTS: englische Stimme wählen ---
+  function pickVoice() {
+    const voices = speechSynthesis.getVoices();
+    voice = voices.find(v => /en[-_]GB/i.test(v.lang)) ||
+            voices.find(v => /en[-_]US/i.test(v.lang)) ||
+            voices.find(v => /^en/i.test(v.lang)) || null;
+  }
+  if ('speechSynthesis' in window) {
+    pickVoice();
+    speechSynthesis.onvoiceschanged = pickVoice;
+  }
+
+  function speak(text, { onend } = {}) {
+    if (!('speechSynthesis' in window) || !text) { onend && onend(); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    if (voice) u.voice = voice;
+    u.lang = voice ? voice.lang : 'en-US';
+    u.rate = 0.96;
+    u.onend = () => onend && onend();
+    speechSynthesis.speak(u);
+  }
+  function stopSpeaking() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+
+  // --- STT ---
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const sttSupported = !!SR;
+  let recog = null;
+
+  function listen({ onresult, onend, onerror } = {}) {
+    if (!SR) { onerror && onerror(new Error('Spracherkennung wird hier nicht unterstützt.')); return null; }
+    recog = new SR();
+    recog.lang = 'en-US';
+    recog.interimResults = true;
+    recog.continuous = false;
+    let finalText = '';
+    recog.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t; else interim += t;
+      }
+      onresult && onresult(finalText, interim);
+    };
+    recog.onerror = (e) => onerror && onerror(e);
+    recog.onend = () => onend && onend(finalText.trim());
+    recog.start();
+    return recog;
+  }
+  function stopListening() { if (recog) try { recog.stop(); } catch (_) {} }
+
+  // --- Wake Lock: hält den Bildschirm im Gespräch an ---
+  async function keepAwake() {
+    try {
+      if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+    } catch (_) {}
+  }
+  function releaseAwake() { if (wakeLock) { wakeLock.release().catch(()=>{}); wakeLock = null; } }
+  document.addEventListener('visibilitychange', () => {
+    if (wakeLock && document.visibilityState === 'visible') keepAwake();
+  });
+
+  return { speak, stopSpeaking, listen, stopListening, sttSupported, ttsSupported: 'speechSynthesis' in window, keepAwake, releaseAwake };
+})();
+
+</script>
+<script>
+/* =========================================================================
+ *  NUR FÜR DIE VORSCHAU (preview.html).
+ *  Ersetzt das echte Backend durch einen Demo-Coach mit Beispieltexten,
+ *  damit man die App ohne Server/KI durchklicken kann.
+ *  Stellt dasselbe API-Objekt bereit wie js/api.js.
+ * ========================================================================= */
+const API = (() => {
+  const wait = (ms, val) => new Promise(r => setTimeout(() => r(val), ms));
+  let convCount = 0, curTopic = 'a chat', turn = 0;
+
+  const TOPICS = [
+    { id:1, slug:'smalltalk-cafe', title:'Smalltalk im Café', description:'Lockeres Gespräch beim Kaffee.', emoji:'☕', is_custom:0 },
+    { id:2, slug:'job-interview', title:'Vorstellungsgespräch', description:'Ein realistisches Job-Interview üben.', emoji:'💼', is_custom:0 },
+    { id:3, slug:'office-meeting', title:'Meeting im Büro', description:'Standpunkte vertreten, nachfragen.', emoji:'🗂️', is_custom:0 },
+    { id:4, slug:'travel-airport', title:'Reisen & Flughafen', description:'Check-in, Umsteigen, Probleme lösen.', emoji:'✈️', is_custom:0 },
+    { id:5, slug:'restaurant', title:'Im Restaurant', description:'Bestellen, nachfragen, reklamieren.', emoji:'🍽️', is_custom:0 },
+    { id:6, slug:'doctor', title:'Beim Arzt', description:'Beschwerden schildern.', emoji:'🩺', is_custom:0 },
+    { id:7, slug:'opinion-debate', title:'Meinung & Diskussion', description:'Eine Position begründen — ideal für C1.', emoji:'🧠', is_custom:0 },
+    { id:8, slug:'phone-call', title:'Telefonat', description:'Ohne Mimik verstehen — fordernd.', emoji:'📞', is_custom:0 },
+  ];
+
+  const GREET = {
+    1:"Hey, good to see you! Grab a seat — I just ordered a flat white. So, how has your week been so far?",
+    2:"Welcome, thanks for coming in. Please, take a seat. To start us off — could you tell me a little about yourself and what drew you to this role?",
+    3:"Morning, everyone — let's get started. We're here to align on the new timeline. What's your take on where we currently stand?",
+    4:"Hi there, welcome to the check-in desk. May I see your passport and booking, please? And are you checking in any bags today?",
+    5:"Good evening and welcome! Here are your menus. Can I start you off with something to drink while you decide?",
+    6:"Hello, come on in and have a seat. So, what brings you in today — what's been bothering you?",
+    7:"Great, let's dig into this. I'd argue that remote work has done more good than harm. Where do you stand on that?",
+    8:"Hello, thanks for calling! This is Alex from support. How can I help you today?",
+  };
+
+  const VOCAB_POOL = {
+    1:[{en:'to catch up',de:'sich austauschen / auf den neuesten Stand bringen',example:"Let's catch up over coffee soon."},
+       {en:'hectic',de:'hektisch',example:"It's been a hectic week at work."}],
+    2:[{en:'to be drawn to',de:'sich hingezogen fühlen zu',example:'I was drawn to this role by the team culture.'},
+       {en:'a track record',de:'eine Erfolgsbilanz',example:'She has a strong track record in sales.'}],
+    7:[{en:'to make a case for',de:'für etwas argumentieren',example:'He made a compelling case for the change.'},
+       {en:'on balance',de:'alles in allem',example:'On balance, the benefits outweigh the costs.'}],
+  };
+  const GENERIC_VOCAB = [
+    {en:'to be honest',de:'ehrlich gesagt',example:"To be honest, I'm not entirely sure."},
+    {en:"I'd say",de:'ich würde sagen',example:"I'd say it depends on the situation."},
+    {en:'in terms of',de:'in Bezug auf',example:"In terms of cost, it's reasonable."},
+    {en:'come to think of it',de:'wenn ich so darüber nachdenke',example:'Come to think of it, that makes sense.'},
+  ];
+
+  const FOLLOWUPS = [
+    "What about you — how do you usually handle that?",
+    "Interesting! Can you tell me a bit more about why?",
+    "Nice. And how did that make you feel?",
+    "Got it. What would you do differently next time?",
+    "That makes sense. Could you give me an example?",
+    "I see. What's the hardest part about that for you?",
+  ];
+  const ENCOURAGE = [
+    "Super, du traust dich zu sprechen — genau so wächst dein Englisch!",
+    "Toll formuliert! Kleine Fehler sind völlig egal, du wirst verstanden.",
+    "Stark — du benutzt schon längere Sätze. Bleib dran!",
+    "Klasse, dass du einfach drauflos redest. Das ist der wichtigste Schritt.",
+  ];
+
+  let idc = 0;
+  const pick = (a) => a[Math.floor(Math.random()*a.length)];
+
+  function coachReply(userText) {
+    turn++;
+    const tid = Number(curTopic) || 0;
+    const vpool = VOCAB_POOL[tid] || GENERIC_VOCAB;
+    const reply = `That's a great point. ${pick(FOLLOWUPS)}`;
+    const msg = {
+      reply,
+      reply_de: 'Das ist ein guter Punkt. ' + '(Übersetzung der Rückfrage erscheint hier.)',
+      feedback: (turn % 2 === 0 && userText && userText.length > 8)
+        ? [{ original: userText.slice(0,40), better: 'A slightly more natural phrasing here.',
+             note_de:'Im echten Betrieb erklärt der Coach hier kurz das Warum.' }]
+        : [],
+      vocab: [ pick(vpool), pick(GENERIC_VOCAB) ].filter((v,i,a)=>a.indexOf(v)===i),
+      encouragement_de: pick(ENCOURAGE),
+      level_estimate: 'B2',
+    };
+    return msg;
+  }
+
+  let VOCAB = [
+    {id:1,en:'to catch up',de:'sich austauschen',example:"Let's catch up soon.",due_at:'2026-06-22'},
+    {id:2,en:'a track record',de:'eine Erfolgsbilanz',example:'A strong track record.',due_at:'2026-06-22'},
+    {id:3,en:'on balance',de:'alles in allem',example:'On balance, it works.',due_at:'2026-06-22'},
+    {id:4,en:'to make a case for',de:'für etwas argumentieren',example:'He made a case for it.',due_at:'2026-06-22'},
+    {id:5,en:'hectic',de:'hektisch',example:'A hectic week.',due_at:'2026-06-22'},
+  ];
+
+  function days30(){
+    const out=[]; const t=new Date('2026-06-22');
+    for(let i=29;i>=0;i--){const d=new Date(t);d.setDate(t.getDate()-i);
+      out.push({day:d.toISOString().slice(0,10),messages_count: i<7?Math.floor(Math.random()*9):Math.floor(Math.random()*5),new_vocab:0});}
+    return out;
+  }
+
+  const PLAN = {
+    summary_de:'Du bist auf einem soliden B2-Niveau. In vier Wochen bringen wir dich näher an C1 — mit täglich nur ~15 Minuten Sprechen, ohne Druck. Der Schlüssel: reden, reden, reden.',
+    weeks:[
+      {week:1,focus_de:'Sprechangst abbauen',actions_de:['Jeden Tag 1 kurzes Gespräch (Smalltalk).','Keine Korrekturen-Panik: einfach drauflos.','5 neue Vokabeln pro Tag wiederholen.']},
+      {week:2,focus_de:'Flüssigkeit & Füllwörter',actions_de:['Natürliche Wendungen üben (I\'d say, to be honest).','Gespräche zu „Meinung & Diskussion".','Eigene Themen hinzufügen.']},
+      {week:3,focus_de:'Genauigkeit (C1-Wortschatz)',actions_de:['Längere Antworten mit Begründung.','Feedback gezielt umsetzen.','Vokabeln im Satz benutzen.']},
+      {week:4,focus_de:'Anspruchsvolle Szenarien',actions_de:['Vorstellungsgespräch & Telefonat.','Position begründen & widersprechen.','Fortschritt im Tab „Fortschritt" prüfen.']},
+    ],
+    daily_de:['1 Gespräch (5–10 Min).','Fällige Vokabeln wiederholen.','1 neuen Ausdruck aktiv verwenden.'],
+  };
+
+  return {
+    setToken(){}, clearToken(){ location.reload(); }, hasToken(){ return true; },
+    login:  () => wait(300, { token:'demo' }),
+
+    topics: () => wait(150, { topics: TOPICS }),
+    addTopic: (t) => { const id = 100+(++idc); TOPICS.push({id,slug:'custom-'+id,title:t.title,description:t.description,emoji:t.emoji||'💬',is_custom:1}); return wait(150,{id}); },
+    delTopic: (id) => { const i=TOPICS.findIndex(x=>x.id===id); if(i>=0)TOPICS.splice(i,1); return wait(120,{deleted:1}); },
+
+    startConv: (topic_id) => { curTopic=topic_id; turn=0; convCount++;
+      return wait(700, { conversation_id: convCount, message:{
+        reply: GREET[topic_id] || "Hi! Let's just have a relaxed chat. What's on your mind today?",
+        reply_de:'(Deutsche Übersetzung auf Knopfdruck — hier im Demo verkürzt.)',
+        feedback:[], vocab:[ (VOCAB_POOL[topic_id]||GENERIC_VOCAB)[0] ],
+        encouragement_de:'Leg einfach los — du machst das super!', level_estimate:'B2' } }); },
+    sendMsg: (cid, text) => wait(800, { message: coachReply(text) }),
+    listConv: () => wait(100, { conversations: [] }),
+    getConv: () => wait(100, { messages: [] }),
+
+    vocab: () => wait(150, { vocab: VOCAB }),
+    due:   () => wait(150, { due: VOCAB }),
+    review:(id) => { return wait(120, { id, next_due:'soon' }); },
+    addVocab:(v)=>{ VOCAB.unshift({id:900+(++idc),...v}); return wait(120,{ok:true}); },
+
+    stats: () => wait(150, { level:'B2', streak:4, total_msgs:37, total_vocab:VOCAB.length, due_vocab:VOCAB.length, days:days30() }),
+    makePlan: () => wait(1200, { plan: PLAN }),
+    getPlan:  () => wait(150, { plan: PLAN }),
+  };
+})();
+
+</script>
+<script>
+// English Coach — Frontend-Steuerung
+(() => {
+  const $  = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (s) => (s || '').replace(/[&<>]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
+
+  const state = { convId: null, listening: false, autoSpeak: true, showDe: false, topics: [] };
+
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden');
+    clearTimeout(t._t); t._t = setTimeout(() => t.classList.add('hidden'), 2600);
+  }
+
+  /* ---------------- Login ---------------- */
+  async function doLogin() {
+    const pw = $('#login-pw').value;
+    $('#login-err').textContent = '';
+    try {
+      const { token } = await API.login(pw);
+      API.setToken(token);
+      enterApp();
+    } catch (e) {
+      $('#login-err').textContent = e.message || 'Login fehlgeschlagen.';
+    }
+  }
+
+  function enterApp() {
+    $('#login').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    loadTopics();
+    refreshStreak();
+  }
+
+  function logout() {
+    API.clearToken();
+    location.reload();
+  }
+
+  /* ---------------- Navigation ---------------- */
+  const titles = { talk: 'Reden', vocab: 'Vokabeln', plan: 'Lernplan', progress: 'Fortschritt' };
+  function switchView(name) {
+    $$('.view').forEach(v => v.classList.add('hidden'));
+    $('#view-' + name).classList.remove('hidden');
+    $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+    $('#topbar-title').textContent = titles[name];
+    if (name === 'vocab') loadReview();
+    if (name === 'plan') loadPlan();
+    if (name === 'progress') loadProgress();
+  }
+
+  async function refreshStreak() {
+    try {
+      const s = await API.stats();
+      $('#topbar-streak').textContent = s.streak > 0 ? `🔥 ${s.streak} Tage` : '';
+    } catch (_) {}
+  }
+
+  /* ---------------- Themen ---------------- */
+  async function loadTopics() {
+    try {
+      const { topics } = await API.topics();
+      state.topics = topics;
+      const grid = $('#topic-grid');
+      grid.innerHTML = topics.map(t => `
+        <button class="topic-card" data-id="${t.id}">
+          ${Number(t.is_custom) ? `<button class="del" data-del="${t.id}" title="Löschen">✕</button>` : ''}
+          <div class="emo">${esc(t.emoji)}</div>
+          <div class="t">${esc(t.title)}</div>
+          <div class="d">${esc(t.description || '')}</div>
+        </button>`).join('');
+    } catch (e) { toast(e.message); }
+  }
+
+  async function startConversation(topicId) {
+    showConversation();
+    const chat = $('#chat'); chat.innerHTML = '';
+    addTyping();
+    try {
+      const level = $('#level-select').value;
+      const { conversation_id, message } = await API.startConv(topicId, level);
+      state.convId = conversation_id;
+      removeTyping();
+      renderCoachTurn(message);
+    } catch (e) { removeTyping(); toast(e.message); showPicker(); }
+  }
+
+  /* ---------------- Gespräch UI ---------------- */
+  function showConversation() { $('#topic-picker').classList.add('hidden'); $('#conversation').classList.remove('hidden'); Speech.keepAwake(); }
+  function showPicker() { $('#conversation').classList.add('hidden'); $('#topic-picker').classList.remove('hidden'); Speech.releaseAwake(); Speech.stopSpeaking(); state.convId = null; }
+
+  function addTyping() {
+    const d = document.createElement('div');
+    d.className = 'typing'; d.id = 'typing'; d.textContent = 'Coach denkt nach…';
+    $('#chat').appendChild(d); scrollChat();
+  }
+  function removeTyping() { const t = $('#typing'); if (t) t.remove(); }
+
+  function bubbleMe(text) {
+    const d = document.createElement('div');
+    d.className = 'bubble me'; d.textContent = text;
+    $('#chat').appendChild(d); scrollChat();
+  }
+
+  function renderCoachTurn(m) {
+    const reply = m.reply || '';
+    // Coach-Sprechblase
+    const b = document.createElement('div');
+    b.className = 'bubble coach';
+    b.innerHTML = `<div class="reply">${esc(reply)}</div>
+      ${m.reply_de ? `<div class="de ${state.showDe ? '' : 'hidden'}">${esc(m.reply_de)}</div>` : ''}
+      <button class="speak">🔊 Vorlesen</button>`;
+    b.querySelector('.speak').onclick = () => Speech.speak(reply);
+    $('#chat').appendChild(b);
+
+    // Feedback (sanft, max 1–2)
+    if (Array.isArray(m.feedback) && m.feedback.length) {
+      const f = document.createElement('div');
+      f.className = 'feedback';
+      f.innerHTML = '<strong>💡 Kleiner Tipp:</strong>' + m.feedback.map(x => `
+        <div class="fb"><span class="o">${esc(x.original)}</span> → <span class="b">${esc(x.better)}</span>
+        ${x.note_de ? `<div class="n">${esc(x.note_de)}</div>` : ''}</div>`).join('');
+      $('#chat').appendChild(f);
+    }
+    // Neue Vokabeln
+    if (Array.isArray(m.vocab) && m.vocab.length) {
+      const v = document.createElement('div');
+      v.className = 'vocab-chiprow';
+      v.innerHTML = m.vocab.map(x => `<span class="vchip"><b>${esc(x.en)}</b> — ${esc(x.de)}</span>`).join('');
+      $('#chat').appendChild(v);
+    }
+    // Ermutigung
+    if (m.encouragement_de) {
+      const e = document.createElement('div');
+      e.className = 'encourage'; e.textContent = '🌱 ' + m.encouragement_de;
+      $('#chat').appendChild(e);
+    }
+    scrollChat();
+    if (state.autoSpeak && reply) Speech.speak(reply);
+  }
+
+  function scrollChat() { requestAnimationFrame(() => { const el = $('.content'); if (el) el.scrollTop = el.scrollHeight; }); }
+
+  async function sendMessage() {
+    const input = $('#msg-input');
+    const text = input.value.trim();
+    if (!text || !state.convId) return;
+    input.value = ''; input.style.height = 'auto';
+    bubbleMe(text);
+    addTyping();
+    try {
+      const { message } = await API.sendMsg(state.convId, text);
+      removeTyping();
+      renderCoachTurn(message);
+      refreshStreak();
+    } catch (e) { removeTyping(); toast(e.message); }
+  }
+
+  /* ---------------- Mikrofon (STT) ---------------- */
+  function toggleMic() {
+    const btn = $('#mic-btn');
+    if (state.listening) { Speech.stopListening(); return; }
+    if (!Speech.sttSupported) { toast('Spracheingabe hier nicht verfügbar — bitte tippen.'); return; }
+    Speech.stopSpeaking();
+    state.listening = true; btn.classList.add('rec');
+    Speech.listen({
+      onresult: (final, interim) => { $('#msg-input').value = (final + ' ' + interim).trim(); },
+      onerror: () => { state.listening = false; btn.classList.remove('rec'); },
+      onend: (finalText) => {
+        state.listening = false; btn.classList.remove('rec');
+        if (finalText) { $('#msg-input').value = finalText; sendMessage(); }
+      },
+    });
+  }
+
+  /* ---------------- Vokabeln ---------------- */
+  let reviewQueue = [], reviewShown = false;
+  async function loadReview() {
+    const box = $('#vocab-review');
+    box.innerHTML = '<div class="empty">Lade…</div>';
+    try {
+      const { due } = await API.due();
+      reviewQueue = due || [];
+      nextCard();
+    } catch (e) { box.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+  }
+  function nextCard() {
+    const box = $('#vocab-review');
+    if (!reviewQueue.length) {
+      box.innerHTML = '<div class="empty">🎉 Alles wiederholt! Komm später wieder — die Vokabeln tauchen nach dem Spaced-Repetition-Plan erneut auf.</div>';
+      return;
+    }
+    const c = reviewQueue[0]; reviewShown = false;
+    box.innerHTML = `
+      <div class="flashcard" id="fc">
+        <div class="en">${esc(c.en)}</div>
+        <div class="de hidden">${esc(c.de || '—')}</div>
+        ${c.example ? `<div class="ex hidden">„${esc(c.example)}"</div>` : ''}
+        <button class="btn ghost" id="reveal" style="margin-top:1rem">Umdrehen</button>
+      </div>
+      <div class="grade-row hidden" id="grades">
+        <button class="grade g-bad" data-q="1">Nochmal</button>
+        <button class="grade g-ok" data-q="3">OK</button>
+        <button class="grade g-good" data-q="5">Leicht</button>
+      </div>
+      <p class="muted small" style="text-align:center;margin-top:.6rem">Noch ${reviewQueue.length} Karte(n)</p>`;
+    $('#reveal').onclick = () => {
+      $$('#fc .de, #fc .ex').forEach(e => e.classList.remove('hidden'));
+      $('#reveal').classList.add('hidden');
+      $('#grades').classList.remove('hidden');
+      Speech.speak(c.en);
+      reviewShown = true;
+    };
+    $$('#grades .grade').forEach(g => g.onclick = async () => {
+      try { await API.review(c.id, +g.dataset.q); } catch (_) {}
+      reviewQueue.shift(); nextCard();
+    });
+  }
+  async function loadVocabAll() {
+    const box = $('#vocab-all');
+    box.innerHTML = '<div class="empty">Lade…</div>';
+    try {
+      const { vocab } = await API.vocab();
+      box.innerHTML = vocab.length ? vocab.map(v => `
+        <div class="vocab-item"><div><div class="en">${esc(v.en)}</div><div class="de">${esc(v.de || '')}</div></div></div>`).join('')
+        : '<div class="empty">Noch keine Vokabeln. Führe ein Gespräch — der Coach sammelt sie automatisch.</div>';
+    } catch (e) { box.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+  }
+
+  /* ---------------- Plan ---------------- */
+  function renderPlan(plan) {
+    const box = $('#plan-content');
+    if (!plan) { box.innerHTML = '<div class="empty">Noch kein Plan. Tippe unten auf „Lernplan erstellen".</div>'; return; }
+    box.innerHTML = `
+      <div class="plan-summary">${esc(plan.summary_de || '')}</div>
+      ${(plan.weeks || []).map(w => `
+        <div class="week"><h4>Woche ${w.week} — ${esc(w.focus_de || '')}</h4>
+        <ul>${(w.actions_de || []).map(a => `<li>${esc(a)}</li>`).join('')}</ul></div>`).join('')}
+      ${(plan.daily_de && plan.daily_de.length) ? `<div class="daily"><strong>Jeden Tag (~15 Min):</strong>
+        <ul>${plan.daily_de.map(d => `<li>${esc(d)}</li>`).join('')}</ul></div>` : ''}`;
+  }
+  async function loadPlan() {
+    try { const { plan } = await API.getPlan(); renderPlan(plan); }
+    catch (e) { toast(e.message); }
+  }
+  async function makePlan() {
+    $('#plan-content').innerHTML = '<div class="empty">Coach erstellt deinen Plan…</div>';
+    try { const { plan } = await API.makePlan(); renderPlan(plan); }
+    catch (e) { toast(e.message); loadPlan(); }
+  }
+
+  /* ---------------- Fortschritt ---------------- */
+  async function loadProgress() {
+    const box = $('#progress-content');
+    try {
+      const s = await API.stats();
+      const max = Math.max(1, ...s.days.map(d => d.messages_count));
+      box.innerHTML = `
+        <div class="stat-grid">
+          <div class="stat"><div class="num">${s.level}</div><div class="lbl">Geschätztes Level</div></div>
+          <div class="stat"><div class="num">🔥 ${s.streak}</div><div class="lbl">Tage in Folge</div></div>
+          <div class="stat"><div class="num">${s.total_vocab}</div><div class="lbl">Vokabeln gesammelt</div></div>
+          <div class="stat"><div class="num">${s.due_vocab}</div><div class="lbl">heute fällig</div></div>
+        </div>
+        <h3>Letzte 30 Tage (Nachrichten)</h3>
+        <div class="bars">${s.days.map(d => `<div class="bar" style="height:${Math.round(d.messages_count/max*100)}%" title="${d.day}: ${d.messages_count}"></div>`).join('')}</div>`;
+    } catch (e) { box.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+  }
+
+  /* ---------------- Modal Thema ---------------- */
+  function openTopicModal() { $('#topic-modal').classList.remove('hidden'); }
+  function closeTopicModal() { $('#topic-modal').classList.add('hidden'); $('#nt-emoji').value = $('#nt-title').value = $('#nt-desc').value = ''; }
+  async function saveTopic() {
+    const title = $('#nt-title').value.trim();
+    if (!title) { toast('Bitte einen Titel eingeben.'); return; }
+    try {
+      await API.addTopic({ title, description: $('#nt-desc').value.trim(), emoji: $('#nt-emoji').value.trim() || '💬' });
+      closeTopicModal(); loadTopics(); toast('Thema hinzugefügt ✓');
+    } catch (e) { toast(e.message); }
+  }
+
+  /* ---------------- Events ---------------- */
+  function bind() {
+    $('#login-btn').onclick = doLogin;
+    $('#login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    $('#logout').onclick = logout;
+
+    $$('.tab').forEach(t => t.onclick = () => switchView(t.dataset.view));
+
+    // Themen-Grid (Delegation: Karte starten / löschen)
+    $('#topic-grid').onclick = async (e) => {
+      const del = e.target.closest('[data-del]');
+      if (del) { e.stopPropagation(); if (confirm('Thema löschen?')) { await API.delTopic(+del.dataset.del); loadTopics(); } return; }
+      const card = e.target.closest('.topic-card');
+      if (card) startConversation(+card.dataset.id);
+    };
+    $('#add-topic-btn').onclick = openTopicModal;
+    $('#nt-cancel').onclick = closeTopicModal;
+    $('#nt-save').onclick = saveTopic;
+
+    $('#send-btn').onclick = sendMessage;
+    $('#msg-input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+    $('#msg-input').addEventListener('input', e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; });
+    $('#mic-btn').onclick = toggleMic;
+    $('#end-conv').onclick = showPicker;
+    $('#auto-speak').onchange = e => { state.autoSpeak = e.target.checked; if (!state.autoSpeak) Speech.stopSpeaking(); };
+    $('#show-de').onchange = e => { state.showDe = e.target.checked; $$('.bubble .de').forEach(d => d.classList.toggle('hidden', !state.showDe)); };
+
+    $$('.seg-btn').forEach(b => b.onclick = () => {
+      $$('.seg-btn').forEach(x => x.classList.remove('active')); b.classList.add('active');
+      const isAll = b.dataset.vocab === 'all';
+      $('#vocab-all').classList.toggle('hidden', !isAll);
+      $('#vocab-review').classList.toggle('hidden', isAll);
+      if (isAll) loadVocabAll(); else loadReview();
+    });
+
+    $('#make-plan').onclick = makePlan;
+
+    // Geräte-Fähigkeiten anzeigen
+    $('#caps-info').textContent =
+      `Spracheingabe (Mikro): ${Speech.sttSupported ? 'verfügbar' : 'nicht verfügbar'} · ` +
+      `Vorlesen: ${Speech.ttsSupported ? 'verfügbar' : 'nicht verfügbar'}.`;
+  }
+
+  /* ---------------- Start ---------------- */
+  bind();
+  if (API.hasToken()) enterApp(); else $('#login').classList.remove('hidden');
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+
+</script>
+</body>
+</html>
