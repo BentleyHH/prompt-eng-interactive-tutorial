@@ -4,7 +4,7 @@
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) => (s || '').replace(/[&<>]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
 
-  const state = { convId: null, listening: false, autoSpeak: true, showDe: false, topics: [] };
+  const state = { convId: null, listening: false, autoSpeak: true, showDe: false, handsFree: false, topics: [], shareUser: 0, shareCoach: 0 };
 
   const READY_HINT = () => Speech.sttSupported ? 'Du bist dran — tippe 🎙️ und sprich' : 'Du bist dran — schreib unten';
   function setOrb(mode, status) {
@@ -13,9 +13,10 @@
     if (status !== undefined) { const s = $('#orb-status'); if (s) s.textContent = status; }
   }
   function speakCoach(text) {
-    if (!text) return;
+    const afterwards = () => { if (state.handsFree && state.convId) startListening(); else setOrb(null, READY_HINT()); };
+    if (!text) { afterwards(); return; }
     setOrb('speaking', 'Coach spricht …');
-    Speech.speak(text, { onend: () => setOrb(null, READY_HINT()) });
+    Speech.speak(text, { onend: afterwards });
   }
 
   function toast(msg) {
@@ -57,7 +58,7 @@
     $('#topbar-title').textContent = titles[name];
     if (name === 'vocab') loadReview();
     if (name === 'plan') loadPlan();
-    if (name === 'progress') loadProgress();
+    if (name === 'progress') { loadProgress(); loadProfile(); populateVoices(); setTimeout(populateVoices, 600); }
   }
 
   async function refreshStreak() {
@@ -97,7 +98,10 @@
   }
 
   /* ---------------- Gespräch UI ---------------- */
-  function showConversation() { $('#topic-picker').classList.add('hidden'); $('#conversation').classList.remove('hidden'); Speech.keepAwake(); }
+  function showConversation() {
+    $('#topic-picker').classList.add('hidden'); $('#conversation').classList.remove('hidden');
+    $('#goal-chip').classList.add('hidden'); resetShare(); Speech.keepAwake();
+  }
   function showPicker() { $('#conversation').classList.add('hidden'); $('#topic-picker').classList.remove('hidden'); Speech.releaseAwake(); Speech.stopSpeaking(); state.convId = null; }
 
   function addTyping() {
@@ -116,6 +120,10 @@
 
   function renderCoachTurn(m) {
     const reply = m.reply || '';
+    // Mini-Ziel des Szenarios
+    if (m.goal_de) { const c = $('#goal-chip'); c.textContent = '🎯 ' + m.goal_de; c.classList.remove('hidden', 'met'); c.dataset.text = m.goal_de; }
+    if (m.goal_met) { const c = $('#goal-chip'); c.classList.remove('hidden'); c.classList.add('met'); c.textContent = '✅ ' + (c.dataset.text || 'Ziel erreicht!'); toast('🎉 Ziel erreicht — stark!'); }
+    addShare('assistant', reply);
     // Coach-Sprechblase
     const b = document.createElement('div');
     b.className = 'bubble coach';
@@ -159,6 +167,7 @@
     if (!text || !state.convId) return;
     input.value = ''; input.style.height = 'auto';
     bubbleMe(text);
+    addShare('user', text);
     addTyping();
     try {
       const { message } = await API.sendMsg(state.convId, text);
@@ -169,11 +178,11 @@
   }
 
   /* ---------------- Mikrofon (STT) ---------------- */
-  function toggleMic() {
-    const btn = $('#mic-btn');
-    if (state.listening) { Speech.stopListening(); return; }
+  function startListening() {
+    if (state.listening) return;
     if (!Speech.sttSupported) { toast('Spracheingabe hier nicht verfügbar — bitte tippen.'); return; }
     Speech.stopSpeaking();
+    const btn = $('#mic-btn');
     state.listening = true; btn.classList.add('rec'); setOrb('listening', 'Ich höre zu … 🎧');
     Speech.listen({
       onresult: (final, interim) => { $('#msg-input').value = (final + ' ' + interim).trim(); },
@@ -181,8 +190,26 @@
       onend: (finalText) => {
         state.listening = false; btn.classList.remove('rec'); setOrb(null);
         if (finalText) { $('#msg-input').value = finalText; sendMessage(); }
+        else if (state.handsFree) setOrb(null, 'Ich habe nichts gehört — tippe 🎙️, wenn du bereit bist.');
       },
     });
+  }
+  function toggleMic() {
+    if (state.listening) { Speech.stopListening(); return; }
+    startListening();
+  }
+
+  /* ---------------- Redeanteil (Du vs. Coach) ---------------- */
+  function resetShare() { state.shareUser = 0; state.shareCoach = 0; $('#share-bar').classList.add('hidden'); }
+  function addShare(role, text) {
+    const n = (text || '').length;
+    if (role === 'user') state.shareUser += n; else state.shareCoach += n;
+    const total = state.shareUser + state.shareCoach;
+    if (total < 5) return;
+    const pct = Math.round(state.shareUser / total * 100);
+    $('#share-bar').classList.remove('hidden');
+    $('#share-fill').style.width = pct + '%';
+    $('#share-label').textContent = `Du ${pct}% · Coach ${100 - pct}%`;
   }
 
   /* ---------------- Vokabeln ---------------- */
@@ -279,6 +306,37 @@
     } catch (e) { box.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
   }
 
+  /* ---------------- Profil & Stimme ---------------- */
+  async function loadProfile() {
+    try {
+      const { profile } = await API.getProfile();
+      if (profile) {
+        $('#pf-name').value = profile.name || '';
+        $('#pf-job').value = profile.job || '';
+        $('#pf-interests').value = profile.interests || '';
+        $('#pf-goals').value = profile.goals || '';
+      }
+    } catch (_) {}
+  }
+  async function saveProfile() {
+    try {
+      await API.saveProfile({
+        name: $('#pf-name').value.trim(), job: $('#pf-job').value.trim(),
+        interests: $('#pf-interests').value.trim(), goals: $('#pf-goals').value.trim(),
+      });
+      toast('Profil gespeichert ✓');
+    } catch (e) { toast(e.message); }
+  }
+  function populateVoices() {
+    const sel = $('#voice-select');
+    const voices = Speech.listVoices();
+    if (!voices.length) { sel.innerHTML = '<option>Keine englische Stimme gefunden</option>'; return; }
+    const cur = Speech.currentVoiceURI();
+    sel.innerHTML = voices.map(v => `<option value="${esc(v.uri)}" ${v.uri === cur ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('');
+    const r = Speech.getRate();
+    $('#rate-range').value = r; $('#rate-val').textContent = r.toFixed(2) + '×';
+  }
+
   /* ---------------- Modal Thema ---------------- */
   function openTopicModal() { $('#topic-modal').classList.remove('hidden'); }
   function closeTopicModal() { $('#topic-modal').classList.add('hidden'); $('#nt-emoji').value = $('#nt-title').value = $('#nt-desc').value = ''; }
@@ -317,6 +375,18 @@
     $('#end-conv').onclick = showPicker;
     $('#auto-speak').onchange = e => { state.autoSpeak = e.target.checked; if (!state.autoSpeak) Speech.stopSpeaking(); };
     $('#show-de').onchange = e => { state.showDe = e.target.checked; $$('.bubble .de').forEach(d => d.classList.toggle('hidden', !state.showDe)); };
+    $('#hands-free').onchange = e => {
+      state.handsFree = e.target.checked;
+      if (state.handsFree) { toast('Freisprech an — nach dem Coach höre ich automatisch zu.'); if (state.convId && !state.listening) setOrb(null, 'Sag etwas, sobald du bereit bist …'); }
+      else { Speech.stopListening(); }
+    };
+
+    // Profil & Stimme
+    $('#pf-save').onclick = saveProfile;
+    $('#voice-select').onchange = e => { Speech.useVoice(e.target.value); };
+    $('#rate-range').oninput = e => { const r = parseFloat(e.target.value); Speech.setRate(r); $('#rate-val').textContent = r.toFixed(2) + '×'; };
+    $('#voice-test').onclick = () => Speech.speak("Hi! This is how I sound. Let's practise together — you're doing great.");
+    $('#forget-mem').onclick = async () => { if (confirm('Soll der Coach alles über dich vergessen?')) { try { await API.forgetMemory(); toast('Gedächtnis geleert.'); } catch (e) { toast(e.message); } } };
 
     $$('.seg-btn').forEach(b => b.onclick = () => {
       $$('.seg-btn').forEach(x => x.classList.remove('active')); b.classList.add('active');
@@ -332,6 +402,7 @@
     $('#caps-info').textContent =
       `Spracheingabe (Mikro): ${Speech.sttSupported ? 'verfügbar' : 'nicht verfügbar'} · ` +
       `Vorlesen: ${Speech.ttsSupported ? 'verfügbar' : 'nicht verfügbar'}.`;
+    if (!Speech.sttSupported) { const hf = $('#hands-free'); hf.disabled = true; hf.parentElement.style.opacity = .5; }
   }
 
   /* ---------------- Start ---------------- */

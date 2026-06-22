@@ -77,6 +77,8 @@ const API = (() => {
         : [],
       vocab: [ pick(vpool), pick(GENERIC_VOCAB) ].filter((v,i,a)=>a.indexOf(v)===i),
       encouragement_de: pick(ENCOURAGE),
+      remember: turn === 1 && userText ? ['(Demo) merkt sich etwas aus deiner Antwort'] : [],
+      goal_met: turn === 3,
       level_estimate: 'B2',
     };
     return msg;
@@ -121,7 +123,8 @@ const API = (() => {
         reply: GREET[topic_id] || "Hi! Let's just have a relaxed chat. What's on your mind today?",
         reply_de:'(Deutsche Übersetzung auf Knopfdruck — hier im Demo verkürzt.)',
         feedback:[], vocab:[ (VOCAB_POOL[topic_id]||GENERIC_VOCAB)[0] ],
-        encouragement_de:'Leg einfach los — du machst das super!', level_estimate:'B2' } }); },
+        encouragement_de:'Leg einfach los — du machst das super!',
+        goal_de:'Stell eine Frage und erzähle einen Satz über dich.', level_estimate:'B2' } }); },
     sendMsg: (cid, text) => wait(800, { message: coachReply(text) }),
     listConv: () => wait(100, { conversations: [] }),
     getConv: () => wait(100, { messages: [] }),
@@ -134,5 +137,9 @@ const API = (() => {
     stats: () => wait(150, { level:'B2', streak:4, total_msgs:37, total_vocab:VOCAB.length, due_vocab:VOCAB.length, days:days30() }),
     makePlan: () => wait(1200, { plan: PLAN }),
     getPlan:  () => wait(150, { plan: PLAN }),
+
+    getProfile:  () => wait(120, { profile:{name:'',job:'',interests:'',goals:''}, memory:[] }),
+    saveProfile: (p) => wait(120, { ok:true, profile:p }),
+    forgetMemory:() => wait(120, { ok:true }),
   };
 })();

@@ -1,20 +1,34 @@
-// Sprachausgabe (TTS), Spracherkennung (STT) und Wake-Lock.
-// Hinweis: Spracherkennung läuft am zuverlässigsten in Chrome/Edge/Safari.
+// Sprachausgabe (TTS), Spracherkennung (STT), Wake-Lock + Stimmenwahl.
+// Browser-Stimme als Standard; sauber gekapselt, damit später eine
+// Premium-/Realtime-Engine eingehängt werden kann.
 const Speech = (() => {
   let voice = null;
+  let voices = [];
+  let chosenURI = localStorage.getItem('ec_voice') || '';
+  let rate = parseFloat(localStorage.getItem('ec_rate') || '0.96');
   let wakeLock = null;
 
-  // --- TTS: englische Stimme wählen ---
-  function pickVoice() {
-    const voices = speechSynthesis.getVoices();
-    voice = voices.find(v => /en[-_]GB/i.test(v.lang)) ||
-            voices.find(v => /en[-_]US/i.test(v.lang)) ||
-            voices.find(v => /^en/i.test(v.lang)) || null;
+  function refreshVoices() {
+    if (!('speechSynthesis' in window)) return;
+    voices = speechSynthesis.getVoices();
+    const en = voices.filter(v => /^en/i.test(v.lang));
+    voice = (chosenURI && voices.find(v => v.voiceURI === chosenURI)) ||
+            // bevorzuge hochwertige/natürliche Stimmen
+            en.find(v => /natural|premium|neural|enhanced|siri|samantha|serena|aria|google/i.test(v.name)) ||
+            en.find(v => /en[-_]GB/i.test(v.lang)) ||
+            en.find(v => /en[-_]US/i.test(v.lang)) ||
+            en[0] || null;
   }
   if ('speechSynthesis' in window) {
-    pickVoice();
-    speechSynthesis.onvoiceschanged = pickVoice;
+    refreshVoices();
+    speechSynthesis.onvoiceschanged = refreshVoices;
   }
+
+  function listVoices() { return voices.filter(v => /^en/i.test(v.lang)).map(v => ({ uri: v.voiceURI, name: v.name, lang: v.lang })); }
+  function useVoice(uri) { chosenURI = uri; localStorage.setItem('ec_voice', uri); refreshVoices(); }
+  function setRate(r) { rate = r; localStorage.setItem('ec_rate', String(r)); }
+  function getRate() { return rate; }
+  function currentVoiceURI() { return voice ? voice.voiceURI : ''; }
 
   function speak(text, { onend } = {}) {
     if (!('speechSynthesis' in window) || !text) { onend && onend(); return; }
@@ -22,8 +36,10 @@ const Speech = (() => {
     const u = new SpeechSynthesisUtterance(text);
     if (voice) u.voice = voice;
     u.lang = voice ? voice.lang : 'en-US';
-    u.rate = 0.96;
-    u.onend = () => onend && onend();
+    u.rate = rate;
+    let done = false;
+    const finish = () => { if (!done) { done = true; onend && onend(); } };
+    u.onend = finish; u.onerror = finish;
     speechSynthesis.speak(u);
   }
   function stopSpeaking() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
@@ -50,21 +66,23 @@ const Speech = (() => {
     };
     recog.onerror = (e) => onerror && onerror(e);
     recog.onend = () => onend && onend(finalText.trim());
-    recog.start();
+    try { recog.start(); } catch (_) {}
     return recog;
   }
   function stopListening() { if (recog) try { recog.stop(); } catch (_) {} }
 
-  // --- Wake Lock: hält den Bildschirm im Gespräch an ---
+  // --- Wake Lock ---
   async function keepAwake() {
-    try {
-      if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
-    } catch (_) {}
+    try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (_) {}
   }
-  function releaseAwake() { if (wakeLock) { wakeLock.release().catch(()=>{}); wakeLock = null; } }
+  function releaseAwake() { if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; } }
   document.addEventListener('visibilitychange', () => {
     if (wakeLock && document.visibilityState === 'visible') keepAwake();
   });
 
-  return { speak, stopSpeaking, listen, stopListening, sttSupported, ttsSupported: 'speechSynthesis' in window, keepAwake, releaseAwake };
+  return {
+    speak, stopSpeaking, listen, stopListening, keepAwake, releaseAwake,
+    listVoices, useVoice, setRate, getRate, currentVoiceURI,
+    sttSupported, ttsSupported: 'speechSynthesis' in window,
+  };
 })();

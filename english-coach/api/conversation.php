@@ -7,7 +7,11 @@ $action = $_GET['action'] ?? '';
 /* ------------------------------------------------------------------ *
  *  Der Coach: System-Prompt
  * ------------------------------------------------------------------ */
-function coach_system(string $topicTitle, string $topicDesc, string $level): string {
+function coach_system(string $topicTitle, string $topicDesc, string $level, string $perso = '', bool $isStart = false): string {
+    $persoBlock = $perso !== '' ? "\n\nWhat you remember about this learner (use it naturally, never list it back robotically):\n{$perso}\n" : '';
+    $goalRule = $isStart
+        ? "- Because this is the START of the scenario, also invent ONE small, concrete, achievable mini-goal for this chat (e.g. \"order a coffee and ask for a recommendation\") and put it in \"goal_de\" (in German). Keep it light and fun."
+        : "- Set \"goal_met\" to true ONLY if the learner has clearly achieved the scenario's mini-goal in this message; otherwise false or omit it.";
     return <<<SYS
 You are "Coach", a warm, patient English conversation partner and tutor for a
 German native speaker. Their current CEFR level is about {$level} and their goal
@@ -16,21 +20,24 @@ vocabulary and are AFRAID of failing in conversations, so they avoid speaking.
 Your single most important job is to keep them talking and feeling safe and
 capable. Build their confidence on every turn.
 
-The current scenario is: "{$topicTitle}" — {$topicDesc}
+The current scenario is: "{$topicTitle}" — {$topicDesc}{$persoBlock}
 
 Rules for your behaviour:
 - Speak natural, idiomatic English slightly ABOVE their current level (the i+1
   principle) so they stretch, but stay understandable.
 - Keep your spoken reply SHORT: 2–4 sentences, then ask ONE engaging follow-up
-  question so the conversation never stalls.
+  question so the conversation never stalls. Let THEM do most of the talking.
 - NEVER lecture or correct everything. Pick at most the 1–2 most useful
   corrections from their last message. If they made no meaningful mistakes,
   give zero corrections and just praise.
 - Be specific and warm in encouragement, never generic.
 - Stay inside the scenario. Play your role naturally (e.g. the interviewer,
-  the barista, a colleague).
+  the barista, a colleague). Weave in what you remember about them when natural.
 - If the learner writes in German or mixes languages, gently keep going in
   English and model how to say it.
+- In "remember", add 0–2 NEW, durable facts you just learned about the learner
+  (interests, job, plans, preferences) — short phrases, English. Skip trivia.
+{$goalRule}
 
 Respond with ONLY a single valid JSON object (no markdown, no code fences),
 with EXACTLY these keys:
@@ -40,11 +47,57 @@ with EXACTLY these keys:
   "feedback":       [ { "original": "what they said", "better": "improved version", "note_de": "short German why" } ],
   "vocab":          [ { "en": "useful B2/C1 word or phrase", "de": "German meaning", "example": "short English example sentence" } ],
   "encouragement_de": "one short, warm German sentence that lowers their fear",
+  "remember":       [ "new durable fact about the learner" ],
+  "goal_de":        "the mini-goal in German (only on the first message of a scenario, else omit)",
+  "goal_met":       false,
   "level_estimate": "A2|B1|B2|C1|C2 — your estimate of their level from their latest message"
 }
-"feedback" and "vocab" may be empty arrays. Include 1–3 vocab items that are
-genuinely useful for this scenario at the B2→C1 range. Keep everything concise.
+"feedback", "vocab" and "remember" may be empty arrays. Include 1–3 vocab items
+that are genuinely useful for this scenario at the B2→C1 range. Keep it concise.
 SYS;
+}
+
+/* Liest Profil + Gedächtnis + schwierige Vokabeln und baut einen Kontextblock. */
+function personalization(): string {
+    $get = function (string $k) {
+        $st = db()->prepare('SELECT v FROM settings WHERE k = ?');
+        $st->execute([$k]);
+        $v = $st->fetchColumn();
+        return $v === false ? null : json_decode((string)$v, true);
+    };
+    $lines = [];
+    $p = $get('profile');
+    if (is_array($p)) {
+        if (!empty($p['name']))      $lines[] = "Name: {$p['name']}";
+        if (!empty($p['job']))       $lines[] = "Job/role: {$p['job']}";
+        if (!empty($p['interests'])) $lines[] = "Interests: {$p['interests']}";
+        if (!empty($p['goals']))     $lines[] = "Their goals: {$p['goals']}";
+    }
+    $m = $get('memory');
+    if (is_array($m) && $m) {
+        $lines[] = 'Things you remember: ' . implode('; ', array_slice($m, -25));
+    }
+    // ein paar schwierige Vokabeln zum sanften Wiederverwenden
+    $weak = db()->query('SELECT en FROM vocabulary ORDER BY ease ASC, RAND() LIMIT 8')->fetchAll(PDO::FETCH_COLUMN);
+    if ($weak) $lines[] = 'Words they are still practising (try to reuse a couple naturally): ' . implode(', ', $weak);
+
+    return implode("\n", $lines);
+}
+
+/* Merge neuer Fakten ins Langzeit-Gedächtnis (dedupe, gedeckelt). */
+function merge_memory(array $data): void {
+    $facts = array_filter(array_map('trim', (array)($data['remember'] ?? [])));
+    if (!$facts) return;
+    $st = db()->prepare('SELECT v FROM settings WHERE k = "memory"');
+    $st->execute();
+    $cur = json_decode((string)$st->fetchColumn(), true);
+    if (!is_array($cur)) $cur = [];
+    foreach ($facts as $f) {
+        if (!in_array($f, $cur, true)) $cur[] = $f;
+    }
+    $cur = array_slice($cur, -60); // Deckel
+    db()->prepare('INSERT INTO settings (k,v) VALUES ("memory",?) ON DUPLICATE KEY UPDATE v=VALUES(v)')
+        ->execute([json_encode(array_values($cur), JSON_UNESCAPED_UNICODE)]);
 }
 
 /* Speichert Vokabeln + Fortschritt nach einer Coach-Antwort. */
@@ -127,7 +180,7 @@ if ($action === 'start') {
     $st->execute([$topicId, $topic['title'], $level]);
     $convId = (int)db()->lastInsertId();
 
-    $system = coach_system($topic['title'], (string)$topic['description'], $level);
+    $system = coach_system($topic['title'], (string)$topic['description'], $level, personalization(), true);
     $kick   = "[The learner just opened the scenario \"{$topic['title']}\". "
             . "Greet them warmly in English, set the scene in one or two sentences, "
             . "and ask one easy opening question to get them talking.]";
@@ -140,6 +193,7 @@ if ($action === 'start') {
     );
     $ins->execute([$convId, 'assistant', (string)($data['reply'] ?? ''), json_encode($data, JSON_UNESCAPED_UNICODE)]);
     save_artifacts($data, $convId, $topicId, $level);
+    merge_memory($data);
 
     ok(['conversation_id' => $convId, 'message' => $data]);
 }
@@ -168,7 +222,7 @@ if ($action === 'message') {
     db()->prepare('INSERT INTO messages (conversation_id, role, content) VALUES (?,?,?)')
         ->execute([$convId, 'user', $text]);
 
-    $system   = coach_system($topic['title'], (string)$topic['description'], $conv['level']);
+    $system   = coach_system($topic['title'], (string)$topic['description'], $conv['level'], personalization(), false);
     $messages = history_for_claude($convId);
     $resp = claude($system, $messages);
     $data = extract_json($resp['text']) ?? ['reply' => $resp['text']];
@@ -176,6 +230,7 @@ if ($action === 'message') {
     db()->prepare('INSERT INTO messages (conversation_id, role, content, meta) VALUES (?,?,?,?)')
         ->execute([$convId, 'assistant', (string)($data['reply'] ?? ''), json_encode($data, JSON_UNESCAPED_UNICODE)]);
     save_artifacts($data, $convId, $conv['topic_id'] ? (int)$conv['topic_id'] : null, $conv['level']);
+    merge_memory($data);
 
     // updated_at anstoßen
     db()->prepare('UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$convId]);

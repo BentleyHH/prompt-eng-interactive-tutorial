@@ -56,6 +56,11 @@
           <div class="avatar-stage">
             <div class="orb" id="orb"><span class="orb-emoji">🙂</span></div>
             <div class="orb-status" id="orb-status">Bereit, wenn du es bist.</div>
+            <div id="goal-chip" class="goal-chip hidden"></div>
+            <div id="share-bar" class="share-bar hidden">
+              <div class="share-fill" id="share-fill"></div>
+              <span class="share-label" id="share-label"></span>
+            </div>
           </div>
           <div id="chat" class="chat"></div>
           <div class="composer">
@@ -66,8 +71,9 @@
             </div>
             <div class="composer-tools">
               <label class="switch"><input type="checkbox" id="auto-speak" checked /> Vorlesen</label>
-              <label class="switch"><input type="checkbox" id="show-de" /> Deutsch zeigen</label>
-              <button id="end-conv" class="link">Gespräch beenden</button>
+              <label class="switch"><input type="checkbox" id="hands-free" /> Freisprech</label>
+              <label class="switch"><input type="checkbox" id="show-de" /> Deutsch</label>
+              <button id="end-conv" class="link">Beenden</button>
             </div>
           </div>
         </div>
@@ -93,8 +99,31 @@
       <!-- PROGRESS -->
       <section id="view-progress" class="view hidden">
         <div id="progress-content"></div>
+
+        <h3>Dein Profil</h3>
+        <p class="muted small">Je mehr der Coach über dich weiß, desto persönlicher & vertrauter werden die Gespräche.</p>
+        <div class="form-card">
+          <input id="pf-name" placeholder="Vorname" />
+          <input id="pf-job" placeholder="Job / was du machst" />
+          <input id="pf-interests" placeholder="Interessen (z. B. Reisen, Fußball, Tech)" />
+          <input id="pf-goals" placeholder="Dein Ziel (z. B. C1 für den Job)" />
+          <button id="pf-save" class="btn primary full">Profil speichern</button>
+        </div>
+
+        <h3>Stimme</h3>
+        <div class="form-card">
+          <label class="field">Stimme
+            <select id="voice-select"></select>
+          </label>
+          <label class="field">Tempo <span id="rate-val" class="muted small"></span>
+            <input id="rate-range" type="range" min="0.7" max="1.2" step="0.02" />
+          </label>
+          <button id="voice-test" class="btn ghost full">Stimme testen 🔊</button>
+        </div>
+
         <h3>Einstellungen</h3>
         <p class="muted small" id="caps-info"></p>
+        <button id="forget-mem" class="btn ghost full">Gedächtnis des Coaches löschen</button>
         <button id="logout" class="btn ghost full">Ausloggen</button>
         <p class="muted small note">Hinweis: Bei gesperrtem Bildschirm pausieren Mikrofon &amp;
         App auf dem Handy (Browser-Limit). Mit „Vorlesen" läuft die Audio-Ausgabe weiter; für

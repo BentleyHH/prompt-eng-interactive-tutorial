@@ -21,6 +21,15 @@ liegt **sicher auf dem Server** und ist nie im Browser sichtbar.
   Datenbank und kommen per Spaced Repetition zum Wiederholen zurück.
 - **Deutsch-Stütze** – jede Coach-Antwort hat eine deutsche Übersetzung auf Knopfdruck.
 - **Plan & Fortschritt** – Streak, Level-Schätzung, 4-Wochen-Plan vom Coach.
+- **Gedächtnis & Profil** – der Coach merkt sich Name, Job, Interessen, Ziele und
+  Fakten aus euren Gesprächen → vertraute, persönliche Dialoge. (In der DB-Tabelle
+  `settings` gespeichert; kein Schema-Update nötig.)
+- **Freisprech-Modus** – nach dem Coach startet automatisch dein Mikro, deine Antwort
+  geht automatisch raus. Kommt dem „Telefongespräch"-Gefühl mit reiner Browser-Technik nahe.
+- **Stimme wählbar** – beste verfügbare englische Stimme + Tempo einstellbar
+  (Bereich „Fortschritt"). Vorbereitet für späteres Premium-/Realtime-TTS.
+- **Mini-Ziele & Redeanteil** – jedes Szenario hat ein kleines Ziel (mit Erfolg-Feier),
+  ein Balken zeigt „Du % / Coach %" — der Coach hält sich bewusst zurück.
 - **PWA** – „Zum Home-Bildschirm hinzufügen" → fühlt sich an wie eine App.
 
 ### Ehrlich zur „Bildschirm aus"-Idee

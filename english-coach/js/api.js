@@ -49,5 +49,9 @@ const API = (() => {
     stats:    () => call('progress.php', { query: { action: 'stats' } }),
     makePlan: () => call('progress.php', { query: { action: 'plan' } }),
     getPlan:  () => call('progress.php', { query: { action: 'get_plan' } }),
+
+    getProfile:  () => call('profile.php', { query: { action: 'get' } }),
+    saveProfile: (p) => call('profile.php', { method: 'POST', query: { action: 'save' }, body: p }),
+    forgetMemory:() => call('profile.php', { method: 'POST', query: { action: 'forget' } }),
   };
 })();
