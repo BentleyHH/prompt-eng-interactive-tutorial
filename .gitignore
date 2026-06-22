@@ -3,3 +3,6 @@
 # English Coach: echte Zugangsdaten niemals einchecken
 english-coach/api/config.php
 
+# Build-/Download-Artefakt (wird bei Bedarf neu erzeugt)
+english-coach.zip
+
