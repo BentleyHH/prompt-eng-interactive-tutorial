@@ -1,0 +1,14 @@
+{
+  "name": "English Coach",
+  "short_name": "Coach",
+  "description": "Dein persönlicher Englisch-Gesprächspartner von B nach C.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1220",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

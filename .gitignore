@@ -1,2 +1,5 @@
 .DS_Store
 
+# English Coach: echte Zugangsdaten niemals einchecken
+english-coach/api/config.php
+

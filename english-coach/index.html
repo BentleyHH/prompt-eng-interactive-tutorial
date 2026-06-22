@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0f766e" />
+  <title>English Coach</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- Login -->
+  <div id="login" class="login hidden">
+    <div class="login-card">
+      <div class="logo">🗣️</div>
+      <h1>English Coach</h1>
+      <p class="muted">Dein persönlicher Sprach-Partner von B nach C.</p>
+      <input id="login-pw" type="password" placeholder="Passwort" autocomplete="current-password" />
+      <button id="login-btn" class="btn primary">Einloggen</button>
+      <p id="login-err" class="error"></p>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <span class="title" id="topbar-title">Reden</span>
+      <span class="streak" id="topbar-streak"></span>
+    </header>
+
+    <main class="content">
+      <!-- TALK -->
+      <section id="view-talk" class="view">
+        <!-- Themenauswahl -->
+        <div id="topic-picker">
+          <div class="hero">
+            <h2>Worüber möchtest du reden?</h2>
+            <p class="muted">Wähle ein Thema. Keine Angst vor Fehlern — der Coach hilft dir sanft weiter.</p>
+            <label class="level-row">Dein Level:
+              <select id="level-select">
+                <option>B1</option><option selected>B2</option><option>C1</option>
+              </select>
+            </label>
+          </div>
+          <div id="topic-grid" class="topic-grid"></div>
+          <button id="add-topic-btn" class="btn ghost full">＋ Eigenes Thema hinzufügen</button>
+        </div>
+
+        <!-- Aktives Gespräch -->
+        <div id="conversation" class="hidden">
+          <div id="chat" class="chat"></div>
+          <div class="composer">
+            <div class="composer-row">
+              <button id="mic-btn" class="mic" title="Sprechen">🎙️</button>
+              <textarea id="msg-input" rows="1" placeholder="Schreiben oder 🎙️ antippen…"></textarea>
+              <button id="send-btn" class="btn primary send">➤</button>
+            </div>
+            <div class="composer-tools">
+              <label class="switch"><input type="checkbox" id="auto-speak" checked /> Vorlesen</label>
+              <label class="switch"><input type="checkbox" id="show-de" /> Deutsch zeigen</label>
+              <button id="end-conv" class="link">Gespräch beenden</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VOCAB -->
+      <section id="view-vocab" class="view hidden">
+        <div class="seg">
+          <button class="seg-btn active" data-vocab="review">Wiederholen</button>
+          <button class="seg-btn" data-vocab="all">Alle Vokabeln</button>
+        </div>
+        <div id="vocab-review"></div>
+        <div id="vocab-all" class="hidden"></div>
+      </section>
+
+      <!-- PLAN -->
+      <section id="view-plan" class="view hidden">
+        <div id="plan-content"></div>
+        <button id="make-plan" class="btn primary full">Lernplan (neu) erstellen</button>
+        <p class="muted small">Der Coach baut einen 4-Wochen-Plan aus deinem Level und deinen Vokabeln.</p>
+      </section>
+
+      <!-- PROGRESS -->
+      <section id="view-progress" class="view hidden">
+        <div id="progress-content"></div>
+        <h3>Einstellungen</h3>
+        <p class="muted small" id="caps-info"></p>
+        <button id="logout" class="btn ghost full">Ausloggen</button>
+        <p class="muted small note">Hinweis: Bei gesperrtem Bildschirm pausieren Mikrofon &amp;
+        App auf dem Handy (Browser-Limit). Mit „Vorlesen" läuft die Audio-Ausgabe weiter; für
+        echtes Weiterlaufen bei dunklem Display bräuchte es eine native App.</p>
+      </section>
+    </main>
+
+    <nav class="tabbar">
+      <button class="tab active" data-view="talk"><span>💬</span>Reden</button>
+      <button class="tab" data-view="vocab"><span>📇</span>Vokabeln</button>
+      <button class="tab" data-view="plan"><span>🗺️</span>Plan</button>
+      <button class="tab" data-view="progress"><span>📈</span>Fortschritt</button>
+    </nav>
+  </div>
+
+  <!-- Modal: Thema hinzufügen -->
+  <div id="topic-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Eigenes Thema</h3>
+      <input id="nt-emoji" placeholder="Emoji (z. B. 🎬)" maxlength="4" />
+      <input id="nt-title" placeholder="Titel, z. B. „Über Filme reden"" />
+      <textarea id="nt-desc" rows="2" placeholder="Kurz: worum geht es?"></textarea>
+      <div class="modal-actions">
+        <button id="nt-cancel" class="btn ghost">Abbrechen</button>
+        <button id="nt-save" class="btn primary">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/speech.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
