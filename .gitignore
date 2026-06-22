@@ -6,3 +6,6 @@ english-coach/api/config.php
 # Build-/Download-Artefakt (wird bei Bedarf neu erzeugt)
 english-coach.zip
 
+
+# Screenshot-Artefakte
+english-coach/shots/

@@ -6,6 +6,18 @@
 
   const state = { convId: null, listening: false, autoSpeak: true, showDe: false, topics: [] };
 
+  const READY_HINT = () => Speech.sttSupported ? 'Du bist dran — tippe 🎙️ und sprich' : 'Du bist dran — schreib unten';
+  function setOrb(mode, status) {
+    const orb = $('#orb');
+    if (orb) { orb.classList.remove('speaking', 'listening'); if (mode) orb.classList.add(mode); }
+    if (status !== undefined) { const s = $('#orb-status'); if (s) s.textContent = status; }
+  }
+  function speakCoach(text) {
+    if (!text) return;
+    setOrb('speaking', 'Coach spricht …');
+    Speech.speak(text, { onend: () => setOrb(null, READY_HINT()) });
+  }
+
   function toast(msg) {
     const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden');
     clearTimeout(t._t); t._t = setTimeout(() => t.classList.add('hidden'), 2600);
@@ -91,6 +103,7 @@
   function addTyping() {
     const d = document.createElement('div');
     d.className = 'typing'; d.id = 'typing'; d.textContent = 'Coach denkt nach…';
+    setOrb(null, 'Coach denkt nach …');
     $('#chat').appendChild(d); scrollChat();
   }
   function removeTyping() { const t = $('#typing'); if (t) t.remove(); }
@@ -109,7 +122,7 @@
     b.innerHTML = `<div class="reply">${esc(reply)}</div>
       ${m.reply_de ? `<div class="de ${state.showDe ? '' : 'hidden'}">${esc(m.reply_de)}</div>` : ''}
       <button class="speak">🔊 Vorlesen</button>`;
-    b.querySelector('.speak').onclick = () => Speech.speak(reply);
+    b.querySelector('.speak').onclick = () => speakCoach(reply);
     $('#chat').appendChild(b);
 
     // Feedback (sanft, max 1–2)
@@ -135,7 +148,7 @@
       $('#chat').appendChild(e);
     }
     scrollChat();
-    if (state.autoSpeak && reply) Speech.speak(reply);
+    if (state.autoSpeak && reply) speakCoach(reply); else setOrb(null, READY_HINT());
   }
 
   function scrollChat() { requestAnimationFrame(() => { const el = $('.content'); if (el) el.scrollTop = el.scrollHeight; }); }
@@ -161,12 +174,12 @@
     if (state.listening) { Speech.stopListening(); return; }
     if (!Speech.sttSupported) { toast('Spracheingabe hier nicht verfügbar — bitte tippen.'); return; }
     Speech.stopSpeaking();
-    state.listening = true; btn.classList.add('rec');
+    state.listening = true; btn.classList.add('rec'); setOrb('listening', 'Ich höre zu … 🎧');
     Speech.listen({
       onresult: (final, interim) => { $('#msg-input').value = (final + ' ' + interim).trim(); },
-      onerror: () => { state.listening = false; btn.classList.remove('rec'); },
+      onerror: () => { state.listening = false; btn.classList.remove('rec'); setOrb(null, READY_HINT()); },
       onend: (finalText) => {
-        state.listening = false; btn.classList.remove('rec');
+        state.listening = false; btn.classList.remove('rec'); setOrb(null);
         if (finalText) { $('#msg-input').value = finalText; sendMessage(); }
       },
     });
