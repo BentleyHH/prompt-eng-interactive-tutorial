@@ -3,6 +3,7 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const api = async (url, opts) => {
   const r = await fetch(url, opts);
+  if (r.status === 401) { location.href = "/login"; throw new Error("nicht angemeldet"); }
   if (!r.ok) throw new Error((await r.text()) || r.status);
   return r.headers.get("content-type")?.includes("json") ? r.json() : r;
 };
@@ -56,6 +57,9 @@ async function refreshDetail() {
   if (!$("#f-team").value) $("#f-team").value = p.team || "";
   if (!$("#f-country").value && p.country) $("#f-country").value = p.country;
   $("#tpl-link").href = `/api/protocols/${p.id}/template.xlsx`;
+  const cq = `protocol=${p.id}${country ? `&country=${encodeURIComponent(country)}` : ""}`;
+  $("#exp-csv").href = `/api/produced/export.csv?${cq}`;
+  $("#exp-cert").href = `/api/produced/certificate.pdf?${cq}`;
 
   renderCoverage(p.coverage, country);
   renderRuns(p.runs);
@@ -80,6 +84,10 @@ function renderRuns(runs) {
     if (r.status === "sauber") {
       if (r.combined_path) dl += `<a href="/api/runs/${r.id}/download/combined">Druck-PDF</a>`;
       if (r.zip_path) dl += `<a href="/api/runs/${r.id}/download/zip">ZIP</a>`;
+      if (r.pdfa_path) dl += `<a href="/api/runs/${r.id}/download/pdfa">PDF/A</a>`;
+      else dl += `<a href="#" data-pdfa="${r.id}">PDF/A erstellen</a>`;
+      dl += `<a href="#" data-ftp="${r.id}">FTP-Upload</a>`;
+      if (r.ftp_status) dl += `<span class="muted"> · ${escapeHtml(r.ftp_status)}</span>`;
     }
     const bar = r.status === "laeuft"
       ? `<div class="bar"><i style="width:${r.progress || 0}%"></i></div>` : "";
@@ -158,6 +166,9 @@ function currentBody() {
     auslassen: $("#f-skip").value.trim() || null,
     modus: $("#f-mode").value,
     thorough: $("#f-thorough").checked,
+    workers: numOrNull($("#f-workers").value) || 1,
+    pdfa: $("#f-pdfa").checked,
+    ftp: $("#f-ftp").checked,
   };
 }
 
@@ -233,6 +244,91 @@ function renderOrders(orders) {
     catch (err) { btn.disabled = false; btn.textContent = "Fehler"; alert(err.message); }
   });
 }
+
+// KI-Check
+$("#btn-insight").onclick = async () => {
+  const el = $("#insight");
+  el.classList.remove("hidden"); el.textContent = "…";
+  try { const r = await api(`/api/protocols/${selectedId}/insight`); el.textContent = r.text; }
+  catch (err) { el.textContent = "Fehler: " + err.message; }
+};
+
+// PDF/A & FTP je Lauf (Event-Delegation)
+$("#runs").addEventListener("click", async (e) => {
+  const a = e.target.closest("a"); if (!a) return;
+  if (a.dataset.pdfa) {
+    e.preventDefault(); a.textContent = "PDF/A…";
+    try { await api(`/api/runs/${a.dataset.pdfa}/pdfa`, { method: "POST" }); await refreshDetail(); }
+    catch (err) { a.textContent = "Fehler"; alert(err.message); }
+  } else if (a.dataset.ftp) {
+    e.preventDefault(); a.textContent = "FTP…";
+    try { await api(`/api/runs/${a.dataset.ftp}/ftp`, { method: "POST" }); await refreshDetail(); }
+    catch (err) { a.textContent = "Fehler"; alert(err.message); }
+  }
+});
+
+// ----------------------------------------------------------------- Modals
+const modal = $("#modal"), modalBody = $("#modal-body");
+function openModal(html) { modalBody.innerHTML = html; modal.classList.remove("hidden"); }
+$("#modal-close").onclick = () => modal.classList.add("hidden");
+modal.addEventListener("click", e => { if (e.target === modal) modal.classList.add("hidden"); });
+
+$("#nav-audit").onclick = async () => {
+  const rows = await api("/api/audit");
+  let h = `<h2>Audit-Log</h2><table class="orders-table"><tr><th>Zeit</th><th>Benutzer</th><th>Aktion</th><th>Detail</th></tr>`;
+  for (const r of rows) h += `<tr><td>${(r.ts || "").slice(0, 19)}</td><td>${escapeHtml(r.username || "")}</td><td>${escapeHtml(r.action)}</td><td>${escapeHtml(r.detail || "")}</td></tr>`;
+  openModal(h + "</table>");
+};
+
+$("#nav-pw") && ($("#nav-pw").onclick = () => {
+  openModal(`<h2>Passwort ändern</h2>
+    <label>Neues Passwort<input type="password" id="pw-new"></label>
+    <button id="pw-save">Speichern</button> <span id="pw-msg" class="muted"></span>`);
+  $("#pw-save").onclick = async () => {
+    try { await api("/api/users/password", jsonPost({ password: $("#pw-new").value })); $("#pw-msg").textContent = "gespeichert ✓"; }
+    catch (err) { $("#pw-msg").textContent = err.message; }
+  };
+});
+
+const navSettings = $("#nav-settings");
+if (navSettings) navSettings.onclick = async () => {
+  const s = await api("/api/settings");
+  const users = await api("/api/users");
+  openModal(`<h2>Einstellungen</h2>
+    <h3>FTP-Upload</h3>
+    <div class="row"><label>Host<input id="s-host" value="${s.ftp_host || ""}"></label>
+      <label>Port<input id="s-port" value="${s.ftp_port || "21"}"></label>
+      <label class="chk"><input type="checkbox" id="s-tls" ${s.ftp_tls === "1" ? "checked" : ""}> TLS</label></div>
+    <div class="row"><label>Benutzer<input id="s-user" value="${s.ftp_user || ""}"></label>
+      <label>Passwort<input type="password" id="s-pass" value="${s.ftp_pass || ""}"></label>
+      <label>Verzeichnis<input id="s-dir" value="${s.ftp_dir || ""}"></label></div>
+    <div class="row actions"><button id="s-save">Speichern</button>
+      <button id="s-test" class="ghost">Verbindung testen</button><span id="s-msg" class="muted"></span></div>
+    <h3>Benutzer</h3>
+    <ul class="runs">${users.map(u => `<li>${escapeHtml(u.username)} <span class="muted">(${u.role})</span></li>`).join("")}</ul>
+    <div class="row"><label>Neuer Benutzer<input id="u-name"></label>
+      <label>Passwort<input type="password" id="u-pass"></label>
+      <label>Rolle<select id="u-role"><option value="operator">operator</option><option value="admin">admin</option></select></label></div>
+    <div class="row actions"><button id="u-add" class="ghost">Benutzer anlegen</button><span id="u-msg" class="muted"></span></div>`);
+  $("#s-save").onclick = async () => {
+    try {
+      await api("/api/settings", jsonPost({
+        ftp_host: $("#s-host").value, ftp_port: $("#s-port").value, ftp_user: $("#s-user").value,
+        ftp_pass: $("#s-pass").value, ftp_dir: $("#s-dir").value, ftp_tls: $("#s-tls").checked ? "1" : "0",
+      }));
+      $("#s-msg").textContent = "gespeichert ✓";
+    } catch (err) { $("#s-msg").textContent = err.message; }
+  };
+  $("#s-test").onclick = async () => {
+    $("#s-msg").textContent = "teste…";
+    try { const r = await api("/api/settings/ftp-test", { method: "POST" }); $("#s-msg").textContent = r.ok ? `OK (${r.pwd})` : r.error; }
+    catch (err) { $("#s-msg").textContent = err.message; }
+  };
+  $("#u-add").onclick = async () => {
+    try { await api("/api/users", jsonPost({ username: $("#u-name").value, password: $("#u-pass").value, role: $("#u-role").value })); $("#u-msg").textContent = "angelegt ✓"; }
+    catch (err) { $("#u-msg").textContent = err.message; }
+  };
+};
 
 // ------------------------------------------------------------------- Helper
 function jsonPost(body) { return { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }; }

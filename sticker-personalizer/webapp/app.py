@@ -3,30 +3,50 @@
 Start:
     cd sticker-personalizer
     python -m webapp.app          # oder:  python webapp/app.py
-    -> http://127.0.0.1:5000
+    -> http://127.0.0.1:5000   (erster Login: admin / admin)
 
-Funktionen: Master-Booklets importieren und analysieren (Ampel-Status),
-Mengen/Bereiche festlegen oder per Excel importieren, produzieren (mit
-100%-Verifikation), Verlauf + Doppel-Schutz, Downloads. Datenbank und Ausgaben
-liegen unter ``webapp/data`` und lassen sich per FTP sichern.
+Funktionen: Login + Audit-Log, Master-Booklets importieren/analysieren
+(Ampel-Status), Mengen/Bereiche oder Excel-Import, parallele Produktion mit
+100%-Verifikation, Integritäts-Siegel je Nummer, Doppel-Schutz-Ledger,
+PDF/A-Archivkopien, FTP-Upload, CSV-/Nachweis-Export und KI-Plausibilitätscheck.
+Datenbank und Ausgaben liegen unter ``webapp/data`` (FTP-tauglich sicherbar).
 """
 
 from __future__ import annotations
 
+import io
 import re
 import sys
 import threading
 from pathlib import Path
 
-from flask import (Flask, jsonify, request, render_template,
-                   send_file, send_from_directory, abort)
+from flask import (Flask, abort, jsonify, redirect, render_template, request,
+                   send_file, session, url_for)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from webapp import db, jobs, orders  # noqa: E402
+from webapp import auth, db, exports, jobs, orders, pdfa, seal  # noqa: E402
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024  # 200 MB Upload
+app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024  # 300 MB Upload
+
+
+# ---------------------------------------------------------------------------
+# Auth: alles außer Login + statische Dateien erfordert Anmeldung
+# ---------------------------------------------------------------------------
+@app.before_request
+def _require_login():
+    open_paths = {"/login"}
+    if request.endpoint == "static" or request.path in open_paths:
+        return
+    if not session.get("user"):
+        if request.path.startswith("/api/"):
+            return jsonify({"error": "nicht angemeldet"}), 401
+        return redirect(url_for("login_page"))
+
+
+def _user():
+    return session.get("user")
 
 
 def _slugify(text: str) -> str:
@@ -42,11 +62,42 @@ def _unique_slug(base: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Seiten
+# Seiten / Login
 # ---------------------------------------------------------------------------
-@app.route("/")
+@app.get("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", user=_user(), role=session.get("role"))
+
+
+@app.get("/login")
+def login_page():
+    if session.get("user"):
+        return redirect(url_for("index"))
+    return render_template("login.html")
+
+
+@app.post("/login")
+def login_post():
+    u = auth.authenticate(request.form.get("username", ""), request.form.get("password", ""))
+    if not u:
+        return render_template("login.html", error="Anmeldung fehlgeschlagen."), 401
+    session["user"] = u["username"]
+    session["role"] = u["role"]
+    db.log_audit(u["username"], "login", "")
+    return redirect(url_for("index"))
+
+
+@app.get("/logout")
+def logout():
+    db.log_audit(_user(), "logout", "")
+    session.clear()
+    return redirect(url_for("login_page"))
+
+
+@app.get("/api/me")
+def api_me():
+    return jsonify({"user": _user(), "role": session.get("role"),
+                    "pdfa": pdfa.available()})
 
 
 # ---------------------------------------------------------------------------
@@ -68,6 +119,7 @@ def api_protocol_upload():
     dest.parent.mkdir(parents=True, exist_ok=True)
     f.save(dest)
     pid = db.add_protocol(name, slug, dest)
+    db.log_audit(_user(), "protokoll-import", name)
     threading.Thread(target=jobs.analyze_protocol, args=(pid,), daemon=True).start()
     return jsonify({"id": pid, "status": "laeuft"})
 
@@ -98,9 +150,16 @@ def api_protocol_template(pid):
     if not p:
         abort(404)
     data = orders.build_template(p)
-    return send_file(__import__("io").BytesIO(data), as_attachment=True,
+    return send_file(io.BytesIO(data), as_attachment=True,
                      download_name=f"Auftragsvorlage_{p['slug']}.xlsx",
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+@app.get("/api/protocols/<int:pid>/insight")
+def api_protocol_insight(pid):
+    if not db.get_protocol(pid):
+        abort(404)
+    return jsonify(jobs.insight(pid))
 
 
 # ---------------------------------------------------------------------------
@@ -113,11 +172,7 @@ def _expand_and_check(pid, country, body) -> dict:
         refs=body.get("refs"), skip=body.get("auslassen"), width=int(width))
     check = jobs.plan_check(pid, country, refs)
     check["mode"] = (body.get("modus") or "neu").lower()
-    # effektiv zu produzierende Nummern je nach Modus
-    if check["mode"] == "nachdruck":
-        check["produzieren"] = refs
-    else:
-        check["produzieren"] = check["neu"]
+    check["produzieren"] = refs if check["mode"] == "nachdruck" else check["neu"]
     return check
 
 
@@ -150,8 +205,7 @@ def api_orders_preview(pid):
     for o in parsed:
         body = {"von": o["von"], "bis": o["bis"], "anzahl": o["anzahl"],
                 "auslassen": o["auslassen"], "modus": o["modus"]}
-        check = _expand_and_check(pid, o["country"], body)
-        out.append({"order": o, "check": check})
+        out.append({"order": o, "check": _expand_and_check(pid, o["country"], body)})
     return jsonify({"orders": out})
 
 
@@ -177,13 +231,17 @@ def api_produce(pid):
     refs = check["produzieren"]
     if not refs:
         abort(400, "Keine zu produzierenden Nummern (alle bereits vorhanden? Modus 'nachdruck' wählen).")
-    spec = (f"{country} {refs[0]}–{refs[-1]} ({len(refs)} St., Modus {check['mode']})")
+    spec = f"{country} {refs[0]}–{refs[-1]} ({len(refs)} St., Modus {check['mode']})"
     rid = db.add_run(pid, team, country, spec, refs, check["mode"])
     threading.Thread(
         target=jobs.produce_run, args=(rid, refs),
         kwargs={"team": team, "country": country,
                 "book_total": body.get("book_total"),
-                "thorough": bool(body.get("thorough"))},
+                "thorough": bool(body.get("thorough")),
+                "workers": int(body.get("workers") or 1),
+                "username": _user(),
+                "make_pdfa": bool(body.get("pdfa")),
+                "ftp_after": bool(body.get("ftp"))},
         daemon=True).start()
     return jsonify({"run_id": rid, "spec": spec, "count": len(refs)})
 
@@ -206,14 +264,39 @@ def api_run_download(rid, which):
     r = db.get_run(rid)
     if not r:
         abort(404)
-    path = r.get("combined_path") if which == "combined" else r.get("zip_path")
+    key = {"combined": "combined_path", "zip": "zip_path", "pdfa": "pdfa_path"}.get(which)
+    path = r.get(key) if key else None
     if not path or not Path(path).exists():
         abort(404, "Datei nicht vorhanden.")
     return send_file(path, as_attachment=True, download_name=Path(path).name)
 
 
+@app.post("/api/runs/<int:rid>/pdfa")
+def api_run_pdfa(rid):
+    r = db.get_run(rid)
+    if not r or not r.get("combined_path"):
+        abort(404)
+    try:
+        dst = Path(r["combined_path"]).with_name(Path(r["combined_path"]).stem + "__PDFA.pdf")
+        pdfa.to_pdfa(r["combined_path"], dst)
+        db.set_run_file(rid, pdfa_path=dst)
+        db.log_audit(_user(), "pdfa", f"Lauf #{rid}")
+        return jsonify({"ok": True, "pdfa": dst.name})
+    except Exception as e:  # noqa: BLE001
+        abort(400, str(e))
+
+
+@app.post("/api/runs/<int:rid>/ftp")
+def api_run_ftp(rid):
+    if not db.get_run(rid):
+        abort(404)
+    p = db.get_protocol(db.get_run(rid)["protocol_id"])
+    jobs._ftp_upload_run(rid, p, _user())
+    return jsonify(db.get_run(rid))
+
+
 # ---------------------------------------------------------------------------
-# Ledger
+# Ledger / Exporte / Verifikation
 # ---------------------------------------------------------------------------
 @app.get("/api/produced")
 def api_produced():
@@ -225,8 +308,138 @@ def api_produced():
     })
 
 
+@app.get("/api/produced/export.csv")
+def api_export_csv():
+    pid = request.args.get("protocol", type=int)
+    country = request.args.get("country")
+    rows = db.produced_list(pid, country)
+    db.log_audit(_user(), "export-csv", f"Protokoll {pid} Country {country}")
+    return send_file(io.BytesIO(exports.ledger_csv(rows)), as_attachment=True,
+                     download_name=f"Ledger_{pid}_{country or 'alle'}.csv",
+                     mimetype="text/csv")
+
+
+@app.get("/api/produced/certificate.pdf")
+def api_certificate():
+    pid = request.args.get("protocol", type=int)
+    country = request.args.get("country") or ""
+    p = db.get_protocol(pid)
+    if not p:
+        abort(404)
+    rows = db.produced_list(pid, country)
+    cov = jobs.coverage(pid, country) if country else None
+    pdf = exports.certificate_pdf(p, country, rows, cov, _user(), db.now())
+    db.log_audit(_user(), "nachweis-pdf", f"Protokoll {pid} Country {country}")
+    return send_file(io.BytesIO(pdf), as_attachment=True,
+                     download_name=f"Produktionsnachweis_{p['slug']}_{country}.pdf",
+                     mimetype="application/pdf")
+
+
+@app.get("/api/verify")
+def api_verify():
+    pid = request.args.get("protocol", type=int)
+    country = request.args.get("country", "")
+    ref = request.args.get("ref", "")
+    given = request.args.get("seal", "")
+    p = db.get_protocol(pid)
+    if not p:
+        abort(404)
+    expected = seal.compute(db.ensure_secret(), p["slug"], p["team"], country, ref)
+    return jsonify({"expected": expected, "match": (given.strip().upper() == expected),
+                    "in_ledger": ref in db.produced_refs(pid, country)})
+
+
+# ---------------------------------------------------------------------------
+# Einstellungen / Benutzer / Audit (Admin)
+# ---------------------------------------------------------------------------
+@app.get("/api/settings")
+@auth.admin_required
+def api_settings_get():
+    s = db.all_settings()
+    s.pop("secret_key", None)
+    if s.get("ftp_pass"):
+        s["ftp_pass"] = "********"
+    return jsonify(s)
+
+
+@app.post("/api/settings")
+@auth.admin_required
+def api_settings_set():
+    body = request.get_json(force=True)
+    for k in ("ftp_host", "ftp_port", "ftp_user", "ftp_dir", "ftp_tls",
+              "auto_pdfa", "auto_ftp", "default_workers"):
+        if k in body and body[k] is not None:
+            db.set_setting(k, body[k])
+    if body.get("ftp_pass") and body["ftp_pass"] != "********":
+        db.set_setting("ftp_pass", body["ftp_pass"])
+    db.log_audit(_user(), "settings", "aktualisiert")
+    return jsonify({"ok": True})
+
+
+@app.post("/api/settings/ftp-test")
+@auth.admin_required
+def api_ftp_test():
+    from . import ftp_util
+    s = db.all_settings()
+    try:
+        pwd = ftp_util.test_connection(
+            host=s.get("ftp_host", ""), user=s.get("ftp_user", ""),
+            password=s.get("ftp_pass", ""), port=int(s.get("ftp_port", 21) or 21),
+            tls=(s.get("ftp_tls") == "1"))
+        return jsonify({"ok": True, "pwd": pwd})
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+
+@app.get("/api/users")
+@auth.admin_required
+def api_users():
+    return jsonify(db.list_users())
+
+
+@app.post("/api/users")
+@auth.admin_required
+def api_user_create():
+    body = request.get_json(force=True)
+    username = (body.get("username") or "").strip()
+    password = body.get("password") or ""
+    role = body.get("role") or "operator"
+    if not username or not password:
+        abort(400, "Benutzername und Passwort erforderlich.")
+    if db.get_user(username):
+        abort(400, "Benutzer existiert bereits.")
+    db.create_user(username, auth.hash_pw(password), role)
+    db.log_audit(_user(), "benutzer-anlegen", username)
+    return jsonify({"ok": True})
+
+
+@app.post("/api/users/password")
+def api_user_password():
+    body = request.get_json(force=True)
+    pw = body.get("password") or ""
+    if len(pw) < 4:
+        abort(400, "Passwort zu kurz.")
+    u = db.get_user(_user())
+    if not u:
+        abort(404)
+    with db._LOCK, db.connect() as con:
+        con.execute("UPDATE users SET pw_hash=? WHERE id=?", (auth.hash_pw(pw), u["id"]))
+    db.log_audit(_user(), "passwort-aendern", "")
+    return jsonify({"ok": True})
+
+
+@app.get("/api/audit")
+def api_audit():
+    return jsonify(db.list_audit())
+
+
+# ---------------------------------------------------------------------------
 def main():
     db.init_db()
+    app.secret_key = db.ensure_secret()
+    note = auth.ensure_default_admin()
+    if note:
+        print("  " + note)
     print("Booklet-Dashboard läuft auf  http://127.0.0.1:5000")
     app.run(host="127.0.0.1", port=5000, debug=False, threaded=True)
 

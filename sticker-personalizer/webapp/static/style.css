@@ -93,3 +93,31 @@ button:hover { filter: brightness(1.08); }
 .runs a { color: #7cc4ff; margin-right: 10px; }
 .orders-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
 .orders-table th, .orders-table td { border: 1px solid var(--line); padding: 5px 7px; text-align: left; }
+
+/* Top-Navigation */
+.topnav { display: flex; align-items: center; gap: 10px; }
+.topnav .user { color: var(--muted); font-size: 13px; margin: 0 4px; }
+.topnav button, .topnav .btnlike { padding: 6px 10px; font-size: 13px; }
+
+/* Insight / KI-Check */
+.insight { white-space: pre-wrap; background: #11161c; border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px; font-size: 12.5px; margin-top: 10px; color: #cfe; }
+.runs a[data-pdfa], .runs a[data-ftp] { cursor: pointer; }
+
+/* Modal */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex;
+  align-items: flex-start; justify-content: center; padding: 40px 16px; z-index: 50; overflow: auto; }
+.modal-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 20px; width: min(720px, 96vw); position: relative; }
+.modal-close { position: absolute; top: 10px; right: 12px; background: transparent;
+  border: 0; color: var(--muted); font-size: 22px; cursor: pointer; }
+.modal-card h3 { margin-top: 16px; }
+
+/* Login */
+.login-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.login-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 28px; width: 320px; display: grid; gap: 12px; }
+.login-card h1 { margin: 0; font-size: 18px; }
+.login-card h1::first-letter { color: var(--accent); }
+.login-card label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.small { font-size: 11px; }

@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS runs (
     error         TEXT,
     combined_path TEXT,
     zip_path      TEXT,
+    pdfa_path     TEXT,
+    ftp_status    TEXT,
     created_at    TEXT,
     finished_at   TEXT
 );
@@ -72,9 +74,30 @@ CREATE TABLE IF NOT EXISTS produced (
     country     TEXT,
     ref         TEXT,
     is_reprint  INTEGER DEFAULT 0,
+    seal        TEXT,
+    username    TEXT,
     produced_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_produced_key ON produced(protocol_id, country, ref);
+
+CREATE TABLE IF NOT EXISTS users (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    username   TEXT UNIQUE NOT NULL,
+    pw_hash    TEXT NOT NULL,
+    role       TEXT NOT NULL DEFAULT 'operator',   -- admin | operator
+    created_at TEXT
+);
+CREATE TABLE IF NOT EXISTS audit (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts        TEXT,
+    username  TEXT,
+    action    TEXT,
+    detail    TEXT
+);
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+);
 """
 
 
@@ -164,6 +187,14 @@ def finish_run(rid, status, error=None, combined_path=None, zip_path=None) -> No
              str(zip_path) if zip_path else None, now(), rid))
 
 
+def set_run_file(rid, *, pdfa_path=None, ftp_status=None) -> None:
+    with _LOCK, connect() as con:
+        if pdfa_path is not None:
+            con.execute("UPDATE runs SET pdfa_path=? WHERE id=?", (str(pdfa_path), rid))
+        if ftp_status is not None:
+            con.execute("UPDATE runs SET ftp_status=? WHERE id=?", (ftp_status, rid))
+
+
 def list_runs(protocol_id=None, limit=100) -> list[dict]:
     with _LOCK, connect() as con:
         if protocol_id:
@@ -180,15 +211,17 @@ def get_run(rid) -> dict | None:
 
 
 # --- Ledger (produzierte Nummern) -----------------------------------------
-def record_produced(protocol_id, run_id, team, country, refs, reprints: set | None = None) -> None:
+def record_produced(protocol_id, run_id, team, country, refs, reprints: set | None = None,
+                    seals: dict | None = None, username: str | None = None) -> None:
     reprints = reprints or set()
+    seals = seals or {}
     ts = now()
     with _LOCK, connect() as con:
         con.executemany(
-            "INSERT INTO produced(protocol_id,run_id,team,country,ref,is_reprint,produced_at) "
-            "VALUES(?,?,?,?,?,?,?)",
-            [(protocol_id, run_id, team, country, r, 1 if r in reprints else 0, ts)
-             for r in refs])
+            "INSERT INTO produced(protocol_id,run_id,team,country,ref,is_reprint,seal,"
+            "username,produced_at) VALUES(?,?,?,?,?,?,?,?,?)",
+            [(protocol_id, run_id, team, country, r, 1 if r in reprints else 0,
+              seals.get(r), username, ts) for r in refs])
 
 
 def produced_refs(protocol_id, country) -> set[str]:
@@ -200,7 +233,7 @@ def produced_refs(protocol_id, country) -> set[str]:
         return {r["ref"] for r in rows}
 
 
-def produced_list(protocol_id=None, country=None, limit=5000) -> list[dict]:
+def produced_list(protocol_id=None, country=None, limit=20000) -> list[dict]:
     q = "SELECT * FROM produced WHERE 1=1"
     args = []
     if protocol_id:
@@ -210,3 +243,66 @@ def produced_list(protocol_id=None, country=None, limit=5000) -> list[dict]:
     q += " ORDER BY ref LIMIT ?"; args.append(limit)
     with _LOCK, connect() as con:
         return _rows(con.execute(q, args))
+
+
+# --- Einstellungen ---------------------------------------------------------
+def get_setting(key, default=None):
+    with _LOCK, connect() as con:
+        r = con.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+        return r["value"] if r else default
+
+
+def set_setting(key, value) -> None:
+    with _LOCK, connect() as con:
+        con.execute("INSERT INTO settings(key,value) VALUES(?,?) "
+                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key, str(value)))
+
+
+def all_settings() -> dict:
+    with _LOCK, connect() as con:
+        return {r["key"]: r["value"] for r in con.execute("SELECT key,value FROM settings")}
+
+
+def ensure_secret() -> str:
+    import secrets
+    s = get_setting("secret_key")
+    if not s:
+        s = secrets.token_hex(32)
+        set_setting("secret_key", s)
+    return s
+
+
+# --- Benutzer --------------------------------------------------------------
+def create_user(username, pw_hash, role="operator") -> int:
+    with _LOCK, connect() as con:
+        cur = con.execute("INSERT INTO users(username,pw_hash,role,created_at) VALUES(?,?,?,?)",
+                          (username, pw_hash, role, now()))
+        return cur.lastrowid
+
+
+def get_user(username) -> dict | None:
+    with _LOCK, connect() as con:
+        r = con.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+        return dict(r) if r else None
+
+
+def list_users() -> list[dict]:
+    with _LOCK, connect() as con:
+        return _rows(con.execute("SELECT id,username,role,created_at FROM users ORDER BY username"))
+
+
+def count_users() -> int:
+    with _LOCK, connect() as con:
+        return con.execute("SELECT COUNT(*) c FROM users").fetchone()["c"]
+
+
+# --- Audit-Log -------------------------------------------------------------
+def log_audit(username, action, detail="") -> None:
+    with _LOCK, connect() as con:
+        con.execute("INSERT INTO audit(ts,username,action,detail) VALUES(?,?,?,?)",
+                    (now(), username, action, detail))
+
+
+def list_audit(limit=300) -> list[dict]:
+    with _LOCK, connect() as con:
+        return _rows(con.execute("SELECT * FROM audit ORDER BY id DESC LIMIT ?", (limit,)))

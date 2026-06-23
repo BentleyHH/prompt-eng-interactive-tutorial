@@ -15,6 +15,13 @@
       <span><i class="dot rot"></i>Fehler</span>
       <span><i class="dot gruen"></i>sauber</span>
     </div>
+    <nav class="topnav">
+      <button class="ghost" id="nav-audit">Audit-Log</button>
+      {% if role == 'admin' %}<button class="ghost" id="nav-settings">Einstellungen</button>{% endif %}
+      <span class="user">👤 {{ user }} ({{ role }})</span>
+      <button class="ghost" id="nav-pw">Passwort</button>
+      <a class="ghost btnlike" href="{{ url_for('logout') }}">Abmelden</a>
+    </nav>
   </header>
 
   <main>
@@ -77,11 +84,16 @@
                     <option value="nachdruck">nachdruck (auch vorhandene)</option>
                   </select>
                 </label>
+                <label>Parallel<input id="f-workers" type="number" min="1" max="8" value="4"></label>
+              </div>
+              <div class="row">
+                <label class="chk"><input type="checkbox" id="f-thorough"> gründlich verifizieren</label>
+                <label class="chk"><input type="checkbox" id="f-pdfa"> PDF/A-Archiv</label>
+                <label class="chk"><input type="checkbox" id="f-ftp"> nach FTP hochladen</label>
               </div>
               <div class="row actions">
                 <button id="btn-check" class="ghost">Prüfen</button>
                 <button id="btn-produce">Produzieren</button>
-                <label class="chk"><input type="checkbox" id="f-thorough"> gründlich</label>
               </div>
               <div id="check-result" class="check hidden"></div>
             </div>
@@ -103,6 +115,12 @@
           <div class="card">
             <h3>Bereits produziert <span class="muted" id="cov-country"></span></h3>
             <div id="coverage" class="coverage muted">—</div>
+            <div class="row actions">
+              <button id="btn-insight" class="ghost">KI-Check</button>
+              <a id="exp-csv" class="ghost btnlike" href="#">CSV</a>
+              <a id="exp-cert" class="ghost btnlike" href="#">Nachweis-PDF</a>
+            </div>
+            <pre id="insight" class="insight hidden"></pre>
             <h4>Verlauf</h4>
             <ul id="runs" class="runs"></ul>
           </div>
@@ -110,6 +128,14 @@
       </div>
     </section>
   </main>
+
+  <!-- Modal: Einstellungen / Audit / Passwort -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close">×</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

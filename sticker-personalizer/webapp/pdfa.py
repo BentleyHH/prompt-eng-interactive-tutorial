@@ -1,0 +1,79 @@
+"""PDF/A-Konvertierung für Archivkopien (via Ghostscript).
+
+PDF/A-2b ist ein ISO-Archivformat (selbsterhaltend, eingebettete Schriften,
+definierter Farbraum). Die Konvertierung übernimmt Ghostscript (``gs``); ist es
+nicht installiert, wird eine klare Fehlermeldung geliefert.
+"""
+
+from __future__ import annotations
+
+import shutil
+import subprocess
+from pathlib import Path
+
+
+def available() -> bool:
+    return shutil.which("gs") is not None
+
+
+def to_pdfa(src: str | Path, dst: str | Path) -> Path:
+    gs = shutil.which("gs")
+    if not gs:
+        raise RuntimeError("Ghostscript (gs) ist nicht installiert – PDF/A nicht möglich. "
+                           "Unter Debian/Ubuntu:  sudo apt-get install -y ghostscript")
+    src, dst = str(src), str(dst)
+    cmd = [
+        gs, "-dPDFA=2", "-dBATCH", "-dNOPAUSE", "-dNOOUTERSAVE", "-dQUIET",
+        "-sProcessColorModel=DeviceRGB",
+        "-sColorConversionStrategy=RGB",
+        "-sDEVICE=pdfwrite", "-dPDFACompatibilityPolicy=1",
+        # KEIN Downsampling – sonst werden kleine QR-/Barcode-Bilder unkenntlich.
+        "-dDownsampleColorImages=false",
+        "-dDownsampleGrayImages=false",
+        "-dDownsampleMonoImages=false",
+        "-dAutoFilterColorImages=false",
+        "-dAutoFilterGrayImages=false",
+        f"-sOutputFile={dst}", src,
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0 or not Path(dst).exists():
+        raise RuntimeError(f"Ghostscript-Fehler bei PDF/A: {res.stderr.strip()[-400:]}")
+    _verify_symbols_preserved(src, dst)
+    return Path(dst)
+
+
+def _decoded(path, page_index, zoom=8) -> set:
+    import fitz
+    from PIL import Image
+    from pyzbar.pyzbar import decode as zbar_decode
+    doc = fitz.open(path)
+    if page_index >= doc.page_count:
+        return set()
+    pix = doc[page_index].get_pixmap(matrix=fitz.Matrix(zoom, zoom))
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    out = {s.data.decode(errors="replace") for s in zbar_decode(img)}
+    doc.close()
+    return out
+
+
+def _verify_symbols_preserved(src, dst) -> None:
+    """Stelle sicher, dass die PDF/A-Konvertierung keine scannbaren Symbole
+    verloren hat (Stichprobe je Booklet-Anfang). Schlägt sonst hart fehl."""
+    import fitz
+    n = fitz.open(src).page_count
+    # Stichproben: feste Schlüsselseiten + einige Booklet-Anfänge (gedeckelt,
+    # damit der Check auch bei großen kombinierten PDFs schnell bleibt).
+    booklet_starts = list(range(0, n, 32))
+    if len(booklet_starts) > 6:
+        booklet_starts = booklet_starts[:: max(1, len(booklet_starts) // 6)]
+    sample = sorted(set([0, 1, min(9, n - 1), min(30, n - 1)] + booklet_starts))
+    for i in sample:
+        before = _decoded(src, i)
+        if not before:
+            continue
+        after = _decoded(dst, i)
+        if not before <= after:
+            raise RuntimeError(
+                f"PDF/A-Konvertierung hat Symbole auf Seite {i} beschädigt "
+                f"(vorher {sorted(before)}, nachher {sorted(after) or 'nichts'}). "
+                f"Archivkopie verworfen.")

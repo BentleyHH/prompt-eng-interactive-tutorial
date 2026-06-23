@@ -26,8 +26,11 @@ Symbol-Architektur des Masters (automatisch erkannt):
 
 from __future__ import annotations
 
+import concurrent.futures as _cf
 import io
 import re
+import shutil
+import tempfile
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -296,18 +299,41 @@ def build_copy(master_path: str | Path, plan: MasterPlan, dst: Reference,
     """Erzeuge eine personalisierte Kopie (als offenes ``fitz.Document``)."""
     doc = fitz.open(master_path)
 
-    # 1) Bild-Symbole global ersetzen (einmal je XObject)
+    # 1) Bild-Symbole ersetzen. Zweistufig, damit das Ergebnis sowohl
+    #    druckkorrekt als auch PDF/A-tauglich ist:
+    #    (a) replace_image: tauscht die Pixel des geteilten XObjects –
+    #        löscht die alte Nummer überall (auch in den Bytes).
+    #    (b) insert_image-Overlay je Platzierung: legt das neue Symbol als
+    #        sauberes, opakes Bild oben drauf. Anders als ein per replace_image
+    #        ersetztes Bild übersteht ein eingefügtes Bild die PDF/A-Konvertierung
+    #        (Ghostscript verwirft sonst die ersetzten Objekte). Identische
+    #        Symbole werden über ihren xref wiederverwendet (kein Aufblähen).
     done = set()
+    overlay_xref: dict[tuple, int] = {}
     for sym in plan.image_symbols:
-        if sym.xref in done:
-            continue
-        done.add(sym.xref)
         new_str = transform_symbol(sym.master_string, plan.src, dst)
-        if sym.kind == "QRCODE":
-            img = qr_util.make_image(new_str, box_pixels=600)
-        else:
-            img = barcode_util.make_image_for_box(new_str, sym.aspect)
-        doc[sym.page].replace_image(sym.xref, stream=_png_bytes(img))
+        if sym.xref not in done:
+            done.add(sym.xref)
+            if sym.kind == "QRCODE":
+                base = qr_util.make_image(new_str, box_pixels=600)
+            else:
+                base = barcode_util.make_image_for_box(new_str, sym.aspect)
+            doc[sym.page].replace_image(sym.xref, stream=_png_bytes(base))
+        for pi, bbox in sym.placements:
+            rect = fitz.Rect(bbox)
+            rotated = sym.kind == "CODE128" and rect.height > rect.width
+            key = (sym.kind, new_str, rotated)
+            if key in overlay_xref:
+                doc[pi].insert_image(rect, xref=overlay_xref[key], keep_proportion=False)
+            else:
+                if sym.kind == "QRCODE":
+                    img = qr_util.make_image(new_str, box_pixels=600)
+                else:
+                    img = barcode_util.make_image_for_box(new_str, sym.aspect)
+                    if rotated:
+                        img = img.rotate(-90, expand=True)
+                overlay_xref[key] = doc[pi].insert_image(
+                    rect, stream=_png_bytes(img), keep_proportion=False)
 
     # 2) je Seite: Text + Vektor-QRs (Redaktion, danach Neuzeichnen)
     vec_by_page: dict[int, list[VectorSymbol]] = {}
@@ -441,14 +467,33 @@ def make_refs(start: int | None, count: int | None, width: int,
 # ---------------------------------------------------------------------------
 # Gesamter Produktionslauf
 # ---------------------------------------------------------------------------
+def _produce_one(master_path, plan, dst, idx, book_total, path, verify, thorough):
+    """Baue, verifiziere und speichere eine einzelne Kopie. Modulweit (damit
+    sie an einen ProcessPoolExecutor übergeben werden kann)."""
+    doc = build_copy(master_path, plan, dst, book_index=idx, book_total=book_total)
+    if verify:
+        errs = verify_copy(doc, plan, dst, thorough=thorough)
+        if errs:
+            doc.close()
+            raise RuntimeError(
+                f"Verifikation fehlgeschlagen für Kopie {dst.ref} (Stopp vor dem Druck):\n  "
+                + "\n  ".join(errs[:20])
+                + ("" if len(errs) <= 20 else f"\n  … (+{len(errs)-20} weitere)"))
+    doc.save(str(path), garbage=4, deflate=True)
+    doc.close()
+    return str(path)
+
+
 def produce(master_path: str | Path, refs: list[str], out_dir: str | Path, *,
             team: str | None = None, country: str | None = None,
             combined: bool = True, individual: bool = True,
             book_total: int | None = None, verify: bool = True,
-            thorough: bool = False, on_progress=None) -> dict:
+            thorough: bool = False, workers: int = 1, on_progress=None) -> dict:
     """Erzeuge alle Kopien, verifiziere sie und schreibe die Ausgaben.
 
-    Liefert ein Ergebnis-Dict mit den geschriebenen Pfaden und dem Report.
+    ``workers`` > 1 baut und verifiziert mehrere Kopien parallel (Threads;
+    PyMuPDF/pyzbar geben das GIL frei). Die kombinierte Druck-PDF wird danach in
+    Referenz-Reihenfolge zusammengesetzt. Liefert ein Ergebnis-Dict mit Pfaden.
     """
     master_path = Path(master_path)
     out_dir = Path(out_dir)
@@ -460,45 +505,72 @@ def produce(master_path: str | Path, refs: list[str], out_dir: str | Path, *,
     country = country or src.country
     if book_total is None:
         book_total = len(refs)
-
-    combined_doc = fitz.open() if combined else None
-    individual_paths: list[Path] = []
     stem = master_path.stem
 
+    # Einzel-PDFs in das Zielverzeichnis (falls gewünscht), sonst in ein Temp,
+    # das nach dem Zusammensetzen der Druck-PDF wieder entfernt wird.
+    tmp_dir = None
+    if individual:
+        ind_dir = out_dir
+    else:
+        tmp_dir = Path(tempfile.mkdtemp(prefix="booklet_", dir=out_dir))
+        ind_dir = tmp_dir
+
+    jobs = []
     for idx, ref in enumerate(refs, start=1):
         dst = Reference(team, country, ref)
-        doc = build_copy(master_path, plan, dst, book_index=idx, book_total=book_total)
+        path = ind_dir / f"{stem}__{team}_{country}_{ref}.pdf"
+        jobs.append((idx, ref, dst, path))
 
-        if verify:
-            errs = verify_copy(doc, plan, dst, thorough=thorough)
-            if errs:
-                doc.close()
-                raise RuntimeError(
-                    f"Verifikation fehlgeschlagen für Kopie {ref} (Stopp vor dem Druck):\n  "
-                    + "\n  ".join(errs[:20]) + ("" if len(errs) <= 20 else f"\n  … (+{len(errs)-20} weitere)"))
+    total = len(jobs)
+    done = 0
+    workers = max(1, int(workers))
+    if workers == 1:
+        for idx, ref, dst, path in jobs:
+            _produce_one(master_path, plan, dst, idx, book_total, path, verify, thorough)
+            done += 1
+            if on_progress:
+                on_progress(done, total, ref)
+    else:
+        with _cf.ProcessPoolExecutor(max_workers=workers) as ex:
+            futures = {ex.submit(_produce_one, master_path, plan, dst, idx,
+                                 book_total, path, verify, thorough): ref
+                       for idx, ref, dst, path in jobs}
+            try:
+                for fut in _cf.as_completed(futures):
+                    fut.result()  # löst eine etwaige RuntimeError aus
+                    done += 1
+                    if on_progress:
+                        on_progress(done, total, futures[fut])
+            except Exception:
+                for f in futures:
+                    f.cancel()
+                if tmp_dir:
+                    shutil.rmtree(tmp_dir, ignore_errors=True)
+                raise
 
-        if individual:
-            p = out_dir / f"{stem}__{team}_{country}_{ref}.pdf"
-            doc.save(p, garbage=4, deflate=True)
-            individual_paths.append(p)
-        if combined_doc is not None:
-            combined_doc.insert_pdf(doc)
-        doc.close()
-        if on_progress:
-            on_progress(idx, len(refs), ref)
-
-    result = {"plan": plan, "count": len(refs), "individual": individual_paths,
+    individual_paths = [j[3] for j in jobs] if individual else []
+    result = {"plan": plan, "count": total, "individual": individual_paths,
               "combined": None, "zip": None, "verified": verify}
 
-    if combined_doc is not None:
-        cpath = out_dir / f"{stem}__DRUCK_{team}_{country}_{refs[0]}-{refs[-1]}_x{len(refs)}.pdf"
-        combined_doc.save(cpath, garbage=4, deflate=True)
-        combined_doc.close()
+    if combined:
+        cdoc = fitz.open()
+        for job in jobs:                       # in Referenz-Reihenfolge
+            sub = fitz.open(job[3])
+            cdoc.insert_pdf(sub)
+            sub.close()
+        cpath = out_dir / f"{stem}__DRUCK_{team}_{country}_{refs[0]}-{refs[-1]}_x{total}.pdf"
+        cdoc.save(cpath, garbage=4, deflate=True)
+        cdoc.close()
         result["combined"] = cpath
+
     if individual and individual_paths:
-        zpath = out_dir / f"{stem}__EINZEL_{team}_{country}_x{len(refs)}.zip"
+        zpath = out_dir / f"{stem}__EINZEL_{team}_{country}_x{total}.zip"
         with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
             for p in individual_paths:
                 z.write(p, p.name)
         result["zip"] = zpath
+
+    if tmp_dir:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
     return result

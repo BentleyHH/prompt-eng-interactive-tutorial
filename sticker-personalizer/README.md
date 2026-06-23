@@ -154,11 +154,16 @@ sticker-personalizer/
     └── booklet.py          CBRN-Massenproduktion + 100%-Verifikation
 
 webapp/                     lokales Dashboard (Flask + SQLite)
-├── app.py                  Flask-Routen (REST + Seite)
-├── db.py                   SQLite-Schema/Helfer (Protokolle, Läufe, Ledger)
-├── jobs.py                 Hintergrund-Analyse/-Produktion + Doppel-/Lücken-Check
-├── orders.py              Excel-Auftragsvorlage erzeugen/einlesen
-├── templates/index.html    Dashboard-Oberfläche
+├── app.py                  Flask-Routen (REST + Seiten, Login-Schutz)
+├── db.py                   SQLite (Protokolle, Läufe, Ledger, Benutzer, Audit, Settings)
+├── jobs.py                 Analyse/Produktion (parallel) + Doppel-/Lücken-Check + KI-Insight
+├── orders.py               Excel-Auftragsvorlage erzeugen/einlesen
+├── auth.py                 Login, Benutzer, Zugriffsschutz
+├── seal.py                 HMAC-Integritäts-Siegel je Nummer
+├── pdfa.py                 PDF/A-Archivkopie (Ghostscript) + Symbol-Prüfung
+├── ftp_util.py             FTP-/FTPS-Upload der Ergebnisse
+├── exports.py              CSV-Ledger + Produktionsnachweis-PDF
+├── templates/              index.html + login.html
 └── static/                 app.js + style.css
 ```
 

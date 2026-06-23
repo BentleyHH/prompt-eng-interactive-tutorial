@@ -14,10 +14,10 @@ Ausgaben liegen unter `webapp/data/` und lassen sich **1:1 per FTP sichern**.
 
 ```bash
 cd sticker-personalizer
-sudo apt-get install -y libzbar0
+sudo apt-get install -y libzbar0 ghostscript   # ghostscript optional (PDF/A)
 pip install -r requirements.txt
 python -m webapp.app
-# -> http://127.0.0.1:5000
+# -> http://127.0.0.1:5000     (erster Login: admin / admin – danach Passwort ändern)
 ```
 
 ## Funktionen
@@ -41,6 +41,30 @@ python -m webapp.app
   im Modus **nachdruck** bewusst erneut erzeugt.
 - **Abdeckung**: Anzahl, Bereich (min–max) und **Lücken** je Country.
 - **Downloads**: kombinierte Druck-PDF und ZIP der Einzel-PDFs je Lauf.
+
+### Zusätzliche Funktionen
+
+- **Login + Audit-Log**: Anmeldung (Rollen *admin*/*operator*); jede Aktion
+  (Import, Produktion, Export, FTP …) wird mit Benutzer und Zeit protokolliert
+  (Knopf „Audit-Log"). Erststart legt `admin`/`admin` an.
+- **Parallele Produktion**: Feld „Parallel" (1–8) baut mehrere Kopien
+  gleichzeitig (Prozesse) – ~3× schneller (≈ 3 min statt 10 min für 100 Stück).
+- **Integritäts-Siegel**: jede Nummer erhält ein HMAC-Siegel mit Prüfziffer
+  (mod 97). Über `/api/verify?protocol=…&country=…&ref=…&seal=…` lässt sich
+  später zweifelsfrei prüfen, dass eine Nummer aus dieser Produktion stammt.
+- **PDF/A-Archivkopie**: Checkbox „PDF/A-Archiv" (oder Knopf je Lauf) erzeugt
+  eine ISO-Archivversion. Nach der Konvertierung werden Stichproben neu gescannt;
+  verliert die PDF/A ein Symbol, wird sie **verworfen** (keine kaputte Archivdatei).
+  Läuft als Hintergrundschritt nach dem (bereits grünen) Lauf – Ghostscript ist
+  bei sehr großen kombinierten PDFs langsam (~15 s je Booklet), das Dashboard
+  bleibt derweil bedienbar.
+- **FTP-Upload**: in den *Einstellungen* (Admin) Host/Port/Benutzer/Passwort/TLS
+  hinterlegen und testen. Checkbox „nach FTP hochladen" lädt Druck-PDF, ZIP und
+  PDF/A nach jedem Lauf hoch; alternativ Knopf „FTP-Upload" je Lauf.
+- **Export / Produktionsnachweis**: „CSV" (Ledger mit Siegeln, Excel-tauglich)
+  und „Nachweis-PDF" (Produktionsnachweis mit Zusammenfassung und Nummernliste).
+- **KI-Check**: Knopf „KI-Check" liefert eine Klartext-Übersicht je Country
+  (Bereich, Lücken, nächste freie Nummer, Nachdrucke, Auffälligkeiten).
 
 ## Datenablage / Backup
 
@@ -66,5 +90,10 @@ Historie der bereits produzierten Nummern.
 | POST | `/api/protocols/<id>/orders/preview` | Auftrags-Excel importieren (Vorschau) |
 | POST | `/api/protocols/<id>/produce` | Lauf starten (Bereich/Menge/Modus) |
 | GET  | `/api/runs/<id>` | Status/Fortschritt |
-| GET  | `/api/runs/<id>/download/combined`·`/zip` | Ergebnis herunterladen |
+| GET  | `/api/runs/<id>/download/combined`·`/zip`·`/pdfa` | Ergebnis herunterladen |
+| POST | `/api/runs/<id>/pdfa` · `/ftp` | PDF/A erzeugen · per FTP hochladen |
 | GET  | `/api/produced?protocol=<id>&country=49` | Ledger + Abdeckung |
+| GET  | `/api/produced/export.csv` · `/certificate.pdf` | CSV-Ledger · Nachweis-PDF |
+| GET  | `/api/protocols/<id>/insight` | KI-Klartext-Übersicht |
+| GET  | `/api/verify?protocol=&country=&ref=&seal=` | Siegel prüfen |
+| GET/POST | `/api/settings` · `/api/users` · `/api/audit` | Admin: FTP/Benutzer/Log |

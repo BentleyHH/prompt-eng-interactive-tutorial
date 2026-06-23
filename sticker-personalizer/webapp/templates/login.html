@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login – Booklet-Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-body">
+  <form class="login-card" method="post" action="{{ url_for('login_post') }}">
+    <h1>▦ Booklet-Dashboard</h1>
+    <p class="muted">Bitte anmelden</p>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <label>Benutzer<input name="username" autofocus autocomplete="username"></label>
+    <label>Passwort<input name="password" type="password" autocomplete="current-password"></label>
+    <button type="submit">Anmelden</button>
+    <p class="muted small">Erststart: <b>admin / admin</b> – danach Passwort ändern.</p>
+  </form>
+</body>
+</html>

@@ -50,18 +50,18 @@ def draw_on_canvas(c, data: str, x: float, y: float, size: float,
 
 
 def make_image(data: str, box_pixels: int = 600, border: int = 2):
-    """Erzeuge ein scharfes PIL-Schwarzweißbild des QR-Codes."""
+    """Erzeuge ein scharfes PIL-Schwarzweißbild des QR-Codes.
+
+    Ein 1px-pro-Modul-Bild wird in C per ``putdata`` aufgebaut und dann mit
+    NEAREST hochskaliert – deutlich schneller als Pixel-Schleifen in Python.
+    """
     from PIL import Image
 
     matrix = make_matrix(data, border=border)
     n = len(matrix)
+    small = Image.new("1", (n, n), 1)
+    small.putdata([0 if v else 1 for row in matrix for v in row])
     scale = max(1, box_pixels // n)
-    img = Image.new("1", (n * scale, n * scale), 1)
-    px = img.load()
-    for r, row in enumerate(matrix):
-        for col, val in enumerate(row):
-            if val:
-                for dy in range(scale):
-                    for dx in range(scale):
-                        px[col * scale + dx, r * scale + dy] = 0
-    return img
+    if scale == 1:
+        return small
+    return small.resize((n * scale, n * scale), Image.NEAREST)

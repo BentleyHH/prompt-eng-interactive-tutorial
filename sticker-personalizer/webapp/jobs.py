@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sticker import booklet  # noqa: E402
-from . import db  # noqa: E402
+from . import db, ftp_util, pdfa, seal  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -122,11 +122,14 @@ def analyze_protocol(pid: int) -> None:
 # Worker: Produktion
 # ---------------------------------------------------------------------------
 def produce_run(rid: int, refs: list[str], *, team=None, country=None,
-                book_total=None, thorough=False) -> None:
+                book_total=None, thorough=False, workers=1, username=None,
+                make_pdfa=False, ftp_after=False) -> None:
     run = db.get_run(rid)
     p = db.get_protocol(run["protocol_id"])
+    team = team or p["team"]
+    country = country or p["country"]
     out_dir = db.OUTPUT_DIR / f"run_{rid}"
-    already = db.produced_refs(p["id"], country or p["country"])
+    already = db.produced_refs(p["id"], country)
     reprints = {r for r in refs if r in already}
     try:
         def prog(i, n, ref):
@@ -137,11 +140,89 @@ def produce_run(rid: int, refs: list[str], *, team=None, country=None,
             team=team, country=country,
             combined=True, individual=True,
             book_total=book_total or len(refs),
-            verify=True, thorough=thorough, on_progress=prog,
+            verify=True, thorough=thorough, workers=workers, on_progress=prog,
         )
-        db.record_produced(p["id"], rid, team or p["team"], country or p["country"],
-                           refs, reprints=reprints)
+        # Integritäts-Siegel je Nummer berechnen und im Ledger ablegen
+        secret = db.ensure_secret()
+        seals = {r: seal.compute(secret, p["slug"], team, country, r) for r in refs}
+        db.record_produced(p["id"], rid, team, country, refs,
+                           reprints=reprints, seals=seals, username=username)
         db.finish_run(rid, "sauber",
                       combined_path=res.get("combined"), zip_path=res.get("zip"))
+        db.log_audit(username, "produce",
+                     f"{p['name']} {country} {refs[0]}–{refs[-1]} ({len(refs)} St., "
+                     f"{len(reprints)} Nachdruck)")
+
+        # PDF/A-Archivkopie (optional)
+        if make_pdfa and res.get("combined"):
+            try:
+                dst = out_dir / (res["combined"].stem + "__PDFA.pdf")
+                pdfa.to_pdfa(res["combined"], dst)
+                db.set_run_file(rid, pdfa_path=dst)
+                db.log_audit(username, "pdfa", f"Lauf #{rid} PDF/A erstellt")
+            except Exception as e:  # noqa: BLE001
+                db.set_run_file(rid, ftp_status=f"PDF/A fehlgeschlagen: {e}")
+
+        # FTP-Upload (optional)
+        if ftp_after:
+            _ftp_upload_run(rid, p, username)
     except Exception as e:  # noqa: BLE001
         db.finish_run(rid, "fehler", error=f"{e}")
+        db.log_audit(username, "fehler", f"Lauf #{rid}: {e}")
+
+
+def _ftp_upload_run(rid, protocol, username) -> None:
+    run = db.get_run(rid)
+    s = db.all_settings()
+    files = [f for f in [run.get("combined_path"), run.get("zip_path"), run.get("pdfa_path")] if f]
+    try:
+        remote = ftp_util.upload(
+            files, host=s.get("ftp_host", ""), user=s.get("ftp_user", ""),
+            password=s.get("ftp_pass", ""), directory=s.get("ftp_dir", ""),
+            port=int(s.get("ftp_port", 21) or 21), tls=(s.get("ftp_tls") == "1"))
+        db.set_run_file(rid, ftp_status=f"hochgeladen: {len(remote)} Datei(en)")
+        db.log_audit(username, "ftp", f"Lauf #{rid}: {len(remote)} Datei(en) hochgeladen")
+    except Exception as e:  # noqa: BLE001
+        db.set_run_file(rid, ftp_status=f"FTP fehlgeschlagen: {e}")
+        db.log_audit(username, "ftp-fehler", f"Lauf #{rid}: {e}")
+
+
+# ---------------------------------------------------------------------------
+# KI-Plausibilitätscheck (deterministische Klartext-Zusammenfassung)
+# ---------------------------------------------------------------------------
+def insight(protocol_id) -> dict:
+    """Erzeuge eine verständliche Übersicht über den Produktionsstand je Country,
+    inkl. Lücken, nächster freier Nummer, Nachdrucken und Auffälligkeiten."""
+    p = db.get_protocol(protocol_id)
+    rows = db.produced_list(protocol_id)
+    by_country: dict[str, list[dict]] = {}
+    for r in rows:
+        by_country.setdefault(r["country"], []).append(r)
+
+    lines: list[str] = []
+    warnings: list[str] = []
+    if not rows:
+        return {"text": "Für dieses Protokoll wurde noch nichts produziert.", "warnings": []}
+
+    for country in sorted(by_country):
+        cov = coverage(protocol_id, country)
+        reprints = sum(1 for r in by_country[country] if r["is_reprint"])
+        line = (f"Country {country}: {cov['count']} Nummern, Bereich "
+                f"{cov['min']}–{cov['max']}, "
+                + ("lückenlos" if not cov["gaps"] else f"Lücken: {', '.join(cov['gaps'])}")
+                + f". Nächste freie Nummer: {str(int(cov['max'])+1).zfill(cov['width'])}.")
+        if reprints:
+            line += f" {reprints} Nachdruck(e)."
+        lines.append(line)
+        if cov["gaps"]:
+            warnings.append(f"Country {country}: {len(cov['gaps'])} Lücke(n) – evtl. fehlende Auflage prüfen.")
+        if reprints:
+            warnings.append(f"Country {country}: {reprints} Nachdruck(e) im Ledger – doppelte Nummern wurden bewusst erneut erzeugt.")
+
+    header = f"Protokoll „{p['name']}“ – Stand der Unique-Nummern:"
+    text = header + "\n• " + "\n• ".join(lines)
+    if warnings:
+        text += "\n\nHinweise:\n• " + "\n• ".join(warnings)
+    else:
+        text += "\n\nKeine Auffälligkeiten – alles konsistent."
+    return {"text": text, "warnings": warnings, "countries": list(by_country)}
