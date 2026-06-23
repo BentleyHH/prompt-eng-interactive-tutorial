@@ -80,13 +80,18 @@ class MasterPlan:
     ref_width: int
     image_symbols: list = field(default_factory=list)
     vector_symbols: list = field(default_factory=list)
+    spot_colors: list = field(default_factory=list)   # Sonderfarben (Stanze/Perfo/Nut/Passer)
+    draw_marks: dict = field(default_factory=dict)     # Seite -> Menge der Vektor-Pfad-Signaturen
+    vector_pages: set = field(default_factory=set)     # Seiten mit ersetzten Vektor-Symbolen
 
     def summary(self) -> str:
         nqr = sum(1 for s in self.image_symbols if s.kind == "QRCODE")
         nbc = sum(1 for s in self.image_symbols if s.kind == "CODE128")
+        spots = ", ".join(self.spot_colors) if self.spot_colors else "keine"
         return (f"Quell-Referenz: {self.src.base()!r} (Ref-Breite {self.ref_width})\n"
                 f"  Bild-Symbole: {len(self.image_symbols)}  (QR={nqr}, Barcode={nbc})\n"
-                f"  Vektor-Symbole: {len(self.vector_symbols)} (z.B. Asservaten-Labels)")
+                f"  Vektor-Symbole: {len(self.vector_symbols)} (z.B. Asservaten-Labels)\n"
+                f"  Sonderfarben (Druckvorstufe): {spots}")
 
 
 # ---------------------------------------------------------------------------
@@ -208,10 +213,58 @@ def analyze_master(pdf_path: str | Path) -> MasterPlan:
         # 3) Vektor-Symbole (gezeichnete QR-Codes mit Suffix) je Seite finden
         vector_symbols = _find_vector_symbols(doc, src)
 
+        # 4) Druckvorstufe: Sonderfarben + Vektor-Marken je Seite erfassen
+        spot_colors = sorted(_spot_names(doc))
+        vector_pages = {v.page for v in vector_symbols}
+        draw_marks = {i: _page_draw_marks(page) for i, page in enumerate(doc)
+                      if i not in vector_pages}
+
         return MasterPlan(src=src, ref_width=len(ref),
-                          image_symbols=image_symbols, vector_symbols=vector_symbols)
+                          image_symbols=image_symbols, vector_symbols=vector_symbols,
+                          spot_colors=spot_colors, draw_marks=draw_marks,
+                          vector_pages=vector_pages)
     finally:
         doc.close()
+
+
+# ---------------------------------------------------------------------------
+# Druckvorstufe: Sonderfarben (Stanze/Perfo/Nut/Passer) und Marken-Geometrie
+# ---------------------------------------------------------------------------
+def _spot_names(doc) -> set:
+    """Alle Separation-/Vollton-Sonderfarbennamen im Dokument (außer 'All')."""
+    names = set()
+    for x in range(1, doc.xref_length()):
+        try:
+            obj = doc.xref_object(x, compressed=True)
+        except Exception:  # noqa: BLE001
+            continue
+        if "/Separation" in obj:
+            for m in re.findall(r"/Separation\s*/([^\s/\[\]]+)", obj):
+                names.add(m)
+    return names
+
+
+def _page_draw_marks(page) -> set:
+    """Menge kompakter Signaturen **jedes** Vektor-Pfads (Stanze/Perfo/Nut/Rahmen)
+    einer Seite – Geometrie + Farbe. Eine verschobene, angeschnittene, entfernte
+    oder umgefärbte Marke fällt damit aus der Menge heraus."""
+    import hashlib
+
+    marks = set()
+    for dr in page.get_drawings():
+        pts = []
+        for it in dr["items"]:
+            for p in it[1:]:
+                if isinstance(p, fitz.Point):
+                    pts.append((round(p.x, 1), round(p.y, 1)))
+                elif isinstance(p, fitz.Rect):
+                    pts.append((round(p.x0, 1), round(p.y0, 1),
+                                round(p.x1, 1), round(p.y1, 1)))
+        fill = tuple(round(c, 3) for c in (dr.get("fill") or ())) or None
+        stroke = tuple(round(c, 3) for c in (dr.get("stroke") or ())) or None
+        key = str((dr["type"], fill, stroke, tuple(pts)))
+        marks.add(hashlib.blake2b(key.encode(), digest_size=10).hexdigest())
+    return marks
 
 
 def _find_vector_symbols(doc, src: Reference) -> list[VectorSymbol]:
@@ -439,6 +492,33 @@ def verify_copy(doc, plan: MasterPlan, dst: Reference, thorough: bool = False) -
         if expected not in got:
             errors.append(f"Seite {v.page}: Vektor-QR erwartet {expected!r}, "
                           f"gelesen {sorted(got) or 'nichts'}.")
+
+    # 3) Druckvorstufen-Check: Sonderfarben + Schneide-/Falzmarken (immer)
+    errors.extend(verify_prepress(doc, plan))
+    return errors
+
+
+def verify_prepress(doc, plan: MasterPlan) -> list[str]:
+    """Prüfe, dass die Druckvorstufe unangetastet ist: alle Sonderfarben
+    (Stanze/Perfo/Nut/Passer) noch als Reinfarbe vorhanden **und** die
+    Vektor-Marken jeder Seite unverändert (nichts angeschnitten/verschoben/
+    umgefärbt). Läuft günstig (~0,2 s) und daher immer mit. Liefert Fehler."""
+    errors: list[str] = []
+    if plan.spot_colors:
+        present = _spot_names(doc)
+        for name in plan.spot_colors:
+            if name not in present:
+                errors.append(f"Druckvorstufe: Sonderfarbe {name!r} fehlt in der Kopie "
+                              f"(Reinfarbe verloren oder in Prozessfarbe umgewandelt?).")
+    for i, master_marks in plan.draw_marks.items():
+        if i >= doc.page_count:
+            continue
+        # Jeder Original-Marken-Pfad muss erhalten sein. Hinzugefügte weiße
+        # Abdeck-Rechtecke der Redaktion sind erlaubt (Teilmengen-Prüfung).
+        missing = master_marks - _page_draw_marks(doc[i])
+        if missing:
+            errors.append(f"Druckvorstufe: {len(missing)} Marke(n) auf Seite {i} "
+                          f"fehlen/verändert (Stanze/Perfo/Nut/Rahmen?).")
     return errors
 
 

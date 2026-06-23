@@ -113,7 +113,8 @@ def analyze_protocol(pid: int) -> None:
         plan = booklet.analyze_master(p["master_path"])
         db.set_protocol_analysis(
             pid, plan.src.team, plan.src.country, plan.src.ref, plan.ref_width,
-            len(plan.image_symbols), len(plan.vector_symbols))
+            len(plan.image_symbols), len(plan.vector_symbols),
+            spots=", ".join(plan.spot_colors) if plan.spot_colors else None)
     except Exception as e:  # noqa: BLE001
         db.set_protocol_status(pid, "fehler", f"{e}\n{traceback.format_exc()}")
 

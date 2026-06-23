@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS protocols (
     ref_width   INTEGER,
     n_image     INTEGER,
     n_vector    INTEGER,
+    spots       TEXT,                          -- erkannte Sonderfarben (Druckvorstufe)
     status      TEXT NOT NULL DEFAULT 'neu',   -- neu | laeuft | fehler | sauber
     error       TEXT,
     created_at  TEXT,
@@ -118,6 +119,21 @@ def connect() -> sqlite3.Connection:
 def init_db() -> None:
     with _LOCK, connect() as con:
         con.executescript(SCHEMA)
+        _migrate(con)
+
+
+def _migrate(con) -> None:
+    """Fehlende Spalten in bestehenden Datenbanken nachrüsten (sanfte Migration)."""
+    wanted = {
+        "protocols": {"spots": "TEXT"},
+        "runs": {"pdfa_path": "TEXT", "ftp_status": "TEXT"},
+        "produced": {"seal": "TEXT", "username": "TEXT"},
+    }
+    for table, cols in wanted.items():
+        have = {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
+        for name, typ in cols.items():
+            if name not in have:
+                con.execute(f"ALTER TABLE {table} ADD COLUMN {name} {typ}")
 
 
 def _rows(cur) -> list[dict]:
@@ -139,12 +155,13 @@ def set_protocol_status(pid, status, error=None) -> None:
                     (status, error, pid))
 
 
-def set_protocol_analysis(pid, team, country, src_ref, ref_width, n_image, n_vector) -> None:
+def set_protocol_analysis(pid, team, country, src_ref, ref_width, n_image, n_vector,
+                          spots=None) -> None:
     with _LOCK, connect() as con:
         con.execute(
             "UPDATE protocols SET team=?,country=?,src_ref=?,ref_width=?,n_image=?,"
-            "n_vector=?,status='sauber',error=NULL,analyzed_at=? WHERE id=?",
-            (team, country, src_ref, ref_width, n_image, n_vector, now(), pid))
+            "n_vector=?,spots=?,status='sauber',error=NULL,analyzed_at=? WHERE id=?",
+            (team, country, src_ref, ref_width, n_image, n_vector, spots, now(), pid))
 
 
 def list_protocols() -> list[dict]:

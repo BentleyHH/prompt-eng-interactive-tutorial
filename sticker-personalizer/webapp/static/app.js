@@ -48,6 +48,7 @@ async function refreshDetail() {
   $("#d-analysis").innerHTML = p.team
     ? `Quelle: <b>${p.team} ${p.country} ${p.src_ref}</b> · Ref-Breite <b>${p.ref_width}</b>
        · <b>${p.n_image}</b> Bild-Symbole · <b>${p.n_vector}</b> Vektor-Symbole`
+       + (p.spots ? `<br>Sonderfarben (Druckvorstufe): <b>${escapeHtml(p.spots)}</b> – werden mitgeprüft` : "")
     : `<span class="muted">Analyse ${p.status === "laeuft" ? "läuft…" : "ausstehend"}</span>`;
   const err = $("#d-error");
   if (p.status === "fehler" && p.error) { err.textContent = p.error; err.classList.remove("hidden"); }

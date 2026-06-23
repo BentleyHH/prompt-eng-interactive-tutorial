@@ -125,6 +125,12 @@ Symbol die falsche Nummer, **bricht der Lauf sofort mit Fehlermeldung ab** – e
 wird also nie eine fehlerhafte Datei in den Druck gegeben. Titel
 (`CBRN RED ZONE`) und Dokumentcode im Fuß bleiben bewusst unverändert.
 
+Zusätzlich läuft ein **Druckvorstufen-Check** mit: Alle Sonderfarben/Volltöne
+(Stanze, Perforation, Nut/Rill, Passer) müssen als **Reinfarbe** erhalten bleiben
+(nicht in Prozessfarbe umgewandelt, nicht entfernt), und **keine Schneide-/
+Falzmarke** darf verschoben, angeschnitten oder umgefärbt sein. Andernfalls →
+sofortiger Stopp. So bleibt die Datei für Stanze/Plotter korrekt.
+
 ---
 
 # C) Dashboard (lokale Web-App)

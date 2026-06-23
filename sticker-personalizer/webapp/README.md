@@ -41,6 +41,10 @@ python -m webapp.app
   ist also für DE (`49`) und Abu Dhabi (`4971`) erlaubt. Vor jedem Lauf wird
   geprüft, was schon existiert; im Modus **neu** werden Doppelte übersprungen,
   im Modus **nachdruck** bewusst erneut erzeugt.
+- **Druckvorstufen-Check** (automatisch je Kopie): bestätigt, dass alle
+  Sonderfarben (Stanze/Perfo/Nut/Passer) als Reinfarbe erhalten bleiben und
+  keine Schneide-/Falzmarke verändert wurde – sonst wird der Lauf rot. Die
+  erkannten Sonderfarben stehen in der Protokoll-Analyse.
 - **Abdeckung**: Anzahl, Bereich (min–max) und **Lücken** je Country.
 - **Downloads**: kombinierte Druck-PDF und ZIP der Einzel-PDFs je Lauf.
 
