@@ -11,6 +11,10 @@ Zwei Werkzeuge in einem Paket für die ETAF-Booklets:
    **Text-Stelle** wird konsistent ausgetauscht und anschließend **100 %
    verifiziert**. → Abschnitt **B**.
 
+> **Schnellstart für Nicht-Techniker:** siehe [`ANLEITUNG.md`](ANLEITUNG.md) –
+> Python installieren, `start.bat` (Windows) bzw. `start.sh` (macOS/Linux)
+> doppelklicken, Browser auf http://127.0.0.1:5000.
+
 ---
 
 ## Installation
