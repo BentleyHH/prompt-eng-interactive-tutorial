@@ -19,10 +19,13 @@ Zwei Werkzeuge in einem Paket für die ETAF-Booklets:
 
 ## Installation
 
+**Mac (am einfachsten):** Python von python.org installieren und `Start.command`
+doppelklicken – siehe [`ANLEITUNG.md`](ANLEITUNG.md). Sonst:
+
 ```bash
 cd sticker-personalizer
-sudo apt-get install -y libzbar0        # Systemabhängigkeit für pyzbar (Verifikation)
-pip install -r requirements.txt
+pip install -r requirements.txt          # reine pip-Installation, keine Systembibliothek
+# optional nur für PDF/A:  macOS: brew install ghostscript | Ubuntu: sudo apt-get install -y ghostscript
 ```
 
 ---
@@ -175,8 +178,8 @@ webapp/                     lokales Dashboard (Flask + SQLite)
 
 - Die **Master-/Original-PDFs werden nicht mitgeliefert**; jeweils den eigenen
   Pfad angeben.
-- Verifikation und Symbol-Erkennung nutzen `pyzbar` (benötigt das System-Paket
-  `libzbar0`).
+- Verifikation und Symbol-Erkennung nutzen `zxing-cpp` (selbst-enthaltenes
+  pip-Wheel, keine Systembibliothek). Optionaler Fallback: `pyzbar` (+ libzbar).
 - Schrift ist Helvetica-Bold (metrisch nah an Arial-BoldMT des Originals);
   Referenznummern werden auf die Master-Stellenzahl mit führenden Nullen
   aufgefüllt, damit ersetzte Zahlen exakt sitzen.

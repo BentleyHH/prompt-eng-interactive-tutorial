@@ -1,54 +1,68 @@
-# Schnellstart – in 3 Schritten
+# Schnellstart für den Mac 🍎
 
-Du brauchst nur **einmal** etwas einzurichten. Danach reicht ein Doppelklick.
-
-## Schritt 1 – Python installieren (nur einmal)
-
-- **Windows / macOS:** https://www.python.org/downloads/ → großen gelben Knopf
-  „Download" klicken, Datei öffnen, durchklicken.
-  - **Windows-WICHTIG:** im ersten Installationsfenster unten das Häkchen
-    **„Add Python to PATH"** setzen, dann „Install Now".
-- **Linux (Ubuntu/Debian):** Terminal öffnen und einfügen:
-  `sudo apt-get install -y python3 python3-venv python3-pip`
-
-## Schritt 2 – Programm starten
-
-- **Windows:** Doppelklick auf **`start.bat`**
-- **macOS / Linux:** Doppelklick auf **`start.sh`**
-  (falls es nur im Editor aufgeht: Terminal im Ordner öffnen und `./start.sh`
-  eingeben; einmalig vorher `chmod +x start.sh`).
-
-Beim **ersten Mal** lädt es 1–2 Minuten die benötigten Pakete – das ist normal.
-Danach geht es sofort.
-
-## Schritt 3 – Im Browser öffnen
-
-Browser öffnen und eingeben: **http://127.0.0.1:5000**
-Erster Login: **admin** / **admin** (Passwort danach oben rechts ändern).
-
-Fertig. 🎉
+So einfach wie möglich – du brauchst **nur Python**, sonst nichts. Kein
+Homebrew, keine Zusatz-Bibliotheken.
 
 ---
 
-### Zwei optionale Zusatzwerkzeuge
+## Einmalig: Python installieren
 
-Nur nötig, wenn du diese Funktionen wirklich nutzt – das Programm läuft auch ohne:
+1. Diese Seite öffnen: **https://www.python.org/downloads/macos/**
+2. Den großen gelben Knopf **„Download Python"** klicken.
+3. Die geladene Datei (endet auf **`.pkg`**) öffnen und einfach durchklicken
+   („Fortfahren" → „Installieren", evtl. Mac-Passwort eingeben).
 
-| Funktion | Was fehlt sonst | Installation (einmalig) |
-|----------|-----------------|--------------------------|
-| **QR/Barcode-Prüfung** (Verifikation) | Produktion meldet „libzbar" fehlt | **Win:** meist automatisch dabei. **macOS:** `brew install zbar` · **Linux:** `sudo apt-get install -y libzbar0` |
-| **PDF/A-Archiv** | nur PDF/A-Erstellung | **Win:** Ghostscript von https://ghostscript.com/releases/ · **macOS:** `brew install ghostscript` · **Linux:** `sudo apt-get install -y ghostscript` |
+Das war's – musst du nie wieder machen.
 
-> „brew" ist der Mac-Installer von https://brew.sh – einmal einrichten, dann
-> funktionieren die `brew install …`-Befehle.
+---
 
-### Wo liegen meine Daten?
+## Programm starten
 
-Alles (Datenbank, hochgeladene Master, erzeugte PDFs) liegt im Unterordner
-**`webapp/data/`**. Diesen Ordner per FTP sichern = komplettes Backup.
+1. Das ZIP **entpacken** (Doppelklick darauf).
+2. Im entpackten Ordner **`Start.command`** doppelklicken.
 
-### Hilfe
+   ⚠️ **Nur beim allerersten Mal** meldet der Mac evtl.: *„… kann nicht geöffnet
+   werden, da es von einem nicht verifizierten Entwickler stammt."*
+   Dann so machen:
+   - Mit der Maus **Rechtsklick** (oder Ctrl + Klick) auf `Start.command`
+   - **„Öffnen"** wählen → im Hinweisfenster nochmal **„Öffnen"**.
 
-- „Seite nicht erreichbar" im Browser? → Das schwarze Start-Fenster muss offen
-  bleiben, solange du arbeitest.
-- Etwas klemmt? Start-Fenster schließen und `start`-Datei erneut doppelklicken.
+   Ab dann reicht immer ein normaler Doppelklick.
+
+3. Es öffnet sich ein schwarzes Fenster. Beim **ersten Start** lädt es 1–2
+   Minuten die Pakete – das ist normal. Danach **öffnet sich der Browser von
+   selbst**.
+
+---
+
+## Anmelden
+
+Im Browser erscheint der Login:
+
+- Benutzer: **admin**
+- Passwort: **admin**
+
+Danach oben rechts unter „Passwort" gleich ein eigenes setzen. **Fertig.** 🎉
+
+---
+
+## Gut zu wissen
+
+- **Das schwarze Fenster offen lassen**, solange du arbeitest. Zum Beenden
+  einfach schließen. Zum erneuten Starten wieder `Start.command` doppelklicken.
+- **Backup:** Alles (Datenbank, Master-PDFs, erzeugte Drucke) liegt im
+  Unterordner **`webapp/data/`**. Den per FTP sichern = komplettes Backup.
+- **PDF/A-Archiv** (optional): braucht zusätzlich „Ghostscript". Nur falls du es
+  nutzen willst, einmal im Terminal: `brew install ghostscript`
+  (Homebrew gibt es auf https://brew.sh). Ohne das läuft alles andere normal.
+
+## Wenn mal etwas klemmt
+
+- „Seite nicht erreichbar" im Browser → das schwarze Startfenster muss offen
+  sein; einfach `Start.command` erneut doppelklicken.
+- Browser ging nicht von selbst auf → manuell **http://127.0.0.1:5000** eingeben.
+
+---
+
+*(Windows oder Linux? Dann stattdessen `start.bat` bzw. `start.sh` verwenden –
+funktioniert genauso.)*

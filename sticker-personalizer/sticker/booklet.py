@@ -37,9 +37,7 @@ from pathlib import Path
 
 import fitz
 from PIL import Image
-from pyzbar.pyzbar import decode as zbar_decode
-
-from . import qr_util, barcode_util
+from . import barcode_util, qr_util, symbols
 
 INK = (35 / 255, 31 / 255, 32 / 255)   # #231F20  Schriftfarbe der Referenzfelder
 FONT_BOLD = "hebo"                       # Helvetica-Bold (eingebauter ReportLab/MuPDF-Font)
@@ -136,7 +134,7 @@ def _decode_region(page, bbox, zoom: float = 8.0):
         return []
     pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), clip=clip)
     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-    return [(s.type, s.data.decode(errors="replace")) for s in zbar_decode(img)]
+    return [(s.type, s.data.decode(errors="replace")) for s in symbols.decode(img)]
 
 
 def _decode_image_xref(doc, xref):
@@ -154,7 +152,7 @@ def _decode_image_xref(doc, xref):
         return None
     area = (pix.width * pix.height) or 1
     best = None
-    for s in zbar_decode(img):
+    for s in symbols.decode(img):
         ratio = (s.rect.width * s.rect.height) / area
         if best is None or ratio > best[2]:
             best = (s.type, s.data.decode(errors="replace"), ratio)

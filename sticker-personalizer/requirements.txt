@@ -2,11 +2,11 @@ PyMuPDF>=1.24      # PDF lesen/overlay/ersetzen (Modul: fitz)
 reportlab>=4.0     # PDF neu rendern (generate-Vorlage)
 qrcode>=7.4        # QR-Code-Erzeugung
 python-barcode>=0.15  # Code128-Barcodes (CBRN-Exhibit-Booklet)
-pyzbar>=0.1.9      # QR/Barcode dekodieren (100%-Verifikation) – benötigt libzbar0
+zxing-cpp>=2.2     # QR/Barcode dekodieren (100%-Verifikation) – selbst-enthalten, KEINE Systembibliothek
 Pillow>=10.0       # Bildverarbeitung (QR/Barcode-Bild, Logo)
 openpyxl>=3.1      # Excel (.xlsx) lesen/schreiben
 Flask>=3.0         # lokales Web-Dashboard (webapp/), inkl. Werkzeug (Login/Passwort-Hash)
 
-# Systemabhängigkeiten (Debian/Ubuntu):
-#   sudo apt-get install -y libzbar0      # für pyzbar (Verifikation)
-#   sudo apt-get install -y ghostscript   # optional, für PDF/A-Archivkopien
+# Optionaler Decoder-Fallback (nur falls zxing-cpp nicht läuft): pyzbar (+ libzbar).
+# Optional für PDF/A-Archivkopien (Systemwerkzeug):
+#   macOS: brew install ghostscript   |   Debian/Ubuntu: sudo apt-get install -y ghostscript

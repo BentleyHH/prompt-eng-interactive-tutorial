@@ -6,7 +6,7 @@ Booklet-Massenproduktion. Es nutzt dieselbe Engine wie das CLI
 Ausgaben liegen unter `webapp/data/` und lassen sich **1:1 per FTP sichern**.
 
 > Hinweis: Die PDF-Produktion + 100%-Verifikation braucht **Python**
-> (PyMuPDF/pyzbar). Reines Static-FTP kann sie nicht ausführen – darum läuft
+> (PyMuPDF/zxing-cpp). Reines Static-FTP kann sie nicht ausführen – darum läuft
 > das Dashboard lokal (oder auf einem kleinen Server) und der FTP dient als
 > Ablage/Backup.
 
@@ -14,11 +14,13 @@ Ausgaben liegen unter `webapp/data/` und lassen sich **1:1 per FTP sichern**.
 
 ```bash
 cd sticker-personalizer
-sudo apt-get install -y libzbar0 ghostscript   # ghostscript optional (PDF/A)
-pip install -r requirements.txt
+pip install -r requirements.txt                # reine pip-Installation
+# optional nur für PDF/A:  macOS: brew install ghostscript | Ubuntu: sudo apt-get install -y ghostscript
 python -m webapp.app
 # -> http://127.0.0.1:5000     (erster Login: admin / admin – danach Passwort ändern)
 ```
+
+> macOS am einfachsten: `Start.command` doppelklicken (siehe `ANLEITUNG.md`).
 
 ## Funktionen
 

@@ -76,13 +76,13 @@ def to_pdfa_many(pairs: list[tuple], workers: int = 4, on_progress=None) -> list
 def _decoded(path, page_index, zoom=8) -> set:
     import fitz
     from PIL import Image
-    from pyzbar.pyzbar import decode as zbar_decode
+    from sticker import symbols
     doc = fitz.open(path)
     if page_index >= doc.page_count:
         return set()
     pix = doc[page_index].get_pixmap(matrix=fitz.Matrix(zoom, zoom))
     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-    out = {s.data.decode(errors="replace") for s in zbar_decode(img)}
+    out = {s.data.decode(errors="replace") for s in symbols.decode(img)}
     doc.close()
     return out
 
