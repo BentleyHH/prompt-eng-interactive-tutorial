@@ -1,38 +1,15 @@
-# ETAF Officer-ID Sticker-Personalisierung
+# ETAF Booklet-Personalisierung
 
-Werkzeug, um das **Officer-Management-Booklet** (die Aufkleber-/Badge-PDF
-`OM_BOOKLET_…_74401_74445.pdf`) anhand einer **Excel-Tabelle** individuell zu
-personalisieren. Pro Person wird eine Seite erzeugt mit:
+Zwei Werkzeuge in einem Paket für die ETAF-Booklets:
 
-- **Name** (im Namensfeld des Badges),
-- **Bedeutung / Rolle** (z. B. `ENTRANCE EXIT A`, `CBRN COMMANDER`) und Team,
-- **Officer-ID**,
-- einem **pro Person eindeutigen QR-Code** (zwei Stück je Seite – auf Badge und
-  Logbuch-Label).
-
-Heraus kommt eine **druckfertige Booklet-PDF** im Format und Stil des Originals.
-
----
-
-## Was die PDF enthält (Analyse des Originals)
-
-- **46 Seiten**: 1 Titelseite + 45 Rollen-/Aufkleberseiten (IDs `74401`–`74445`).
-- Format **226,6 × 313,6 mm** (inkl. Beschnitt/Crop-Marks), Adobe InDesign.
-- Pro Seite **zwei Aufkleber**: ein **Badge** (ETAF-Logo, QR, Team, Rolle,
-  Officer-ID, Site/Name-Feld) und ein **Logbuch-Label** (Officer-ID, kleiner QR,
-  Formular NAME/RANK/AGENCY/… + „FILL OUT + SCAN / ATTACH TO LOGBOOK“), plus eine
-  **türkise Seitenleiste** (#045B74) mit großem vertikalem Rollentext.
-- Die beiden QR-Codes kodierten im Original jeweils den Text `Officer ID 74401`.
-  Beim Personalisieren werden sie durch person-individuelle Codes ersetzt.
-
----
-
-## Zwei Betriebsarten
-
-| Modus | Befehl | Ergebnis |
-|-------|--------|----------|
-| **overlay** | `overlay` | Nutzt die **Original-PDF** als Hintergrund und personalisiert nur QR + Name. **Druckidentisch** zum Original. Empfohlen, wenn die vorhandenen 45 Rollen genutzt werden. |
-| **generate** | `generate` | Rendert das Booklet aus einer **selbst entworfenen Vorlage** komplett neu. **Frei skalierbar** für beliebig viele Personen und freie Rollen/Teams. |
+1. **Officer-ID-Booklet** – das Aufkleber-/Badge-Booklet
+   (`OM_BOOKLET_…_74401_74445.pdf`) anhand einer **Excel-Tabelle** personalisieren
+   (Name, Rolle/Bedeutung, pro Person eindeutiger QR). → Abschnitt **A**.
+2. **CBRN-Exhibit-Booklet** – ein druckfertiges Master-Booklet
+   (`ETAF_CBRN_REDZONE_…_MASTER.pdf`) als **Massenware** mit je **eindeutiger
+   Referenznummer** erzeugen. Jeder **QR-Code**, jeder **Barcode** und jede
+   **Text-Stelle** wird konsistent ausgetauscht und anschließend **100 %
+   verifiziert**. → Abschnitt **B**.
 
 ---
 
@@ -40,56 +17,106 @@ Heraus kommt eine **druckfertige Booklet-PDF** im Format und Stil des Originals.
 
 ```bash
 cd sticker-personalizer
+sudo apt-get install -y libzbar0        # Systemabhängigkeit für pyzbar (Verifikation)
 pip install -r requirements.txt
 ```
 
-## Benutzung
+---
 
-**1) Excel-Vorlage erzeugen** (Beispieldaten + Legende):
+# A) Officer-ID-Booklet (Aufkleber, aus Excel)
 
-```bash
-python personalize.py init-excel teams.xlsx
-```
+Pro Person eine Seite mit **Name**, **Bedeutung/Rolle**, **Officer-ID** und einem
+**pro Person eindeutigen QR-Code** (zwei je Seite). Heraus kommt eine
+druckfertige Booklet-PDF im Stil des Originals.
 
-Spalten (Überschriften werden deutsch/englisch und groß/klein tolerant erkannt):
-
-| Spalte | Bedeutung | Pflicht |
-|--------|-----------|---------|
-| `Name` | Name der Person → Namensfeld | empfohlen |
-| `Bedeutung` (`Rolle`/`Role`) | Rolle/Funktion, z. B. `ENTRANCE EXIT A` | ja |
-| `Team` | Kategorie, z. B. `CONTROL`, `CBRN`, `CSI`, `DVI` | optional |
-| `OfficerID` (`ID`/`Nummer`) | Nummer; **leer = automatisch ab 74401** | optional |
-| `Site` | Standort/Einsatzort | optional |
-| `QR` (`URL`) | Eigener QR-Inhalt; **leer = automatisch** | optional |
-
-**2a) Druckidentisch aus dem Original personalisieren:**
+| Modus | Befehl | Ergebnis |
+|-------|--------|----------|
+| **overlay** | `overlay` | Nutzt die **Original-PDF** als Hintergrund, ersetzt nur QR + Name. Druckidentisch. |
+| **generate** | `generate` | Rendert das Booklet aus einer **selbst entworfenen Vorlage** neu. Frei skalierbar. |
 
 ```bash
-python personalize.py overlay teams.xlsx \
+python personalize.py init-excel teams.xlsx          # Excel-Vorlage erzeugen
+
+python personalize.py overlay teams.xlsx \           # druckidentisch
     --original OM_BOOKLET_260209_Booklet_1_74401_74445.pdf \
-    --out booklet_personalisiert.pdf \
-    --qr-base-url https://etaf.example/o
+    --out booklet_personalisiert.pdf --qr-base-url https://etaf.example/o
+
+python personalize.py generate teams.xlsx \          # neu aus eigener Vorlage
+    --out booklet_neu.pdf --qr-base-url https://etaf.example/o
 ```
 
-**2b) Neu aus selbst entworfener Vorlage erzeugen:**
+Excel-Spalten (tolerant erkannt): `Name`, `Bedeutung`/`Rolle`, `Team`,
+`OfficerID` (leer = ab 74401), `Site`, `QR`/`URL`. QR-Inhalt-Priorität:
+Spalte `QR` > `--qr-base-url` + ID > Fallback `Officer ID <id>`.
+
+---
+
+# B) CBRN-Exhibit-Booklet (Massenware mit Referenznummer)
+
+Das CBRN-Booklet trägt eine **eindeutige Referenz** aus Team-Code, Country-Code
+und einer fortlaufenden **Unique Reference Number** (im Master `CBRN 971 0035`).
+Diese Referenz kommt **dutzendfach** vor – als Text, als **QR-Codes** und als
+**Code128-Barcodes**, über fast alle Seiten verteilt. Für eine Auflage von z. B.
+100 Stück muss jede Kopie eine andere Nummer tragen, und **jedes** Vorkommen muss
+korrekt sein, damit es im DVI-Einsatz zu keiner Verwechslung kommt.
+
+### Master analysieren
 
 ```bash
-python personalize.py generate teams.xlsx \
-    --out booklet_neu.pdf \
-    --qr-base-url https://etaf.example/o
+python personalize.py booklet-info ETAF_CBRN_REDZONE_..._MASTER.pdf
 ```
 
-### QR-Inhalt
+```
+Quell-Referenz: 'CBRN 971 0035' (Ref-Breite 4)
+  Bild-Symbole: 11  (QR=5, Barcode=6)
+  Vektor-Symbole: 42 (z.B. Asservaten-Labels)
+```
 
-Priorität: **Spalte `QR`** > **`--qr-base-url` + OfficerID** > Fallback
-`Officer ID <id>` (wie im Original). Mit `--qr-base-url https://etaf.example/o`
-ergibt sich z. B. `https://etaf.example/o/74401` – pro Person eindeutig.
+### 100 Kopien erzeugen (fortlaufend ab 0035)
 
-### Nützliche Optionen
+```bash
+python personalize.py booklet ETAF_CBRN_REDZONE_..._MASTER.pdf \
+    --start 35 --count 100 --out-dir druck/
+```
 
-- `overlay --no-cover` – Titelseite weglassen.
-- `overlay --no-name` – Namensfeld leer lassen (nur QR ersetzen).
-- `generate --logo eigenes_logo.png` – eigenes Logo statt ETAF.
+Ergebnis im Ordner `druck/`:
+
+- **eine kombinierte Druck-PDF** (alle Kopien hintereinander, für die Druckerei) **und**
+- **100 Einzel-PDFs**, gebündelt als **ZIP** (zur Einzelablage/Nachverfolgung).
+
+Das Feld **„Book No: __ of __"** auf der Titelseite wird automatisch als
+„laufende Nr. of Gesamt" gefüllt (`1 of 100`, `2 of 100`, …).
+
+### Weitere Optionen
+
+| Option | Wirkung |
+|--------|---------|
+| `--refs "35,40,100-105"` | Explizite Nummern/Bereiche statt `--start/--count`. |
+| `--skip "50,51,77"` | Bei fortlaufend bestimmte (z. B. vergebene) Nummern auslassen. |
+| `--ref-width 4` | Stellenzahl der Nummer (Standard: wie im Master → 4, mit führenden Nullen). |
+| `--team CBRN` / `--country 971` | Team- bzw. Country-Code überschreiben (Standard: wie Master). |
+| `--only-combined` / `--only-individual` | Nur eine der beiden Ausgabeformen. |
+| `--book-total 100` | Gesamtzahl im „Book No"-Feld festlegen. |
+| `--thorough` | Jede einzelne Symbol-Platzierung prüfen (sonst je Objekt eine – gleich sicher, schneller). |
+| `--no-verify` | Verifikation überspringen (**nicht** für den Druck empfohlen). |
+
+### Wie die Korrektheit garantiert wird
+
+Das Booklet enthält zwei Arten von Symbolen, die **automatisch erkannt** werden:
+
+- **Bild-Symbole** – QR-/Barcode-Bildobjekte, die seitenübergreifend mehrfach
+  platziert sind. Das Bildobjekt wird **einmal** ersetzt; alle Platzierungen
+  aktualisieren sich pixelgenau (Position/Größe/Rotation bleiben erhalten).
+  Zusammengesetzte Label-Kacheln (die nur zufällig einen QR enthalten) werden
+  zuverlässig **ausgeschlossen** und unverändert übernommen.
+- **Vektor-Symbole** – einzeln gezeichnete QR-Codes mit Suffix (Asservaten-Labels
+  `… - 1` … `… - N`). Sie werden zellweise neu erzeugt; das Suffix bleibt erhalten.
+
+Nach jeder Kopie läuft eine **Verifikation**: jedes Symbol wird neu gescannt und
+der Textlayer geprüft. Bleibt **irgendwo** die alte Nummer stehen oder trägt ein
+Symbol die falsche Nummer, **bricht der Lauf sofort mit Fehlermeldung ab** – es
+wird also nie eine fehlerhafte Datei in den Druck gegeben. Titel
+(`CBRN RED ZONE`) und Dokumentcode im Fuß bleiben bewusst unverändert.
 
 ---
 
@@ -97,24 +124,28 @@ ergibt sich z. B. `https://etaf.example/o/74401` – pro Person eindeutig.
 
 ```
 sticker-personalizer/
-├── personalize.py          CLI (init-excel | overlay | generate)
+├── personalize.py          CLI (init-excel | overlay | generate | booklet-info | booklet)
 ├── requirements.txt
 ├── assets/etaf_logo.png    aus dem Original extrahiertes Logo
 ├── examples/
-│   ├── teams_example.xlsx          Beispiel-Tabelle
+│   ├── teams_example.xlsx          Beispiel-Tabelle (Officer-ID)
 │   └── sample_output_generate.pdf  Muster-Ergebnis (generate-Modus)
 └── sticker/
-    ├── config.py           Maße, Farben, Positionen
+    ├── config.py           Maße, Farben, Positionen (Officer-ID)
     ├── qr_util.py          QR-Erzeugung (Vektor/Bild)
+    ├── barcode_util.py     Code128-Barcode-Erzeugung (Bild)
     ├── excel_io.py         Excel lesen + Datenmodell
-    ├── overlay.py          Modus „overlay“
-    └── template.py         Modus „generate“ (eigene Vorlage)
+    ├── overlay.py          Officer-ID-Modus „overlay"
+    ├── template.py         Officer-ID-Modus „generate"
+    └── booklet.py          CBRN-Massenproduktion + 100%-Verifikation
 ```
 
 ## Hinweise
 
-- Die **Original-PDF wird nicht mitgeliefert**; für den `overlay`-Modus den
-  eigenen Pfad via `--original` angeben.
-- Für scharfen Druck werden QR-Codes im `generate`-Modus als **Vektor**
-  gezeichnet, im `overlay`-Modus als hochauflösendes Bild eingesetzt.
-- Die Schrift ist Helvetica-Bold (metrisch nah an Arial-BoldMT des Originals).
+- Die **Master-/Original-PDFs werden nicht mitgeliefert**; jeweils den eigenen
+  Pfad angeben.
+- Verifikation und Symbol-Erkennung nutzen `pyzbar` (benötigt das System-Paket
+  `libzbar0`).
+- Schrift ist Helvetica-Bold (metrisch nah an Arial-BoldMT des Originals);
+  Referenznummern werden auf die Master-Stellenzahl mit führenden Nullen
+  aufgefüllt, damit ersetzte Zahlen exakt sitzen.

@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 booklet_personalisiert.pdf
 booklet_neu.pdf
+druck/

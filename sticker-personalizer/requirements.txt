@@ -1,5 +1,9 @@
-PyMuPDF>=1.24      # PDF lesen/overlay (Modul: fitz)
+PyMuPDF>=1.24      # PDF lesen/overlay/ersetzen (Modul: fitz)
 reportlab>=4.0     # PDF neu rendern (generate-Vorlage)
 qrcode>=7.4        # QR-Code-Erzeugung
-Pillow>=10.0       # Bildverarbeitung (QR-Bild, Logo)
+python-barcode>=0.15  # Code128-Barcodes (CBRN-Exhibit-Booklet)
+pyzbar>=0.1.9      # QR/Barcode dekodieren (100%-Verifikation) – benötigt libzbar0
+Pillow>=10.0       # Bildverarbeitung (QR/Barcode-Bild, Logo)
 openpyxl>=3.1      # Excel (.xlsx) lesen/schreiben
+
+# Systemabhängigkeit für pyzbar (Debian/Ubuntu):  sudo apt-get install -y libzbar0
