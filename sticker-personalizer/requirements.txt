@@ -1,0 +1,5 @@
+PyMuPDF>=1.24      # PDF lesen/overlay (Modul: fitz)
+reportlab>=4.0     # PDF neu rendern (generate-Vorlage)
+qrcode>=7.4        # QR-Code-Erzeugung
+Pillow>=10.0       # Bildverarbeitung (QR-Bild, Logo)
+openpyxl>=3.1      # Excel (.xlsx) lesen/schreiben
