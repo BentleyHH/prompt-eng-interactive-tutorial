@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ETAF Booklet-Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>ETAF&nbsp;Booklet-Dashboard</h1>
+    <div class="legend">
+      <span><i class="dot grau"></i>neu</span>
+      <span><i class="dot orange"></i>läuft</span>
+      <span><i class="dot rot"></i>Fehler</span>
+      <span><i class="dot gruen"></i>sauber</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Linke Spalte: Protokolle -->
+    <section id="left">
+      <div class="panel">
+        <h2>Protokolle</h2>
+        <ul id="protocols" class="protocol-list"></ul>
+        <form id="upload-form" class="upload">
+          <label class="file-btn">
+            <input type="file" id="master-file" accept="application/pdf" hidden>
+            Master-PDF wählen…
+          </label>
+          <input type="text" id="master-name" placeholder="Name (optional)">
+          <button type="submit">Importieren &amp; analysieren</button>
+          <div id="upload-status" class="muted"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Rechte Spalte: Detail -->
+    <section id="right">
+      <div id="empty" class="panel muted">
+        Wähle links ein Protokoll oder importiere ein neues Master-Booklet.
+      </div>
+
+      <div id="detail" class="panel hidden">
+        <div class="detail-head">
+          <h2 id="d-name"></h2>
+          <span id="d-status" class="badge"></span>
+          <button id="d-reanalyze" class="ghost">neu analysieren</button>
+        </div>
+        <div id="d-analysis" class="analysis"></div>
+        <p id="d-error" class="error hidden"></p>
+
+        <div class="grid2">
+          <!-- Produktion -->
+          <div class="card">
+            <h3>Produktion</h3>
+            <div class="tabs">
+              <button class="tab active" data-tab="range">Bereich / Menge</button>
+              <button class="tab" data-tab="excel">Excel-Import</button>
+            </div>
+
+            <div class="tab-body" data-body="range">
+              <div class="row">
+                <label>Country-Code<input id="f-country" placeholder="z.B. 49"></label>
+                <label>Team<input id="f-team" placeholder="z.B. CBRN"></label>
+              </div>
+              <div class="row">
+                <label>Von<input id="f-von" type="number" placeholder="35"></label>
+                <label>Bis<input id="f-bis" type="number" placeholder="134"></label>
+                <label>oder Anzahl<input id="f-anzahl" type="number" placeholder="100"></label>
+              </div>
+              <div class="row">
+                <label>Auslassen<input id="f-skip" placeholder="50,51,77"></label>
+                <label>Modus
+                  <select id="f-mode">
+                    <option value="neu">neu (Doppel überspringen)</option>
+                    <option value="nachdruck">nachdruck (auch vorhandene)</option>
+                  </select>
+                </label>
+              </div>
+              <div class="row actions">
+                <button id="btn-check" class="ghost">Prüfen</button>
+                <button id="btn-produce">Produzieren</button>
+                <label class="chk"><input type="checkbox" id="f-thorough"> gründlich</label>
+              </div>
+              <div id="check-result" class="check hidden"></div>
+            </div>
+
+            <div class="tab-body hidden" data-body="excel">
+              <p class="muted">Vorlage herunterladen, ausfüllen, wieder hochladen.</p>
+              <div class="row actions">
+                <a id="tpl-link" class="ghost btnlike" href="#">Excel-Vorlage herunterladen</a>
+                <label class="file-btn small">
+                  <input type="file" id="orders-file" accept=".xlsx" hidden>
+                  Auftrags-Excel wählen…
+                </label>
+              </div>
+              <div id="orders-preview"></div>
+            </div>
+          </div>
+
+          <!-- Abdeckung / Ledger -->
+          <div class="card">
+            <h3>Bereits produziert <span class="muted" id="cov-country"></span></h3>
+            <div id="coverage" class="coverage muted">—</div>
+            <h4>Verlauf</h4>
+            <ul id="runs" class="runs"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

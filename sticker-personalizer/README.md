@@ -120,6 +120,20 @@ wird also nie eine fehlerhafte Datei in den Druck gegeben. Titel
 
 ---
 
+# C) Dashboard (lokale Web-App)
+
+Für 5–10 wiederkehrende Protokolle gibt es ein **lokales Web-Dashboard**
+(`webapp/`) zum Verwalten, Produzieren und Nachverfolgen – mit Ampel-Status,
+Excel-Import, Doppel-Schutz-Ledger und FTP-tauglicher SQLite-Datenbank.
+
+```bash
+python -m webapp.app        # -> http://127.0.0.1:5000
+```
+
+Details: siehe [`webapp/README.md`](webapp/README.md).
+
+---
+
 ## Projektstruktur
 
 ```
@@ -138,6 +152,14 @@ sticker-personalizer/
     ├── overlay.py          Officer-ID-Modus „overlay"
     ├── template.py         Officer-ID-Modus „generate"
     └── booklet.py          CBRN-Massenproduktion + 100%-Verifikation
+
+webapp/                     lokales Dashboard (Flask + SQLite)
+├── app.py                  Flask-Routen (REST + Seite)
+├── db.py                   SQLite-Schema/Helfer (Protokolle, Läufe, Ledger)
+├── jobs.py                 Hintergrund-Analyse/-Produktion + Doppel-/Lücken-Check
+├── orders.py              Excel-Auftragsvorlage erzeugen/einlesen
+├── templates/index.html    Dashboard-Oberfläche
+└── static/                 app.js + style.css
 ```
 
 ## Hinweise
