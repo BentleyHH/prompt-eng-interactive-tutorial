@@ -26,6 +26,9 @@ liegt **sicher auf dem Server** und ist nie im Browser sichtbar.
   `settings` gespeichert; kein Schema-Update nötig.)
 - **Freisprech-Modus** – nach dem Coach startet automatisch dein Mikro, deine Antwort
   geht automatisch raus. Kommt dem „Telefongespräch"-Gefühl mit reiner Browser-Technik nahe.
+- **Einstellbare Überlegungszeit** – Regler „⏳" im Gespräch: 3 s / 5 s / 10 s / Manuell.
+  Das Mikro bleibt bei Denkpausen offen und der Coach redet NICHT dazwischen, bis deine
+  gewählte Pause verstrichen ist (Manuell = senden erst beim Mikro-Tippen).
 - **Stimme wählbar** – beste verfügbare englische Stimme + Tempo einstellbar
   (Bereich „Fortschritt"). Vorbereitet für späteres Premium-/Realtime-TTS.
 - **Mini-Ziele & Redeanteil** – jedes Szenario hat ein kleines Ziel (mit Erfolg-Feier),

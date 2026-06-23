@@ -4,7 +4,7 @@
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) => (s || '').replace(/[&<>]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
 
-  const state = { convId: null, listening: false, autoSpeak: true, showDe: false, handsFree: false, topics: [], shareUser: 0, shareCoach: 0 };
+  const state = { convId: null, listening: false, autoSpeak: true, showDe: false, handsFree: false, topics: [], shareUser: 0, shareCoach: 0, pauseMs: parseInt(localStorage.getItem('ec_pause') || '5000', 10) };
 
   const READY_HINT = () => Speech.sttSupported ? 'Du bist dran — tippe 🎙️ und sprich' : 'Du bist dran — schreib unten';
   function setOrb(mode, status) {
@@ -184,19 +184,24 @@
     if (!Speech.sttSupported) { toast('Spracheingabe hier nicht verfügbar — bitte tippen.'); return; }
     Speech.stopSpeaking();
     const btn = $('#mic-btn');
-    state.listening = true; btn.classList.add('rec'); setOrb('listening', 'Ich höre zu … 🎧');
+    const manual = state.pauseMs < 0;
+    state.listening = true; btn.classList.add('rec');
+    setOrb('listening', manual ? 'Ich höre zu … tippe das Mikro, wenn du fertig bist.' : 'Ich höre zu … nimm dir ruhig Zeit.');
     Speech.listen({
+      pauseMs: manual ? 0 : state.pauseMs,
+      manual,
       onresult: (final, interim) => { $('#msg-input').value = (final + ' ' + interim).trim(); },
       onerror: () => { state.listening = false; btn.classList.remove('rec'); setOrb(null, READY_HINT()); },
-      onend: (finalText) => {
+      onfinal: (finalText) => {
         state.listening = false; btn.classList.remove('rec'); setOrb(null);
         if (finalText) { $('#msg-input').value = finalText; sendMessage(); }
-        else if (state.handsFree) setOrb(null, 'Ich habe nichts gehört — tippe 🎙️, wenn du bereit bist.');
+        else if (state.handsFree) setOrb(null, 'Sag etwas, sobald du bereit bist …');
       },
     });
   }
+  // Mikro tippen: läuft -> jetzt absenden; sonst -> Zuhören starten.
   function toggleMic() {
-    if (state.listening) { Speech.stopListening(); return; }
+    if (state.listening) { Speech.finalizeNow(); return; }
     startListening();
   }
 
@@ -401,6 +406,13 @@
       state.handsFree = e.target.checked;
       if (state.handsFree) { toast('Freisprech an — nach dem Coach höre ich automatisch zu.'); if (state.convId && !state.listening) setOrb(null, 'Sag etwas, sobald du bereit bist …'); }
       else { Speech.stopListening(); }
+    };
+    const pauseSel = $('#pause-select');
+    pauseSel.value = String(state.pauseMs);
+    pauseSel.onchange = e => {
+      state.pauseMs = parseInt(e.target.value, 10);
+      localStorage.setItem('ec_pause', String(state.pauseMs));
+      toast(state.pauseMs < 0 ? 'Manuell: du tippst das Mikro zum Senden.' : `Überlegungszeit: ${state.pauseMs / 1000}s.`);
     };
 
     // Profil & Stimme

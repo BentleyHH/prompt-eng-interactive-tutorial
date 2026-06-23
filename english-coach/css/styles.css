@@ -139,6 +139,7 @@ svg{display:block}
 .composer-tools{display:flex;gap:1.1rem;align-items:center;padding:.6rem .3rem;flex-wrap:wrap}
 .switch{font-size:.82rem;color:var(--muted);display:inline-flex;gap:.4rem;align-items:center;cursor:pointer;font-weight:600}
 .switch input{accent-color:var(--accent)}
+.composer-tools select{background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:9px;padding:.2rem .4rem;font-size:.8rem;font-weight:600}
 
 /* Segmented */
 .seg{display:flex;background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:.25rem;margin-bottom:1.2rem}

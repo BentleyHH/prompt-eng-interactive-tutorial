@@ -144,6 +144,7 @@ svg{display:block}
 .composer-tools{display:flex;gap:1.1rem;align-items:center;padding:.6rem .3rem;flex-wrap:wrap}
 .switch{font-size:.82rem;color:var(--muted);display:inline-flex;gap:.4rem;align-items:center;cursor:pointer;font-weight:600}
 .switch input{accent-color:var(--accent)}
+.composer-tools select{background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:9px;padding:.2rem .4rem;font-size:.8rem;font-weight:600}
 
 /* Segmented */
 .seg{display:flex;background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:.25rem;margin-bottom:1.2rem}
@@ -253,6 +254,14 @@ svg{display:block}
               <label class="switch"><input type="checkbox" id="auto-speak" checked /> Vorlesen</label>
               <label class="switch"><input type="checkbox" id="hands-free" /> Freisprech</label>
               <label class="switch"><input type="checkbox" id="show-de" /> Deutsch</label>
+              <label class="switch" title="Wie lange das Mikro auf dich wartet, bevor abgeschickt wird">⏳
+                <select id="pause-select">
+                  <option value="3000">3 s</option>
+                  <option value="5000">5 s</option>
+                  <option value="10000">10 s</option>
+                  <option value="-1">Manuell</option>
+                </select>
+              </label>
               <button id="end-conv" class="link">Beenden</button>
             </div>
           </div>
@@ -432,32 +441,67 @@ const Speech = (() => {
   function stopAudio() { if (curAudio) { try { curAudio.pause(); } catch (_) {} curAudio = null; } }
   function stopSpeaking() { if ('speechSynthesis' in window) speechSynthesis.cancel(); stopAudio(); }
 
-  // --- STT ---
+  // --- STT mit einstellbarer Überlegungszeit ---
+  // Das Mikro bleibt offen und bricht bei Denkpausen NICHT ab. Es wird erst
+  // gesendet, wenn nach gesprochenem Text die gewählte Pause verstrichen ist
+  // (oder im Manuell-Modus, wenn finalizeNow() aufgerufen wird).
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const sttSupported = !!SR;
-  let recog = null;
+  let session = null;
 
-  function listen({ onresult, onend, onerror } = {}) {
-    if (!SR) { onerror && onerror(new Error('Spracherkennung wird hier nicht unterstützt.')); return null; }
-    recog = new SR();
-    recog.lang = 'en-US';
-    recog.interimResults = true;
-    recog.continuous = false;
+  function listen({ pauseMs = 5000, manual = false, onresult, onfinal, onerror } = {}) {
+    if (!SR) { onerror && onerror(new Error('Spracherkennung wird hier nicht unterstützt.')); onfinal && onfinal(''); return null; }
     let finalText = '';
-    recog.onresult = (e) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalText += t; else interim += t;
-      }
-      onresult && onresult(finalText, interim);
+    let stopped = false;
+    let silence = null;
+    let r = null;
+
+    const clearSilence = () => { if (silence) { clearTimeout(silence); silence = null; } };
+    const armSilence = () => {
+      if (manual) return;                 // Manuell: nie automatisch senden
+      clearSilence();
+      if (!finalText.trim()) return;      // noch nichts gesagt -> weiter warten
+      silence = setTimeout(finish, pauseMs);
     };
-    recog.onerror = (e) => onerror && onerror(e);
-    recog.onend = () => onend && onend(finalText.trim());
-    try { recog.start(); } catch (_) {}
-    return recog;
+    function finish() {
+      if (stopped) return;
+      stopped = true; clearSilence();
+      try { r && r.stop(); } catch (_) {}
+      onfinal && onfinal(finalText.trim());
+    }
+    function startOnce() {
+      r = new SR();
+      r.lang = 'en-US'; r.interimResults = true; r.continuous = true;
+      r.onresult = (e) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) finalText += t + ' '; else interim += t;
+        }
+        onresult && onresult(finalText.trim(), interim.trim());
+        armSilence();
+      };
+      r.onerror = (e) => {
+        const err = e && e.error;
+        if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'aborted') {
+          stopped = true; clearSilence(); onerror && onerror(e); onfinal && onfinal(finalText.trim());
+        }
+        // 'no-speech'/'audio-capture' u. Ä. -> onend startet neu
+      };
+      r.onend = () => {
+        if (stopped) return;
+        // Browser hat selbst beendet -> Mikro offen halten, neu starten.
+        try { r.start(); } catch (_) { setTimeout(() => { if (!stopped) try { startOnce(); } catch (_) {} }, 250); }
+      };
+      try { r.start(); } catch (_) {}
+    }
+
+    session = { stop: () => { stopped = true; clearSilence(); try { r && r.stop(); } catch (_) {} }, finalizeNow: finish };
+    startOnce();
+    return session;
   }
-  function stopListening() { if (recog) try { recog.stop(); } catch (_) {} }
+  function stopListening() { if (session) session.stop(); }
+  function finalizeNow() { if (session) session.finalizeNow(); }
 
   // --- Wake Lock ---
   async function keepAwake() {
@@ -469,7 +513,7 @@ const Speech = (() => {
   });
 
   return {
-    speak, stopSpeaking, listen, stopListening, keepAwake, releaseAwake,
+    speak, stopSpeaking, listen, stopListening, finalizeNow, keepAwake, releaseAwake,
     listVoices, useVoice, setRate, getRate, currentVoiceURI,
     setPremiumInfo, usePremium, setPremiumVoice, premiumState,
     sttSupported, ttsSupported: 'speechSynthesis' in window,
@@ -678,7 +722,7 @@ const API = (() => {
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) => (s || '').replace(/[&<>]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
 
-  const state = { convId: null, listening: false, autoSpeak: true, showDe: false, handsFree: false, topics: [], shareUser: 0, shareCoach: 0 };
+  const state = { convId: null, listening: false, autoSpeak: true, showDe: false, handsFree: false, topics: [], shareUser: 0, shareCoach: 0, pauseMs: parseInt(localStorage.getItem('ec_pause') || '5000', 10) };
 
   const READY_HINT = () => Speech.sttSupported ? 'Du bist dran — tippe 🎙️ und sprich' : 'Du bist dran — schreib unten';
   function setOrb(mode, status) {
@@ -858,19 +902,24 @@ const API = (() => {
     if (!Speech.sttSupported) { toast('Spracheingabe hier nicht verfügbar — bitte tippen.'); return; }
     Speech.stopSpeaking();
     const btn = $('#mic-btn');
-    state.listening = true; btn.classList.add('rec'); setOrb('listening', 'Ich höre zu … 🎧');
+    const manual = state.pauseMs < 0;
+    state.listening = true; btn.classList.add('rec');
+    setOrb('listening', manual ? 'Ich höre zu … tippe das Mikro, wenn du fertig bist.' : 'Ich höre zu … nimm dir ruhig Zeit.');
     Speech.listen({
+      pauseMs: manual ? 0 : state.pauseMs,
+      manual,
       onresult: (final, interim) => { $('#msg-input').value = (final + ' ' + interim).trim(); },
       onerror: () => { state.listening = false; btn.classList.remove('rec'); setOrb(null, READY_HINT()); },
-      onend: (finalText) => {
+      onfinal: (finalText) => {
         state.listening = false; btn.classList.remove('rec'); setOrb(null);
         if (finalText) { $('#msg-input').value = finalText; sendMessage(); }
-        else if (state.handsFree) setOrb(null, 'Ich habe nichts gehört — tippe 🎙️, wenn du bereit bist.');
+        else if (state.handsFree) setOrb(null, 'Sag etwas, sobald du bereit bist …');
       },
     });
   }
+  // Mikro tippen: läuft -> jetzt absenden; sonst -> Zuhören starten.
   function toggleMic() {
-    if (state.listening) { Speech.stopListening(); return; }
+    if (state.listening) { Speech.finalizeNow(); return; }
     startListening();
   }
 
@@ -1075,6 +1124,13 @@ const API = (() => {
       state.handsFree = e.target.checked;
       if (state.handsFree) { toast('Freisprech an — nach dem Coach höre ich automatisch zu.'); if (state.convId && !state.listening) setOrb(null, 'Sag etwas, sobald du bereit bist …'); }
       else { Speech.stopListening(); }
+    };
+    const pauseSel = $('#pause-select');
+    pauseSel.value = String(state.pauseMs);
+    pauseSel.onchange = e => {
+      state.pauseMs = parseInt(e.target.value, 10);
+      localStorage.setItem('ec_pause', String(state.pauseMs));
+      toast(state.pauseMs < 0 ? 'Manuell: du tippst das Mikro zum Senden.' : `Überlegungszeit: ${state.pauseMs / 1000}s.`);
     };
 
     // Profil & Stimme

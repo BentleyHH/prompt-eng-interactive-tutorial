@@ -73,6 +73,14 @@
               <label class="switch"><input type="checkbox" id="auto-speak" checked /> Vorlesen</label>
               <label class="switch"><input type="checkbox" id="hands-free" /> Freisprech</label>
               <label class="switch"><input type="checkbox" id="show-de" /> Deutsch</label>
+              <label class="switch" title="Wie lange das Mikro auf dich wartet, bevor abgeschickt wird">⏳
+                <select id="pause-select">
+                  <option value="3000">3 s</option>
+                  <option value="5000">5 s</option>
+                  <option value="10000">10 s</option>
+                  <option value="-1">Manuell</option>
+                </select>
+              </label>
               <button id="end-conv" class="link">Beenden</button>
             </div>
           </div>

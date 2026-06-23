@@ -88,32 +88,67 @@ const Speech = (() => {
   function stopAudio() { if (curAudio) { try { curAudio.pause(); } catch (_) {} curAudio = null; } }
   function stopSpeaking() { if ('speechSynthesis' in window) speechSynthesis.cancel(); stopAudio(); }
 
-  // --- STT ---
+  // --- STT mit einstellbarer Überlegungszeit ---
+  // Das Mikro bleibt offen und bricht bei Denkpausen NICHT ab. Es wird erst
+  // gesendet, wenn nach gesprochenem Text die gewählte Pause verstrichen ist
+  // (oder im Manuell-Modus, wenn finalizeNow() aufgerufen wird).
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const sttSupported = !!SR;
-  let recog = null;
+  let session = null;
 
-  function listen({ onresult, onend, onerror } = {}) {
-    if (!SR) { onerror && onerror(new Error('Spracherkennung wird hier nicht unterstützt.')); return null; }
-    recog = new SR();
-    recog.lang = 'en-US';
-    recog.interimResults = true;
-    recog.continuous = false;
+  function listen({ pauseMs = 5000, manual = false, onresult, onfinal, onerror } = {}) {
+    if (!SR) { onerror && onerror(new Error('Spracherkennung wird hier nicht unterstützt.')); onfinal && onfinal(''); return null; }
     let finalText = '';
-    recog.onresult = (e) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalText += t; else interim += t;
-      }
-      onresult && onresult(finalText, interim);
+    let stopped = false;
+    let silence = null;
+    let r = null;
+
+    const clearSilence = () => { if (silence) { clearTimeout(silence); silence = null; } };
+    const armSilence = () => {
+      if (manual) return;                 // Manuell: nie automatisch senden
+      clearSilence();
+      if (!finalText.trim()) return;      // noch nichts gesagt -> weiter warten
+      silence = setTimeout(finish, pauseMs);
     };
-    recog.onerror = (e) => onerror && onerror(e);
-    recog.onend = () => onend && onend(finalText.trim());
-    try { recog.start(); } catch (_) {}
-    return recog;
+    function finish() {
+      if (stopped) return;
+      stopped = true; clearSilence();
+      try { r && r.stop(); } catch (_) {}
+      onfinal && onfinal(finalText.trim());
+    }
+    function startOnce() {
+      r = new SR();
+      r.lang = 'en-US'; r.interimResults = true; r.continuous = true;
+      r.onresult = (e) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) finalText += t + ' '; else interim += t;
+        }
+        onresult && onresult(finalText.trim(), interim.trim());
+        armSilence();
+      };
+      r.onerror = (e) => {
+        const err = e && e.error;
+        if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'aborted') {
+          stopped = true; clearSilence(); onerror && onerror(e); onfinal && onfinal(finalText.trim());
+        }
+        // 'no-speech'/'audio-capture' u. Ä. -> onend startet neu
+      };
+      r.onend = () => {
+        if (stopped) return;
+        // Browser hat selbst beendet -> Mikro offen halten, neu starten.
+        try { r.start(); } catch (_) { setTimeout(() => { if (!stopped) try { startOnce(); } catch (_) {} }, 250); }
+      };
+      try { r.start(); } catch (_) {}
+    }
+
+    session = { stop: () => { stopped = true; clearSilence(); try { r && r.stop(); } catch (_) {} }, finalizeNow: finish };
+    startOnce();
+    return session;
   }
-  function stopListening() { if (recog) try { recog.stop(); } catch (_) {} }
+  function stopListening() { if (session) session.stop(); }
+  function finalizeNow() { if (session) session.finalizeNow(); }
 
   // --- Wake Lock ---
   async function keepAwake() {
@@ -125,7 +160,7 @@ const Speech = (() => {
   });
 
   return {
-    speak, stopSpeaking, listen, stopListening, keepAwake, releaseAwake,
+    speak, stopSpeaking, listen, stopListening, finalizeNow, keepAwake, releaseAwake,
     listVoices, useVoice, setRate, getRate, currentVoiceURI,
     setPremiumInfo, usePremium, setPremiumVoice, premiumState,
     sttSupported, ttsSupported: 'speechSynthesis' in window,
