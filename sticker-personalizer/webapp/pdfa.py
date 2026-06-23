@@ -7,6 +7,7 @@ nicht installiert, wird eine klare Fehlermeldung geliefert.
 
 from __future__ import annotations
 
+import concurrent.futures as _cf
 import shutil
 import subprocess
 from pathlib import Path
@@ -40,6 +41,36 @@ def to_pdfa(src: str | Path, dst: str | Path) -> Path:
         raise RuntimeError(f"Ghostscript-Fehler bei PDF/A: {res.stderr.strip()[-400:]}")
     _verify_symbols_preserved(src, dst)
     return Path(dst)
+
+
+def _convert_one(pair):
+    """Worker für die Parallel-Konvertierung (modulweit für ProcessPool)."""
+    src, dst = pair
+    try:
+        to_pdfa(src, dst)
+        return (src, str(dst), None)
+    except Exception as e:  # noqa: BLE001
+        return (src, None, str(e))
+
+
+def to_pdfa_many(pairs: list[tuple], workers: int = 4, on_progress=None) -> list[tuple]:
+    """Konvertiere mehrere PDFs parallel zu PDF/A. ``pairs`` = Liste (src, dst).
+    Liefert je Eintrag (src, dst_or_None, error_or_None)."""
+    results = []
+    workers = max(1, int(workers))
+    if workers == 1:
+        for i, pr in enumerate(pairs, 1):
+            results.append(_convert_one(pr))
+            if on_progress:
+                on_progress(i, len(pairs))
+    else:
+        with _cf.ProcessPoolExecutor(max_workers=workers) as ex:
+            futures = [ex.submit(_convert_one, pr) for pr in pairs]
+            for i, fut in enumerate(_cf.as_completed(futures), 1):
+                results.append(fut.result())
+                if on_progress:
+                    on_progress(i, len(pairs))
+    return results
 
 
 def _decoded(path, page_index, zoom=8) -> set:

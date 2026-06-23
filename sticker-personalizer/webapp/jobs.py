@@ -153,15 +153,14 @@ def produce_run(rid: int, refs: list[str], *, team=None, country=None,
                      f"{p['name']} {country} {refs[0]}–{refs[-1]} ({len(refs)} St., "
                      f"{len(reprints)} Nachdruck)")
 
-        # PDF/A-Archivkopie (optional)
-        if make_pdfa and res.get("combined"):
+        # PDF/A-Archivkopien (optional) – pro Booklet, parallel, als ZIP
+        if make_pdfa:
             try:
-                dst = out_dir / (res["combined"].stem + "__PDFA.pdf")
-                pdfa.to_pdfa(res["combined"], dst)
-                db.set_run_file(rid, pdfa_path=dst)
-                db.log_audit(username, "pdfa", f"Lauf #{rid} PDF/A erstellt")
+                make_pdfa_bundle(rid, p, username, workers=workers,
+                                 individual_paths=res.get("individual"))
             except Exception as e:  # noqa: BLE001
                 db.set_run_file(rid, ftp_status=f"PDF/A fehlgeschlagen: {e}")
+                db.log_audit(username, "pdfa-fehler", f"Lauf #{rid}: {e}")
 
         # FTP-Upload (optional)
         if ftp_after:
@@ -169,6 +168,48 @@ def produce_run(rid: int, refs: list[str], *, team=None, country=None,
     except Exception as e:  # noqa: BLE001
         db.finish_run(rid, "fehler", error=f"{e}")
         db.log_audit(username, "fehler", f"Lauf #{rid}: {e}")
+
+
+def make_pdfa_bundle(rid, protocol, username, workers=4, individual_paths=None) -> Path:
+    """Erzeuge je Booklet eine PDF/A-Archivkopie (parallel) und bündle sie als ZIP.
+
+    Skaliert deutlich besser als eine einzige riesige PDF/A: viele kleine
+    32-Seiten-Konvertierungen laufen gleichzeitig statt einer langen seriellen.
+    """
+    import zipfile
+
+    out_dir = db.OUTPUT_DIR / f"run_{rid}"
+    if individual_paths:
+        inds = [Path(x) for x in individual_paths]
+    else:  # für den manuellen Knopf: Einzel-PDFs im Lauf-Ordner finden
+        inds = sorted(x for x in out_dir.glob("*.pdf")
+                      if "__DRUCK_" not in x.name and "__PDFA" not in x.name)
+    if not inds:
+        raise RuntimeError("Keine Einzel-PDFs für die PDF/A-Erzeugung gefunden.")
+
+    pairs = [(str(x), str(out_dir / (x.stem + "__PDFA.pdf"))) for x in inds]
+    results = pdfa.to_pdfa_many(pairs, workers=max(1, int(workers)))
+    made = [r[1] for r in results if r[1]]
+    errors = [(r[0], r[2]) for r in results if r[2]]
+    if not made:
+        raise RuntimeError(
+            f"alle {len(errors)} PDF/A-Konvertierungen fehlgeschlagen: "
+            f"{errors[0][1] if errors else ''}")
+
+    zpath = out_dir / f"{protocol['slug']}__PDFA_x{len(made)}.zip"
+    with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in made:
+            z.write(f, Path(f).name)
+    for f in made:                       # Einzel-PDF/A nach dem Zippen entfernen
+        Path(f).unlink(missing_ok=True)
+
+    db.set_run_file(rid, pdfa_path=zpath)
+    msg = f"Lauf #{rid}: {len(made)} PDF/A erstellt"
+    if errors:
+        msg += f", {len(errors)} fehlgeschlagen"
+        db.set_run_file(rid, ftp_status=f"PDF/A: {len(errors)} fehlgeschlagen")
+    db.log_audit(username, "pdfa", msg)
+    return zpath
 
 
 def _ftp_upload_run(rid, protocol, username) -> None:

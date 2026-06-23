@@ -274,14 +274,13 @@ def api_run_download(rid, which):
 @app.post("/api/runs/<int:rid>/pdfa")
 def api_run_pdfa(rid):
     r = db.get_run(rid)
-    if not r or not r.get("combined_path"):
+    if not r:
         abort(404)
+    p = db.get_protocol(r["protocol_id"])
     try:
-        dst = Path(r["combined_path"]).with_name(Path(r["combined_path"]).stem + "__PDFA.pdf")
-        pdfa.to_pdfa(r["combined_path"], dst)
-        db.set_run_file(rid, pdfa_path=dst)
-        db.log_audit(_user(), "pdfa", f"Lauf #{rid}")
-        return jsonify({"ok": True, "pdfa": dst.name})
+        workers = request.args.get("workers", default=4, type=int)
+        zpath = jobs.make_pdfa_bundle(rid, p, _user(), workers=workers)
+        return jsonify({"ok": True, "pdfa": Path(zpath).name})
     except Exception as e:  # noqa: BLE001
         abort(400, str(e))
 

@@ -84,7 +84,7 @@ function renderRuns(runs) {
     if (r.status === "sauber") {
       if (r.combined_path) dl += `<a href="/api/runs/${r.id}/download/combined">Druck-PDF</a>`;
       if (r.zip_path) dl += `<a href="/api/runs/${r.id}/download/zip">ZIP</a>`;
-      if (r.pdfa_path) dl += `<a href="/api/runs/${r.id}/download/pdfa">PDF/A</a>`;
+      if (r.pdfa_path) dl += `<a href="/api/runs/${r.id}/download/pdfa">PDF/A-ZIP</a>`;
       else dl += `<a href="#" data-pdfa="${r.id}">PDF/A erstellen</a>`;
       dl += `<a href="#" data-ftp="${r.id}">FTP-Upload</a>`;
       if (r.ftp_status) dl += `<span class="muted"> · ${escapeHtml(r.ftp_status)}</span>`;
@@ -339,3 +339,6 @@ $("#f-country").addEventListener("change", refreshDetail);
 // Start
 loadProtocols();
 setInterval(loadProtocols, 5000);
+// Lauf-Liste regelmäßig aktualisieren, damit PDF/A-/FTP-Ergebnisse (die nach
+// dem grünen Lauf im Hintergrund entstehen) ohne Neuauswahl erscheinen.
+setInterval(() => { if (selectedId && modal.classList.contains("hidden")) refreshDetailRunsOnly(); }, 5000);
