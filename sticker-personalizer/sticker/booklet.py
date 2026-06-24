@@ -498,41 +498,28 @@ def build_copy(master_path: str | Path, plan: MasterPlan, dst: Reference,
     """Erzeuge eine personalisierte Kopie (als offenes ``fitz.Document``)."""
     doc = fitz.open(master_path)
 
-    # 1) Bild-Symbole ersetzen. Zweistufig, damit das Ergebnis sowohl
-    #    druckkorrekt als auch PDF/A-tauglich ist:
-    #    (a) replace_image: tauscht die Pixel des geteilten XObjects –
-    #        löscht die alte Nummer überall (auch in den Bytes).
-    #    (b) insert_image-Overlay je Platzierung: legt das neue Symbol als
-    #        sauberes, opakes Bild oben drauf. Anders als ein per replace_image
-    #        ersetztes Bild übersteht ein eingefügtes Bild die PDF/A-Konvertierung
-    #        (Ghostscript verwirft sonst die ersetzten Objekte). Identische
-    #        Symbole werden über ihren xref wiederverwendet (kein Aufblähen).
+    # Reihenfolge ist wichtig:
+    #   1) replace_image scrubbt die Pixel jedes geteilten XObjects (löscht die
+    #      alte Nummer auch in den Bytes – nötig für PDF/A).
+    #   2) Text-/Vektor-QR-Redaktion (apply_redactions) entfernt die alte Nummer
+    #      sauber aus dem Textlayer.
+    #   3) ERST DANACH werden die frischen Symbol-Bilder als opakes Overlay
+    #      eingesetzt. apply_redactions bereinigt den Seiteninhalt und würde ein
+    #      vorher eingesetztes Overlay sonst beschädigen (führte zu unlesbaren
+    #      "Geister"-QR-Codes auf manchen Seiten).
+
+    # 1) replace_image: Pixel der geteilten Symbol-XObjects austauschen
     done = set()
-    overlay_xref: dict[tuple, int] = {}
     for sym in plan.image_symbols:
+        if sym.xref in done:
+            continue
+        done.add(sym.xref)
         new_str = _symbol_payload(sym, plan.src, dst)
-        if sym.xref not in done:
-            done.add(sym.xref)
-            if sym.kind == "QRCODE":
-                base = qr_util.make_image(new_str, box_pixels=600)
-            else:
-                base = barcode_util.make_image_for_box(new_str, sym.aspect)
-            doc[sym.page].replace_image(sym.xref, stream=_png_bytes(base))
-        for pi, bbox in sym.placements:
-            rect = fitz.Rect(bbox)
-            rotated = sym.kind == "CODE128" and rect.height > rect.width
-            key = (sym.kind, new_str, rotated)
-            if key in overlay_xref:
-                doc[pi].insert_image(rect, xref=overlay_xref[key], keep_proportion=False)
-            else:
-                if sym.kind == "QRCODE":
-                    img = qr_util.make_image(new_str, box_pixels=600)
-                else:
-                    img = barcode_util.make_image_for_box(new_str, sym.aspect)
-                    if rotated:
-                        img = img.rotate(-90, expand=True)
-                overlay_xref[key] = doc[pi].insert_image(
-                    rect, stream=_png_bytes(img), keep_proportion=False)
+        if sym.kind == "QRCODE":
+            base = qr_util.make_image(new_str, box_pixels=600)
+        else:
+            base = barcode_util.make_image_for_box(new_str, sym.aspect)
+        doc[sym.page].replace_image(sym.xref, stream=_png_bytes(base))
 
     # 2) je Seite: Text + Vektor-QRs (Redaktion, danach Neuzeichnen)
     vec_by_page: dict[int, list[VectorSymbol]] = {}
@@ -569,7 +556,31 @@ def build_copy(master_path: str | Path, plan: MasterPlan, dst: Reference,
             page.insert_image(r, stream=_png_bytes(qr_util.make_image(new_str, box_pixels=400)),
                               keep_proportion=False)
 
-    # 3) "Book No: __ of __" auf der Titelseite füllen
+    # 3) Symbol-Overlays je Platzierung – NACH der Redaktion. Untergrund (das
+    #    per replace_image getauschte Bild) erst weiß abdecken, dann das frische
+    #    Symbol opak darüberlegen. Identische Bilder werden per ``stream``
+    #    eingesetzt (PyMuPDF dedupliziert gleiche Streams – kein Aufblähen).
+    overlay_png: dict[tuple, bytes] = {}
+    for sym in plan.image_symbols:
+        new_str = _symbol_payload(sym, plan.src, dst)
+        for pi, bbox in sym.placements:
+            rect = fitz.Rect(bbox)
+            rotated = sym.kind == "CODE128" and rect.height > rect.width
+            doc[pi].draw_rect(rect + (-1, -1, 1, 1), color=None, fill=(1, 1, 1))
+            key = (sym.kind, new_str, rotated)
+            png = overlay_png.get(key)
+            if png is None:
+                if sym.kind == "QRCODE":
+                    img = qr_util.make_image(new_str, box_pixels=600)
+                else:
+                    img = barcode_util.make_image_for_box(new_str, sym.aspect)
+                    if rotated:
+                        img = img.rotate(-90, expand=True)
+                png = _png_bytes(img)
+                overlay_png[key] = png
+            doc[pi].insert_image(rect, stream=png, keep_proportion=False)
+
+    # 4) "Book No: __ of __" auf der Titelseite füllen
     if book_index is not None:
         _fill_book_no(doc[0], book_index, book_total)
 
