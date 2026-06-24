@@ -195,14 +195,17 @@ _REF_TEXT_RE = re.compile(r"\b([A-Z]{2,6})\s+(\d{2,4})\s+(\d{2,6})\b")
 
 
 def _detect_reference_text(doc) -> "Reference | None":
-    """Bestimme die Quell-Referenz aus dem **größten** sichtbaren Referenz-Feld
-    (dem Nummern-Kasten auf dem Cover). Bei gleicher Schriftgröße entscheidet die
-    Häufigkeit. So wird die Referenz erkannt, die das Booklet tatsächlich trägt –
-    unabhängig davon, was ein (evtl. abweichender) Barcode kodiert."""
+    """Bestimme die Quell-Referenz aus dem sichtbaren Text. Maßgeblich ist, auf
+    wie vielen **verschiedenen Seiten** eine Referenz vorkommt (die echte
+    Booklet-Referenz durchzieht das ganze Heft), dann Häufigkeit, dann
+    Schriftgröße. So gewinnt z.B. ``CBRN 971 0035`` (auf vielen Seiten) gegen
+    ein seltenes, groß gesetztes ``CBRN PM 971 0035`` auf einer Einzelseite und
+    gegen eine lokal gehäufte Querverweis-Liste (``AM 971 7408`` auf 2 Seiten)."""
     from collections import Counter
     counts: Counter = Counter()
     sizes: dict = {}
-    for page in doc:
+    page_set: dict = {}
+    for i, page in enumerate(doc):
         for b in page.get_text("dict")["blocks"]:
             if b["type"] != 0:
                 continue
@@ -213,9 +216,11 @@ def _detect_reference_text(doc) -> "Reference | None":
                     g = m.groups()
                     counts[g] += 1
                     sizes[g] = max(sizes.get(g, 0.0), sz)
+                    page_set.setdefault(g, set()).add(i)
     if not counts:
         return None
-    team, country, ref = max(counts, key=lambda g: (sizes[g], counts[g]))
+    team, country, ref = max(
+        counts, key=lambda g: (len(page_set[g]), counts[g], sizes[g]))
     return Reference(team, country, ref)
 
 
