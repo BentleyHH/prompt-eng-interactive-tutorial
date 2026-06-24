@@ -42,6 +42,10 @@ from . import barcode_util, qr_util, symbols
 INK = (35 / 255, 31 / 255, 32 / 255)   # #231F20  Schriftfarbe der Referenzfelder
 FONT_BOLD = "hebo"                       # Helvetica-Bold (eingebauter ReportLab/MuPDF-Font)
 
+# Schreibrichtung einer Textzeile (PyMuPDF 'dir') -> insert_text rotate-Winkel,
+# damit gedrehte (hochkant gesetzte) Referenznummern wieder hochkant erscheinen.
+_DIR_ROTATE = {(1, 0): 0, (0, -1): 90, (-1, 0): 180, (0, 1): 270}
+
 
 # ---------------------------------------------------------------------------
 # Datenmodell
@@ -392,17 +396,19 @@ def build_copy(master_path: str | Path, plan: MasterPlan, dst: Reference,
         vec_by_page.setdefault(v.page, []).append(v)
 
     for i, page in enumerate(doc):
-        text_ops = []   # (origin, new_text, size)
-        # 2a) Referenz-Textfelder einsammeln
+        text_ops = []   # (origin, new_text, size, rotate)
+        # 2a) Referenz-Textfelder einsammeln (inkl. Schreibrichtung/Drehung)
         for b in page.get_text("dict")["blocks"]:
             if b["type"] != 0:
                 continue
             for l in b["lines"]:
+                rot = _DIR_ROTATE.get((round(l.get("dir", (1, 0))[0]),
+                                       round(l.get("dir", (1, 0))[1])), 0)
                 for s in l["spans"]:
                     new = transform_text(s["text"], plan.src, dst)
                     if new != s["text"]:
                         page.add_redact_annot(fitz.Rect(s["bbox"]), fill=(1, 1, 1))
-                        text_ops.append((s["origin"], new, s["size"]))
+                        text_ops.append((s["origin"], new, s["size"], rot))
         # 2b) Vektor-QR-Zellen zum Entfernen markieren
         qr_ops = []
         for v in vec_by_page.get(i, []):
@@ -411,8 +417,9 @@ def build_copy(master_path: str | Path, plan: MasterPlan, dst: Reference,
 
         if text_ops or qr_ops:
             page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
-        for origin, new, size in text_ops:
-            page.insert_text(origin, new, fontname=FONT_BOLD, fontsize=size, color=INK)
+        for origin, new, size, rot in text_ops:
+            page.insert_text(origin, new, fontname=FONT_BOLD, fontsize=size,
+                             color=INK, rotate=rot)
         for bbox, new_str in qr_ops:
             r = fitz.Rect(bbox)
             page.insert_image(r, stream=_png_bytes(qr_util.make_image(new_str, box_pixels=400)),
