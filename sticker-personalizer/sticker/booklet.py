@@ -225,23 +225,12 @@ def _detect_reference_text(doc) -> "Reference | None":
 
 
 def _symbol_payload(sym: "ImageSymbol", src: "Reference", dst: "Reference") -> str:
-    """Neuer Inhalt eines Bild-Symbols in der Ziel-Kopie.
+    """Neuer Inhalt eines Bild-Symbols in der Ziel-Kopie: **immer** exakt die
+    sichtbare Booklet-Referenz ``dst.base()`` (z.B. ``PM 49 0042``).
 
-    * **Referenz-Symbole** (Barcode bzw. Referenz-QR) erhalten *exakt* die
-      sichtbare Booklet-Referenz ``dst.base()``. Damit stimmen Barcode und
-      Aufdruck garantiert überein – selbst dann, wenn der Master-Barcode einen
-      abweichenden Team-Code trug (z.B. ``PM`` statt ``EX``); diese Inkonsistenz
-      wird so automatisch korrigiert.
-    * **Statische/URL-QR-Codes** (z.B. ``http://www.dvi-systems.com``) tragen die
-      eindeutige Referenz als Parameter mit, behalten aber ihre Basis-URL.
-    """
-    s = sym.master_string.strip()
-    if sym.kind == "QRCODE" and not _REF_RE.match(s):
-        ref = f"{dst.team}-{dst.country}-{dst.ref}"
-        if s.lower().startswith(("http://", "https://")):
-            sep = "&" if "?" in s else "?"
-            return f"{s}{sep}ref={ref}"
-        return dst.base()
+    Damit tragen **Barcode UND QR-Code** dieselbe eindeutige Nummer wie der
+    Aufdruck – keine URL, kein Zusatz. Das korrigiert auch Master, deren
+    Barcode einen abweichenden Team-Code trug (z.B. ``PM`` statt ``EX``)."""
     return dst.base()
 
 
@@ -321,8 +310,8 @@ def analyze_master(pdf_path: str | Path) -> MasterPlan:
         if any(s.kind == "QRCODE" and not _REF_RE.match(s.master_string.strip())
                for s in image_symbols):
             notes.append(
-                "QR-Codes tragen künftig die eindeutige Referenz mit "
-                "(Basis-URL bleibt erhalten).")
+                "QR-Codes tragen jetzt die eindeutige Referenznummer "
+                "(z.B. PM 49 0042), keine URL mehr.")
 
         return MasterPlan(src=src, ref_width=len(src.ref),
                           image_symbols=image_symbols, vector_symbols=vector_symbols,
@@ -492,6 +481,74 @@ def _which_band(bands, v):
 # ---------------------------------------------------------------------------
 # Eine Kopie erzeugen
 # ---------------------------------------------------------------------------
+def _rect_area(r) -> float:
+    return abs(r.width) * abs(r.height)
+
+
+def _white_boxes(page) -> list:
+    """Weiße/sehr helle gefüllte Rechtecke der Seite – die Referenz-Felder, in
+    die eine neue Nummer mittig eingepasst wird. Klein zuerst (engstes Feld)."""
+    boxes = []
+    for d in page.get_drawings():
+        f = d.get("fill")
+        if not f or len(f) < 3 or sum(f[:3]) / 3 < 0.92:
+            continue
+        r = fitz.Rect(d["rect"])
+        if r.width > 6 and r.height > 6:
+            boxes.append(r)
+    boxes.sort(key=_rect_area)
+    return boxes
+
+
+def _enclosing_box(boxes, bbox):
+    """Engstes weißes Feld, dessen Mitte den Span enthält und das breit genug
+    ist, um die Nummer aufzunehmen – oder ``None``."""
+    cx, cy = (bbox.x0 + bbox.x1) / 2, (bbox.y0 + bbox.y1) / 2
+    for r in boxes:  # kleinste zuerst
+        if (r.x0 - 1 <= cx <= r.x1 + 1 and r.y0 - 1 <= cy <= r.y1 + 1
+                and r.width >= 0.6 * bbox.width):
+            return r
+    return None
+
+
+def _insert_ref_text(page, c) -> None:
+    """Setze die neue Referenznummer – in ihr weißes Feld **mittig eingepasst**
+    (waagerecht zentriert, bei Bedarf verkleinert, damit nichts übersteht oder
+    Trennlinien verdeckt). Gedrehte (hochkant) Felder werden längs der Drehung
+    eingepasst, Position bleibt erhalten."""
+    text, size, rot = c["new"], c["size"], c["rot"]
+    bbox, box, origin = c["bbox"], c["box"], c["origin"]
+
+    def width(sz):
+        return fitz.get_text_length(text, fontname=FONT_BOLD, fontsize=sz)
+
+    if rot == 0:
+        # Senkrechte Position (Grundlinie) bleibt wie im Original – nur
+        # waagerecht im Feld zentrieren und ggf. verkleinern. So rutscht die
+        # Nummer nie über andere Inhalte (z.B. das Schädel-Bild auf der HEAD-Seite).
+        if box is not None:
+            avail = box.width * 0.88            # etwas Rand im Feld lassen
+            cx = (box.x0 + box.x1) / 2
+        else:
+            avail = bbox.width
+            cx = (bbox.x0 + bbox.x1) / 2
+        w = width(size)
+        if w > avail and w > 0:
+            size = size * avail / w
+            w = width(size)
+        page.insert_text((cx - w / 2, origin[1]), text, fontname=FONT_BOLD,
+                         fontsize=size, color=INK, rotate=0)
+    else:
+        # Hochkant/gedreht: nur längs der Schreibrichtung einpassen (verkleinern),
+        # Ursprung beibehalten – das sind kleine Rand-Labels.
+        avail = bbox.height if rot in (90, 270) else bbox.width
+        w = width(size)
+        if w > avail and w > 0:
+            size = size * avail / w
+        page.insert_text(origin, text, fontname=FONT_BOLD, fontsize=size,
+                         color=INK, rotate=rot)
+
+
 def _png_bytes(img: Image.Image) -> bytes:
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -532,30 +589,52 @@ def build_copy(master_path: str | Path, plan: MasterPlan, dst: Reference,
         vec_by_page.setdefault(v.page, []).append(v)
 
     for i, page in enumerate(doc):
-        text_ops = []   # (origin, new_text, size, rotate)
-        # 2a) Referenz-Textfelder einsammeln (inkl. Schreibrichtung/Drehung)
+        white_boxes = _white_boxes(page)
+        # 2a) Referenz-Textfelder einsammeln (mit Zeilen-/Feldkontext)
+        cands = []   # je Treffer: bbox, new, size, rot, origin, country?, box
         for b in page.get_text("dict")["blocks"]:
             if b["type"] != 0:
                 continue
             for l in b["lines"]:
                 rot = _DIR_ROTATE.get((round(l.get("dir", (1, 0))[0]),
                                        round(l.get("dir", (1, 0))[1])), 0)
+                line_text = "".join(s["text"] for s in l["spans"])
+                has_country = plan.src.country in line_text
                 for s in l["spans"]:
                     new = transform_text(s["text"], plan.src, dst)
                     if new != s["text"]:
-                        page.add_redact_annot(fitz.Rect(s["bbox"]), fill=(1, 1, 1))
-                        text_ops.append((s["origin"], new, s["size"], rot))
+                        bbox = fitz.Rect(s["bbox"])
+                        cands.append({"bbox": bbox, "new": new, "size": s["size"],
+                                      "rot": rot, "origin": s["origin"],
+                                      "country": has_country,
+                                      "box": _enclosing_box(white_boxes, bbox)})
+        # 2a') Verdeckte Doubletten überspringen: ein Treffer ohne Country-Kontext,
+        #      der einen Treffer MIT Country-Kontext überlappt, ist eine im Master
+        #      hinter einem weißen Feld liegende Alt-Referenz (sonst Doppeldruck).
+        keep = []
+        for c in cands:
+            if not c["country"]:
+                covered = any(
+                    o is not c and o["country"]
+                    and not (c["bbox"] & o["bbox"]).is_empty
+                    and _rect_area(c["bbox"] & o["bbox"]) > 0.3 * _rect_area(c["bbox"])
+                    for o in cands)
+                if covered:
+                    continue
+            keep.append(c)
+
         # 2b) Vektor-QR-Zellen zum Entfernen markieren
         qr_ops = []
         for v in vec_by_page.get(i, []):
             page.add_redact_annot(fitz.Rect(v.bbox), fill=(1, 1, 1))
             qr_ops.append((v.bbox, transform_symbol(v.master_string, plan.src, dst)))
 
-        if text_ops or qr_ops:
+        for c in keep:
+            page.add_redact_annot(c["bbox"], fill=(1, 1, 1))
+        if keep or qr_ops:
             page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
-        for origin, new, size, rot in text_ops:
-            page.insert_text(origin, new, fontname=FONT_BOLD, fontsize=size,
-                             color=INK, rotate=rot)
+        for c in keep:
+            _insert_ref_text(page, c)
         for bbox, new_str in qr_ops:
             r = fitz.Rect(bbox)
             page.insert_image(r, stream=_png_bytes(qr_util.make_image(new_str, box_pixels=400)),
