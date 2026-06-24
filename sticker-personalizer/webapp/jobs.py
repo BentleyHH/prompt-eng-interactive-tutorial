@@ -143,6 +143,27 @@ def officer_run(rid: int, roster_path: str, *, base_url=None, include_cover=True
         db.log_audit(username, "fehler", f"Officer-Lauf #{rid}: {e}")
 
 
+def officer_renumber_run(rid: int, start: int, *, base_url=None, include_cover=True,
+                         username=None) -> None:
+    """Officer-Booklet mit neu vergebenen, fortlaufenden Officer-IDs ab ``start``
+    erzeugen (Design/Rollen gleich, nur Nummern + QR-Codes ändern sich)."""
+    run = db.get_run(rid)
+    p = db.get_protocol(run["protocol_id"])
+    out_dir = db.OUTPUT_DIR / f"run_{rid}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        out_pdf = out_dir / f"{p['slug']}__nummern_ab_{start}.pdf"
+        res = overlay.renumber_build(p["master_path"], int(start), out_pdf,
+                                     base_url=base_url, include_cover=include_cover)
+        db.set_run_progress(rid, 100)
+        db.finish_run(rid, "sauber", combined_path=res["path"])
+        db.log_audit(username, "officer-renumber",
+                     f"{p['name']}: {res['count']} IDs {res['first']}–{res['last']}")
+    except Exception as e:  # noqa: BLE001
+        db.finish_run(rid, "fehler", error=f"{e}")
+        db.log_audit(username, "fehler", f"Officer-Nummern #{rid}: {e}")
+
+
 # ---------------------------------------------------------------------------
 # Worker: Produktion
 # ---------------------------------------------------------------------------

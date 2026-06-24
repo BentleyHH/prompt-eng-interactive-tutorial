@@ -178,6 +178,51 @@ def api_officer_template(pid):
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
+@app.post("/api/protocols/<int:pid>/officer-preview")
+def api_officer_preview(pid):
+    if not db.get_protocol(pid):
+        abort(404)
+    f = request.files.get("roster")
+    if not f:
+        abort(400, "Bitte eine Excel-Datei wählen.")
+    import tempfile
+    from sticker import excel_io
+    tmp = Path(tempfile.mkstemp(suffix=".xlsx")[1])
+    f.save(tmp)
+    try:
+        people = excel_io.read_people(tmp)
+        named = [pp for pp in people if pp.name]
+        return jsonify({"ok": True, "count": len(people), "named": len(named),
+                        "sample": [{"id": pp.officer_id, "name": pp.name, "role": pp.role}
+                                   for pp in people[:3]]})
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(e)}), 400
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+@app.post("/api/protocols/<int:pid>/officer-renumber")
+def api_officer_renumber(pid):
+    p = db.get_protocol(pid)
+    if not p:
+        abort(404)
+    if p.get("ptype") != "officer":
+        abort(400, "Dieses Protokoll ist kein Officer-Booklet.")
+    body = request.get_json(force=True)
+    try:
+        start = int(body.get("start"))
+    except (TypeError, ValueError):
+        abort(400, "Bitte eine gültige Startnummer angeben.")
+    base_url = (body.get("qr_base_url") or "").strip() or None
+    include_cover = body.get("cover", True) is not False
+    rid = db.add_run(pid, "OFFICER", "-", f"Officer-Nummern ab {start}", [], "officer")
+    threading.Thread(
+        target=jobs.officer_renumber_run, args=(rid, start),
+        kwargs={"base_url": base_url, "include_cover": include_cover, "username": _user()},
+        daemon=True).start()
+    return jsonify({"run_id": rid})
+
+
 @app.post("/api/protocols/<int:pid>/officer-produce")
 def api_officer_produce(pid):
     p = db.get_protocol(pid)
@@ -335,6 +380,20 @@ def api_run_ftp(rid):
     p = db.get_protocol(db.get_run(rid)["protocol_id"])
     jobs._ftp_upload_run(rid, p, _user())
     return jsonify(db.get_run(rid))
+
+
+@app.delete("/api/runs/<int:rid>")
+def api_run_delete(rid):
+    r = db.get_run(rid)
+    if not r:
+        abort(404)
+    import shutil
+    db.delete_run(rid)
+    run_dir = db.OUTPUT_DIR / f"run_{rid}"
+    if run_dir.exists():
+        shutil.rmtree(run_dir, ignore_errors=True)
+    db.log_audit(_user(), "run-delete", f"Lauf #{rid} ({r.get('spec') or '-'})")
+    return jsonify({"ok": True, "deleted": rid})
 
 
 # ---------------------------------------------------------------------------

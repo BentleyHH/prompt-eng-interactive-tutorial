@@ -83,24 +83,73 @@ async function refreshDetail() {
   renderRuns(p.runs);
 }
 
-// Officer-Booklet: Excel hochladen → personalisiertes Booklet erzeugen
+// Officer-Sub-Tabs (Nur Nummern / Excel-Maske)
+$$("[data-otab]").forEach(tab => tab.onclick = () => {
+  $$("[data-otab]").forEach(t => t.classList.remove("active"));
+  tab.classList.add("active");
+  $$(".otab-body").forEach(b => b.classList.toggle("hidden", b.dataset.obody !== tab.dataset.otab));
+});
+
+// Variante A: nur Nummern fortlaufend neu vergeben
+$("#num-go").onclick = async () => {
+  const start = numOrNull($("#num-start").value);
+  if (!start) { $("#num-status").innerHTML = '<span class="error">Bitte eine Startnummer angeben.</span>'; return; }
+  $("#num-status").textContent = "Erzeuge Booklet mit neuen Nummern …";
+  try {
+    const res = await api(`/api/protocols/${selectedId}/officer-renumber`, jsonPost({
+      start, qr_base_url: $("#num-url").value.trim(), cover: $("#num-cover").checked,
+    }));
+    $("#num-status").textContent = "Lauf gestartet …";
+    await refreshDetail();
+    pollRun(res.run_id);
+  } catch (err) { $("#num-status").innerHTML = `<span class="error">Fehler: ${escapeHtml(err.message)}</span>`; }
+};
+
+// Variante B: Excel prüfen (grün/rot) → danach Start-Knopf freigeben
+let officerFile = null;
 $("#off-file").addEventListener("change", async () => {
-  const f = $("#off-file").files[0];
-  if (!f) return;
+  officerFile = $("#off-file").files[0] || null;
+  const chk = $("#off-check"), go = $("#off-go");
+  go.disabled = true;
+  if (!officerFile) { chk.classList.add("hidden"); return; }
+  chk.classList.remove("hidden");
+  chk.innerHTML = '<span class="muted">Prüfe Excel-Datei …</span>';
+  const fd = new FormData(); fd.append("roster", officerFile);
+  try {
+    const r = await api(`/api/protocols/${selectedId}/officer-preview`, { method: "POST", body: fd });
+    if (r.ok) {
+      chk.innerHTML = `<div class="ok">✓ Die hochgeladene Excel-Datei funktioniert – grün.</div>
+        <div class="muted">${r.count} Officer erkannt (${r.named} mit Namen). Klicke „Booklet erzeugen“.</div>`;
+      go.disabled = false;
+    } else {
+      chk.innerHTML = `<div class="warn">✗ Datei nicht verwendbar: ${escapeHtml(r.error)}</div>`;
+      officerFile = null;
+    }
+  } catch (err) {
+    chk.innerHTML = `<div class="warn">✗ Fehler: ${escapeHtml(err.message)}</div>`;
+    officerFile = null;
+  }
+});
+
+// Start-Knopf: geprüfte Excel personalisieren
+$("#off-go").onclick = async () => {
+  if (!officerFile) return;
   const fd = new FormData();
-  fd.append("roster", f);
+  fd.append("roster", officerFile);
   fd.append("qr_base_url", $("#off-url").value.trim());
   fd.append("cover", $("#off-cover").checked ? "1" : "0");
   fd.append("name", $("#off-name").checked ? "1" : "0");
   $("#off-status").textContent = "Erzeuge personalisiertes Booklet …";
+  $("#off-go").disabled = true;
   try {
     const res = await api(`/api/protocols/${selectedId}/officer-produce`, { method: "POST", body: fd });
     $("#off-status").textContent = "Lauf gestartet …";
-    $("#off-file").value = "";
+    $("#off-file").value = ""; officerFile = null;
+    $("#off-check").classList.add("hidden");
     await refreshDetail();
     pollRun(res.run_id);
   } catch (err) { $("#off-status").textContent = "Fehler: " + err.message; }
-});
+};
 
 function renderCoverage(cov, country) {
   $("#cov-country").textContent = country ? `· Country ${country}` : "";
@@ -128,8 +177,10 @@ function renderRuns(runs) {
     }
     const bar = r.status === "laeuft"
       ? `<div class="bar"><i style="width:${r.progress || 0}%"></i></div>` : "";
+    const del = r.status !== "laeuft"
+      ? `<a href="#" class="del" data-del="${r.id}" title="Lauf löschen">✕ löschen</a>` : "";
     li.innerHTML = `<i class="dot ${COLOR[r.status]}"></i> <b>#${r.id}</b> ${escapeHtml(r.spec || "")}
-      ${bar}${r.status === "fehler" ? `<div class="error">${escapeHtml(r.error || "")}</div>` : dl}`;
+      ${bar}${r.status === "fehler" ? `<div class="error">${escapeHtml(r.error || "")}</div>` : dl}${del}`;
     ul.appendChild(li);
     if (r.status === "laeuft") pollRun(r.id);
   }
@@ -293,7 +344,12 @@ $("#btn-insight").onclick = async () => {
 // PDF/A & FTP je Lauf (Event-Delegation)
 $("#runs").addEventListener("click", async (e) => {
   const a = e.target.closest("a"); if (!a) return;
-  if (a.dataset.pdfa) {
+  if (a.dataset.del) {
+    e.preventDefault();
+    if (!confirm(`Lauf #${a.dataset.del} endgültig löschen? Die Ledger-Einträge dieses Laufs werden entfernt.`)) return;
+    try { await api(`/api/runs/${a.dataset.del}`, { method: "DELETE" }); await refreshDetail(); }
+    catch (err) { alert(err.message); }
+  } else if (a.dataset.pdfa) {
     e.preventDefault(); a.textContent = "PDF/A…";
     try { await api(`/api/runs/${a.dataset.pdfa}/pdfa`, { method: "POST" }); await refreshDetail(); }
     catch (err) { a.textContent = "Fehler"; alert(err.message); }

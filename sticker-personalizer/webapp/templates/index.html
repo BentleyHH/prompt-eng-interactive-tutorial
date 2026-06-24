@@ -58,28 +58,58 @@
         <p id="d-error" class="error hidden"></p>
 
         <div class="grid2">
-          <!-- Officer-Booklet: Excel-Personalisierung -->
+          <!-- Officer-Booklet: Personalisierung -->
           <div class="card hidden" id="officer-card">
-            <h3>Officer-Personalisierung (Excel)</h3>
-            <p class="muted">Maske herunterladen, Namen eintragen, wieder hochladen –
-              pro Rolle werden Name und QR-Code eingesetzt.</p>
-            <div class="row actions">
-              <a id="off-tpl" class="ghost btnlike" href="#">① Excel-Maske herunterladen</a>
+            <h3>Officer-Booklet personalisieren</h3>
+            <p class="muted">Wähle, wie du das Booklet erzeugen möchtest –
+              nur die Nummern austauschen oder eine ausgefüllte Excel-Maske hochladen.</p>
+            <div class="tabs">
+              <button class="tab active" data-otab="num">Nur Nummern</button>
+              <button class="tab" data-otab="xls">Excel-Maske</button>
             </div>
-            <div class="row">
-              <label>QR-Basis-URL (optional)<input id="off-url" placeholder="https://etaf.example/o"></label>
+
+            <!-- Variante A: nur Nummern fortlaufend neu vergeben -->
+            <div class="otab-body" data-obody="num">
+              <p class="muted">Design und Rollen bleiben unverändert – es werden nur
+                die Officer-Nummern (Text + QR-Codes) ab der Startnummer fortlaufend
+                neu vergeben.</p>
+              <div class="row">
+                <label>Startnummer<input id="num-start" type="number" placeholder="74500"></label>
+                <label>QR-Basis-URL (optional)<input id="num-url" placeholder="https://etaf.example/o"></label>
+              </div>
+              <div class="row">
+                <label class="chk"><input type="checkbox" id="num-cover" checked> Titelseite mit</label>
+              </div>
+              <div class="row actions">
+                <button id="num-go">Nummern erzeugen ▶</button>
+              </div>
+              <div id="num-status" class="muted"></div>
             </div>
-            <div class="row">
-              <label class="chk"><input type="checkbox" id="off-cover" checked> Titelseite mit</label>
-              <label class="chk"><input type="checkbox" id="off-name" checked> Namen einsetzen</label>
+
+            <!-- Variante B: Excel-Maske -->
+            <div class="otab-body hidden" data-obody="xls">
+              <div class="row actions">
+                <a id="off-tpl" class="ghost btnlike" href="#">① Excel-Maske herunterladen</a>
+              </div>
+              <div class="row">
+                <label>QR-Basis-URL (optional)<input id="off-url" placeholder="https://etaf.example/o"></label>
+              </div>
+              <div class="row">
+                <label class="chk"><input type="checkbox" id="off-cover" checked> Titelseite mit</label>
+                <label class="chk"><input type="checkbox" id="off-name" checked> Namen einsetzen</label>
+              </div>
+              <div class="row actions">
+                <label class="file-btn small">
+                  <input type="file" id="off-file" accept=".xlsx" hidden>
+                  ② Ausgefüllte Excel wählen…
+                </label>
+              </div>
+              <div id="off-check" class="check hidden"></div>
+              <div class="row actions">
+                <button id="off-go" disabled>③ Booklet erzeugen ▶</button>
+              </div>
+              <div id="off-status" class="muted"></div>
             </div>
-            <div class="row actions">
-              <label class="file-btn small">
-                <input type="file" id="off-file" accept=".xlsx" hidden>
-                ② Ausgefüllte Excel wählen → erzeugen
-              </label>
-            </div>
-            <div id="off-status" class="muted"></div>
           </div>
 
           <!-- Produktion (CBRN-Referenznummer) -->

@@ -237,6 +237,13 @@ def get_run(rid) -> dict | None:
         return dict(r) if r else None
 
 
+def delete_run(rid) -> None:
+    """Lauf entfernen (inkl. zugehöriger Ledger-Einträge); Dateien räumt der Aufrufer."""
+    with _LOCK, connect() as con:
+        con.execute("DELETE FROM produced WHERE run_id=?", (rid,))
+        con.execute("DELETE FROM runs WHERE id=?", (rid,))
+
+
 # --- Ledger (produzierte Nummern) -----------------------------------------
 def record_produced(protocol_id, run_id, team, country, refs, reprints: set | None = None,
                     seals: dict | None = None, username: str | None = None) -> None:

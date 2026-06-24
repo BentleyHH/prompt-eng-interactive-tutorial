@@ -94,6 +94,7 @@ button:hover { filter: brightness(1.08); }
 .runs .bar { height: 6px; background: #11161c; border-radius: 4px; overflow: hidden; margin: 6px 0; }
 .runs .bar > i { display: block; height: 100%; background: var(--orange); }
 .runs a { color: #7cc4ff; margin-right: 10px; }
+.runs a.del { color: #ff9a9a; float: right; margin-right: 0; }
 .orders-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
 .orders-table th, .orders-table td { border: 1px solid var(--line); padding: 5px 7px; text-align: left; }
 
