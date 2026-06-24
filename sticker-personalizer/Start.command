@@ -43,10 +43,15 @@ fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 
-python -m pip install --quiet --upgrade pip
+python -m pip install --quiet --upgrade pip setuptools wheel
 echo "==> Installiere/aktualisiere die benötigten Pakete ..."
-if ! python -m pip install --quiet -r requirements.txt; then
-  echo "Installation fehlgeschlagen. Bitte Internetverbindung prüfen und erneut versuchen."
+# --prefer-binary: immer Fertigpakete bevorzugen, nie aus Quellcode kompilieren.
+if ! python -m pip install --quiet --prefer-binary -r requirements.txt; then
+  echo ""
+  echo "Installation fehlgeschlagen."
+  echo "  • Internetverbindung prüfen und Start.command erneut starten."
+  echo "  • Falls es weiter klemmt: den Ordner '.venv' löschen und neu starten."
+  echo "  • Sehr alte Python-Version? Aktuelles Python von https://www.python.org/downloads/macos/."
   read -r -p "  Mit ENTER schließen ..." _
   exit 1
 fi

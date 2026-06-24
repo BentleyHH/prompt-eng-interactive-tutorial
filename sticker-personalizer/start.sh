@@ -20,9 +20,9 @@ if [ ! -d ".venv" ]; then
 fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
-python -m pip install --quiet --upgrade pip
+python -m pip install --quiet --upgrade pip setuptools wheel
 echo "==> Installiere/aktualisiere die benötigten Pakete..."
-python -m pip install --quiet -r requirements.txt
+python -m pip install --quiet --prefer-binary -r requirements.txt
 
 # Hinweis auf Systemwerkzeuge (nur einmalig nötig)
 command -v gs >/dev/null 2>&1 || echo "Hinweis: 'ghostscript' fehlt – nur für PDF/A nötig (macOS: brew install ghostscript)."

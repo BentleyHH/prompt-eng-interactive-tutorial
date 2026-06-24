@@ -20,9 +20,9 @@ if not exist ".venv" (
   %PY% -m venv .venv
 )
 call .venv\Scripts\activate.bat
-python -m pip install --quiet --upgrade pip
+python -m pip install --quiet --upgrade pip setuptools wheel
 echo ==^> Installiere/aktualisiere die benoetigten Pakete...
-python -m pip install --quiet -r requirements.txt
+python -m pip install --quiet --prefer-binary -r requirements.txt
 
 echo.
 echo ============================================================
