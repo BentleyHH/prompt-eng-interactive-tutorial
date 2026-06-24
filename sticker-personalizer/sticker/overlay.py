@@ -41,6 +41,82 @@ def _qr_pixmap(data: str) -> "fitz.Pixmap":
     return fitz.Pixmap(buf.getvalue())
 
 
+# ---------------------------------------------------------------------------
+# Seitenleiste ("Aufkleber" rechts): Farbe erkennen und – auf Wunsch – ändern
+# ---------------------------------------------------------------------------
+_DIR_ROTATE_SB = {(1, 0): 0, (0, -1): 90, (-1, 0): 180, (0, 1): 270}
+
+
+def sidebar_info(page):
+    """Finde die farbige Leiste am rechten Seitenrand. Liefert ``(rect, (r,g,b))``
+    oder ``None``. Heuristik: hoher, rechtsbündiger, gefüllter Block, der nicht
+    die ganze Seite bedeckt."""
+    pw, ph = page.rect.width, page.rect.height
+    best = None  # (rect, rgb, height)
+    for d in page.get_drawings():
+        fill = d.get("fill")
+        if not fill:
+            continue
+        r = fitz.Rect(d["rect"])
+        if (r.height >= 0.5 * ph and r.x1 >= 0.75 * pw
+                and r.x0 >= 0.10 * pw and r.width <= 0.6 * pw):
+            if best is None or r.height > best[2]:
+                best = (r, tuple(fill)[:3], r.height)
+    return (best[0], best[1]) if best else None
+
+
+def color_hex(rgb) -> str:
+    """(r,g,b) in 0..1 -> '#RRGGBB'."""
+    return "#" + "".join(f"{max(0, min(255, round(c * 255))):02X}" for c in rgb[:3])
+
+
+def parse_color(s):
+    """Akzeptiere '#045B74', '045B74' oder 'r,g,b' (0..255 oder 0..1).
+    Liefert (r,g,b) in 0..1 oder ``None``."""
+    s = str(s or "").strip()
+    if not s:
+        return None
+    if "," in s:
+        try:
+            parts = [float(x) for x in s.split(",")]
+        except ValueError:
+            return None
+        if len(parts) != 3:
+            return None
+        if max(parts) > 1:
+            parts = [x / 255 for x in parts]
+        return tuple(max(0.0, min(1.0, x)) for x in parts)
+    h = s.lstrip("#")
+    if len(h) == 6:
+        try:
+            return tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+        except ValueError:
+            return None
+    return None
+
+
+def recolor_sidebar(page, rect, new_rgb) -> None:
+    """Färbe die Leiste in ``new_rgb`` um und zeichne ihre Beschriftung (z.B.
+    weißer, hochkant laufender Rollentext) in Originalfarbe wieder darauf."""
+    spans = []
+    for b in page.get_text("dict")["blocks"]:
+        if b["type"] != 0:
+            continue
+        for l in b["lines"]:
+            d = l.get("dir", (1, 0))
+            for s in l["spans"]:
+                sb = fitz.Rect(s["bbox"])
+                inter = sb & rect
+                if (not inter.is_empty) and inter.get_area() >= 0.5 * max(sb.get_area(), 1e-6):
+                    spans.append((s["origin"], s["text"], s["size"], d, s.get("color", 16777215)))
+    # neue Farbe deckt alte Farbe + Beschriftung
+    page.draw_rect(rect, color=None, fill=tuple(new_rgb))
+    for origin, text, size, d, col in spans:
+        rot = _DIR_ROTATE_SB.get((round(d[0]), round(d[1])), 0)
+        rgb = (((col >> 16) & 255) / 255, ((col >> 8) & 255) / 255, (col & 255) / 255)
+        page.insert_text(origin, text, fontname="hebo", fontsize=size, color=rgb, rotate=rot)
+
+
 def _fit_text(page, rect, text, fontsize_max=15.0, fontsize_min=6.0):
     """Schreibe ``text`` zentriert in ``rect`` mit größtmöglicher Schrift."""
     size = fontsize_max
@@ -72,6 +148,14 @@ def personalize_page(page, person: Person, base_url: Optional[str],
 
     if write_name and person.name:
         _fit_text(page, _NAME_BOX, person.name)
+
+    # Optional: Farbe der Seitenleiste ("Aufkleber") angleichen.
+    if getattr(person, "color", ""):
+        rgb = parse_color(person.color)
+        if rgb:
+            info = sidebar_info(page)
+            if info:
+                recolor_sidebar(page, info[0], rgb)
 
 
 def build(original_pdf: str | Path, people: list[Person], out_pdf: str | Path,

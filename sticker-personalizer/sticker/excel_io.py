@@ -36,6 +36,12 @@ _ALIASES = {
     "qrcontent": "qr",
     "qrdata": "qr",
     "url": "qr",
+    "farbe": "color",
+    "color": "color",
+    "stickerfarbe": "color",
+    "stickercolor": "color",
+    "leiste": "color",
+    "leistenfarbe": "color",
 }
 
 ID_START = 74401  # Start-Nummer wie im Original-Booklet
@@ -49,6 +55,7 @@ class Person:
     officer_id: str = ""    # z.B. "74401"
     site: str = ""
     qr: str = ""            # expliziter QR-Inhalt (optional)
+    color: str = ""         # Farbe der Seitenleiste, z.B. "#045B74" (optional)
     _row: int = field(default=0, repr=False)
 
     def qr_payload(self, base_url: Optional[str]) -> str:
@@ -110,6 +117,7 @@ def read_people(path: str | Path, id_start: int = ID_START) -> list[Person]:
             officer_id=values.get("officer_id", ""),
             site=values.get("site", ""),
             qr=values.get("qr", ""),
+            color=values.get("color", ""),
             _row=r,
         )
         if not p.officer_id:
@@ -132,18 +140,18 @@ def write_example(path: str | Path) -> Path:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Teams"
-    headers = ["Name", "Bedeutung", "Team", "OfficerID", "Site", "QR"]
+    headers = ["Name", "Bedeutung", "Team", "OfficerID", "Site", "QR", "Farbe"]
     ws.append(headers)
     examples = [
-        ["Max Mustermann", "ENTRANCE EXIT A", "CONTROL", "74401", "", ""],
-        ["Erika Beispiel", "LOGISTIC", "LOGISTIC", "74403", "", ""],
-        ["John Doe", "CSI COMMANDER", "CSI", "74405", "", "https://etaf.example/o/74405"],
-        ["Jane Roe", "DVI TEAMLEADER", "DVI", "74431", "", ""],
+        ["Max Mustermann", "ENTRANCE EXIT A", "CONTROL", "74401", "", "", ""],
+        ["Erika Beispiel", "LOGISTIC", "LOGISTIC", "74403", "", "", ""],
+        ["John Doe", "CSI COMMANDER", "CSI", "74405", "", "https://etaf.example/o/74405", "#045B74"],
+        ["Jane Roe", "DVI TEAMLEADER", "DVI", "74431", "", "", ""],
     ]
     for row in examples:
         ws.append(row)
     # Spaltenbreiten hübsch machen.
-    for col, width in zip("ABCDEF", (22, 26, 14, 12, 10, 34)):
+    for col, width in zip("ABCDEFG", (22, 26, 14, 12, 10, 34, 12)):
         ws.column_dimensions[col].width = width
     # Kommentar/Legende auf einem zweiten Blatt.
     info = wb.create_sheet("Hinweise")
@@ -155,6 +163,7 @@ def write_example(path: str | Path) -> Path:
         ["OfficerID", "Nummer; leer = automatisch ab 74401", "optional"],
         ["Site", "Standort/Einsatzort", "optional"],
         ["QR", "Eigener QR-Inhalt (URL/Text); leer = automatisch", "optional"],
+        ["Farbe", "Aufkleber-/Leistenfarbe rechts, z.B. #045B74; leer = Originalfarbe", "optional"],
     ]:
         info.append(line)
     info.column_dimensions["A"].width = 14
@@ -174,7 +183,7 @@ def write_roster_template(path: str | Path, roster: list[dict]) -> Path:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Officer"
-    headers = ["Name", "Bedeutung", "Team", "OfficerID", "Site", "QR"]
+    headers = ["Name", "Bedeutung", "Team", "OfficerID", "Site", "QR", "Farbe"]
     ws.append(headers)
     title = Font(bold=True, color="FFFFFF")
     fill = PatternFill("solid", fgColor="045B74")
@@ -183,10 +192,16 @@ def write_roster_template(path: str | Path, roster: list[dict]) -> Path:
         cell.font = title
         cell.fill = fill
     for entry in roster:
+        color = entry.get("color", "") or ""
         ws.append(["", entry.get("role", ""), entry.get("team", ""),
-                   entry.get("officer_id", ""), "", ""])
+                   entry.get("officer_id", ""), "", "", color])
+        # Die Farb-Zelle zur Sicht-Kontrolle mit der erkannten Farbe hinterlegen.
+        hexv = color.lstrip("#")
+        if len(hexv) == 6:
+            cell = ws.cell(row=ws.max_row, column=7)
+            cell.fill = PatternFill("solid", fgColor=hexv.upper())
     ws.freeze_panes = "A2"
-    for col, width in zip("ABCDEF", (24, 28, 14, 12, 12, 34)):
+    for col, width in zip("ABCDEFG", (24, 28, 14, 12, 12, 34, 12)):
         ws.column_dimensions[col].width = width
 
     info = wb.create_sheet("Hinweise")
@@ -197,6 +212,9 @@ def write_roster_template(path: str | Path, roster: list[dict]) -> Path:
         ["• Trage in Spalte 'Name' den Namen der Person ein – mehr ist nicht nötig."],
         ["• 'Bedeutung'/'Team'/'OfficerID' sind schon vorbefüllt (zur Orientierung)."],
         ["• 'QR' optional: eigener QR-Inhalt (URL/Text); leer = automatisch 'Officer ID <id>'."],
+        ["• 'Farbe' = Farbe des Aufklebers/der Seitenleiste rechts (z.B. #045B74),"],
+        ["   schon aus dem Booklet ausgelesen. Leer lassen = Originalfarbe bleibt."],
+        ["   Für eine zusätzliche Person die passende Farbe eintragen (#RRGGBB)."],
         ["• Zeilen ohne Namen kannst du löschen, wenn die Rolle nicht besetzt ist."],
     ]:
         info.append(line)

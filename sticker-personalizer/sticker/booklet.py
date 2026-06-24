@@ -390,6 +390,7 @@ _OFFICER_BOILER = {
 def officer_roster(path: str | Path) -> list[dict]:
     """Lies aus dem Officer-Booklet je Rollen-Seite die Officer-ID samt einer
     lesbaren Rollen-/Team-Bezeichnung aus – Grundlage der vorbefüllten Maske."""
+    from . import overlay
     doc = fitz.open(path)
     roster: list[dict] = []
     try:
@@ -404,7 +405,11 @@ def officer_roster(path: str | Path) -> list[dict]:
                     and "OFFICER ID" not in l]
             role = caps[0] if caps else ""
             team = caps[1] if len(caps) > 1 and caps[1] != role else ""
-            roster.append({"officer_id": ids[0], "role": role, "team": team})
+            # Farbe der Seitenleiste ("Aufkleber" rechts) auslesen.
+            info = overlay.sidebar_info(page)
+            color = overlay.color_hex(info[1]) if info else ""
+            roster.append({"officer_id": ids[0], "role": role, "team": team,
+                           "color": color})
     finally:
         doc.close()
     return roster

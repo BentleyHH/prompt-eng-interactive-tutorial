@@ -58,10 +58,12 @@ async function refreshDetail() {
   $("#cbrn-cov").classList.toggle("hidden", officer);
 
   if (officer) {
+    officerRoles = p.n_image || 0;
     $("#d-analysis").innerHTML = p.status === "sauber"
-      ? `Officer-Booklet · <b>${p.n_image}</b> Rollen-Seiten · Personalisierung per Excel (Name + QR)`
+      ? `Officer-Booklet · <b>${p.n_image}</b> Rollen-Seiten · Personalisierung per Excel (Name + QR + Aufkleberfarbe)`
       : `<span class="muted">Analyse ${p.status === "laeuft" ? "läuft…" : "ausstehend"}</span>`;
     $("#off-tpl").href = `/api/protocols/${p.id}/officer-template.xlsx`;
+    updateNumRange();
   } else {
     $("#d-analysis").innerHTML = p.team
       ? `Quelle: <b>${p.team} ${p.country} ${p.src_ref}</b> · Ref-Breite <b>${p.ref_width}</b>
@@ -91,14 +93,37 @@ $$("[data-otab]").forEach(tab => tab.onclick = () => {
   $$(".otab-body").forEach(b => b.classList.toggle("hidden", b.dataset.obody !== tab.dataset.otab));
 });
 
-// Variante A: nur Nummern fortlaufend neu vergeben
+// Variante A: nur Nummern fortlaufend neu vergeben (Von–Bis)
+let officerRoles = 0;
+function updateNumRange() {
+  const box = $("#num-range"); if (!box) return;
+  const start = numOrNull($("#num-start").value);
+  const end = numOrNull($("#num-end").value);
+  if (!start || !officerRoles) { box.classList.add("hidden"); return; }
+  box.classList.remove("hidden");
+  const last = start + officerRoles - 1;
+  let html = `Ergibt <b>${officerRoles}</b> Nummern: <b>${start}–${last}</b> (eine je Rollen-Seite).`;
+  if (end) {
+    const want = end - start + 1;
+    if (want === officerRoles) html += ` <span class="ok">✓ passt zu „bis ${end}".</span>`;
+    else html += ` <span class="warn">⚠ „bis ${end}" wären ${want} Nummern – das Booklet hat ${officerRoles} Rollen-Seiten.</span>`;
+  }
+  box.innerHTML = html;
+}
+$("#num-start").addEventListener("input", updateNumRange);
+$("#num-end").addEventListener("input", updateNumRange);
+
 $("#num-go").onclick = async () => {
   const start = numOrNull($("#num-start").value);
+  const end = numOrNull($("#num-end").value);
   if (!start) { $("#num-status").innerHTML = '<span class="error">Bitte eine Startnummer angeben.</span>'; return; }
+  if (end && officerRoles && (end - start + 1) !== officerRoles) {
+    if (!confirm(`„Von ${start} bis ${end}" sind ${end - start + 1} Nummern, das Booklet hat aber ${officerRoles} Rollen-Seiten.\n\nEs werden ${officerRoles} Nummern ab ${start} vergeben (${start}–${start + officerRoles - 1}). Fortfahren?`)) return;
+  }
   $("#num-status").textContent = "Erzeuge Booklet mit neuen Nummern …";
   try {
     const res = await api(`/api/protocols/${selectedId}/officer-renumber`, jsonPost({
-      start, qr_base_url: $("#num-url").value.trim(), cover: $("#num-cover").checked,
+      start, end, qr_base_url: $("#num-url").value.trim(), cover: $("#num-cover").checked,
     }));
     $("#num-status").textContent = "Lauf gestartet …";
     await refreshDetail();

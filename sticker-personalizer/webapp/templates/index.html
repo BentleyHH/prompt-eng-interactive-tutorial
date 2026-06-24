@@ -71,12 +71,15 @@
             <!-- Variante A: nur Nummern fortlaufend neu vergeben -->
             <div class="otab-body" data-obody="num">
               <p class="muted">Design und Rollen bleiben unverändert – es werden nur
-                die Officer-Nummern (Text + QR-Codes) ab der Startnummer fortlaufend
-                neu vergeben.</p>
+                die Officer-Nummern (Text + QR-Codes) fortlaufend neu vergeben.</p>
               <div class="row">
-                <label>Startnummer<input id="num-start" type="number" placeholder="74500"></label>
+                <label>Von (Startnummer)<input id="num-start" type="number" placeholder="74500"></label>
+                <label>Bis (optional)<input id="num-end" type="number" placeholder="74544"></label>
+              </div>
+              <div class="row">
                 <label>QR-Basis-URL (optional)<input id="num-url" placeholder="https://etaf.example/o"></label>
               </div>
+              <div id="num-range" class="check hidden"></div>
               <div class="row">
                 <label class="chk"><input type="checkbox" id="num-cover" checked> Titelseite mit</label>
               </div>
