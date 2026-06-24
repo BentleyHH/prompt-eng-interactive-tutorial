@@ -126,7 +126,7 @@ def init_db() -> None:
 def _migrate(con) -> None:
     """Fehlende Spalten in bestehenden Datenbanken nachrüsten (sanfte Migration)."""
     wanted = {
-        "protocols": {"spots": "TEXT", "ptype": "TEXT NOT NULL DEFAULT 'cbrn'"},
+        "protocols": {"spots": "TEXT", "ptype": "TEXT NOT NULL DEFAULT 'cbrn'", "notes": "TEXT"},
         "runs": {"pdfa_path": "TEXT", "ftp_status": "TEXT"},
         "produced": {"seal": "TEXT", "username": "TEXT"},
     }
@@ -157,12 +157,12 @@ def set_protocol_status(pid, status, error=None) -> None:
 
 
 def set_protocol_analysis(pid, team, country, src_ref, ref_width, n_image, n_vector,
-                          spots=None) -> None:
+                          spots=None, notes=None) -> None:
     with _LOCK, connect() as con:
         con.execute(
             "UPDATE protocols SET team=?,country=?,src_ref=?,ref_width=?,n_image=?,"
-            "n_vector=?,spots=?,ptype='cbrn',status='sauber',error=NULL,analyzed_at=? WHERE id=?",
-            (team, country, src_ref, ref_width, n_image, n_vector, spots, now(), pid))
+            "n_vector=?,spots=?,notes=?,ptype='cbrn',status='sauber',error=NULL,analyzed_at=? WHERE id=?",
+            (team, country, src_ref, ref_width, n_image, n_vector, spots, notes, now(), pid))
 
 
 def set_protocol_officer(pid, n_roles) -> None:

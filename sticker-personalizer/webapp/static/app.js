@@ -67,6 +67,7 @@ async function refreshDetail() {
       ? `Quelle: <b>${p.team} ${p.country} ${p.src_ref}</b> · Ref-Breite <b>${p.ref_width}</b>
          · <b>${p.n_image}</b> Bild-Symbole · <b>${p.n_vector}</b> Vektor-Symbole`
          + (p.spots ? `<br>Sonderfarben (Druckvorstufe): <b>${escapeHtml(p.spots)}</b> – werden mitgeprüft` : "")
+         + (p.notes ? `<br><span class="note">⚑ ${escapeHtml(p.notes).replace(/\n/g, "<br>⚑ ")}</span>` : "")
       : `<span class="muted">Analyse ${p.status === "laeuft" ? "läuft…" : "ausstehend"}</span>`;
     if (!$("#f-team").value) $("#f-team").value = p.team || "";
     if (!$("#f-country").value && p.country) $("#f-country").value = p.country;

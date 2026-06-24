@@ -87,6 +87,7 @@ class MasterPlan:
     spot_colors: list = field(default_factory=list)   # Sonderfarben (Stanze/Perfo/Nut/Passer)
     draw_marks: dict = field(default_factory=dict)     # Seite -> Menge der Vektor-Pfad-Signaturen
     vector_pages: set = field(default_factory=set)     # Seiten mit ersetzten Vektor-Symbolen
+    notes: list = field(default_factory=list)          # Hinweise (z.B. korrigierte Barcode-Inkonsistenz)
 
     def summary(self) -> str:
         nqr = sum(1 for s in self.image_symbols if s.kind == "QRCODE")
@@ -107,11 +108,29 @@ def _num_sub(old: str, new: str, text: str) -> str:
     return re.sub(rf"(?<!\d){re.escape(old)}(?!\d)", new, text)
 
 
+def _replace_ref_numbers(text: str, src: Reference, dst: Reference) -> str:
+    """Ersetze Country/Ref-Ziffern – auch wenn sie **zusammengeschrieben** sind
+    (``EX 9717408``) oder in **umgekehrter** (arabischer) Reihenfolge stehen
+    (``7408 971``). Das Trennzeichen (Leerzeichen oder keines) bleibt erhalten,
+    damit das Layout des Feldes unverändert bleibt."""
+    c, r = re.escape(src.country), re.escape(src.ref)
+    # Country+Ref (Vorwärts), Trennzeichen erhalten
+    text = re.sub(rf"(?<!\d){c}(\s*){r}(?!\d)",
+                  lambda m: f"{dst.country}{m.group(1)}{dst.ref}", text)
+    # Ref+Country (umgekehrt, z.B. arabischer Lesefluss)
+    text = re.sub(rf"(?<!\d){r}(\s*){c}(?!\d)",
+                  lambda m: f"{dst.ref}{m.group(1)}{dst.country}", text)
+    # Ref allein (großes Einzelfeld)
+    text = _num_sub(src.ref, dst.ref, text)
+    # Country allein – nur wenn er sich ändert
+    if dst.country != src.country:
+        text = _num_sub(src.country, dst.country, text)
+    return text
+
+
 def transform_symbol(text: str, src: Reference, dst: Reference) -> str:
     """Transformiere den in einem Symbol kodierten String (Team/Country/Ref)."""
-    s = _num_sub(src.ref, dst.ref, text)
-    if dst.country != src.country:
-        s = _num_sub(src.country, dst.country, s)
+    s = _replace_ref_numbers(text, src, dst)
     if dst.team != src.team:
         s = re.sub(rf"(?<![A-Za-z0-9]){re.escape(src.team)}(?![A-Za-z0-9])", dst.team, s)
     return s
@@ -124,9 +143,7 @@ def transform_text(text: str, src: Reference, dst: Reference) -> str:
     Einzelfeld oder kombinierte Beschriftung), damit Produkttitel
     (``CBRN RED ZONE``) und Dokumentcode im Fuß (``ETAF_CBRN_REDZONE_BOOKLET_…``)
     unangetastet bleiben."""
-    s = _num_sub(src.ref, dst.ref, text)
-    if dst.country != src.country:
-        s = _num_sub(src.country, dst.country, s)
+    s = _replace_ref_numbers(text, src, dst)
     if dst.team != src.team:
         ref_ctx = (text.strip() == src.team) or (src.country in text) or (src.ref in text)
         if ref_ctx:
@@ -170,6 +187,58 @@ def _decode_image_xref(doc, xref):
 
 _REF_RE = re.compile(r"^(\S+)\s+(\d{2,4})\s+(\d{2,6})$")
 
+# Referenz im sichtbaren Text: "<TEAM> <COUNTRY> <REF>" (z.B. "PM 971 7408",
+# "EX 971 7408", "CBRN 971 0035"). Dient als Grundwahrheit für die Quell-
+# Referenz – auch bei Booklets, deren Barcode (fälschlich) einen anderen
+# Team-Code trägt oder die gar kein scanbares Symbol enthalten.
+_REF_TEXT_RE = re.compile(r"\b([A-Z]{2,6})\s+(\d{2,4})\s+(\d{2,6})\b")
+
+
+def _detect_reference_text(doc) -> "Reference | None":
+    """Bestimme die Quell-Referenz aus dem **größten** sichtbaren Referenz-Feld
+    (dem Nummern-Kasten auf dem Cover). Bei gleicher Schriftgröße entscheidet die
+    Häufigkeit. So wird die Referenz erkannt, die das Booklet tatsächlich trägt –
+    unabhängig davon, was ein (evtl. abweichender) Barcode kodiert."""
+    from collections import Counter
+    counts: Counter = Counter()
+    sizes: dict = {}
+    for page in doc:
+        for b in page.get_text("dict")["blocks"]:
+            if b["type"] != 0:
+                continue
+            for l in b["lines"]:
+                txt = "".join(s["text"] for s in l["spans"])
+                sz = max((s["size"] for s in l["spans"]), default=0.0)
+                for m in _REF_TEXT_RE.finditer(txt):
+                    g = m.groups()
+                    counts[g] += 1
+                    sizes[g] = max(sizes.get(g, 0.0), sz)
+    if not counts:
+        return None
+    team, country, ref = max(counts, key=lambda g: (sizes[g], counts[g]))
+    return Reference(team, country, ref)
+
+
+def _symbol_payload(sym: "ImageSymbol", src: "Reference", dst: "Reference") -> str:
+    """Neuer Inhalt eines Bild-Symbols in der Ziel-Kopie.
+
+    * **Referenz-Symbole** (Barcode bzw. Referenz-QR) erhalten *exakt* die
+      sichtbare Booklet-Referenz ``dst.base()``. Damit stimmen Barcode und
+      Aufdruck garantiert überein – selbst dann, wenn der Master-Barcode einen
+      abweichenden Team-Code trug (z.B. ``PM`` statt ``EX``); diese Inkonsistenz
+      wird so automatisch korrigiert.
+    * **Statische/URL-QR-Codes** (z.B. ``http://www.dvi-systems.com``) tragen die
+      eindeutige Referenz als Parameter mit, behalten aber ihre Basis-URL.
+    """
+    s = sym.master_string.strip()
+    if sym.kind == "QRCODE" and not _REF_RE.match(s):
+        ref = f"{dst.team}-{dst.country}-{dst.ref}"
+        if s.lower().startswith(("http://", "https://")):
+            sep = "&" if "?" in s else "?"
+            return f"{s}{sep}ref={ref}"
+        return dst.base()
+    return dst.base()
+
 
 def analyze_master(pdf_path: str | Path) -> MasterPlan:
     """Erkenne automatisch Quell-Referenz, Bild-Symbole und Vektor-Symbole."""
@@ -196,23 +265,29 @@ def analyze_master(pdf_path: str | Path) -> MasterPlan:
             if not res:
                 continue
             kind, data, ratio = res
-            if (kind in ("QRCODE", "CODE128") and ratio >= 0.5
-                    and re.search(r"\d{2,}\s+\d{2,}", data)):
+            # Alle echten Symbole übernehmen: Referenz-Barcodes UND QR-Codes
+            # (auch statische URL-QRs – sie tragen künftig die Referenz mit).
+            if kind in ("QRCODE", "CODE128") and ratio >= 0.5:
                 image_symbols.append(ImageSymbol(xref, kind, data, pi, px_aspect,
                                                  placements.get(xref, [])))
-                ref_strings.append(data)
+                if _REF_RE.match(data.strip()):
+                    ref_strings.append(data.strip())
 
-        # 2) Quell-Referenz bestimmen (häufigster "TEAM COUNTRY REF"-String)
-        from collections import Counter
-        base_counts = Counter()
-        for s in ref_strings:
-            m = _REF_RE.match(s)
-            if m:
-                base_counts[m.groups()] += 1
-        if not base_counts:
-            raise ValueError("Konnte im Master keine eindeutige Referenz (TEAM COUNTRY REF) erkennen.")
-        team, country, ref = base_counts.most_common(1)[0][0]
-        src = Reference(team, country, ref)
+        # 2) Quell-Referenz bestimmen. Grundwahrheit ist das größte sichtbare
+        #    Referenz-Textfeld (Cover); nur wenn gar kein Referenz-Text gefunden
+        #    wird, dient der häufigste decodierte Barcode als Rückfallebene.
+        src = _detect_reference_text(doc)
+        if src is None:
+            from collections import Counter
+            base_counts = Counter()
+            for s in ref_strings:
+                m = _REF_RE.match(s)
+                if m:
+                    base_counts[m.groups()] += 1
+            if not base_counts:
+                raise ValueError("Konnte im Master keine eindeutige Referenz (TEAM COUNTRY REF) erkennen.")
+            team, country, ref = base_counts.most_common(1)[0][0]
+            src = Reference(team, country, ref)
 
         # 3) Vektor-Symbole (gezeichnete QR-Codes mit Suffix) je Seite finden
         vector_symbols = _find_vector_symbols(doc, src)
@@ -223,10 +298,31 @@ def analyze_master(pdf_path: str | Path) -> MasterPlan:
         draw_marks = {i: _page_draw_marks(page) for i, page in enumerate(doc)
                       if i not in vector_pages}
 
-        return MasterPlan(src=src, ref_width=len(ref),
+        # 5) Hinweise: Barcodes, deren Team-Code von der sichtbaren Referenz
+        #    abweicht (Master-Inkonsistenz), werden bei der Produktion auf die
+        #    sichtbare Booklet-Referenz angeglichen – das hier transparent melden.
+        notes = []
+        bad_teams = set()
+        for sym in image_symbols:
+            m = _REF_RE.match(sym.master_string.strip())
+            if m and m.group(1) != src.team:
+                bad_teams.add(m.group(1))
+        if bad_teams:
+            notes.append(
+                f"Hinweis: Im Master kodierte der Barcode den Team-Code "
+                f"{', '.join(sorted(bad_teams))} statt {src.team!r}. Bei der "
+                f"Produktion wird der Barcode automatisch auf die sichtbare "
+                f"Booklet-Referenz ({src.team} …) angeglichen und geprüft.")
+        if any(s.kind == "QRCODE" and not _REF_RE.match(s.master_string.strip())
+               for s in image_symbols):
+            notes.append(
+                "QR-Codes tragen künftig die eindeutige Referenz mit "
+                "(Basis-URL bleibt erhalten).")
+
+        return MasterPlan(src=src, ref_width=len(src.ref),
                           image_symbols=image_symbols, vector_symbols=vector_symbols,
                           spot_colors=spot_colors, draw_marks=draw_marks,
-                          vector_pages=vector_pages)
+                          vector_pages=vector_pages, notes=notes)
     finally:
         doc.close()
 
@@ -409,7 +505,7 @@ def build_copy(master_path: str | Path, plan: MasterPlan, dst: Reference,
     done = set()
     overlay_xref: dict[tuple, int] = {}
     for sym in plan.image_symbols:
-        new_str = transform_symbol(sym.master_string, plan.src, dst)
+        new_str = _symbol_payload(sym, plan.src, dst)
         if sym.xref not in done:
             done.add(sym.xref)
             if sym.kind == "QRCODE":
@@ -508,9 +604,12 @@ def verify_copy(doc, plan: MasterPlan, dst: Reference, thorough: bool = False) -
     errors: list[str] = []
     src = plan.src
 
-    # 1) Textlayer: alte Ref-Nummer / alter Basis-String dürfen nicht mehr vorkommen
+    # 1) Textlayer: alte Ref-Nummer darf nicht mehr vorkommen – weder als
+    #    Einzel-Token (``7408``) noch mit dem Country zusammengeschrieben
+    #    (``9717408``) oder in umgekehrter Reihenfolge (``7408971``).
     if dst.ref != src.ref:
-        old_ref_re = re.compile(rf"(?<!\d){re.escape(src.ref)}(?!\d)")
+        c, r = re.escape(src.country), re.escape(src.ref)
+        old_ref_re = re.compile(rf"(?<!\d)(?:{c}\s*{r}|{r}\s*{c}|{r})(?!\d)")
         for i, page in enumerate(doc):
             if old_ref_re.search(page.get_text()):
                 errors.append(f"Seite {i}: alte Referenznummer {src.ref!r} noch im Text vorhanden.")
@@ -524,7 +623,7 @@ def verify_copy(doc, plan: MasterPlan, dst: Reference, thorough: bool = False) -
     # Platzierungs-Bboxes (xref-Nummern können sich beim Ersetzen ändern).
     # 2a) Bild-Symbole (je XObject eine bzw. – thorough – jede Platzierung)
     for sym in plan.image_symbols:
-        expected = transform_symbol(sym.master_string, src, dst)
+        expected = _symbol_payload(sym, src, dst)
         places = sym.placements if thorough else sym.placements[:1]
         if not places:
             errors.append(f"{sym.kind} (xref {sym.xref}): keine Platzierung zum Prüfen vorhanden.")

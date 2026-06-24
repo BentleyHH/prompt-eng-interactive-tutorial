@@ -70,6 +70,7 @@ button:hover { filter: brightness(1.08); }
 .analysis { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); margin: 6px 0 4px; }
 .analysis b { color: var(--txt); }
 .error { color: #ff9a9a; white-space: pre-wrap; font-size: 12px; }
+.note { color: #f4c361; font-size: 12px; }
 
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
 @media (max-width: 980px) { main { grid-template-columns: 1fr; } .grid2 { grid-template-columns: 1fr; } }
