@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS protocols (
     n_image     INTEGER,
     n_vector    INTEGER,
     spots       TEXT,                          -- erkannte Sonderfarben (Druckvorstufe)
+    ptype       TEXT NOT NULL DEFAULT 'cbrn',  -- cbrn (Referenznummer) | officer (Excel-Personalisierung)
     status      TEXT NOT NULL DEFAULT 'neu',   -- neu | laeuft | fehler | sauber
     error       TEXT,
     created_at  TEXT,
@@ -125,7 +126,7 @@ def init_db() -> None:
 def _migrate(con) -> None:
     """Fehlende Spalten in bestehenden Datenbanken nachrüsten (sanfte Migration)."""
     wanted = {
-        "protocols": {"spots": "TEXT"},
+        "protocols": {"spots": "TEXT", "ptype": "TEXT NOT NULL DEFAULT 'cbrn'"},
         "runs": {"pdfa_path": "TEXT", "ftp_status": "TEXT"},
         "produced": {"seal": "TEXT", "username": "TEXT"},
     }
@@ -160,8 +161,17 @@ def set_protocol_analysis(pid, team, country, src_ref, ref_width, n_image, n_vec
     with _LOCK, connect() as con:
         con.execute(
             "UPDATE protocols SET team=?,country=?,src_ref=?,ref_width=?,n_image=?,"
-            "n_vector=?,spots=?,status='sauber',error=NULL,analyzed_at=? WHERE id=?",
+            "n_vector=?,spots=?,ptype='cbrn',status='sauber',error=NULL,analyzed_at=? WHERE id=?",
             (team, country, src_ref, ref_width, n_image, n_vector, spots, now(), pid))
+
+
+def set_protocol_officer(pid, n_roles) -> None:
+    """Officer-Booklet (Excel-Personalisierung) als sauber analysiert markieren."""
+    with _LOCK, connect() as con:
+        con.execute(
+            "UPDATE protocols SET ptype='officer', n_image=?, n_vector=0, team=NULL, "
+            "src_ref=NULL, spots=NULL, status='sauber', error=NULL, analyzed_at=? WHERE id=?",
+            (n_roles, now(), pid))
 
 
 def list_protocols() -> list[dict]:

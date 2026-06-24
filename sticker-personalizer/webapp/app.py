@@ -162,6 +162,47 @@ def api_protocol_insight(pid):
     return jsonify(jobs.insight(pid))
 
 
+# --- Officer-Booklet (Excel-Personalisierung) ------------------------------
+@app.get("/api/protocols/<int:pid>/officer-template.xlsx")
+def api_officer_template(pid):
+    p = db.get_protocol(pid)
+    if not p:
+        abort(404)
+    import tempfile
+    from sticker import booklet, excel_io
+    roster = booklet.officer_roster(p["master_path"])
+    tmp = Path(tempfile.mkstemp(suffix=".xlsx")[1])
+    excel_io.write_roster_template(tmp, roster)
+    return send_file(tmp, as_attachment=True,
+                     download_name=f"Officer_Maske_{p['slug']}.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+@app.post("/api/protocols/<int:pid>/officer-produce")
+def api_officer_produce(pid):
+    p = db.get_protocol(pid)
+    if not p:
+        abort(404)
+    if p.get("ptype") != "officer":
+        abort(400, "Dieses Protokoll ist kein Officer-Booklet.")
+    f = request.files.get("roster")
+    if not f:
+        abort(400, "Bitte die ausgefüllte Officer-Excel hochladen.")
+    import tempfile
+    tmp = Path(tempfile.mkstemp(suffix=".xlsx")[1])
+    f.save(tmp)
+    base_url = (request.form.get("qr_base_url") or "").strip() or None
+    include_cover = request.form.get("cover", "1") != "0"
+    write_name = request.form.get("name", "1") != "0"
+    rid = db.add_run(pid, "OFFICER", "-", "Officer-Personalisierung (Excel)", [], "officer")
+    threading.Thread(
+        target=jobs.officer_run, args=(rid, str(tmp)),
+        kwargs={"base_url": base_url, "include_cover": include_cover,
+                "write_name": write_name, "username": _user()},
+        daemon=True).start()
+    return jsonify({"run_id": rid})
+
+
 # ---------------------------------------------------------------------------
 # Planung / Prüfung (Doppel-Schutz)
 # ---------------------------------------------------------------------------
@@ -217,6 +258,8 @@ def api_produce(pid):
     p = db.get_protocol(pid)
     if not p:
         abort(404)
+    if p.get("ptype") == "officer":
+        abort(400, "Officer-Booklet: bitte über die Excel-Maske personalisieren.")
     if p["status"] != "sauber":
         abort(400, "Protokoll ist noch nicht sauber analysiert.")
     body = request.get_json(force=True)

@@ -20,10 +20,15 @@ async function loadProtocols() {
   for (const p of list) {
     const li = document.createElement("li");
     if (p.id === selectedId) li.classList.add("active");
-    const src = p.team ? `${p.team} ${p.country || ""} ${p.src_ref || ""}` : "—";
+    let sub;
+    if (p.ptype === "officer") {
+      sub = p.n_image != null ? `Officer-Booklet · ${p.n_image} Rollen` : "Officer-Booklet";
+    } else {
+      const src = p.team ? `${p.team} ${p.country || ""} ${p.src_ref || ""}` : "—";
+      sub = escapeHtml(src.trim()) + (p.n_image != null ? ` · ${p.n_image} QR/Barcode-Objekte · ${p.n_vector} Vektor` : "");
+    }
     li.innerHTML = `<i class="dot ${COLOR[p.status] || "grau"}"></i>
-      <div class="meta"><b>${escapeHtml(p.name)}</b>
-      <small>${escapeHtml(src.trim())}${p.n_image != null ? ` · ${p.n_image} QR/Barcode-Objekte · ${p.n_vector} Vektor` : ""}</small></div>`;
+      <div class="meta"><b>${escapeHtml(p.name)}</b><small>${sub}</small></div>`;
     li.onclick = () => selectProtocol(p.id);
     ul.appendChild(li);
   }
@@ -45,26 +50,57 @@ async function refreshDetail() {
   const badge = $("#d-status");
   badge.textContent = LABEL[p.status] || p.status;
   badge.className = "badge " + (COLOR[p.status] || "grau");
-  $("#d-analysis").innerHTML = p.team
-    ? `Quelle: <b>${p.team} ${p.country} ${p.src_ref}</b> · Ref-Breite <b>${p.ref_width}</b>
-       · <b>${p.n_image}</b> Bild-Symbole · <b>${p.n_vector}</b> Vektor-Symbole`
-       + (p.spots ? `<br>Sonderfarben (Druckvorstufe): <b>${escapeHtml(p.spots)}</b> – werden mitgeprüft` : "")
-    : `<span class="muted">Analyse ${p.status === "laeuft" ? "läuft…" : "ausstehend"}</span>`;
+  const officer = p.ptype === "officer";
+
+  // Panels je nach Booklet-Typ umschalten
+  $("#officer-card").classList.toggle("hidden", !officer);
+  $("#prod-card").classList.toggle("hidden", officer);
+  $("#cbrn-cov").classList.toggle("hidden", officer);
+
+  if (officer) {
+    $("#d-analysis").innerHTML = p.status === "sauber"
+      ? `Officer-Booklet · <b>${p.n_image}</b> Rollen-Seiten · Personalisierung per Excel (Name + QR)`
+      : `<span class="muted">Analyse ${p.status === "laeuft" ? "läuft…" : "ausstehend"}</span>`;
+    $("#off-tpl").href = `/api/protocols/${p.id}/officer-template.xlsx`;
+  } else {
+    $("#d-analysis").innerHTML = p.team
+      ? `Quelle: <b>${p.team} ${p.country} ${p.src_ref}</b> · Ref-Breite <b>${p.ref_width}</b>
+         · <b>${p.n_image}</b> Bild-Symbole · <b>${p.n_vector}</b> Vektor-Symbole`
+         + (p.spots ? `<br>Sonderfarben (Druckvorstufe): <b>${escapeHtml(p.spots)}</b> – werden mitgeprüft` : "")
+      : `<span class="muted">Analyse ${p.status === "laeuft" ? "läuft…" : "ausstehend"}</span>`;
+    if (!$("#f-team").value) $("#f-team").value = p.team || "";
+    if (!$("#f-country").value && p.country) $("#f-country").value = p.country;
+    $("#tpl-link").href = `/api/protocols/${p.id}/template.xlsx`;
+    const cq = `protocol=${p.id}${country ? `&country=${encodeURIComponent(country)}` : ""}`;
+    $("#exp-csv").href = `/api/produced/export.csv?${cq}`;
+    $("#exp-cert").href = `/api/produced/certificate.pdf?${cq}`;
+    renderCoverage(p.coverage, country);
+  }
   const err = $("#d-error");
   if (p.status === "fehler" && p.error) { err.textContent = p.error; err.classList.remove("hidden"); }
   else err.classList.add("hidden");
 
-  // Vorbelegung
-  if (!$("#f-team").value) $("#f-team").value = p.team || "";
-  if (!$("#f-country").value && p.country) $("#f-country").value = p.country;
-  $("#tpl-link").href = `/api/protocols/${p.id}/template.xlsx`;
-  const cq = `protocol=${p.id}${country ? `&country=${encodeURIComponent(country)}` : ""}`;
-  $("#exp-csv").href = `/api/produced/export.csv?${cq}`;
-  $("#exp-cert").href = `/api/produced/certificate.pdf?${cq}`;
-
-  renderCoverage(p.coverage, country);
   renderRuns(p.runs);
 }
+
+// Officer-Booklet: Excel hochladen → personalisiertes Booklet erzeugen
+$("#off-file").addEventListener("change", async () => {
+  const f = $("#off-file").files[0];
+  if (!f) return;
+  const fd = new FormData();
+  fd.append("roster", f);
+  fd.append("qr_base_url", $("#off-url").value.trim());
+  fd.append("cover", $("#off-cover").checked ? "1" : "0");
+  fd.append("name", $("#off-name").checked ? "1" : "0");
+  $("#off-status").textContent = "Erzeuge personalisiertes Booklet …";
+  try {
+    const res = await api(`/api/protocols/${selectedId}/officer-produce`, { method: "POST", body: fd });
+    $("#off-status").textContent = "Lauf gestartet …";
+    $("#off-file").value = "";
+    await refreshDetail();
+    pollRun(res.run_id);
+  } catch (err) { $("#off-status").textContent = "Fehler: " + err.message; }
+});
 
 function renderCoverage(cov, country) {
   $("#cov-country").textContent = country ? `· Country ${country}` : "";

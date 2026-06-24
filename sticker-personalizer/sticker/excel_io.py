@@ -163,3 +163,44 @@ def write_example(path: str | Path) -> Path:
     path = Path(path)
     wb.save(path)
     return path
+
+
+def write_roster_template(path: str | Path, roster: list[dict]) -> Path:
+    """Schreibe eine **vorbefüllte** Maske: je Rollen-Seite eine Zeile mit
+    Officer-ID, Rolle und Team (aus dem Booklet ausgelesen). Die Spalten
+    ``Name`` und ``QR`` bleiben leer und werden vom Nutzer ergänzt."""
+    from openpyxl.styles import Font, PatternFill
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Officer"
+    headers = ["Name", "Bedeutung", "Team", "OfficerID", "Site", "QR"]
+    ws.append(headers)
+    title = Font(bold=True, color="FFFFFF")
+    fill = PatternFill("solid", fgColor="045B74")
+    for c in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=c)
+        cell.font = title
+        cell.fill = fill
+    for entry in roster:
+        ws.append(["", entry.get("role", ""), entry.get("team", ""),
+                   entry.get("officer_id", ""), "", ""])
+    ws.freeze_panes = "A2"
+    for col, width in zip("ABCDEF", (24, 28, 14, 12, 12, 34)):
+        ws.column_dimensions[col].width = width
+
+    info = wb.create_sheet("Hinweise")
+    for line in [
+        ["So füllst du die Maske aus"],
+        [""],
+        ["• Jede Zeile ist eine Rollen-Seite des Booklets (Reihenfolge wie im Original)."],
+        ["• Trage in Spalte 'Name' den Namen der Person ein – mehr ist nicht nötig."],
+        ["• 'Bedeutung'/'Team'/'OfficerID' sind schon vorbefüllt (zur Orientierung)."],
+        ["• 'QR' optional: eigener QR-Inhalt (URL/Text); leer = automatisch 'Officer ID <id>'."],
+        ["• Zeilen ohne Namen kannst du löschen, wenn die Rolle nicht besetzt ist."],
+    ]:
+        info.append(line)
+    info.column_dimensions["A"].width = 80
+    path = Path(path)
+    wb.save(path)
+    return path

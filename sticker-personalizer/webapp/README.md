@@ -24,6 +24,12 @@ python -m webapp.app
 
 ## Funktionen
 
+- **Zwei Booklet-Typen** – beim Import automatisch erkannt:
+  - **CBRN-Referenznummer** (Massenware mit eindeutiger Nummer, QR + Barcode),
+  - **Officer-Booklet** (Rollen-Seiten): pro Rolle wird **Name + QR** aus einer
+    **Excel-Maske** eingesetzt. Das Dashboard bietet dann „Excel-Maske
+    herunterladen" (vorbefüllt mit Officer-ID/Rolle), Namen eintragen, hochladen
+    → personalisiertes Booklet als PDF.
 - **Protokolle importieren** (Master-PDF hochladen). Es laufen automatisch die
   Analyse und eine **Ampel**:
   - 🟠 orange = läuft, 🔴 rot = Fehler, 🟢 grün = sauber analysiert, ⚪ grau = neu.

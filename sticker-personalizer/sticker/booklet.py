@@ -271,6 +271,49 @@ def _page_draw_marks(page) -> set:
     return marks
 
 
+def detect_type(path: str | Path) -> str:
+    """Erkenne den Booklet-Typ: ``"officer"`` (Officer-ID-Booklet mit Rollen,
+    Personalisierung per Excel) oder ``"cbrn"`` (Referenznummer-Massenware)."""
+    doc = fitz.open(path)
+    try:
+        full = "\n".join(doc[i].get_text() for i in range(doc.page_count))
+    finally:
+        doc.close()
+    if re.search(r"Officer\s*ID", full, re.I) and len(set(re.findall(r"\b74\d{3}\b", full))) >= 3:
+        return "officer"
+    return "cbrn"
+
+
+_OFFICER_BOILER = {
+    "OFFICER", "MANAGEMENT", "BOOKLET", "OFFICER ID", "FILL OUT + SCAN",
+    "ATTACH TO LOGBOOK", "NAME:", "RANK:", "AGENCY:", "PHONE:", "DATE:", "TIME:",
+    "TEAM:", "SITE:", "SIGNATURE:", "SITE", "NAME",
+}
+
+
+def officer_roster(path: str | Path) -> list[dict]:
+    """Lies aus dem Officer-Booklet je Rollen-Seite die Officer-ID samt einer
+    lesbaren Rollen-/Team-Bezeichnung aus – Grundlage der vorbefüllten Maske."""
+    doc = fitz.open(path)
+    roster: list[dict] = []
+    try:
+        for page in doc:
+            txt = page.get_text()
+            ids = sorted(set(re.findall(r"\b(74\d{3})\b", txt)))
+            if not ids:
+                continue
+            lines = [l.strip() for l in txt.splitlines() if l.strip()]
+            caps = [l for l in lines if l.upper() == l and len(l) > 3
+                    and l not in _OFFICER_BOILER and not l.isdigit()
+                    and "OFFICER ID" not in l]
+            role = caps[0] if caps else ""
+            team = caps[1] if len(caps) > 1 and caps[1] != role else ""
+            roster.append({"officer_id": ids[0], "role": role, "team": team})
+    finally:
+        doc.close()
+    return roster
+
+
 def _find_vector_symbols(doc, src: Reference) -> list[VectorSymbol]:
     """Finde gezeichnete QR-Codes (Cluster kleiner gefüllter Rechtecke) und ordne
     sie über die danebenstehenden Text-Labels ihrer Referenz inkl. Suffix zu."""

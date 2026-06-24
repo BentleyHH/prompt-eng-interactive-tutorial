@@ -58,8 +58,32 @@
         <p id="d-error" class="error hidden"></p>
 
         <div class="grid2">
-          <!-- Produktion -->
-          <div class="card">
+          <!-- Officer-Booklet: Excel-Personalisierung -->
+          <div class="card hidden" id="officer-card">
+            <h3>Officer-Personalisierung (Excel)</h3>
+            <p class="muted">Maske herunterladen, Namen eintragen, wieder hochladen –
+              pro Rolle werden Name und QR-Code eingesetzt.</p>
+            <div class="row actions">
+              <a id="off-tpl" class="ghost btnlike" href="#">① Excel-Maske herunterladen</a>
+            </div>
+            <div class="row">
+              <label>QR-Basis-URL (optional)<input id="off-url" placeholder="https://etaf.example/o"></label>
+            </div>
+            <div class="row">
+              <label class="chk"><input type="checkbox" id="off-cover" checked> Titelseite mit</label>
+              <label class="chk"><input type="checkbox" id="off-name" checked> Namen einsetzen</label>
+            </div>
+            <div class="row actions">
+              <label class="file-btn small">
+                <input type="file" id="off-file" accept=".xlsx" hidden>
+                ② Ausgefüllte Excel wählen → erzeugen
+              </label>
+            </div>
+            <div id="off-status" class="muted"></div>
+          </div>
+
+          <!-- Produktion (CBRN-Referenznummer) -->
+          <div class="card" id="prod-card">
             <h3>Produktion</h3>
             <div class="tabs">
               <button class="tab active" data-tab="range">Bereich / Menge</button>
@@ -111,16 +135,18 @@
             </div>
           </div>
 
-          <!-- Abdeckung / Ledger -->
+          <!-- Abdeckung / Ledger / Verlauf -->
           <div class="card">
-            <h3>Bereits produziert <span class="muted" id="cov-country"></span></h3>
-            <div id="coverage" class="coverage muted">—</div>
-            <div class="row actions">
-              <button id="btn-insight" class="ghost">KI-Check</button>
-              <a id="exp-csv" class="ghost btnlike" href="#">CSV</a>
-              <a id="exp-cert" class="ghost btnlike" href="#">Nachweis-PDF</a>
+            <div id="cbrn-cov">
+              <h3>Bereits produziert <span class="muted" id="cov-country"></span></h3>
+              <div id="coverage" class="coverage muted">—</div>
+              <div class="row actions">
+                <button id="btn-insight" class="ghost">KI-Check</button>
+                <a id="exp-csv" class="ghost btnlike" href="#">CSV</a>
+                <a id="exp-cert" class="ghost btnlike" href="#">Nachweis-PDF</a>
+              </div>
+              <pre id="insight" class="insight hidden"></pre>
             </div>
-            <pre id="insight" class="insight hidden"></pre>
             <h4>Verlauf</h4>
             <ul id="runs" class="runs"></ul>
           </div>

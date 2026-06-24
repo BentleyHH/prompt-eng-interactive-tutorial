@@ -14,7 +14,7 @@ from pathlib import Path
 # Elternpaket 'sticker' importierbar machen
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sticker import booklet  # noqa: E402
+from sticker import booklet, excel_io, overlay  # noqa: E402
 from . import db, ftp_util, pdfa, seal  # noqa: E402
 
 
@@ -110,6 +110,10 @@ def analyze_protocol(pid: int) -> None:
     db.set_protocol_status(pid, "laeuft")
     try:
         p = db.get_protocol(pid)
+        if booklet.detect_type(p["master_path"]) == "officer":
+            roster = booklet.officer_roster(p["master_path"])
+            db.set_protocol_officer(pid, n_roles=len(roster))
+            return
         plan = booklet.analyze_master(p["master_path"])
         db.set_protocol_analysis(
             pid, plan.src.team, plan.src.country, plan.src.ref, plan.ref_width,
@@ -117,6 +121,26 @@ def analyze_protocol(pid: int) -> None:
             spots=", ".join(plan.spot_colors) if plan.spot_colors else None)
     except Exception as e:  # noqa: BLE001
         db.set_protocol_status(pid, "fehler", f"{e}\n{traceback.format_exc()}")
+
+
+def officer_run(rid: int, roster_path: str, *, base_url=None, include_cover=True,
+                write_name=True, username=None) -> None:
+    """Erzeuge ein personalisiertes Officer-Booklet aus der hochgeladenen Excel."""
+    run = db.get_run(rid)
+    p = db.get_protocol(run["protocol_id"])
+    out_dir = db.OUTPUT_DIR / f"run_{rid}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        people = excel_io.read_people(roster_path)
+        out_pdf = out_dir / f"{p['slug']}__personalisiert_x{len(people)}.pdf"
+        overlay.build(p["master_path"], people, out_pdf, base_url=base_url,
+                      include_cover=include_cover, write_name=write_name)
+        db.set_run_progress(rid, 100)
+        db.finish_run(rid, "sauber", combined_path=out_pdf)
+        db.log_audit(username, "officer-produce", f"{p['name']}: {len(people)} Officer")
+    except Exception as e:  # noqa: BLE001
+        db.finish_run(rid, "fehler", error=f"{e}")
+        db.log_audit(username, "fehler", f"Officer-Lauf #{rid}: {e}")
 
 
 # ---------------------------------------------------------------------------
