@@ -47,6 +47,12 @@ def _qr_pixmap(data: str) -> "fitz.Pixmap":
 _DIR_ROTATE_SB = {(1, 0): 0, (0, -1): 90, (-1, 0): 180, (0, 1): 270}
 
 
+def _area(rect) -> float:
+    """Fläche eines Rechtecks – versionsunabhängig (ältere PyMuPDF-Versionen
+    haben kein ``Rect.get_area()``)."""
+    return abs(rect.width) * abs(rect.height)
+
+
 def sidebar_info(page):
     """Finde die farbige Leiste am rechten Seitenrand. Liefert ``(rect, (r,g,b))``
     oder ``None``. Heuristik: hoher, rechtsbündiger, gefüllter Block, der nicht
@@ -107,7 +113,7 @@ def recolor_sidebar(page, rect, new_rgb) -> None:
             for s in l["spans"]:
                 sb = fitz.Rect(s["bbox"])
                 inter = sb & rect
-                if (not inter.is_empty) and inter.get_area() >= 0.5 * max(sb.get_area(), 1e-6):
+                if (not inter.is_empty) and _area(inter) >= 0.5 * max(_area(sb), 1e-6):
                     spans.append((s["origin"], s["text"], s["size"], d, s.get("color", 16777215)))
     # neue Farbe deckt alte Farbe + Beschriftung
     page.draw_rect(rect, color=None, fill=tuple(new_rgb))
@@ -149,13 +155,14 @@ def personalize_page(page, person: Person, base_url: Optional[str],
     if write_name and person.name:
         _fit_text(page, _NAME_BOX, person.name)
 
-    # Optional: Farbe der Seitenleiste ("Aufkleber") angleichen.
-    if getattr(person, "color", ""):
-        rgb = parse_color(person.color)
-        if rgb:
-            info = sidebar_info(page)
-            if info:
-                recolor_sidebar(page, info[0], rgb)
+    # Optional: Farbe der Seitenleiste ("Aufkleber") angleichen – aber nur,
+    # wenn eine Farbe eingetragen ist UND sie sich von der vorhandenen
+    # unterscheidet (sonst bleibt die Originalleiste unangetastet).
+    rgb = parse_color(getattr(person, "color", ""))
+    if rgb:
+        info = sidebar_info(page)
+        if info and tuple(round(c, 3) for c in info[1]) != tuple(round(c, 3) for c in rgb):
+            recolor_sidebar(page, info[0], rgb)
 
 
 def build(original_pdf: str | Path, people: list[Person], out_pdf: str | Path,
