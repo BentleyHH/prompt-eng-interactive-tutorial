@@ -205,8 +205,13 @@ def role_pages(doc) -> list[tuple]:
 
 
 def _renumber_page(page, orig_id: str, new_id: str, base_url: Optional[str]) -> None:
-    """Ersetze auf einer Rollen-Seite die Officer-ID (Text + beide QR-Codes)."""
-    ops = []
+    """Ersetze auf einer Rollen-Seite die Officer-ID (Text + beide QR-Codes).
+
+    Die alte Nummer wird – wie beim Excel-Modus – mit einer weißen Fläche
+    abgedeckt und die neue an gleicher Stelle gesetzt. Bewusst **ohne**
+    ``apply_redactions``: dieses bereinigt den kompletten Seiteninhalt und
+    stürzt auf manchen Original-Mastern ab ("key is not a name").
+    """
     for b in page.get_text("dict")["blocks"]:
         if b["type"] != 0:
             continue
@@ -218,21 +223,18 @@ def _renumber_page(page, orig_id: str, new_id: str, base_url: Optional[str]) -> 
                     bbox = fitz.Rect(s["bbox"])
                     size = s["size"]
                     ox, oy = s["origin"]
-                    # Lösch-Box eng um die Glyphen (Font-Metrik), damit darüber
-                    # liegender Text (z.B. "Officer ID") nicht angeschnitten wird.
+                    # Abdeck-Box eng um die Glyphen (Font-Metrik), damit darüber
+                    # liegender Text (z.B. "Officer ID") nicht verdeckt wird.
                     if rot == 0:
-                        red = fitz.Rect(bbox.x0, oy - 0.82 * size, bbox.x1, oy + 0.16 * size)
+                        cover = fitz.Rect(bbox.x0, oy - 0.82 * size, bbox.x1, oy + 0.16 * size)
                     elif rot == 90:
-                        red = fitz.Rect(ox - 0.16 * size, bbox.y0, ox + 0.82 * size, bbox.y1)
+                        cover = fitz.Rect(ox - 0.16 * size, bbox.y0, ox + 0.82 * size, bbox.y1)
                     else:
-                        red = bbox
-                    page.add_redact_annot(red, fill=(1, 1, 1))
-                    ops.append((s["origin"], s["text"].replace(orig_id, new_id), size, rot))
-    if ops:
-        page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
-        for origin, text, size, rot in ops:
-            page.insert_text(origin, text, fontname="hebo", fontsize=size,
-                             color=(0.137, 0.122, 0.125), rotate=rot)
+                        cover = bbox
+                    page.draw_rect(cover, color=None, fill=(1, 1, 1))
+                    page.insert_text(s["origin"], s["text"].replace(orig_id, new_id),
+                                     fontname="hebo", fontsize=size,
+                                     color=(0.137, 0.122, 0.125), rotate=rot)
     # QR-Codes neu setzen (Inhalt = Basis-URL + ID oder 'Officer ID <id>')
     payload = f"{base_url.rstrip('/')}/{new_id}" if base_url else f"Officer ID {new_id}"
     pix = _qr_pixmap(payload)

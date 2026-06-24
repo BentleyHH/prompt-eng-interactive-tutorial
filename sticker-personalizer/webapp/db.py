@@ -244,6 +244,18 @@ def delete_run(rid) -> None:
         con.execute("DELETE FROM runs WHERE id=?", (rid,))
 
 
+def reset_stale_runs() -> int:
+    """Beim Start: Läufe, die noch auf 'laeuft' stehen, gibt es nach einem
+    Neustart/Absturz nicht mehr (Threads überleben den Prozess nicht). Diese als
+    'fehler' markieren, damit sie nicht ewig orange hängen und gelöscht werden
+    können. Liefert die Anzahl bereinigter Läufe."""
+    with _LOCK, connect() as con:
+        cur = con.execute(
+            "UPDATE runs SET status='fehler', "
+            "error='Abgebrochen (App wurde neu gestartet).' WHERE status='laeuft'")
+        return cur.rowcount
+
+
 # --- Ledger (produzierte Nummern) -----------------------------------------
 def record_produced(protocol_id, run_id, team, country, refs, reprints: set | None = None,
                     seals: dict | None = None, username: str | None = None) -> None:

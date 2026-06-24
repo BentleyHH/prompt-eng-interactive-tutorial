@@ -544,6 +544,9 @@ DEFAULT_PORT = int(os.environ.get("PORT", "8765"))
 
 def main():
     db.init_db()
+    stale = db.reset_stale_runs()
+    if stale:
+        print(f"  {stale} unterbrochene(n) Lauf/Läufe als 'Fehler' markiert (löschbar).")
     app.secret_key = db.ensure_secret()
     note = auth.ensure_default_admin()
     if note:
