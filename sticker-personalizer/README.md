@@ -13,7 +13,7 @@ Zwei Werkzeuge in einem Paket für die ETAF-Booklets:
 
 > **Schnellstart für Nicht-Techniker:** siehe [`ANLEITUNG.md`](ANLEITUNG.md) –
 > Python installieren, `start.bat` (Windows) bzw. `start.sh` (macOS/Linux)
-> doppelklicken, Browser auf http://127.0.0.1:5000.
+> doppelklicken, Browser auf http://127.0.0.1:8765.
 
 ---
 
@@ -140,7 +140,7 @@ Für 5–10 wiederkehrende Protokolle gibt es ein **lokales Web-Dashboard**
 Excel-Import, Doppel-Schutz-Ledger und FTP-tauglicher SQLite-Datenbank.
 
 ```bash
-python -m webapp.app        # -> http://127.0.0.1:5000
+python -m webapp.app        # -> http://127.0.0.1:8765
 ```
 
 Details: siehe [`webapp/README.md`](webapp/README.md).

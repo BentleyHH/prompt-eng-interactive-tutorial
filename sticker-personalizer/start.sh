@@ -29,9 +29,9 @@ command -v gs >/dev/null 2>&1 || echo "Hinweis: 'ghostscript' fehlt – nur für
 
 echo ""
 echo "============================================================"
-echo "  Dashboard startet auf:   http://127.0.0.1:5000"
+echo "  Dashboard startet auf:   http://127.0.0.1:8765"
 echo "  Login beim ersten Mal:   admin / admin"
 echo "  Zum Beenden: dieses Fenster schließen oder Strg+C drücken."
 echo "============================================================"
 echo ""
-python -m webapp.app
+PORT=8765 python -m webapp.app

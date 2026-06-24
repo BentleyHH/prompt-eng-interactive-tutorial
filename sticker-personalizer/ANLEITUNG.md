@@ -60,7 +60,7 @@ Danach oben rechts unter „Passwort" gleich ein eigenes setzen. **Fertig.** �
 
 - „Seite nicht erreichbar" im Browser → das schwarze Startfenster muss offen
   sein; einfach `Start.command` erneut doppelklicken.
-- Browser ging nicht von selbst auf → manuell **http://127.0.0.1:5000** eingeben.
+- Browser ging nicht von selbst auf → manuell **http://127.0.0.1:8765** eingeben.
 
 ---
 

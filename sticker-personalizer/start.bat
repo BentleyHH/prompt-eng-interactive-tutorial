@@ -26,10 +26,12 @@ python -m pip install --quiet --prefer-binary -r requirements.txt
 
 echo.
 echo ============================================================
-echo   Dashboard startet auf:   http://127.0.0.1:5000
+echo   Dashboard startet auf:   http://127.0.0.1:8765
 echo   Login beim ersten Mal:   admin / admin
 echo   Zum Beenden: dieses Fenster schliessen oder Strg+C druecken.
 echo ============================================================
 echo.
+set PORT=8765
+start "" http://127.0.0.1:8765
 python -m webapp.app
 pause

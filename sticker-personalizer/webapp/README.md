@@ -17,7 +17,7 @@ cd sticker-personalizer
 pip install -r requirements.txt                # reine pip-Installation
 # optional nur für PDF/A:  macOS: brew install ghostscript | Ubuntu: sudo apt-get install -y ghostscript
 python -m webapp.app
-# -> http://127.0.0.1:5000     (erster Login: admin / admin – danach Passwort ändern)
+# -> http://127.0.0.1:8765     (erster Login: admin / admin – danach Passwort ändern)
 ```
 
 > macOS am einfachsten: `Start.command` doppelklicken (siehe `ANLEITUNG.md`).

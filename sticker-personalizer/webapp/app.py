@@ -3,7 +3,7 @@
 Start:
     cd sticker-personalizer
     python -m webapp.app          # oder:  python webapp/app.py
-    -> http://127.0.0.1:5000   (erster Login: admin / admin)
+    -> http://127.0.0.1:8765   (erster Login: admin / admin)
 
 Funktionen: Login + Audit-Log, Master-Booklets importieren/analysieren
 (Ampel-Status), Mengen/Bereiche oder Excel-Import, parallele Produktion mit
@@ -433,14 +433,21 @@ def api_audit():
 
 
 # ---------------------------------------------------------------------------
+# Standard-Port 8765 (NICHT 5000 – das belegt macOS für den AirPlay-Empfänger
+# und würde eine leere Seite zeigen). Per Umgebungsvariable PORT überschreibbar.
+import os
+
+DEFAULT_PORT = int(os.environ.get("PORT", "8765"))
+
+
 def main():
     db.init_db()
     app.secret_key = db.ensure_secret()
     note = auth.ensure_default_admin()
     if note:
         print("  " + note)
-    print("Booklet-Dashboard läuft auf  http://127.0.0.1:5000")
-    app.run(host="127.0.0.1", port=5000, debug=False, threaded=True)
+    print(f"Booklet-Dashboard läuft auf  http://127.0.0.1:{DEFAULT_PORT}")
+    app.run(host="127.0.0.1", port=DEFAULT_PORT, debug=False, threaded=True)
 
 
 if __name__ == "__main__":

@@ -60,18 +60,24 @@ fi
 command -v gs >/dev/null 2>&1 || \
   echo "    (Hinweis: PDF/A-Archiv braucht 'ghostscript' – optional: brew install ghostscript)"
 
+PORT=8765
 echo ""
 echo "============================================================"
-echo "  Dashboard läuft gleich auf:   http://127.0.0.1:5000"
+echo "  Dashboard läuft gleich auf:   http://127.0.0.1:${PORT}"
 echo "  Login beim ersten Mal:        admin / admin"
 echo "  Beenden: dieses Fenster schließen oder Strg+C drücken."
 echo "============================================================"
 echo ""
 
-# Browser nach kurzem Moment automatisch öffnen
-( sleep 3; open "http://127.0.0.1:5000" >/dev/null 2>&1 ) &
+# Browser erst öffnen, wenn der Server wirklich antwortet (kein leeres Fenster).
+( for _ in $(seq 1 60); do
+    if curl -s -o /dev/null "http://127.0.0.1:${PORT}/login"; then
+      open "http://127.0.0.1:${PORT}" >/dev/null 2>&1; break
+    fi
+    sleep 1
+  done ) &
 
-python -m webapp.app
+PORT="$PORT" python -m webapp.app
 
 echo ""
 read -r -p "Dashboard beendet. Mit ENTER schließen ..." _
