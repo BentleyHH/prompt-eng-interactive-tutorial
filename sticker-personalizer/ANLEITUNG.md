@@ -46,6 +46,31 @@ Danach oben rechts unter „Passwort" gleich ein eigenes setzen. **Fertig.** �
 
 ---
 
+## Welche Booklets gehen?
+
+Du lädst einfach das Master-PDF hoch, der Rest passiert automatisch:
+
+- **Referenz-Booklets als Massenware** (eindeutige Nummer pro Stück): CBRN
+  Red Zone, **Post Mortem (PM)**, **PM Interpol & Minnesota (PMMP)**,
+  **DVI Recovery**, **CSI/Exhibit (EX)** und **Family Liaison (AMFSB / AM)**.
+  Das Tool erkennt die sichtbare Referenz (z.B. `EX 971 7408`) selbst und
+  tauscht sie samt **Barcode und QR-Code** überall konsistent aus. Du gibst
+  nur den Nummern­bereich **von–bis** (oder Anzahl) ein.
+  - **Barcode = Aufdruck:** Der Barcode bekommt immer exakt die sichtbare
+    Nummer. Falls ein Master-Barcode einen abweichenden Code trug (kam bei
+    CSI vor: Barcode „PM", Aufdruck „EX"), wird das automatisch korrigiert
+    und als Hinweis angezeigt.
+  - **QR trägt die Nummer mit:** Der QR-Code zeigt pro Stück die eindeutige
+    Referenz (Basis-URL bleibt erhalten).
+- **Officer-Management-Booklet** (ein Blatt pro Person): per Excel-Maske
+  oder im Modus „Nur Nummern".
+  - **Aufkleberfarbe:** Die Maske liest die Farbe der Seitenleiste rechts je
+    Rolle aus (Spalte **„Farbe"**, z.B. `#045B74`). Brauchst du eine Person
+    mehr, trägst du dort einfach die passende Farbe ein – die Leiste wird
+    angeglichen, die Beschriftung bleibt. Leer = Originalfarbe bleibt.
+  - **Nur Nummern:** Du gibst **Von** (und optional **Bis**) ein; das Tool
+    zeigt sofort den resultierenden Bereich und vergibt die IDs fortlaufend.
+
 ## Gut zu wissen
 
 - **Das schwarze Fenster offen lassen**, solange du arbeitest. Zum Beenden

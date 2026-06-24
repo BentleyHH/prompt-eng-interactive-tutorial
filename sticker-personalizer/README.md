@@ -53,19 +53,42 @@ python personalize.py generate teams.xlsx \          # neu aus eigener Vorlage
 ```
 
 Excel-Spalten (tolerant erkannt): `Name`, `Bedeutung`/`Rolle`, `Team`,
-`OfficerID` (leer = ab 74401), `Site`, `QR`/`URL`. QR-Inhalt-Priorität:
+`OfficerID` (leer = ab 74401), `Site`, `QR`/`URL`, `Farbe`. QR-Inhalt-Priorität:
 Spalte `QR` > `--qr-base-url` + ID > Fallback `Officer ID <id>`.
+
+Die **Maske** (Dashboard) liest pro Rollen-Seite die **Farbe der Seitenleiste**
+(„Aufkleber" rechts) aus und trägt sie in die Spalte `Farbe` (`#RRGGBB`) ein.
+Wird dort eine Farbe gesetzt, gleicht das Tool die Leiste an (Beschriftung
+bleibt erhalten) – praktisch, um für eine zusätzliche Person die passende
+Aufkleberfarbe zu vergeben. Leer = Originalfarbe bleibt unangetastet.
 
 ---
 
-# B) CBRN-Exhibit-Booklet (Massenware mit Referenznummer)
+# B) Referenz-Booklets (Massenware mit eindeutiger Nummer)
 
-Das CBRN-Booklet trägt eine **eindeutige Referenz** aus Team-Code, Country-Code
-und einer fortlaufenden **Unique Reference Number** (im Master `CBRN 971 0035`).
-Diese Referenz kommt **dutzendfach** vor – als Text, als **QR-Codes** und als
-**Code128-Barcodes**, über fast alle Seiten verteilt. Für eine Auflage von z. B.
-100 Stück muss jede Kopie eine andere Nummer tragen, und **jedes** Vorkommen muss
-korrekt sein, damit es im DVI-Einsatz zu keiner Verwechslung kommt.
+Diese Booklets tragen eine **eindeutige Referenz** aus Team-Code, Country-Code
+und einer fortlaufenden **Unique Reference Number** (z. B. `CBRN 971 0035`,
+`EX 971 7408`, `PM 971 3516`). Die Referenz kommt **dutzendfach** vor – als
+Text, als **QR-Codes** und als **Code128-Barcodes**, über fast alle Seiten
+verteilt. Für eine Auflage von z. B. 100 Stück muss jede Kopie eine andere
+Nummer tragen, und **jedes** Vorkommen muss korrekt sein, damit es im
+DVI-Einsatz zu keiner Verwechslung kommt.
+
+Unterstützt (Typ wird automatisch erkannt): **CBRN Red Zone**, **Post Mortem
+(PM)**, **PM Interpol & Minnesota (PMMP)**, **DVI Recovery**, **CSI/Exhibit
+(EX)**, **Family Liaison (AMFSB / AM)** – auch zwei-/dreisprachige Master
+(EN/AR) und Booklets, deren Referenz nur als Text vorkommt.
+
+Konsistenz-Regeln (DVI-kritisch):
+
+- **Quell-Referenz** wird aus dem größten sichtbaren Referenz-Feld (Cover)
+  bestimmt – funktioniert auch ohne scanbaren Barcode.
+- **Barcode = sichtbare Nummer.** Trug ein Master-Barcode versehentlich einen
+  anderen Team-Code (bei CSI: Barcode `PM`, Aufdruck `EX`), wird er auf die
+  sichtbare Referenz angeglichen und das gemeldet.
+- **QR trägt die Referenz mit** (Basis-URL bleibt, `…?ref=EX-971-0042`).
+- Auch zusammengeschriebene (`EX 9717408`) und arabisch umgekehrte (`7408 971`)
+  Schreibweisen werden ersetzt und in der Verifikation geprüft.
 
 ### Master analysieren
 
