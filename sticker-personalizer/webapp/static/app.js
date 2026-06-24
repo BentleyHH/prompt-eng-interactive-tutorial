@@ -263,9 +263,11 @@ function pollProtocol() {
   }, 1500);
 }
 
-// Tabs
-$$(".tab").forEach(tab => tab.onclick = () => {
-  $$(".tab").forEach(t => t.classList.remove("active"));
+// Tabs (Produktions-Reiter; Officer-Sub-Reiter haben data-otab und werden
+// separat behandelt – hier ausschließen, sonst überschreibt dieser Handler
+// deren onclick und der "Excel-Maske"-Reiter lässt sich nicht öffnen).
+$$(".tab:not([data-otab])").forEach(tab => tab.onclick = () => {
+  $$(".tab:not([data-otab])").forEach(t => t.classList.remove("active"));
   tab.classList.add("active");
   $$(".tab-body").forEach(b => b.classList.toggle("hidden", b.dataset.body !== tab.dataset.tab));
 });
