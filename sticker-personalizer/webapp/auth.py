@@ -9,12 +9,21 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import db
 
+# pbkdf2 statt des neueren Werkzeug-Standards scrypt: scrypt fehlt in manchen
+# Python-Builds (z.B. macOS Command-Line-Tools / LibreSSL) und ließe den Start
+# abstürzen. pbkdf2:sha256 ist überall verfügbar und ausreichend sicher.
+HASH_METHOD = "pbkdf2:sha256"
+
+
+def hash_pw(password: str) -> str:
+    return generate_password_hash(password, method=HASH_METHOD)
+
 
 def ensure_default_admin() -> str | None:
     """Lege beim ersten Start einen Admin 'admin' / 'admin' an. Liefert einen
     Hinweis, falls erstellt (Passwort bitte ändern)."""
     if db.count_users() == 0:
-        db.create_user("admin", generate_password_hash("admin"), role="admin")
+        db.create_user("admin", hash_pw("admin"), role="admin")
         return "Standard-Login angelegt: admin / admin  – bitte Passwort ändern!"
     return None
 
@@ -32,10 +41,6 @@ def current_user() -> str | None:
 
 def current_role() -> str | None:
     return session.get("role")
-
-
-def hash_pw(password: str) -> str:
-    return generate_password_hash(password)
 
 
 def login_required(f):
