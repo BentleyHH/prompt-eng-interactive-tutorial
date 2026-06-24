@@ -18,7 +18,8 @@ header h1::before { content: "▦ "; color: var(--accent); }
 .legend span { display: flex; align-items: center; gap: 6px; }
 
 main { display: grid; grid-template-columns: 340px 1fr; gap: 18px; padding: 18px; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+main > section { min-width: 0; }   /* verhindert, dass lange Inhalte die Spalte sprengen */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow: hidden; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
 h2 { font-size: 16px; margin: 0 0 12px; }
 h3 { font-size: 14px; margin: 0 0 10px; }
@@ -44,9 +45,11 @@ h4 { font-size: 12px; color: var(--muted); margin: 16px 0 6px; text-transform: u
 .protocol-list .meta b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .protocol-list .meta small { color: var(--muted); }
 
-.upload { border-top: 1px dashed var(--line); padding-top: 12px; display: grid; gap: 8px; }
+.upload { border-top: 1px dashed var(--line); padding-top: 12px; display: grid; gap: 8px; min-width: 0; }
 .file-btn { display: inline-block; padding: 8px 12px; border: 1px solid var(--line);
-  border-radius: 8px; cursor: pointer; text-align: center; background: var(--card); }
+  border-radius: 8px; cursor: pointer; text-align: center; background: var(--card);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upload .file-btn { display: block; width: 100%; }
 .file-btn.small { padding: 6px 10px; }
 input[type=text], input[type=number], input:not([type]), select {
   width: 100%; padding: 8px 10px; background: #11161c; color: var(--txt);
