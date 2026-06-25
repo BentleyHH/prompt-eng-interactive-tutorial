@@ -96,10 +96,14 @@ def read_people(path: str | Path, id_start: int = ID_START) -> list[Person]:
         target = _ALIASES.get(_norm(cell))
         if target:
             col_map[idx] = target
-    if "name" not in col_map.values() and "role" not in col_map.values():
+    # Mindestens eine erkannte Spalte genügt. Namen dürfen leer bleiben – es
+    # reicht z.B. eine 'Bedeutung'-, 'OfficerID'- oder 'Team'-Spalte.
+    if not col_map:
         raise ValueError(
-            "Es wurde weder eine 'Name'- noch eine 'Bedeutung'-Spalte erkannt. "
-            f"Gefundene Überschriften: {[h for h in header if h]}"
+            "Keine bekannte Spalte erkannt. Erwartet wird mindestens eine von: "
+            "Name, Bedeutung, Team, OfficerID, Site, QR, Farbe. "
+            f"Gefundene Überschriften: {[h for h in header if h]}. "
+            "Tipp: Lade die Vorlage über „Excel-Maske herunterladen“ und fülle sie aus."
         )
 
     people: list[Person] = []
@@ -107,8 +111,8 @@ def read_people(path: str | Path, id_start: int = ID_START) -> list[Person]:
     for r, raw in enumerate(data_rows, start=2):
         values = {col_map[i]: ("" if raw[i] is None else str(raw[i]).strip())
                   for i in col_map if i < len(raw)}
-        # Komplett leere Zeilen überspringen.
-        if not any(values.get(k) for k in ("name", "role", "team", "officer_id")):
+        # Komplett leere Zeilen überspringen (Namen dürfen leer sein).
+        if not any(values.get(k) for k in ("name", "role", "team", "officer_id", "qr")):
             continue
         p = Person(
             name=values.get("name", ""),
@@ -131,7 +135,9 @@ def read_people(path: str | Path, id_start: int = ID_START) -> list[Person]:
                 pass
         people.append(p)
     if not people:
-        raise ValueError("Keine Datenzeilen in der Tabelle gefunden.")
+        raise ValueError(
+            "Keine ausfüllbaren Datenzeilen gefunden. Trage je Rolle mindestens "
+            "eine Bedeutung oder OfficerID ein (Name darf leer bleiben).")
     return people
 
 

@@ -529,6 +529,11 @@ def _insert_ref_text(page, c) -> None:
         if box is not None:
             avail = box.width * 0.88            # etwas Rand im Feld lassen
             cx = (box.x0 + box.x1) / 2
+            # Niemals höher als das Feld: Ziffernhöhe (~0.72·Schriftgröße)
+            # muss in die Feldhöhe passen, sonst wird oben angeschnitten.
+            h_cap = box.height * 0.92 / 0.72
+            if size > h_cap:
+                size = h_cap
         else:
             avail = bbox.width
             cx = (bbox.x0 + bbox.x1) / 2
