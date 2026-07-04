@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Anleitung Homepage-Baukasten</title>
+<style>
+  :root{
+    --ink:#1f2430;
+    --muted:#5a6472;
+    --line:#e3e7ee;
+    --brand:#2f6df6;
+    --brand-dark:#1e4fc4;
+    --accent:#eaf1ff;
+    --tip:#eef8f0;
+    --tip-line:#bfe3c7;
+    --tip-ink:#1f6b34;
+    --warn:#fff6e9;
+    --warn-line:#f2d9a8;
+    --warn-ink:#8a5a12;
+  }
+
+  @page{
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{ margin:0; padding:0; }
+
+  body{
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color:var(--ink);
+    font-size:11pt;
+    line-height:1.55;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+
+  h1,h2,h3{ line-height:1.2; }
+
+  p{ margin:0 0 9pt; }
+
+  a{ color:var(--brand-dark); text-decoration:none; }
+
+  .muted{ color:var(--muted); }
+
+  /* ---------- Deckblatt ---------- */
+  .cover{
+    height: 261mm;              /* passt in A4 minus Ränder */
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    page-break-after:always;
+  }
+  .cover-top .eyebrow{
+    display:inline-block;
+    font-size:9.5pt;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--brand-dark);
+    background:var(--accent);
+    padding:5pt 11pt;
+    border-radius:999px;
+    font-weight:600;
+  }
+  .cover-mid h1{
+    font-size:33pt;
+    margin:0 0 10pt;
+    letter-spacing:-.01em;
+  }
+  .cover-mid .sub{
+    font-size:13.5pt;
+    color:var(--muted);
+    max-width:150mm;
+    margin:0;
+  }
+  .cover-art{
+    margin:14pt 0 0;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:0;
+    overflow:hidden;
+    background:
+      linear-gradient(135deg,#f6f9ff 0%, #eef3ff 100%);
+  }
+  .browser-bar{
+    background:#eef1f6;
+    border-bottom:1px solid var(--line);
+    padding:8pt 12pt;
+    display:flex;
+    align-items:center;
+    gap:6pt;
+  }
+  .dot{ width:9pt; height:9pt; border-radius:50%; display:inline-block; }
+  .dot.r{ background:#ff6159; } .dot.y{ background:#ffbd2e; } .dot.g{ background:#28c840; }
+  .browser-url{
+    margin-left:8pt; background:#fff; border:1px solid var(--line);
+    border-radius:6px; padding:3pt 10pt; font-size:9pt; color:var(--muted);
+    flex:1;
+  }
+  .browser-body{ padding:16pt 18pt 20pt; }
+  .skeleton-head{ height:16pt; width:52%; background:#d7e2fb; border-radius:6px; margin-bottom:9pt; }
+  .skeleton-line{ height:8pt; background:#e7ecf5; border-radius:5px; margin-bottom:6pt; }
+  .skeleton-line.s1{ width:88%; } .skeleton-line.s2{ width:74%; } .skeleton-line.s3{ width:80%; }
+  .skeleton-row{ display:flex; gap:10pt; margin-top:12pt; }
+  .skeleton-card{ flex:1; height:46pt; background:#eef2f9; border-radius:8px; border:1px solid var(--line); }
+  .cover-bottom{ display:flex; justify-content:space-between; align-items:flex-end; }
+  .cover-bottom .for{ font-size:11pt; }
+  .cover-bottom .for strong{ font-size:12.5pt; }
+  .cover-bottom .brandline{ text-align:right; font-size:10pt; color:var(--muted); }
+
+  /* ---------- Inhalt ---------- */
+  section{ page-break-inside:auto; }
+
+  .lead-num{
+    display:flex; align-items:baseline; gap:12pt;
+    border-bottom:2px solid var(--brand);
+    padding-bottom:7pt; margin:0 0 14pt;
+  }
+  .lead-num .n{
+    font-size:22pt; font-weight:800; color:var(--brand);
+    line-height:1; min-width:30pt;
+  }
+  .lead-num h2{ font-size:18pt; margin:0; }
+
+  h3{ font-size:12.5pt; margin:16pt 0 6pt; }
+
+  /* Schritt-Listen */
+  ol.steps{ counter-reset:step; list-style:none; margin:0; padding:0; }
+  ol.steps > li{
+    counter-increment:step;
+    position:relative;
+    padding:0 0 11pt 30pt;
+    margin:0;
+    page-break-inside:avoid;
+  }
+  ol.steps > li::before{
+    content:counter(step);
+    position:absolute; left:0; top:0;
+    width:20pt; height:20pt;
+    background:var(--brand); color:#fff;
+    border-radius:50%;
+    font-size:10pt; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+  ol.steps > li strong{ color:var(--ink); }
+
+  ul.plain{ margin:4pt 0 9pt; padding-left:16pt; }
+  ul.plain li{ margin:0 0 4pt; }
+
+  /* Boxen */
+  .box{
+    border-radius:10px; padding:11pt 14pt; margin:12pt 0;
+    page-break-inside:avoid; font-size:10.5pt;
+  }
+  .box .box-title{ font-weight:700; margin:0 0 4pt; display:flex; align-items:center; gap:6pt; }
+  .box p:last-child{ margin-bottom:0; }
+  .box.tip{ background:var(--tip); border:1px solid var(--tip-line); }
+  .box.tip .box-title{ color:var(--tip-ink); }
+  .box.warn{ background:var(--warn); border:1px solid var(--warn-line); }
+  .box.warn .box-title{ color:var(--warn-ink); }
+  .box.info{ background:var(--accent); border:1px solid #cfe0ff; }
+  .box.info .box-title{ color:var(--brand-dark); }
+
+  .ico{ font-weight:800; }
+
+  /* Inhaltsverzeichnis */
+  .toc{ page-break-after:always; }
+  .toc ol{ list-style:none; counter-reset:toc; margin:0; padding:0; }
+  .toc ol li{
+    counter-increment:toc;
+    display:flex; align-items:baseline;
+    padding:9pt 0; border-bottom:1px solid var(--line);
+    font-size:12pt;
+  }
+  .toc ol li::before{
+    content:counter(toc);
+    color:var(--brand); font-weight:800; min-width:26pt; font-size:13pt;
+  }
+  .toc ol li .t{ flex:1; }
+  .toc ol li .pg{ color:var(--muted); font-size:10pt; }
+
+  /* Checkliste */
+  ul.check{ list-style:none; margin:0; padding:0; }
+  ul.check li{
+    padding:7pt 0 7pt 26pt; position:relative;
+    border-bottom:1px solid var(--line); font-size:11pt;
+    page-break-inside:avoid;
+  }
+  ul.check li::before{
+    content:""; position:absolute; left:0; top:7pt;
+    width:14pt; height:14pt; border:1.5px solid var(--brand);
+    border-radius:4px;
+  }
+
+  table.faq{ width:100%; border-collapse:collapse; margin-top:6pt; }
+  table.faq td{
+    vertical-align:top; padding:9pt 10pt; border-bottom:1px solid var(--line);
+    font-size:10.5pt;
+  }
+  table.faq td.q{ width:38%; font-weight:600; color:var(--brand-dark); }
+
+  .kbd{
+    font-family:"Consolas",monospace; font-size:9.5pt;
+    background:#f1f3f8; border:1px solid var(--line);
+    border-radius:4px; padding:1pt 5pt; color:#333;
+  }
+
+  .pagebreak{ page-break-before:always; }
+
+  .footer-note{
+    margin-top:16pt; padding-top:10pt; border-top:1px solid var(--line);
+    font-size:9.5pt; color:var(--muted);
+  }
+
+  .two-col{ display:flex; gap:16pt; }
+  .two-col > div{ flex:1; }
+</style>
+</head>
+<body>
+
+<!-- ===================== DECKBLATT ===================== -->
+<div class="cover">
+  <div class="cover-top">
+    <span class="eyebrow">Ihre Website · Kurzanleitung</span>
+  </div>
+
+  <div class="cover-mid">
+    <h1>So pflegen Sie Ihre Website selbst</h1>
+    <p class="sub">Texte anpassen, Bilder austauschen und Blogbeiträge veröffentlichen –
+      Schritt für Schritt und ohne Technik-Kenntnisse. Zum Nachschlagen und Mitmachen.</p>
+
+    <div class="cover-art">
+      <div class="browser-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="browser-url">https://www.ihre-website.de</span>
+      </div>
+      <div class="browser-body">
+        <div class="skeleton-head"></div>
+        <div class="skeleton-line s1"></div>
+        <div class="skeleton-line s2"></div>
+        <div class="skeleton-line s3"></div>
+        <div class="skeleton-row">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-bottom">
+    <div class="for">
+      <div class="muted" style="font-size:9.5pt;text-transform:uppercase;letter-spacing:.1em;">Erstellt für</div>
+      <strong>Ihre Website beim Homepage-Baukasten</strong>
+    </div>
+    <div class="brandline">
+      Persönliche Einführung<br>am Onboarding-Termin
+    </div>
+  </div>
+</div>
+
+<!-- ===================== INHALTSVERZEICHNIS ===================== -->
+<section class="toc">
+  <div class="lead-num">
+    <div class="n">i</div>
+    <h2>Inhalt</h2>
+  </div>
+  <p class="muted">Diese Anleitung begleitet Sie durch die wichtigsten Handgriffe. Sie müssen
+    nichts auswendig lernen – schlagen Sie einfach nach, wenn Sie etwas ändern möchten.</p>
+  <ol>
+    <li><span class="t">Erste Schritte: Anmelden &amp; Bearbeiten-Modus</span></li>
+    <li><span class="t">Das Grundprinzip: Bearbeiten – Speichern – Veröffentlichen</span></li>
+    <li><span class="t">Texte ändern</span></li>
+    <li><span class="t">Bilder einfügen &amp; austauschen</span></li>
+    <li><span class="t">Einen Blogbeitrag schreiben &amp; veröffentlichen</span></li>
+    <li><span class="t">Tipps für gute Bilder &amp; Auffindbarkeit (SEO)</span></li>
+    <li><span class="t">Häufige Fragen</span></li>
+    <li><span class="t">Checkliste vor dem Veröffentlichen</span></li>
+  </ol>
+  <div class="box info">
+    <p class="box-title"><span class="ico">i</span> Gut zu wissen</p>
+    <p>Die Bezeichnungen der Schaltflächen können in Ihrem Baukasten leicht abweichen
+      (z.&nbsp;B. „Bearbeiten“ statt „Seite bearbeiten“). Das Prinzip bleibt aber immer gleich –
+      und die wichtigsten Handgriffe schauen wir uns gemeinsam am Termin an.</p>
+  </div>
+</section>
+
+<!-- ===================== 1 ===================== -->
+<section>
+  <div class="lead-num"><div class="n">1</div><h2>Erste Schritte: Anmelden &amp; Bearbeiten-Modus</h2></div>
+
+  <p>Um Ihre Website zu ändern, melden Sie sich zuerst im Homepage-Baukasten an. Dort öffnen
+    Sie Ihre Seite und schalten in den <strong>Bearbeiten-Modus</strong> – erst dann können Sie etwas verändern.</p>
+
+  <ol class="steps">
+    <li><strong>Login-Seite öffnen.</strong> Rufen Sie die Adresse des Baukastens im Browser auf.
+      (Die genaue Adresse finden Sie unten in Ihren Zugangsdaten.)</li>
+    <li><strong>Anmelden.</strong> Geben Sie Ihren <strong>Benutzernamen</strong> und Ihr <strong>Passwort</strong> ein.</li>
+    <li><strong>Ihre Website öffnen.</strong> Wählen Sie im Übersichtsbereich Ihr Projekt bzw. Ihre Website aus.</li>
+    <li><strong>Bearbeiten starten.</strong> Klicken Sie auf <strong>„Bearbeiten“</strong> bzw. <strong>„Website bearbeiten“</strong>.
+      Jetzt sehen Sie Ihre Seite so, wie Sie sie verändern können.</li>
+  </ol>
+
+  <div class="box warn">
+    <p class="box-title"><span class="ico">!</span> Zugangsdaten sicher aufbewahren</p>
+    <p>Bewahren Sie Benutzername und Passwort an einem sicheren Ort auf und geben Sie diese
+      nicht weiter. Bei Verlust lässt sich das Passwort über die Login-Seite zurücksetzen.</p>
+  </div>
+
+  <h3>Ihre Zugangsdaten (zum Eintragen)</h3>
+  <table class="faq">
+    <tr><td class="q">Adresse Baukasten / Login</td><td>__________________________________________</td></tr>
+    <tr><td class="q">Benutzername</td><td>__________________________________________</td></tr>
+    <tr><td class="q">Passwort</td><td>__________________________________________</td></tr>
+    <tr><td class="q">Adresse Ihrer Website</td><td>__________________________________________</td></tr>
+  </table>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="pagebreak">
+  <div class="lead-num"><div class="n">2</div><h2>Das Grundprinzip</h2></div>
+
+  <p>Fast alles im Baukasten funktioniert nach demselben Muster. Wenn Sie diese drei Schritte
+    verinnerlicht haben, kommen Sie mit fast jeder Änderung zurecht:</p>
+
+  <div class="two-col">
+    <div>
+      <h3>① Bearbeiten</h3>
+      <p>Klicken Sie das Element an, das Sie ändern möchten – z.&nbsp;B. einen Text oder ein Bild.
+        Ein Rahmen oder ein kleines Werkzeug-Menü zeigt Ihnen an, dass Sie es bearbeiten können.</p>
+    </div>
+    <div>
+      <h3>② Speichern</h3>
+      <p>Ihre Änderung wird gespeichert (oft automatisch, sonst über die Schaltfläche
+        <strong>„Speichern“</strong>). Gespeichert heißt aber noch <em>nicht</em> „öffentlich sichtbar“.</p>
+    </div>
+  </div>
+
+  <h3>③ Veröffentlichen</h3>
+  <p>Erst wenn Sie auf <strong>„Veröffentlichen“</strong> (manchmal „Live schalten“ oder „Publizieren“) klicken,
+    werden Ihre Änderungen für Ihre Besucher sichtbar. Das ist ein sehr wichtiger Punkt:</p>
+
+  <div class="box tip">
+    <p class="box-title"><span class="ico">✓</span> Die goldene Regel</p>
+    <p><strong>Bearbeiten → Speichern → Vorschau ansehen → Veröffentlichen.</strong><br>
+      Nutzen Sie vor dem Veröffentlichen immer die <strong>Vorschau</strong>, um zu sehen, wie Ihre Seite
+      für Besucher aussieht. So vermeiden Sie Tippfehler und verrutschte Inhalte auf der echten Website.</p>
+  </div>
+
+  <div class="box info">
+    <p class="box-title"><span class="ico">i</span> Keine Angst vor Fehlern</p>
+    <p>Sie können nichts „kaputt machen“. Solange Sie nicht veröffentlichen, sieht niemand Ihre
+      Änderungen. Und selbst nach dem Veröffentlichen lässt sich alles wieder anpassen.</p>
+  </div>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="pagebreak">
+  <div class="lead-num"><div class="n">3</div><h2>Texte ändern</h2></div>
+
+  <p>Das Anpassen von Texten ist der häufigste Handgriff – etwa neue Öffnungszeiten, ein
+    aktualisierter Preis oder ein neuer Satz auf der Startseite.</p>
+
+  <ol class="steps">
+    <li><strong>In den Bearbeiten-Modus wechseln</strong> (siehe Kapitel 1).</li>
+    <li><strong>Auf den Text klicken,</strong> den Sie ändern möchten. Der Text wird markierbar,
+      der Cursor blinkt – wie in einem Schreibprogramm.</li>
+    <li><strong>Text anpassen.</strong> Löschen Sie mit der <span class="kbd">Entf</span>- oder
+      <span class="kbd">Rück</span>-Taste und tippen Sie den neuen Text ein.</li>
+    <li><strong>Formatieren (optional).</strong> Über die eingeblendete Werkzeugleiste können Sie
+      Text <strong>fett</strong>, <em>kursiv</em>, größer/kleiner machen oder einen Link setzen.</li>
+    <li><strong>Speichern</strong> und anschließend <strong>Veröffentlichen</strong>, wenn alles passt.</li>
+  </ol>
+
+  <div class="box tip">
+    <p class="box-title"><span class="ico">✓</span> Tipps für saubere Texte</p>
+    <ul class="plain">
+      <li>Bleiben Sie beim einheitlichen Stil der Seite – nicht zu viele Schriftgrößen und Farben mischen.</li>
+      <li>Kurze Absätze lesen sich am Bildschirm besser als lange Textblöcke.</li>
+      <li>Text lieber vorab in einem Dokument schreiben und dann einfügen –
+        so geht bei einem Verbindungsabbruch nichts verloren.</li>
+    </ul>
+  </div>
+
+  <div class="box warn">
+    <p class="box-title"><span class="ico">!</span> Vorsicht beim Einfügen aus Word</p>
+    <p>Wenn Sie Text aus Word oder einer E-Mail kopieren, wird manchmal unerwünschte Formatierung
+      mitkopiert. Nutzen Sie – falls vorhanden – die Option <strong>„Als reinen Text einfügen“</strong>
+      (Tastenkürzel oft <span class="kbd">Strg</span>+<span class="kbd">Shift</span>+<span class="kbd">V</span>).</p>
+  </div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="pagebreak">
+  <div class="lead-num"><div class="n">4</div><h2>Bilder einfügen &amp; austauschen</h2></div>
+
+  <p>Bilder machen Ihre Seite lebendig. Sie können ein bestehendes Bild austauschen oder an einer
+    passenden Stelle ein neues einfügen.</p>
+
+  <h3>Ein Bild austauschen</h3>
+  <ol class="steps">
+    <li><strong>Auf das Bild klicken,</strong> das Sie ersetzen möchten.</li>
+    <li>Im Menü <strong>„Bild ersetzen“</strong> bzw. <strong>„Bild ändern“</strong> wählen.</li>
+    <li><strong>Neues Bild hochladen</strong> (von Ihrem Computer) oder aus der
+      <strong>Mediathek</strong> auswählen, falls es schon hochgeladen wurde.</li>
+    <li><strong>Ausschnitt/Größe prüfen</strong> und bei Bedarf anpassen. Speichern &amp; Veröffentlichen.</li>
+  </ol>
+
+  <h3>Ein neues Bild einfügen</h3>
+  <ol class="steps">
+    <li>An der gewünschten Stelle das Werkzeug <strong>„Element hinzufügen“</strong> /
+      <strong>„+“</strong> öffnen und <strong>„Bild“</strong> auswählen.</li>
+    <li>Bild <strong>hochladen</strong> oder aus der Mediathek wählen und platzieren.</li>
+    <li><strong>Alternativtext</strong> ergänzen (kurze Bildbeschreibung – siehe Tipp unten).</li>
+    <li>Speichern &amp; Veröffentlichen.</li>
+  </ol>
+
+  <div class="box tip">
+    <p class="box-title"><span class="ico">✓</span> So sehen Bilder professionell aus</p>
+    <ul class="plain">
+      <li><strong>Passende Größe:</strong> Bilder vor dem Hochladen auf eine sinnvolle Größe bringen
+        (Breite meist 1500–2000&nbsp;Pixel genügt). Riesige Handy-Fotos machen die Seite langsam.</li>
+      <li><strong>Querformat</strong> wirkt für Kopfbereiche und Blog-Titelbilder meist am besten.</li>
+      <li><strong>Rechte beachten:</strong> Verwenden Sie nur eigene Fotos oder Bilder, für die Sie
+        die Nutzungsrechte haben (z.&nbsp;B. aus seriösen Bilddatenbanken).</li>
+    </ul>
+  </div>
+
+  <div class="box info">
+    <p class="box-title"><span class="ico">i</span> Was ist ein „Alternativtext“?</p>
+    <p>Das ist eine kurze Beschreibung des Bildes (z.&nbsp;B. „Team vor dem Ladengeschäft“).
+      Sie hilft Menschen mit Sehbehinderung und verbessert das Ranking bei Google. Ein Satz reicht.</p>
+  </div>
+</section>
+
+<!-- ===================== 5 ===================== -->
+<section class="pagebreak">
+  <div class="lead-num"><div class="n">5</div><h2>Einen Blogbeitrag schreiben &amp; veröffentlichen</h2></div>
+
+  <p>Mit einem Blog halten Sie Ihre Website lebendig und werden bei Google besser gefunden.
+    Ein Beitrag entsteht in wenigen Schritten:</p>
+
+  <ol class="steps">
+    <li><strong>Blog-Bereich öffnen.</strong> Wechseln Sie im Baukasten zum <strong>Blog</strong>
+      (oft im linken Menü unter „Blog“, „Beiträge“ oder „News“).</li>
+    <li><strong>Neuen Beitrag anlegen.</strong> Auf <strong>„Neuer Beitrag“</strong> /
+      <strong>„Beitrag hinzufügen“</strong> klicken.</li>
+    <li><strong>Titel eingeben.</strong> Eine klare, aussagekräftige Überschrift – sie ist das Erste,
+      was Leser und Google sehen.</li>
+    <li><strong>Titelbild festlegen.</strong> Ein ansprechendes Bild wählen (siehe Kapitel 4).
+      Es erscheint in der Beitragsübersicht.</li>
+    <li><strong>Text schreiben.</strong> Verfassen Sie Ihren Beitrag im Textbereich. Nutzen Sie
+      Zwischenüberschriften und kurze Absätze für gute Lesbarkeit.</li>
+    <li><strong>Bilder im Text ergänzen</strong> (optional), um den Beitrag aufzulockern.</li>
+    <li><strong>Kategorie/Schlagwörter</strong> vergeben (falls vorhanden), damit Beiträge sortiert werden.</li>
+    <li><strong>Vorschau ansehen.</strong> Prüfen Sie, wie der Beitrag für Leser aussieht.</li>
+    <li><strong>Veröffentlichen.</strong> Auf <strong>„Veröffentlichen“</strong> klicken – fertig!
+      Manche Baukästen bieten auch „Für später planen“ an.</li>
+  </ol>
+
+  <div class="box tip">
+    <p class="box-title"><span class="ico">✓</span> Aufbau eines guten Blogbeitrags</p>
+    <ul class="plain">
+      <li><strong>Einstieg:</strong> 2–3 Sätze, worum es geht und warum es interessant ist.</li>
+      <li><strong>Hauptteil:</strong> in Abschnitten mit Zwischenüberschriften – ein Gedanke pro Absatz.</li>
+      <li><strong>Abschluss:</strong> kurzes Fazit und – wenn passend – eine Einladung zur Kontaktaufnahme.</li>
+      <li><strong>Länge:</strong> lieber ein klarer, hilfreicher Beitrag als möglichst viele Wörter.</li>
+    </ul>
+  </div>
+
+  <div class="box info">
+    <p class="box-title"><span class="ico">i</span> Entwurf speichern</p>
+    <p>Sie müssen einen Beitrag nicht in einem Rutsch fertigstellen. Speichern Sie ihn als
+      <strong>Entwurf</strong> und schreiben Sie später weiter. Erst „Veröffentlichen“ macht ihn öffentlich.</p>
+  </div>
+</section>
+
+<!-- ===================== 6 ===================== -->
+<section class="pagebreak">
+  <div class="lead-num"><div class="n">6</div><h2>Tipps für gute Bilder &amp; Auffindbarkeit (SEO)</h2></div>
+
+  <p>Ein paar einfache Gewohnheiten sorgen dafür, dass Ihre Website schnell lädt und bei Google
+    gut gefunden wird – ganz ohne Fachwissen.</p>
+
+  <h3>Damit die Seite schnell bleibt</h3>
+  <ul class="plain">
+    <li>Bilder vor dem Hochladen verkleinern (Breite meist 1500–2000&nbsp;Pixel genügt).</li>
+    <li>Nicht mehr Bilder einbauen als nötig – Qualität vor Menge.</li>
+  </ul>
+
+  <h3>Damit Google Sie besser findet</h3>
+  <ul class="plain">
+    <li><strong>Sprechende Titel</strong> für Seiten und Blogbeiträge verwenden (das Thema klar benennen).</li>
+    <li><strong>Alternativtexte</strong> bei Bildern ausfüllen (siehe Kapitel 4).</li>
+    <li>Wenn der Baukasten es anbietet: <strong>Seitentitel</strong> und
+      <strong>Seitenbeschreibung</strong> (Meta-Beschreibung) je Seite kurz ausfüllen.</li>
+    <li><strong>Regelmäßig</strong> etwas Neues veröffentlichen – z.&nbsp;B. ab und zu einen Blogbeitrag.</li>
+  </ul>
+
+  <div class="box tip">
+    <p class="box-title"><span class="ico">✓</span> Immer auch am Handy prüfen</p>
+    <p>Die meisten Besucher kommen über das Smartphone. Sehen Sie sich Ihre Seite nach Änderungen
+      auch in der <strong>mobilen Vorschau</strong> an (oft ein kleines Handy-Symbol im Baukasten).</p>
+  </div>
+</section>
+
+<!-- ===================== 7 ===================== -->
+<section class="pagebreak">
+  <div class="lead-num"><div class="n">7</div><h2>Häufige Fragen</h2></div>
+
+  <table class="faq">
+    <tr>
+      <td class="q">Ich habe etwas geändert, aber online sehe ich nichts?</td>
+      <td>Sehr wahrscheinlich haben Sie noch nicht <strong>veröffentlicht</strong>. Klicken Sie auf
+        „Veröffentlichen“. Aktualisieren Sie danach im Browser die Seite (<span class="kbd">F5</span>).</td>
+    </tr>
+    <tr>
+      <td class="q">Kann ich eine Änderung rückgängig machen?</td>
+      <td>Ja. Direkt beim Tippen mit <span class="kbd">Strg</span>+<span class="kbd">Z</span>.
+        Viele Baukästen haben zusätzlich eine <strong>Versions-/Verlaufsfunktion</strong>, um zu einem
+        früheren Stand zurückzukehren.</td>
+    </tr>
+    <tr>
+      <td class="q">Ich habe mein Passwort vergessen.</td>
+      <td>Nutzen Sie auf der Login-Seite den Link <strong>„Passwort vergessen“</strong>. Sie erhalten
+        eine E-Mail zum Zurücksetzen.</td>
+    </tr>
+    <tr>
+      <td class="q">Mein Bild ist unscharf oder abgeschnitten.</td>
+      <td>Laden Sie ein größeres Bild hoch (siehe Kapitel 4) und passen Sie den <strong>Bildausschnitt</strong>
+        an. Querformat funktioniert für Titelbilder meist am besten.</td>
+    </tr>
+    <tr>
+      <td class="q">Darf ich jedes Bild aus dem Internet verwenden?</td>
+      <td>Nein. Verwenden Sie nur eigene Bilder oder solche mit passender Lizenz. Sonst drohen
+        Abmahnungen. Im Zweifel eine seriöse Bilddatenbank nutzen.</td>
+    </tr>
+    <tr>
+      <td class="q">Wie oft sollte ich etwas veröffentlichen?</td>
+      <td>Es gibt keine Pflicht. Aber regelmäßige, kleine Aktualisierungen (z.&nbsp;B. ein Blogbeitrag
+        pro Monat) helfen bei Google und wirken für Besucher gepflegt.</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ===================== 8 ===================== -->
+<section class="pagebreak">
+  <div class="lead-num"><div class="n">8</div><h2>Checkliste vor dem Veröffentlichen</h2></div>
+
+  <p>Kurz durchgehen, dann guten Gewissens auf „Veröffentlichen“ klicken:</p>
+
+  <ul class="check">
+    <li>Text auf Tippfehler geprüft (einmal laut lesen hilft)</li>
+    <li>Namen, Zahlen, Preise und Öffnungszeiten stimmen</li>
+    <li>Bilder sind scharf, richtig zugeschnitten und nicht zu groß</li>
+    <li>Alternativtexte bei neuen Bildern ausgefüllt</li>
+    <li>Links funktionieren und führen zur richtigen Seite</li>
+    <li>Vorschau am Computer <em>und</em> am Handy angesehen</li>
+    <li>Beitrag/Seite hat einen klaren, aussagekräftigen Titel</li>
+    <li>Gespeichert – und erst dann veröffentlicht</li>
+  </ul>
+
+  <div class="box tip">
+    <p class="box-title"><span class="ico">✓</span> Sie schaffen das</p>
+    <p>Alles in dieser Anleitung ist reine Übung. Nach den ersten zwei, drei Malen gehen Ihnen die
+      Handgriffe von selbst von der Hand. Und für alles Weitere sind wir für Sie da.</p>
+  </div>
+
+  <h3>Notizen vom Termin</h3>
+  <p class="muted" style="line-height:2.6;">
+    ______________________________________________________________<br>
+    ______________________________________________________________<br>
+    ______________________________________________________________<br>
+    ______________________________________________________________
+  </p>
+
+  <div class="footer-note">
+    Diese Kurzanleitung beschreibt die allgemeine Vorgehensweise im Homepage-Baukasten.
+    Einzelne Schaltflächen können je nach Version leicht abweichen. Bei Fragen erreichen Sie uns
+    jederzeit – wir helfen gerne weiter.
+  </div>
+</section>
+
+</body>
+</html>
