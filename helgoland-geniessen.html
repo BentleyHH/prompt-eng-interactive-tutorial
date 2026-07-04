@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Helgoland genießen – Genuss-, Foodbike- & Erlebniskonzept · Nils Benthaus</title>
+<meta name="description" content="Zweites Impulspapier zur Tourismusdirektion Helgoland: die alltägliche, bezahlbare Genuss- und Erlebnisebene – Foodbikes, Beachclub und die sechs Betriebe des HTS weitergedacht.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,500&family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --tiefsee:#0E2C58;        /* Helgoland-Briefkopf-Blau, abgedunkelt */
+    --tiefsee-2:#123769;
+    --nordsee:#2B62A8;
+    --brise:#9FC0E4;
+    --gischt:#FBF9F4;         /* Papierweiß */
+    --sand:#F0E8D6;           /* Dünensand */
+    --sonne:#E39A2E;          /* warmer Genuss-Akzent – sparsam */
+    --klippe:#E2001A;         /* Flaggenrot – sparsam */
+    --land:#00913D;           /* Flaggengrün – sparsam */
+    --tinte:#152238;
+    --tinte-60:rgba(21,34,56,.62);
+    --linie:rgba(14,44,88,.14);
+    --max:1120px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+  body{
+    font-family:'Barlow',system-ui,sans-serif;
+    color:var(--tinte);
+    background:var(--gischt);
+    font-size:17px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--nordsee);color:#fff}
+
+  /* ---------- Grundraster der Slides ---------- */
+  .slide{
+    min-height:100vh; min-height:100svh;
+    display:flex; align-items:center;
+    position:relative; overflow:hidden;
+    padding:96px 24px;
+    scroll-margin-top:0;
+  }
+  .inner{width:100%;max-width:var(--max);margin:0 auto;position:relative;z-index:2}
+  .dark{background:var(--tiefsee);color:var(--gischt)}
+  .dark ::selection{background:var(--brise);color:var(--tiefsee)}
+
+  /* Wellen- und Kornstruktur auf dunklen Flächen */
+  .dark::before{
+    content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(43,98,168,.35), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(227,154,46,.14), transparent 60%);
+  }
+  .grain::after{
+    content:""; position:absolute; inset:0; z-index:1; pointer-events:none; opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- Typo ---------- */
+  .eyebrow{
+    font-family:'Barlow Semi Condensed',sans-serif; font-weight:600;
+    font-size:12.5px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--nordsee); display:flex; align-items:center; gap:12px; margin-bottom:26px;
+  }
+  .dark .eyebrow{color:var(--brise)}
+  .eyebrow .flagge{display:inline-flex;width:34px;height:8px;flex:0 0 auto}
+  .flagge i{flex:1}
+  .flagge i:nth-child(1){background:var(--land)}
+  .flagge i:nth-child(2){background:var(--klippe)}
+  .flagge i:nth-child(3){background:#fff;box-shadow:inset 0 0 0 1px rgba(14,44,88,.25)}
+  .dark .flagge i:nth-child(3){box-shadow:none}
+
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:400;line-height:1.06;letter-spacing:-0.01em}
+  h2{font-size:clamp(34px,4.6vw,56px);max-width:20ch}
+  h2 em, h1 em{font-style:italic;font-weight:400}
+  .lede{font-size:clamp(17px,1.5vw,20px);max-width:62ch;color:var(--tinte-60);margin-top:20px}
+  .dark .lede{color:rgba(251,249,244,.78)}
+  .lede strong{color:inherit;font-weight:600}
+
+  .slidenr{
+    position:absolute;bottom:28px;left:24px;z-index:3;
+    font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:12px;
+    letter-spacing:.18em;color:var(--tinte-60);
+  }
+  .dark .slidenr{color:rgba(251,249,244,.5)}
+
+  /* ---------- Cover ---------- */
+  #cover{padding-top:70px}
+  #cover .inner{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:40px;align-items:center}
+  #cover h1{font-size:clamp(52px,8.2vw,116px);font-weight:300}
+  #cover h1 .zeile{display:block}
+  #cover h1 .zeile b{font-weight:500}
+  #cover .sub{margin-top:30px;font-size:clamp(16px,1.6vw,20px);color:rgba(251,249,244,.82);max-width:52ch}
+  #cover .zitat{
+    margin-top:44px;padding-left:18px;border-left:2px solid var(--sonne);
+    max-width:56ch;font-size:15px;color:rgba(251,249,244,.66);
+  }
+  #cover .zitat .q{font-family:'Fraunces',serif;font-style:italic;font-size:17px;color:rgba(251,249,244,.9);display:block;margin-bottom:6px}
+  .absender{
+    margin-top:44px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;
+    font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--brise);
+  }
+  .absender .punkt{width:5px;height:5px;border-radius:50%;background:var(--sonne)}
+
+  /* Lange Anna */
+  .anna-wrap{position:relative;display:flex;justify-content:center}
+  .atmen{
+    position:absolute;inset:auto;width:130%;aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle, rgba(227,154,46,.20), transparent 62%);
+    animation:atmen 7.5s ease-in-out infinite;
+  }
+  @keyframes atmen{0%,100%{transform:scale(.96);opacity:.75}50%{transform:scale(1.05);opacity:1}}
+  @media (prefers-reduced-motion: reduce){.atmen{animation:none}}
+  .anna{width:min(340px,72vw);height:auto;position:relative;filter:drop-shadow(0 24px 40px rgba(0,0,0,.35))}
+  .flaggenspruch{
+    position:absolute;right:-8px;top:50%;transform:translateY(-50%) rotate(180deg);
+    writing-mode:vertical-rl;font-family:'Barlow Semi Condensed',sans-serif;font-weight:500;
+    font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:rgba(251,249,244,.45);white-space:nowrap;
+  }
+
+  /* ---------- Karten / Grids ---------- */
+  .grid{display:grid;gap:18px;margin-top:44px}
+  .grid.k4{grid-template-columns:repeat(4,1fr)}
+  .grid.k3{grid-template-columns:repeat(3,1fr)}
+  .grid.k2{grid-template-columns:repeat(2,1fr)}
+  .karte{
+    background:#fff;border:1px solid var(--linie);border-radius:12px;
+    padding:22px 22px 20px;position:relative;
+  }
+  .dark .karte{background:rgba(251,249,244,.05);border-color:rgba(251,249,244,.14);backdrop-filter:blur(2px)}
+  .karte h3{font-size:20px;font-weight:500;margin-bottom:8px}
+  .karte p{font-size:14.5px;line-height:1.55;color:var(--tinte-60)}
+  .dark .karte p{color:rgba(251,249,244,.72)}
+  .tag{
+    display:inline-block;margin-top:14px;
+    font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:11px;
+    letter-spacing:.14em;text-transform:uppercase;
+    padding:4px 10px;border-radius:999px;
+    color:var(--nordsee);border:1px solid currentColor;
+  }
+  .dark .tag{color:var(--brise)}
+  .tag.gruen{color:var(--land)} .dark .tag.gruen{color:#5FD79A}
+  .tag.sonne{color:#B9761A} .dark .tag.sonne{color:var(--sonne)}
+
+  /* Preis-Chip */
+  .preis{
+    display:inline-flex;align-items:baseline;gap:6px;margin-top:14px;
+    font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:12px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--land);
+  }
+  .dark .preis{color:#5FD79A}
+  .preis b{font-family:'Fraunces',serif;font-weight:500;font-size:19px;letter-spacing:0}
+
+  /* ---------- Zahlenreihe ---------- */
+  .zahlen{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+  .zahl{border-top:3px solid var(--tiefsee);padding-top:16px}
+  .dark .zahl{border-color:var(--brise)}
+  .zahl .wert{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(34px,4vw,52px);line-height:1;letter-spacing:-.02em}
+  .zahl .label{margin-top:8px;font-size:14px;color:var(--tinte-60)}
+  .dark .zahl .label{color:rgba(251,249,244,.72)}
+  .zahl.rot{border-color:var(--klippe)}
+  .zahl.sonne{border-color:var(--sonne)}
+  .pfeilzeile{margin-top:34px;font-family:'Fraunces',serif;font-style:italic;font-size:clamp(19px,2vw,24px);max-width:52ch}
+  .dark .pfeilzeile{color:rgba(251,249,244,.92)}
+
+  /* ---------- Jahreskalender / Gewerke-Raster ---------- */
+  .jahrgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+  .saison{border-top:3px solid var(--tiefsee);padding-top:14px}
+  .dark .saison{border-color:var(--brise)}
+  .saison h3{font-size:21px;font-weight:500}
+  .saison .monate{font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--tinte-60);display:block;margin:4px 0 12px}
+  .dark .saison .monate{color:rgba(251,249,244,.6)}
+  .saison ul{list-style:none}
+  .saison li{font-size:14px;color:var(--tinte-60);padding:8px 0 8px 18px;position:relative;border-top:1px solid var(--linie);line-height:1.45}
+  .dark .saison li{color:rgba(251,249,244,.72);border-color:rgba(251,249,244,.14)}
+  .saison li::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--nordsee);position:absolute;left:0;top:15px}
+  .saison li.neu::before{background:var(--sonne)}
+
+  /* ---------- Kompass / Leitlinien ---------- */
+  .kurs{display:grid;grid-template-columns:repeat(2,1fr);gap:0;margin-top:48px;border:1px solid rgba(251,249,244,.16);border-radius:14px;overflow:hidden}
+  .kurs .feld{padding:34px 32px;border:0 solid rgba(251,249,244,.16)}
+  .kurs .feld:nth-child(1){border-right-width:1px;border-bottom-width:1px}
+  .kurs .feld:nth-child(2){border-bottom-width:1px}
+  .kurs .feld:nth-child(3){border-right-width:1px}
+  .kurs .nr{font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:12px;letter-spacing:.2em;color:var(--sonne);display:block;margin-bottom:12px}
+  .kurs h3{font-size:clamp(21px,2.2vw,27px);font-weight:500;margin-bottom:10px}
+  .kurs p{font-size:15px;color:rgba(251,249,244,.72);max-width:40ch}
+
+  /* ---------- Leuchtturm-Slides ---------- */
+  .lt .inner{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:56px;align-items:start}
+  .lt-kopf .nr{
+    font-family:'Fraunces',serif;font-weight:300;font-size:clamp(64px,8vw,110px);
+    line-height:.9;letter-spacing:-.03em;color:transparent;
+    -webkit-text-stroke:1.2px var(--nordsee); display:block;margin-bottom:16px;
+  }
+  .dark .lt-kopf .nr{-webkit-text-stroke-color:var(--brise)}
+  .lt h2{font-size:clamp(30px,3.6vw,46px)}
+  .lt .claim{margin-top:22px;font-family:'Fraunces',serif;font-style:italic;font-size:clamp(18px,1.8vw,23px);line-height:1.4;max-width:40ch}
+  .lt .claim::before{content:"";display:block;width:44px;height:3px;background:var(--sonne);margin-bottom:16px}
+  .bloecke{display:grid;gap:14px}
+  .block{border:1px solid var(--linie);border-radius:12px;background:#fff;padding:20px 22px}
+  .dark .block{background:rgba(251,249,244,.05);border-color:rgba(251,249,244,.14)}
+  .block .bt{
+    font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:12px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--nordsee);display:block;margin-bottom:8px;
+  }
+  .dark .block .bt{color:var(--brise)}
+  .block p{font-size:15px;color:var(--tinte-60)}
+  .dark .block p{color:rgba(251,249,244,.75)}
+  .block p b{color:inherit;font-weight:600}
+  .fussnote{margin-top:16px;font-size:13px;color:var(--tinte-60);display:flex;gap:10px;align-items:flex-start}
+  .dark .fussnote{color:rgba(251,249,244,.55)}
+  .fussnote::before{content:"※";flex:0 0 auto;color:var(--sonne)}
+
+  /* ---------- Timeline ---------- */
+  .timeline{margin-top:52px;display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative}
+  .timeline::before{content:"";position:absolute;left:0;right:0;top:7px;height:2px;background:linear-gradient(90deg,var(--land),var(--sonne) 45%,var(--nordsee))}
+  .phase{padding:0 22px 0 0;position:relative}
+  .phase::before{content:"";width:14px;height:14px;border-radius:50%;background:var(--gischt);border:3px solid var(--tiefsee);display:block;margin-bottom:18px;position:relative;z-index:1}
+  .phase .zeit{font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--nordsee);display:block;margin-bottom:6px}
+  .phase h3{font-size:21px;font-weight:500;margin-bottom:8px}
+  .phase p{font-size:14.5px;color:var(--tinte-60)}
+
+  /* ---------- Finale ---------- */
+  #finale{text-align:left}
+  #finale h2{font-size:clamp(40px,6vw,78px);font-weight:300;max-width:16ch}
+  #finale h2 b{font-weight:500}
+  .kontakt{
+    margin-top:52px;display:flex;flex-wrap:wrap;gap:12px 34px;align-items:center;
+    font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--brise);
+  }
+  .kontakt a{color:var(--gischt);text-decoration:none;border-bottom:1px solid rgba(251,249,244,.4);text-transform:none;letter-spacing:.03em;font-weight:500;font-size:15px}
+  .quellen{margin-top:64px;padding-top:20px;border-top:1px solid rgba(251,249,244,.16);font-size:12px;line-height:1.7;color:rgba(251,249,244,.45);max-width:92ch}
+  .anna-klein{position:absolute;right:4vw;bottom:0;width:min(220px,26vw);opacity:.35;z-index:1}
+
+  /* ---------- Navigation (Punkte) ---------- */
+  #dots{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:10px}
+  #dots a{width:9px;height:9px;border-radius:50%;background:rgba(14,44,88,.25);display:block;transition:transform .2s,background .2s}
+  #dots a.d{background:rgba(251,249,244,.35)}
+  #dots a.aktiv{background:var(--sonne);transform:scale(1.35)}
+  #hinweis{
+    position:fixed;bottom:20px;right:18px;z-index:50;
+    font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:rgba(14,44,88,.45);
+  }
+  #hinweis.d{color:rgba(251,249,244,.45)}
+
+  /* Einblendung */
+  .auf{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+  .auf.sichtbar{opacity:1;transform:none}
+  @media (prefers-reduced-motion: reduce){.auf{opacity:1;transform:none;transition:none}}
+
+  /* ---------- Responsiv ---------- */
+  @media (max-width:1020px){
+    .grid.k4,.grid.k3,.jahrgrid{grid-template-columns:repeat(2,1fr)}
+    .lt .inner{grid-template-columns:1fr;gap:34px}
+    .timeline{grid-template-columns:repeat(2,1fr);row-gap:38px}
+    .timeline::before{display:none}
+  }
+  @media (max-width:720px){
+    .slide{padding:80px 20px}
+    #cover .inner{grid-template-columns:1fr}
+    .anna-wrap{order:-1;margin-bottom:8px}
+    .anna{width:min(200px,50vw)}
+    .flaggenspruch{display:none}
+    .grid.k4,.grid.k3,.grid.k2,.zahlen,.kurs,.timeline,.jahrgrid{grid-template-columns:1fr}
+    .kurs .feld{border-right-width:0!important;border-bottom-width:1px!important}
+    .kurs .feld:last-child{border-bottom-width:0!important}
+    #dots,#hinweis{display:none}
+  }
+
+  /* ---------- Druck ---------- */
+  @media print{
+    @page{size:A4 landscape;margin:0}
+    body{font-size:12px}
+    .slide{min-height:auto;height:auto;page-break-after:always;padding:48px 52px;overflow:visible}
+    .slide:last-child{page-break-after:auto}
+    .dark{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    #dots,#hinweis,.flaggenspruch{display:none}
+    .grain::after{display:none}
+    .auf{opacity:1;transform:none}
+    .atmen{display:none}
+    .lt-kopf .nr{-webkit-text-stroke:0;color:rgba(43,98,168,.4)}
+    .dark .lt-kopf .nr{color:rgba(159,192,228,.5)}
+    .karte,.block,.phase,.zahl,.kurs .feld,.saison{break-inside:avoid;page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<nav id="dots" aria-label="Foliennavigation"></nav>
+<div id="hinweis">Scrollen oder ↓</div>
+
+<!-- ============ 01 · COVER ============ -->
+<section class="slide dark grain" id="cover">
+  <div class="inner">
+    <div class="auf">
+      <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Impulspapier II · zur Bewerbung Tourismusdirektion</div>
+      <h1><span class="zeile">Helgoland</span><span class="zeile"><b><em>genießen</em></b>.</span></h1>
+      <p class="sub">Die alltägliche Ebene unter den großen Terminen: bezahlbarer Genuss, rollende Buden und ein Strand, der Abend werden darf. Weniger neue Restaurants – mehr Leben zwischen ihnen.</p>
+      <div class="zitat">
+        <span class="q">„9,90 € für ein Krabbenbrötchen – ein bisschen unverschämt.“</span>
+        Gästestimme, 2025. Dieses Papier nimmt den Satz ernst – und macht aus Helgolands Sonderstatus ein Preisversprechen.
+      </div>
+      <div class="absender">Nils Benthaus <span class="punkt"></span> Hamburg <span class="punkt"></span> Juli 2026</div>
+    </div>
+    <div class="anna-wrap auf">
+      <div class="atmen"></div>
+      <svg class="anna" viewBox="0 0 400 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Silhouette der Langen Anna">
+        <defs>
+          <clipPath id="annaclip">
+            <path d="M166 560 L163 470 Q158 400 164 330 L169 262 Q171 236 165 224 L152 208 Q144 196 148 178 L154 128 Q157 104 172 96 L196 88 Q222 82 240 92 Q254 100 256 122 L260 176 Q262 196 254 208 L242 226 Q236 236 238 258 L244 330 Q250 400 246 470 L244 560 Z"/>
+          </clipPath>
+        </defs>
+        <path d="M166 560 L163 470 Q158 400 164 330 L169 262 Q171 236 165 224 L152 208 Q144 196 148 178 L154 128 Q157 104 172 96 L196 88 Q222 82 240 92 Q254 100 256 122 L260 176 Q262 196 254 208 L242 226 Q236 236 238 258 L244 330 Q250 400 246 470 L244 560 Z" fill="#0A2246"/>
+        <g clip-path="url(#annaclip)" stroke="#2B62A8" stroke-opacity=".38" stroke-width="1.4">
+          <path d="M140 130 H270" /><path d="M140 158 H270" /><path d="M140 188 H270" />
+          <path d="M140 220 H270" /><path d="M140 258 H270" /><path d="M140 300 H270" />
+          <path d="M140 346 H270" /><path d="M140 396 H270" /><path d="M140 448 H270" /><path d="M140 502 H270" />
+        </g>
+        <g stroke="#9FC0E4" stroke-width="2" fill="none" stroke-linecap="round">
+          <path d="M96 84 q8 -8 16 0 q8 -8 16 0"/>
+          <path d="M300 130 q6 -6 12 0 q6 -6 12 0"/>
+          <path d="M70 150 q5 -5 10 0 q5 -5 10 0"/>
+        </g>
+        <g stroke="#E39A2E" stroke-opacity=".55" stroke-width="2" fill="none" stroke-linecap="round">
+          <path d="M20 522 q20 -10 40 0 t40 0 t40 0"/>
+          <path d="M262 538 q20 -10 40 0 t40 0 t40 0"/>
+          <path d="M40 552 q20 -10 40 0 t40 0"/>
+        </g>
+      </svg>
+      <span class="flaggenspruch">Grön is dat Land · rood is de Kant · witt is de Sand</span>
+    </div>
+  </div>
+  <div class="slidenr">01 / 13</div>
+</section>
+
+<!-- ============ 02 · HALTUNG ============ -->
+<section class="slide" id="haltung">
+  <div class="inner auf">
+    <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Warum ein zweites Papier</div>
+    <h2>Zwischen den großen Terminen liegt der ganze Tag.</h2>
+    <p class="lede">Das erste Papier – <strong>„Helgoland weiterdenken“</strong> – setzt den Rahmen: Jahreskalender, Leuchttürme, Events. Dieses hier füllt die Stunden dazwischen. Denn ob ein Gast wiederkommt, entscheidet sich selten am Festabend – sondern am ganz normalen Nachmittag zwischen Landungsbrücke und Klippenrandweg. Es geht <strong>nicht um mehr Restaurants</strong>, sondern um die bezahlbare, mobile, gesellige Genussebene, die heute fehlt.</p>
+    <div class="grid k3">
+      <div class="karte"><h3>Nicht ersetzen, ergänzen</h3><p>Die Insel-Gastronomie ist gesetzt und soll es bleiben. Foodbikes und Beachclub füllen die Lücken – und leiten Gäste am Abend genau dorthin, an die vollen Tische.</p></div>
+      <div class="karte"><h3>Bezahlbar ist Haltung</h3><p>Zollfreiheit ist Helgolands stärkstes Argument – und wird bei Speisen und Getränken kaum genutzt. Ein ehrliches Preisversprechen macht daraus ein Erlebnis, das keine Nordseeinsel kopieren kann.</p></div>
+      <div class="karte"><h3>Erlebnis statt Verzehr</h3><p>Ein Sundowner am Südstrand neben den Robben, ein Knieper-Wrap aus dem Lastenrad: Menschen buchen keine Speisekarte. Sie buchen einen Moment, den sie fotografieren.</p></div>
+    </div>
+    <p class="lede" style="margin-top:36px;font-size:15.5px">Alles hier ist im Schulterschluss mit Insel-Gastronomie, Naturschutz und Gremien gedacht – und darauf ausgelegt, dass die Wertschöpfung auf der Insel bleibt.</p>
+  </div>
+  <div class="slidenr">02 / 13</div>
+</section>
+
+<!-- ============ 03 · BESTANDSAUFNAHME ============ -->
+<section class="slide dark grain" id="bestand">
+  <div class="inner auf">
+    <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Bestandsaufnahme · Was es schon gibt</div>
+    <h2>Es fehlt kein Essen. Es fehlt eine Ebene.</h2>
+    <p class="lede">Wer hier etwas Neues vorschlägt, sollte zuerst kennen, was trägt. Die Insel ist versorgt – klassisch, solide, oft charmant. Die Lücke liegt nicht im Sortiment, sondern im <strong>Tempo, im Preis und im Draußen</strong>.</p>
+    <div class="grid k4">
+      <div class="karte"><h3>Dünenrestaurant</h3><p>Die gelbe Holzbude am Südstrand, direkt am Wasser, mit Blick auf die Robben – Kult. Eine Karte, die sich seit Jahrzehnten kaum ändert. Der Ort ist perfekt, das Format ausbaubar.</p><span class="tag">Kult</span></div>
+      <div class="karte"><h3>Imbiss &amp; Fischbrötchen</h3><p>Inselimbiss „Land und Meer“, Knieper-Imbiss, Buden am Hafen: schnelle Klassiker. Verlässlich – aber ohne gemeinsamen Auftritt und ohne Preisversprechen.</p><span class="tag">Basis</span></div>
+      <div class="karte"><h3>Hummerbuden</h3><p>Die bunten Buden am Binnenhafen sind die Ikone der Insel – teils Werkstatt, teils Bar, teils Galerie. Ein Bilderrahmen, der abends noch zu wenig genutzt wird.</p><span class="tag">Ikone</span></div>
+      <div class="karte"><h3>Restaurants &amp; Hotels</h3><p>Aquarium-Restaurant, Düne Süd, Hotelküchen: das gesetzte Angebot mit Tisch und Service. Es soll voll werden – nicht ersetzt.</p><span class="tag">Gesetzt</span></div>
+      <div class="karte"><h3>Meerwasser-Schwimmbad</h3><p>Innen- und Außenbecken, ganzjährig geöffnet, Geysir und Strömungskanal. Ein HTS-Haus mit Publikum – und heute ohne eigene Genuss- und Abendkante.</p><span class="tag sonne">HTS-Betrieb</span></div>
+      <div class="karte"><h3>Bungalowdorf &amp; Camping Düne</h3><p>100 Stellplätze (Mai–Okt), Bungalows 100 m vom Strand, kleiner Supermarkt, Beach-Turniere. Der ruhige Gegenpol zum Tagestrubel – mit viel Luft nach oben.</p><span class="tag sonne">HTS-Betrieb</span></div>
+      <div class="karte"><h3>Nordseehalle</h3><p>Veranstaltungshaus mit Museum, Hochseekino, Catering-Küche, Kühlräumen und kleiner Sektbar. Eine Profiküche, die die meiste Zeit stillsteht.</p><span class="tag sonne">HTS-Betrieb</span></div>
+      <div class="karte"><h3>Der Sonderstatus</h3><p>Zoll- und mehrwertsteuerfrei, komplett auto- und fahrradfrei. Zwei Rahmenbedingungen, die anderswo Nachteil wären – hier sind sie das Fundament dieses Konzepts.</p><span class="tag">Einmalig</span></div>
+    </div>
+  </div>
+  <div class="slidenr">03 / 13</div>
+</section>
+
+<!-- ============ 04 · DER HEBEL ============ -->
+<section class="slide" id="hebel">
+  <div class="inner auf">
+    <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Der Hebel · Drei Inselwahrheiten</div>
+    <h2>Was anderswo im Weg steht, ist hier der Startvorteil.</h2>
+    <p class="lede">Drei Eigenheiten machen Helgoland für dieses Konzept einzigartig geeignet – man muss sie nur zusammendenken.</p>
+    <div class="zahlen">
+      <div class="zahl sonne">
+        <div class="wert">0</div>
+        <div class="label"><b>Autos, 0 Fahrräder.</b> Seit 1970 komplett verkehrsfrei (§ 50 StVO). Genau deshalb ist eine E-Lastenrad- und Wagen-Flotte das einzige „Rollende“ der Insel – erlaubt, leise, unverwechselbar helgoländisch.</div>
+      </div>
+      <div class="zahl">
+        <div class="wert">0 %</div>
+        <div class="label"><b>MwSt., 0 Zoll.</b> Helgoland liegt außerhalb des EU-Zoll- und deutschen Steuergebiets. Bei Getränken heißt das ehrlich: der günstigste Sundowner Deutschlands – als Argument, nicht als Trick.</div>
+      </div>
+      <div class="zahl rot">
+        <div class="wert">~4 h</div>
+        <div class="label"><b>Zeit pro Tagesgast.</b> Ab Hamburg bleiben knapp 3¾ Stunden an Land. In diesem Fenster entscheidet sich der Pro-Kopf-Umsatz – schnelles, sichtbares, bezahlbares Genießen holt ihn.</div>
+      </div>
+    </div>
+    <p class="pfeilzeile">Verkehrsfrei + steuerfrei + zeitknapp – das ist kein Problemdreieck. Das ist ein Foodbike, ein Strandkorb und eine faire Karte.</p>
+  </div>
+  <div class="slidenr">04 / 13</div>
+</section>
+
+<!-- ============ 05 · KURS ============ -->
+<section class="slide dark grain" id="kurs">
+  <div class="inner auf">
+    <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Leitlinien in vier Sätzen</div>
+    <h2>Wonach wir kochen.</h2>
+    <div class="kurs">
+      <div class="feld"><span class="nr">01</span><h3>Bezahlbar mit Ansage.</h3><p>Ein Kernsortiment mit festen, fairen Preisen – sichtbar ausgezeichnet. Der Sonderstatus kommt beim Gast an, nicht nur an der Parfümtheke.</p></div>
+      <div class="feld"><span class="nr">02</span><h3>Mobil statt Beton.</h3><p>Wir bauen keine Häuser, wir bauen Formate, die morgens dort stehen, wo die Menschen sind – und in der Nebensaison einfach pausieren. Geringe Fixkosten, hohe Flexibilität.</p></div>
+      <div class="feld"><span class="nr">03</span><h3>Inseleigen, nicht austauschbar.</h3><p>Knieper, Hummer, Fisch, Sanddorn, zollfreier Aperitif – regionale Zutaten und die Ikonografie der Insel. Kein Foodtruck-Einheitsbrei.</p></div>
+      <div class="feld"><span class="nr">04</span><h3>In Insel-Hand.</h3><p>Standplätze und Konzessionen gehen an Helgoländer Betriebe, Gründerinnen und Gründer. Der HTS gibt Rahmen, Küche und Marke – die Wertschöpfung bleibt hier.</p></div>
+    </div>
+  </div>
+  <div class="slidenr">05 / 13</div>
+</section>
+
+<!-- ============ 06 · LEUCHTTURM 01 ============ -->
+<section class="slide lt" id="foodbikes">
+  <div class="inner auf">
+    <div class="lt-kopf">
+      <span class="nr">01</span>
+      <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Leuchtturm · Ganzjährig, Schwerpunkt Sommer</div>
+      <h2>Rollende Buden – die Foodbike-Flotte.</h2>
+      <p class="claim">Auf der einzigen Insel Deutschlands, auf der kein Fahrrad fahren darf, wird das E-Lastenrad zum Markenzeichen. Es bringt bezahlbaren Genuss genau dorthin, wo die vier Stunden der Gäste vergehen – und steht abends wieder in der Halle.</p>
+    </div>
+    <div class="bloecke">
+      <div class="block"><span class="bt">Was entsteht</span><p>Eine kleine Flotte gestalteter <b>E-Lastenräder und Handwagen</b> an festen Standplätzen: Landungsbrücke, Binnenhafen, Klippenrandweg, Dünenfähre. Angebot mit Insel-Handschrift – <b>Knieper-Wrap, Fischbrötchen, Sanddorn-Limo, zollfreier Kaffee</b> – mit sichtbarem Preisversprechen.</p></div>
+      <div class="block"><span class="bt">Warum es trägt</span><p>Verkehrsfreiheit macht die Flotte konkurrenzlos und unkopierbar; die Catering-Küche der Nordseehalle liefert die Basis-Küche (Kombüse) samt Kühlung und Spülung. Niedrige Fixkosten, mobil, saisonal skalierbar – und jedes Rad ist ein <b>fahrendes Marken-Bild</b>.</p><span class="preis">Preisversprechen · Kaffee <b>2,50 €</b> · Fischbrötchen <b>4,50 €</b></span></div>
+      <div class="block"><span class="bt">Erste Schritte</span><p>Zwei Piloträder für die Sommersaison 2027 · Standplatz- und Hygienekonzept mit Gemeinde und Insel-Gastronomen · Konzessionsmodell (HTS stellt Rad, Marke, Küche – Betreiber von der Insel) · Design, das sofort erkennbar ist.</p></div>
+      <div class="fussnote">Ergänzung, kein Wettbewerb: Die Räder bedienen Zeiten und Orte ohne Tisch – und tragen abends die Empfehlung zu den Restaurants und Hummerbuden.</div>
+    </div>
+  </div>
+  <div class="slidenr">06 / 13</div>
+</section>
+
+<!-- ============ 07 · LEUCHTTURM 02 ============ -->
+<section class="slide lt dark grain" id="beachclub">
+  <div class="inner auf">
+    <div class="lt-kopf">
+      <span class="nr">02</span>
+      <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Leuchtturm · Saison Mai – September, Düne</div>
+      <h2>Sandbank – der Südstrand wird Abend.</h2>
+      <p class="claim">Weißer Naturstrand, Robben in Rufweite, die Sonne fällt ins Meer – und um 17 Uhr fährt das letzte Schiff zurück, weil es nichts mehr zu bleiben gibt. Genau da beginnt der günstigste Sundowner Deutschlands.</p>
+    </div>
+    <div class="bloecke">
+      <div class="block"><span class="bt">Was entsteht</span><p>Ein leichter, rückbaubarer <b>Beachclub am Südstrand der Düne</b>: Liegen, Strandkörbe, Deck aus Holz, eine Bar mit zollfreien Aperitifs und alkoholfreien Insel-Drinks. Angedockt an Bungalowdorf und Camping, an die Beach-Turniere – und an den Sonnenuntergang.</p><span class="preis">Sundowner · Aperitif ab <b>5,50 €</b> · zollfrei kalkuliert</span></div>
+      <div class="block"><span class="bt">Warum es trägt</span><p>Der Südstrand ist schon heute das Sehnsuchtsbild der Insel; es fehlt nur der Grund, den Nachmittag in den Abend zu ziehen. Der Beachclub <b>verlängert die Verweildauer, füllt die Düne-Fähre am Abend</b> und gibt Bungalow- und Campinggästen ihr Wohnzimmer im Freien.</p></div>
+      <div class="block"><span class="bt">Erste Schritte</span><p>Standort- und Zonierungskonzept eng mit Naturschutz und Jordsand (klarer Abstand zu den Robben-Liegeplätzen) · rückbaubarer Pilot für eine Sommersaison · späte Dünen-Fähren-Slots mit der Reederei · ein Sunset-Format pro Woche.</p></div>
+      <div class="fussnote">Erst der Robbenschutz, dann der Sonnenuntergang: klare Zonen, Ruhezeiten und Lenkung sind Teil des Produkts – der Beachclub lebt vom intakten Strand, nicht gegen ihn.</div>
+    </div>
+  </div>
+  <div class="slidenr">07 / 13</div>
+</section>
+
+<!-- ============ 08 · LEUCHTTURM 03 ============ -->
+<section class="slide lt" id="becken">
+  <div class="inner auf">
+    <div class="lt-kopf">
+      <span class="nr">03</span>
+      <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Leuchtturm · Ganzjährig, HTS-eigenes Haus</div>
+      <h2>Das Becken – das Schwimmbad wird Treffpunkt.</h2>
+      <p class="claim">Ein Meerwasserbad, das ganzjährig geöffnet ist, mitten auf der Insel, im eigenen Haus – und trotzdem nur Schwimmbad. Dabei ist es der wetterfeste Ort, an dem aus einem Bad ein Abend werden kann.</p>
+    </div>
+    <div class="bloecke">
+      <div class="block"><span class="bt">Was entsteht</span><p>Eine leichte Genuss- und Abendkante fürs eigene Haus: <b>Poolbar und Sonnendeck</b>, Familiennachmittage mit fairer Karte, <b>Sauna-Aufguss-Abende</b> in der dunklen Jahreszeit und eine <b>Saft- und Smoothie-Bar</b> aus Sanddorn und Algen – die Brücke zum Mare Frisicum Spa und zur „Gesundheitsinsel“.</p></div>
+      <div class="block"><span class="bt">Warum es trägt</span><p>Das Bad hat schon Publikum, Personal und Öffnungszeiten – es fehlt nur der Anlass zu bleiben. Als HTS-Betrieb ist es der <b>direkteste Hebel ohne neuen Bau</b>: mehr Aufenthalt, mehr Pro-Kopf-Umsatz, ein wetterfestes Abendprogramm für Nebensaison und Regentage.</p></div>
+      <div class="block"><span class="bt">Erste Schritte</span><p>Kleine Barlösung und Deck-Möblierung testen · Aufguss-Abende als Serie in der Nebensaison · Smoothie-Bar gemeinsam mit dem Spa · Familientarif und Karte, die zum Bleiben einlädt.</p></div>
+      <div class="fussnote">Aus „Gesundheitstourismus“ auf dem Papier wird ein Ort: 200 Jahre Seebad, heute mit Deck, Aufguss und Sanddorn-Saft erlebbar.</div>
+    </div>
+  </div>
+  <div class="slidenr">08 / 13</div>
+</section>
+
+<!-- ============ 09 · SECHS FORMATE ============ -->
+<section class="slide dark grain" id="formate">
+  <div class="inner auf">
+    <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Sechs Formate · Klein, bezahlbar, sofort sichtbar</div>
+    <h2>Genuss zum Mitnehmen. <em>Richtig</em> gemacht.</h2>
+    <p class="lede">Neben den drei Leuchttürmen sechs kleine Formate, die schnell Bilder, Umsätze und Vertrauen bringen – und alle auf denselben Grundgedanken zahlen: bezahlbar, mobil, inseleigen.</p>
+    <div class="grid k3">
+      <div class="karte"><h3>04 · Zollfrei-Aperitivo</h3><p>Die ehrlichste Happy Hour Deutschlands: eine feste Abendstunde, in der Foodbikes, Beachclub und Buden den steuerfreien Vorteil sichtbar weitergeben. Ein Preis, ein Versprechen, ein Ritual zum Sonnenuntergang.</p><span class="tag sonne">Täglich, Sommer</span></div>
+      <div class="karte"><h3>05 · Knieper to go</h3><p>Die Inselscheren als Streetfood: der Knieper-Wrap aus dem Lastenrad, sauber zu essen im Gehen. Ein Gericht, das nur Helgoland hat – endlich auch für die vier Stunden der Tagesgäste.</p><span class="tag">Ganzjährig</span></div>
+      <div class="karte"><h3>06 · Beachküche Düne</h3><p>Eine offene Feuer- und Grillküche am Bungalowdorf: Fisch vom Rost, Stockbrot für Kinder, ein Frühstückskorb an die Tür. Aus „Selbstversorger“ wird ein Abend am Feuer.</p><span class="tag sonne">Mai – Oktober</span></div>
+      <div class="karte"><h3>07 · Markthalle Nordseehalle</h3><p>Im Winter wird die Profiküche zur Bühne: eine Indoor-Markthalle an Wochenenden, ein Hochseekino-Dinner. Wetterfester Genuss in der leersten Zeit – im vorhandenen Haus.</p><span class="tag">Nebensaison</span></div>
+      <div class="karte"><h3>08 · Genuss-Pass</h3><p>Die HelgolandCard zahlt und rabattiert quer über Foodbikes, Beachclub und Buden – ein Bezahlen, klare Zahlen für Entscheidungen, weniger Bargeld auf der Düne.</p><span class="tag gruen">Digital</span></div>
+      <div class="karte"><h3>09 · Insel-Automaten</h3><p>Für die Stunden nach Ladenschluss: wenige, gut gestaltete 24-h-Automaten mit Regionalem – Fisch im Glas, Sanddorn, Inselbier. Versorgung, wenn das letzte Schiff längst weg ist.</p><span class="tag">24 / 7</span></div>
+    </div>
+    <div class="fussnote" style="margin-top:22px">Jedes Format ist rückbaubar, saisonflexibel und in Insel-Hand vergebbar – nichts davon braucht einen Neubau, alles davon liefert schnell ein Bild.</div>
+  </div>
+  <div class="slidenr">09 / 13</div>
+</section>
+
+<!-- ============ 10 · DIE SECHS GEWERKE ============ -->
+<section class="slide" id="gewerke">
+  <div class="inner auf">
+    <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Die sechs Betriebe · Aus Verwaltung wird Produkt</div>
+    <h2>Sechs Gewerke, ein Genussgedanke.</h2>
+    <p class="lede">Die Direktion führt nicht nur Kampagnen, sondern einen Betrieb mit sechs Einheiten. Jede wird hier Teil desselben Produkts – nicht Anhang der Verwaltung.</p>
+    <div class="jahrgrid">
+      <div class="saison">
+        <h3>Nordseehalle</h3><span class="monate">Die Kombüse der Insel</span>
+        <ul>
+          <li class="neu">Profiküche als Basis-Küche der Foodbike-Flotte</li>
+          <li class="neu">Winter-Markthalle &amp; Hochseekino-Dinner</li>
+          <li>Kühlung, Spülung, Sektbar bereits vorhanden</li>
+        </ul>
+      </div>
+      <div class="saison">
+        <h3>Schwimmbad</h3><span class="monate">Das Becken · ganzjährig</span>
+        <ul>
+          <li class="neu">Poolbar &amp; Sonnendeck</li>
+          <li class="neu">Sauna-Aufguss-Abende in der Nebensaison</li>
+          <li class="neu">Familiennachmittage mit fairer Karte</li>
+        </ul>
+      </div>
+      <div class="saison">
+        <h3>Mare Frisicum Spa</h3><span class="monate">Gesunder Genuss</span>
+        <ul>
+          <li class="neu">Saft- &amp; Smoothie-Bar aus Sanddorn und Algen</li>
+          <li class="neu">Thalasso-Frühstück als Baustein</li>
+          <li>200 Jahre Seebad – endlich schmeckbar</li>
+        </ul>
+      </div>
+      <div class="saison">
+        <h3>Bungalowdorf &amp; Camping</h3><span class="monate">Beachküche · Mai – Okt</span>
+        <ul>
+          <li class="neu">Offene Feuer- und Grillküche</li>
+          <li class="neu">Beachclub „Sandbank“ als Nachbar</li>
+          <li class="neu">Frühstückskorb &amp; Sunset-Format</li>
+        </ul>
+      </div>
+      <div class="saison">
+        <h3>Tourist-Info &amp; HelgolandCard</h3><span class="monate">Genuss-Pass</span>
+        <ul>
+          <li class="neu">Bezahlen &amp; Rabatt über alle Formate</li>
+          <li>Weniger Bargeld, kürzere Schlangen</li>
+          <li>Belastbare Zahlen für Entscheidungen</li>
+        </ul>
+      </div>
+      <div class="saison">
+        <h3>Verwaltung &amp; Instandhaltung</h3><span class="monate">Die Betriebslogistik</span>
+        <ul>
+          <li class="neu">Lade-, Spül- und Standplatz-Logistik der Flotte</li>
+          <li class="neu">Konzessions- und Hygienerahmen</li>
+          <li>Sauberkeit als leisestes Marketing</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slidenr">10 / 13</div>
+</section>
+
+<!-- ============ 11 · RECHNET SICH ============ -->
+<section class="slide dark grain" id="rechnung">
+  <div class="inner auf">
+    <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Wirtschaftlichkeit · Warum es sich trägt</div>
+    <h2>Bezahlbar für den Gast. Rentabel für die Insel.</h2>
+    <p class="lede">Günstig heißt hier nicht arm gerechnet, sondern klug kalkuliert. Vier Gründe, warum dieses Konzept für Betreiber und HTS aufgeht.</p>
+    <div class="grid k2">
+      <div class="karte"><h3>Der Steuervorteil wird zum Produkt</h3><p>Ohne Mehrwertsteuer und Zoll bleibt bei Getränken eine Marge, die anderswo der Fiskus nimmt. Der Gast zahlt spürbar weniger – und der Betreiber verdient trotzdem. Das kann keine Festlandsküste bieten.</p></div>
+      <div class="karte"><h3>Wenig Beton, viel Umsatz je Fläche</h3><p>Ein Lastenrad kostet einen Bruchteil eines Ladenlokals, steht dort, wo die Menschen sind, und pausiert in der Nebensaison ohne Leerkosten. Mehr Umsatz je Quadratmeter, weniger Fixlast.</p></div>
+      <div class="karte"><h3>Mehr aus den vier Stunden</h3><p>Jeder Tagesgast, der statt nichts einen Kaffee, einen Wrap und einen Sundowner mitnimmt, hebt den Pro-Kopf-Umsatz – ohne einen einzigen Gast mehr. Wertschöpfung vor Volumen, wie im ersten Papier.</p></div>
+      <div class="karte"><h3>Wertschöpfung bleibt hier</h3><p>Konzessionen an Helgoländer Betriebe und Gründer schaffen Jobs und Perspektiven auf der Insel. Der HTS stellt Rad, Marke und Küche – und verdient über Konzession und eigene Häuser mit.</p></div>
+    </div>
+    <p class="pfeilzeile">Nichts davon braucht ein Wunder oder einen Neubau. Nur eine Entscheidung, den Sonderstatus endlich beim Gast ankommen zu lassen.</p>
+  </div>
+  <div class="slidenr">11 / 13</div>
+</section>
+
+<!-- ============ 12 · UMSETZUNG ============ -->
+<section class="slide" id="fahrplan">
+  <div class="inner auf">
+    <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Arbeitsweise · Eine Saison, vier Schritte</div>
+    <h2>Vom Pilot zur Flotte.</h2>
+    <p class="lede">Wie im ersten Papier: kein Aktionismus. Ein sauber umgesetztes erstes Rad schafft mehr Vertrauen als zehn Ankündigungen – und liefert das Bild, das den Rest verkauft.</p>
+    <div class="timeline">
+      <div class="phase"><span class="zeit">Schritt 1 · Winter</span><h3>Abstimmen</h3><p>Insel-Gastronomie, Gemeinde, Naturschutz und Reederei einbinden. Standplätze, Hygiene, Konzessionsmodell und Preisversprechen gemeinsam festlegen.</p></div>
+      <div class="phase"><span class="zeit">Schritt 2 · Frühjahr</span><h3>Zwei Räder</h3><p>Der Pilot: zwei gestaltete Foodbikes an Landungsbrücke und Klippenrandweg, Kombüse in der Nordseehalle. Klein, sichtbar, sauber.</p></div>
+      <div class="phase"><span class="zeit">Schritt 3 · Sommer</span><h3>Strand &amp; Becken</h3><p>Rückbaubarer Beachclub am Südstrand, Poolbar im Schwimmbad. Zollfrei-Aperitivo als tägliches Ritual – die Bilder gehen von allein.</p></div>
+      <div class="phase"><span class="zeit">Schritt 4 · Herbst</span><h3>Auswerten &amp; skalieren</h3><p>Zahlen aus dem Genuss-Pass lesen, Formate schärfen, Flotte und Standplätze für die Folgesaison ausschreiben – getragen von der Insel.</p></div>
+    </div>
+  </div>
+  <div class="slidenr">12 / 13</div>
+</section>
+
+<!-- ============ 13 · FINALE ============ -->
+<section class="slide dark grain" id="finale">
+  <div class="inner auf">
+    <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Zum Schluss</div>
+    <h2>Bezahlbar.<br><b>Beweglich.</b><br><em>Bald.</em></h2>
+    <p class="lede">Dieses zweite Papier ist die Alltagsebene unter den Leuchttürmen aus „Helgoland weiterdenken“ – und wie das erste ein Angebot zum Gespräch, am liebsten vor Ort, bei Wind und mit einem Kaffee aus dem Lastenrad in der Hand.</p>
+    <div class="kontakt">
+      Nils Benthaus · Hamburg
+      <a href="mailto:benthaus@nilsbenthaus.com">benthaus@nilsbenthaus.com</a>
+      <a href="tel:+4915122631030">0151&nbsp;2263&nbsp;1030</a>
+    </div>
+    <div class="quellen">
+      Fakten und Quellen: Gastronomie, Dünenrestaurant, Schwimmbad, Bungalowdorf &amp; Camping, Nordseehalle und Aufgaben des Helgoland Tourismus-Service – helgoland.de · Verkehrsfreiheit (auto- und fahrradfrei, § 50 StVO) – dejure.org / kreis-pinneberg.de · Zoll- und Mehrwertsteuerfreiheit sowie Aufenthaltsdauer und Preise der Tagesgäste – helgoland.de / Reise- und Verbraucherquellen. Alle Impulse sind Denkangebote – nichts davon ersetzt die Abstimmung mit Insel-Gastronomie, Naturschutz, Gremien und Partnern vor Ort.
+    </div>
+  </div>
+  <svg class="anna-klein" viewBox="0 0 400 560" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M166 560 L163 470 Q158 400 164 330 L169 262 Q171 236 165 224 L152 208 Q144 196 148 178 L154 128 Q157 104 172 96 L196 88 Q222 82 240 92 Q254 100 256 122 L260 176 Q262 196 254 208 L242 226 Q236 236 238 258 L244 330 Q250 400 246 470 L244 560 Z" fill="#0A2246"/>
+  </svg>
+  <div class="slidenr">13 / 13</div>
+</section>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var dots = document.getElementById('dots');
+  var hinweis = document.getElementById('hinweis');
+
+  slides.forEach(function(s, i){
+    var a = document.createElement('a');
+    a.href = '#' + s.id;
+    a.setAttribute('aria-label', 'Folie ' + (i+1));
+    dots.appendChild(a);
+  });
+  var dotEls = Array.prototype.slice.call(dots.children);
+
+  function setActive(idx){
+    dotEls.forEach(function(d, i){
+      d.classList.toggle('aktiv', i === idx);
+      d.classList.toggle('d', slides[idx].classList.contains('dark'));
+    });
+    if(hinweis){ hinweis.classList.toggle('d', slides[idx].classList.contains('dark')); }
+  }
+
+  var current = 0;
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        current = slides.indexOf(e.target);
+        setActive(current);
+        e.target.querySelectorAll('.auf').forEach(function(el){ el.classList.add('sichtbar'); });
+      }
+    });
+  }, {threshold:.45});
+  slides.forEach(function(s){ io.observe(s); });
+
+  document.addEventListener('keydown', function(ev){
+    if(ev.key === 'ArrowDown' || ev.key === 'PageDown' || ev.key === ' '){
+      if(current < slides.length - 1){ ev.preventDefault(); slides[current+1].scrollIntoView({behavior:'smooth'}); }
+    }
+    if(ev.key === 'ArrowUp' || ev.key === 'PageUp'){
+      if(current > 0){ ev.preventDefault(); slides[current-1].scrollIntoView({behavior:'smooth'}); }
+    }
+  });
+
+  setActive(0);
+  slides[0].querySelectorAll('.auf').forEach(function(el){ el.classList.add('sichtbar'); });
+})();
+</script>
+</body>
+</html>
