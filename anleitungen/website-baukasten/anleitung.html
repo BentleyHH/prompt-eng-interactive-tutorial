@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Website-Baukasten – Anleitung für den Alltag</title>
+<style>
+  /* =========================================================
+     PLATZHALTER — hier später Agenturname/Kontakt anpassen
+     (wird per Suchen&Ersetzen ausgetauscht):
+        [DEINE AGENTUR]      -> Absender-/Agenturname
+        [DEINE-WEBSITE.DE]   -> Website der Agentur
+        [SUPPORT-EMAIL]      -> Kontakt-E-Mail
+        [SUPPORT-TELEFON]    -> Kontakt-Telefon
+     Logo: <div class="logo-slot"> ... Bild einsetzen
+     ========================================================= */
+
+  :root{
+    --ink:#1c2230;
+    --muted:#5c6675;
+    --line:#e4e8ef;
+    --paper:#ffffff;
+    --soft:#f5f7fb;
+    --brand:#2b56c9;
+    --brand-dk:#1a3a8f;
+    --brand-tint:#eaf0ff;
+    --accent:#0f9d76;         /* Tipp */
+    --accent-tint:#e6f7f0;
+    --warn:#b4680b;           /* Achtung */
+    --warn-tint:#fdf1e0;
+    --blog:#8a3ffc;           /* Blog-Kapitel */
+    --blog-tint:#f2eaff;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:"Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    color:var(--ink);
+    background:#dfe3ea;
+    font-size:10.6pt;
+    line-height:1.5;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+
+  @page{ size:A4; margin:0; }
+
+  .page{
+    position:relative;
+    width:210mm;
+    min-height:297mm;
+    background:var(--paper);
+    padding:19mm 17mm 20mm;
+    margin:0 auto;
+    page-break-after:always;
+    overflow:hidden;
+  }
+  .page:last-child{ page-break-after:auto; }
+  @media screen{
+    .page{ margin:10mm auto; box-shadow:0 6px 30px rgba(20,30,60,.18); }
+  }
+
+  /* ---------- laufende Kopf-/Fußzeile ---------- */
+  .rhead{
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1.5px solid var(--line);
+    padding-bottom:7px; margin-bottom:16px;
+    font-size:8.4pt; color:var(--muted); letter-spacing:.02em;
+  }
+  .rhead .agency{ font-weight:700; color:var(--brand-dk); text-transform:uppercase; letter-spacing:.09em; }
+  .rfoot{
+    position:absolute; left:17mm; right:17mm; bottom:11mm;
+    display:flex; align-items:center; justify-content:space-between;
+    border-top:1px solid var(--line); padding-top:7px;
+    font-size:8pt; color:var(--muted);
+  }
+  .rfoot .pg{ font-weight:700; color:var(--ink); }
+
+  /* ---------- Typo ---------- */
+  h1,h2,h3{ margin:0; line-height:1.18; }
+  .kicker{ font-size:8.6pt; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--brand); }
+  h2.sec{ font-size:19pt; margin:4px 0 3px; color:var(--ink); }
+  .lead{ color:var(--muted); font-size:10.4pt; margin:0 0 14px; }
+  p{ margin:0 0 9px; }
+  strong{ color:var(--ink); }
+  a{ color:var(--brand-dk); text-decoration:none; }
+
+  /* ---------- Deckblatt ---------- */
+  .cover{ padding:0; }
+  .cover .band{
+    position:absolute; inset:0 0 auto 0; height:140mm;
+    background:linear-gradient(135deg,var(--brand-dk) 0%, var(--brand) 62%, #3f74e6 100%);
+  }
+  .cover .band:after{
+    content:""; position:absolute; right:-40mm; top:-30mm; width:120mm; height:120mm;
+    background:radial-gradient(circle at center, rgba(255,255,255,.16), rgba(255,255,255,0) 62%);
+  }
+  .cover-inner{ position:relative; padding:20mm 18mm; color:#fff; }
+  .logo-slot{
+    display:inline-flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.35);
+    border-radius:10px; padding:9px 14px; font-weight:800; letter-spacing:.04em;
+    backdrop-filter:blur(2px);
+  }
+  .logo-mark{ width:22px; height:22px; border-radius:6px; background:#fff; display:inline-block; position:relative; }
+  .logo-mark:after{ content:""; position:absolute; inset:5px; border-radius:3px; background:var(--brand); }
+  .cover h1{
+    font-size:33pt; margin:52mm 0 6px; letter-spacing:-.01em; max-width:150mm;
+  }
+  .cover .sub{ font-size:13pt; color:rgba(255,255,255,.92); max-width:135mm; }
+  .cover-card{
+    position:relative; margin-top:30mm; background:#fff; border:1px solid var(--line);
+    border-radius:14px; padding:18px 20px; color:var(--ink);
+    box-shadow:0 10px 30px rgba(20,40,90,.10);
+  }
+  .cover-card h3{ font-size:11.5pt; margin-bottom:8px; }
+  .cover-card .grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px 22px; margin-top:4px; }
+  .cover-card .grid div{ font-size:9.6pt; color:var(--muted); }
+  .cover-card .grid b{ color:var(--ink); }
+  .cover-meta{ position:absolute; left:18mm; right:18mm; bottom:16mm; display:flex; justify-content:space-between; font-size:8.6pt; color:var(--muted); }
+  .chip-tool{ display:inline-block; background:var(--brand-tint); color:var(--brand-dk); font-weight:700; font-size:8.6pt; padding:3px 10px; border-radius:999px; }
+
+  /* ---------- Inhalt / TOC ---------- */
+  .toc{ list-style:none; padding:0; margin:6px 0 0; }
+  .toc li{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
+  .toc .n{ width:30px; height:30px; flex:0 0 30px; border-radius:8px; background:var(--brand-tint); color:var(--brand-dk); font-weight:800; display:flex; align-items:center; justify-content:center; font-size:11pt; }
+  .toc .t{ font-weight:700; font-size:11pt; }
+  .toc .d{ color:var(--muted); font-size:9.2pt; margin-top:1px; }
+  .toc .pg{ margin-left:auto; color:var(--muted); font-weight:700; font-size:9.4pt; }
+
+  .callout{ border-radius:11px; padding:12px 14px 12px 14px; margin:12px 0; font-size:9.8pt; border:1px solid var(--line); background:var(--soft); position:relative; }
+  .callout .tag{ display:inline-block; font-size:7.8pt; font-weight:800; letter-spacing:.11em; text-transform:uppercase; padding:2px 8px; border-radius:999px; margin-bottom:5px; }
+  .callout.tip{ background:var(--accent-tint); border-color:#bfe8d8; }
+  .callout.tip .tag{ background:var(--accent); color:#fff; }
+  .callout.warn{ background:var(--warn-tint); border-color:#f3d9ad; }
+  .callout.warn .tag{ background:var(--warn); color:#fff; }
+  .callout.key{ background:var(--brand-tint); border-color:#c7d6fb; }
+  .callout.key .tag{ background:var(--brand); color:#fff; }
+  .callout p{ margin:0; }
+
+  /* ---------- Schritt-Listen ---------- */
+  .steps{ counter-reset:step; margin:6px 0 4px; padding:0; list-style:none; }
+  .steps > li{
+    counter-increment:step; position:relative; padding:0 0 14px 42px; margin:0;
+  }
+  .steps > li:before{
+    content:counter(step); position:absolute; left:0; top:-2px;
+    width:28px; height:28px; border-radius:50%;
+    background:var(--brand); color:#fff; font-weight:800; font-size:11pt;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 6px rgba(43,86,201,.3);
+  }
+  .steps > li:after{
+    content:""; position:absolute; left:13.5px; top:28px; bottom:2px; width:2px; background:var(--line);
+  }
+  .steps > li:last-child:after{ display:none; }
+  .steps h4{ margin:2px 0 2px; font-size:10.6pt; }
+  .steps p{ margin:0; color:var(--muted); font-size:9.7pt; }
+  .steps .ui{ font-weight:700; color:var(--brand-dk); background:var(--brand-tint); padding:1px 6px; border-radius:5px; font-size:9.2pt; white-space:nowrap; }
+  .kbd{ font-family:"Consolas",monospace; font-size:8.6pt; background:#eef1f6; border:1px solid #d7dde7; border-bottom-width:2px; border-radius:5px; padding:1px 6px; color:#2b3242; }
+
+  /* blog-Kapitel akzent */
+  .blogsec .kicker{ color:var(--blog); }
+  .blogsec .steps > li:before{ background:var(--blog); box-shadow:0 2px 6px rgba(138,63,252,.3); }
+  .blogsec .steps .ui{ color:#5a1fb0; background:var(--blog-tint); }
+  .blogsec .toc .n{ background:var(--blog-tint); color:#5a1fb0; }
+
+  /* ---------- Karten / Raster ---------- */
+  .cards{ display:grid; grid-template-columns:1fr 1fr; gap:11px; margin:10px 0; }
+  .card{ border:1px solid var(--line); border-radius:11px; padding:12px 13px; background:#fff; }
+  .card h4{ font-size:10pt; margin:0 0 4px; }
+  .card p{ font-size:9.3pt; color:var(--muted); margin:0; }
+  .card .ic{ width:26px; height:26px; border-radius:7px; background:var(--brand-tint); margin-bottom:8px; display:flex; align-items:center; justify-content:center; color:var(--brand-dk); font-weight:800; font-size:11pt; }
+
+  /* checkliste */
+  .check{ list-style:none; padding:0; margin:8px 0; }
+  .check li{ display:flex; gap:11px; align-items:flex-start; padding:8px 0; border-bottom:1px dashed var(--line); font-size:10pt; }
+  .check .box{ width:17px; height:17px; flex:0 0 17px; border:2px solid var(--brand); border-radius:4px; margin-top:1px; }
+  .check b{ display:block; }
+  .check span{ color:var(--muted); font-size:9.2pt; }
+
+  .figure{ border:1px solid var(--line); border-radius:11px; background:var(--soft); padding:0; overflow:hidden; margin:10px 0; }
+  .figure .bar{ height:26px; background:linear-gradient(#fdfdfe,#eef1f6); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:6px; padding:0 10px; }
+  .figure .dot{ width:9px; height:9px; border-radius:50%; background:#cfd6e2; }
+  .figure .body{ padding:13px 14px; font-size:9pt; color:var(--muted); }
+
+  .divider{ height:1px; background:var(--line); margin:14px 0; border:0; }
+  .two{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .small{ font-size:9pt; color:var(--muted); }
+  .notes{ border:1px solid var(--line); border-radius:11px; height:150mm; background:
+      repeating-linear-gradient(var(--paper), var(--paper) 30px, var(--line) 30px, var(--line) 31px); }
+</style>
+</head>
+<body>
+
+<!-- ================= SEITE 1 · DECKBLATT ================= -->
+<section class="page cover">
+  <div class="band"></div>
+  <div class="cover-inner">
+    <!-- LOGO: hier später eigenes Logo-Bild einsetzen -->
+    <div class="logo-slot"><span class="logo-mark"></span> [DEINE AGENTUR]</div>
+
+    <h1>Ihre Website pflegen –<br>ganz ohne Technikstress</h1>
+    <div class="sub">Die wichtigsten Handgriffe im DomainFactory Homepage-Baukasten:
+      Texte ändern, Bilder tauschen, Blogbeiträge schreiben und veröffentlichen.</div>
+
+    <div class="cover-card">
+      <h3>Für wen ist diese Anleitung?</h3>
+      <p class="small" style="margin:0 0 10px">Für Sie als Website-Betreiber:in. Sie brauchen keine
+        Programmierkenntnisse – nur diese Anleitung und ein paar Minuten. Der Baukasten läuft auf dem
+        <span class="chip-tool">Duda-Editor</span> von DomainFactory.</p>
+      <div class="grid">
+        <div><b>Enthalten</b><br>Texte, Bilder, Blog, Veröffentlichen</div>
+        <div><b>Aufwand</b><br>Erste Änderung in unter 5 Minuten</div>
+        <div><b>Voraussetzung</b><br>Zugangsdaten &amp; ein Browser</div>
+        <div><b>Sicher</b><br>Nichts wird live, bis Sie es freigeben</div>
+      </div>
+    </div>
+  </div>
+  <div class="cover-meta">
+    <span>Onboarding-Leitfaden · Website-Baukasten</span>
+    <span>Erstellt von [DEINE AGENTUR] · Version 1.0</span>
+  </div>
+</section>
+
+<!-- ================= SEITE 2 · INHALT + GRUNDPRINZIP ================= -->
+<section class="page">
+  <div class="rhead"><span class="agency">[DEINE AGENTUR]</span><span>Website-Baukasten · Anleitung</span></div>
+
+  <div class="kicker">Übersicht</div>
+  <h2 class="sec">Was Sie hier lernen</h2>
+  <p class="lead">In fünf kurzen Kapiteln. Sie können einfach vorne anfangen – oder direkt zum passenden Thema springen.</p>
+
+  <ul class="toc">
+    <li><span class="n">1</span><span><span class="t">Anmelden &amp; Editor öffnen</span><div class="d">Wie Sie in den Baukasten kommen und sich orientieren</div></span><span class="pg">S. 3</span></li>
+    <li><span class="n">2</span><span><span class="t">Texte ändern</span><div class="d">Wörter, Sätze und Überschriften anpassen</div></span><span class="pg">S. 4</span></li>
+    <li><span class="n">3</span><span><span class="t">Bilder einfügen &amp; austauschen</span><div class="d">Fotos hochladen, ersetzen, zuschneiden</div></span><span class="pg">S. 5</span></li>
+    <li><span class="n">4</span><span><span class="t">Einen Blogbeitrag schreiben</span><div class="d">Vom leeren Beitrag bis zum fertigen Artikel</div></span><span class="pg">S. 6–7</span></li>
+    <li><span class="n">5</span><span><span class="t">Veröffentlichen</span><div class="d">Änderungen live schalten – der letzte Klick</div></span><span class="pg">S. 8</span></li>
+  </ul>
+
+  <hr class="divider">
+
+  <div class="kicker">Das Wichtigste zuerst</div>
+  <h2 class="sec" style="font-size:16pt">Die eine goldene Regel</h2>
+  <div class="callout key">
+    <span class="tag">Merksatz</span>
+    <p><strong>Nichts, was Sie im Editor tun, ist sofort öffentlich.</strong> Sie arbeiten immer in einer
+    Vorschau. Ihre Besucher:innen sehen Änderungen erst, wenn Sie oben rechts auf
+    <span class="ui">Veröffentlichen</span> klicken. Das heißt: Sie können in Ruhe ausprobieren – kaputt machen
+    können Sie nichts.</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="ic">↩</div><h4>Rückgängig machen</h4><p>Ein falscher Klick? <span class="kbd">Strg</span> + <span class="kbd">Z</span> macht den letzten Schritt rückgängig (am Mac <span class="kbd">⌘</span> + <span class="kbd">Z</span>).</p></div>
+    <div class="card"><div class="ic">▭</div><h4>Handy-Ansicht prüfen</h4><p>Oben können Sie zwischen Desktop-, Tablet- und Handy-Ansicht wechseln. Immer kurz kontrollieren.</p></div>
+  </div>
+
+  <div class="rfoot"><span>[DEINE AGENTUR] · [DEINE-WEBSITE.DE]</span><span class="pg">2</span></div>
+</section>
+
+<!-- ================= SEITE 3 · ANMELDEN & ORIENTIEREN ================= -->
+<section class="page">
+  <div class="rhead"><span class="agency">Kapitel 1</span><span>Anmelden &amp; Editor öffnen</span></div>
+
+  <div class="kicker">Kapitel 1</div>
+  <h2 class="sec">Anmelden &amp; sich orientieren</h2>
+  <p class="lead">So kommen Sie in den Baukasten und finden sich in wenigen Sekunden zurecht.</p>
+
+  <ol class="steps">
+    <li><h4>Im Kundenbereich anmelden</h4><p>Öffnen Sie die Website von DomainFactory und melden Sie sich mit den Zugangsdaten an, die wir Ihnen übergeben haben. Rufen Sie dort den Bereich <span class="ui">Homepage-Baukasten</span> / <span class="ui">Website</span> auf.</p></li>
+    <li><h4>Editor öffnen</h4><p>Klicken Sie auf <span class="ui">Bearbeiten</span> bzw. <span class="ui">Website bearbeiten</span>. Der Duda-Editor öffnet sich mit Ihrer Seite in der Mitte.</p></li>
+    <li><h4>Die drei Bereiche merken</h4><p>Ihre Seite in der Mitte. <strong>Links</strong> die Leiste zum Hinzufügen von Bausteinen (Text, Bild, Blog …). <strong>Oben</strong> die Ansichts-Umschaltung und der <span class="ui">Veröffentlichen</span>-Knopf.</p></li>
+    <li><h4>Zwischen Seiten wechseln</h4><p>Über die Seiten-Auswahl (oben, meist beschriftet mit dem aktuellen Seitennamen) springen Sie z. B. von <em>Startseite</em> zu <em>Über uns</em> oder <em>Blog</em>.</p></li>
+  </ol>
+
+  <div class="figure">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span style="margin-left:8px;font-size:8pt;color:var(--muted)">Duda-Editor · schematisch</span>
+      <span style="margin-left:auto;font-size:8pt;font-weight:800;color:var(--brand-dk);background:var(--brand-tint);padding:2px 9px;border-radius:6px">Veröffentlichen</span>
+    </div>
+    <div class="body">
+      <div style="display:grid;grid-template-columns:34px 1fr;gap:10px;">
+        <div style="background:#fff;border:1px solid var(--line);border-radius:7px;height:60px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:7pt;text-align:center">Bau&shy;steine</div>
+        <div style="background:#fff;border:1px dashed var(--line);border-radius:7px;height:60px;display:flex;align-items:center;justify-content:center;color:var(--muted)">Ihre Seite (Vorschau &amp; Bearbeitung)</div>
+      </div>
+      <p style="margin:9px 0 0">Links Bausteine · Mitte Ihre Seite · oben rechts der grüne <strong>Veröffentlichen</strong>-Knopf.</p>
+    </div>
+  </div>
+
+  <div class="callout tip"><span class="tag">Tipp</span><p>Verlieren Sie die Scheu: Klicken Sie ruhig auf Elemente, um zu sehen, was sich öffnet. Solange Sie nicht veröffentlichen, sieht das niemand.</p></div>
+
+  <div class="rfoot"><span>[DEINE AGENTUR] · [DEINE-WEBSITE.DE]</span><span class="pg">3</span></div>
+</section>
+
+<!-- ================= SEITE 4 · TEXTE ÄNDERN ================= -->
+<section class="page">
+  <div class="rhead"><span class="agency">Kapitel 2</span><span>Texte ändern</span></div>
+
+  <div class="kicker">Kapitel 2</div>
+  <h2 class="sec">Texte ändern</h2>
+  <p class="lead">Der häufigste Handgriff – und der einfachste. Text wird direkt an Ort und Stelle bearbeitet.</p>
+
+  <ol class="steps">
+    <li><h4>Textstelle finden</h4><p>Fahren Sie mit der Maus über den Text. Der Baustein wird farbig umrandet – das zeigt: hier lässt sich etwas ändern.</p></li>
+    <li><h4>Doppelklick zum Bearbeiten</h4><p><strong>Doppelklicken</strong> Sie in den Text. Jetzt blinkt der Cursor und Sie können schreiben, löschen und überschreiben wie in einem Textprogramm.</p></li>
+    <li><h4>Formatieren</h4><p>Markieren Sie ein Wort oder einen Satz. Es erscheint eine kleine Leiste mit <span class="ui">Fett</span>, <span class="ui">Kursiv</span>, <span class="ui">Link</span> und der Auswahl der <span class="ui">Textart</span> (Überschrift / Absatz).</p></li>
+    <li><h4>Einen Link setzen</h4><p>Text markieren → <span class="ui">Link</span> anklicken → Zieladresse (z. B. eine andere Seite oder <span class="kbd">https://…</span>) eintragen → bestätigen.</p></li>
+    <li><h4>Neben die Seite klicken</h4><p>Ein Klick auf eine freie Fläche schließt die Bearbeitung. Ihre Änderung ist gespeichert – aber noch nicht veröffentlicht (siehe Kapitel 5).</p></li>
+  </ol>
+
+  <div class="two">
+    <div class="callout tip" style="margin-top:6px"><span class="tag">Tipp</span><p>Überschriften nicht per „Fett“ nachbauen. Nutzen Sie die <strong>Textart</strong> (Überschrift 1/2/3). Das sieht einheitlich aus und hilft bei Google.</p></div>
+    <div class="callout warn" style="margin-top:6px"><span class="tag">Achtung</span><p>Löschen Sie nicht den ganzen Baustein, wenn Sie nur Text ändern wollen. Sonst verschwindet auch das Layout. Nur <em>im</em> Text arbeiten.</p></div>
+  </div>
+
+  <div class="callout key"><span class="tag">Kurz</span><p>Über Text fahren → <strong>doppelklicken</strong> → schreiben → daneben klicken. Fertig.</p></div>
+
+  <div class="rfoot"><span>[DEINE AGENTUR] · [DEINE-WEBSITE.DE]</span><span class="pg">4</span></div>
+</section>
+
+<!-- ================= SEITE 5 · BILDER ================= -->
+<section class="page">
+  <div class="rhead"><span class="agency">Kapitel 3</span><span>Bilder einfügen &amp; austauschen</span></div>
+
+  <div class="kicker">Kapitel 3</div>
+  <h2 class="sec">Bilder einfügen &amp; austauschen</h2>
+  <p class="lead">Ein bestehendes Bild ersetzen oder ein neues hinzufügen – beides in wenigen Klicks.</p>
+
+  <h3 style="font-size:11.5pt;margin:2px 0 4px;color:var(--brand-dk)">A · Ein vorhandenes Bild austauschen</h3>
+  <ol class="steps">
+    <li><h4>Bild anklicken</h4><p>Klicken Sie das Bild an. Es erscheint ein Menü, meist mit <span class="ui">Bild ersetzen</span> / <span class="ui">Bild ändern</span>.</p></li>
+    <li><h4>Neues Bild wählen</h4><p>Die Bildbibliothek öffnet sich. Wählen Sie ein vorhandenes Bild oder laden Sie über <span class="ui">Hochladen</span> ein Foto von Ihrem Computer hoch.</p></li>
+    <li><h4>Zuschneiden &amp; Ausschnitt</h4><p>Über <span class="ui">Zuschneiden</span> bzw. den Bild-Editor passen Sie Ausschnitt, Helligkeit und Größe an. Bestätigen nicht vergessen.</p></li>
+  </ol>
+
+  <h3 style="font-size:11.5pt;margin:10px 0 4px;color:var(--brand-dk)">B · Ein neues Bild hinzufügen</h3>
+  <ol class="steps">
+    <li><h4>Baustein „Bild“ ziehen</h4><p>Ziehen Sie aus der linken Leiste den Baustein <span class="ui">Bild</span> per Maus (Drag &amp; Drop) an die gewünschte Stelle der Seite.</p></li>
+    <li><h4>Datei auswählen</h4><p>Wieder öffnet sich die Bildbibliothek – vorhandenes Bild wählen oder neues <span class="ui">Hochladen</span>.</p></li>
+  </ol>
+
+  <div class="two">
+    <div class="callout tip" style="margin-top:4px"><span class="tag">Tipp · schnelle Seiten</span><p>Große Fotos vorher verkleinern (Längste Kante ca. 1600–2000&nbsp;px). Das hält die Seite schnell.</p></div>
+    <div class="callout tip" style="margin-top:4px"><span class="tag">Tipp · Google &amp; Barrierefreiheit</span><p>Vergeben Sie einen <strong>Alt-Text</strong> (Bildbeschreibung) in den Bild-Einstellungen. Kurz beschreiben, was zu sehen ist.</p></div>
+  </div>
+
+  <div class="callout warn"><span class="tag">Achtung · Bildrechte</span><p>Nur eigene Fotos oder Bilder mit gültiger Lizenz verwenden. Bilder einfach aus dem Internet zu kopieren kann teuer werden.</p></div>
+
+  <div class="rfoot"><span>[DEINE AGENTUR] · [DEINE-WEBSITE.DE]</span><span class="pg">5</span></div>
+</section>
+
+<!-- ================= SEITE 6 · BLOG TEIL 1 ================= -->
+<section class="page blogsec">
+  <div class="rhead"><span class="agency" style="color:#5a1fb0">Kapitel 4</span><span>Einen Blogbeitrag schreiben</span></div>
+
+  <div class="kicker">Kapitel 4 · Teil 1 von 2</div>
+  <h2 class="sec">Einen Blogbeitrag schreiben</h2>
+  <p class="lead">Der Baukasten hat einen eigenen Blog-Bereich. Beiträge bauen Sie aus Bausteinen zusammen: Titel, Text, Bild, Zwischenüberschrift, Video und mehr.</p>
+
+  <ol class="steps">
+    <li><h4>Blog-Bereich öffnen</h4><p>Wechseln Sie über die obere Navigation in den Bereich <span class="ui">Blog</span>. Dort sehen Sie die Liste Ihrer bestehenden Beiträge.</p></li>
+    <li><h4>Neuen Beitrag anlegen</h4><p>Klicken Sie auf <span class="ui">Neuer Beitrag</span> / <span class="ui">Beitrag hinzufügen</span>. Ein leerer Beitrag öffnet sich im Editor.</p></li>
+    <li><h4>Titel eingeben</h4><p>Tragen Sie oben einen aussagekräftigen <strong>Titel</strong> ein – das ist die Überschrift Ihres Artikels.</p></li>
+    <li><h4>Text schreiben</h4><p>In den Textbereich schreiben Sie Ihren Beitrag – ganz wie in Kapitel 2: markieren, formatieren, Links setzen.</p></li>
+    <li><h4>Bausteine ergänzen</h4><p>Über <span class="ui">+</span> bzw. die Bausteinleiste fügen Sie <em>Bild</em>, <em>Zwischenüberschrift</em>, <em>Zitat</em>, <em>Video</em> oder eine <em>Trennlinie</em> hinzu – per Drag &amp; Drop an die passende Stelle.</p></li>
+  </ol>
+
+  <div class="callout tip"><span class="tag">Tipp · Aufbau</span><p>Ein gut lesbarer Beitrag: kurzer Einleitungssatz → Bild → Zwischenüberschriften → kurze Absätze. Das lädt zum Lesen ein.</p></div>
+
+  <div class="rfoot"><span>[DEINE AGENTUR] · [DEINE-WEBSITE.DE]</span><span class="pg">6</span></div>
+</section>
+
+<!-- ================= SEITE 7 · BLOG TEIL 2 ================= -->
+<section class="page blogsec">
+  <div class="rhead"><span class="agency" style="color:#5a1fb0">Kapitel 4</span><span>Beitrag fertigstellen &amp; veröffentlichen</span></div>
+
+  <div class="kicker">Kapitel 4 · Teil 2 von 2</div>
+  <h2 class="sec">Beitrag fertigstellen</h2>
+  <p class="lead">Bevor der Artikel online geht: Beitragsbild, Einordnung und ein kurzer Check.</p>
+
+  <ol class="steps">
+    <li><h4>Beitragsbild festlegen</h4><p>Legen Sie ein <span class="ui">Beitragsbild</span> (Titelbild) fest. Es erscheint in der Blog-Übersicht und beim Teilen des Artikels.</p></li>
+    <li><h4>Kategorien &amp; Schlagwörter</h4><p>Ordnen Sie den Beitrag optional einer <span class="ui">Kategorie</span> zu und vergeben <span class="ui">Schlagwörter</span> (Tags). Das hilft Leser:innen beim Finden.</p></li>
+    <li><h4>Kurzbeschreibung / SEO</h4><p>In den Beitrags-Einstellungen können Sie eine kurze Beschreibung und den Link-Namen (URL) prüfen – gut für Google und die Vorschau.</p></li>
+    <li><h4>Vorschau ansehen</h4><p>Nutzen Sie die <span class="ui">Vorschau</span>, um den Beitrag wie ein:e Besucher:in zu sehen. Tippfehler? Bild schief? Jetzt korrigieren.</p></li>
+    <li><h4>Beitrag speichern / einplanen</h4><p>Speichern Sie den Beitrag. Sie können ihn sofort freigeben oder ein <span class="ui">Veröffentlichungsdatum</span> setzen. <strong>Sichtbar wird er endgültig erst mit dem Veröffentlichen der Website</strong> (Kapitel 5).</p></li>
+  </ol>
+
+  <div class="two">
+    <div class="callout tip" style="margin-top:4px"><span class="tag">Tipp</span><p>Schreiben Sie den Titel so, dass man sofort weiß, worum es geht. Neugier ist gut – aber ehrlich bleiben.</p></div>
+    <div class="callout warn" style="margin-top:4px"><span class="tag">Achtung</span><p>Ein Entwurf ist noch nicht online. Erst <em>Vorschau prüfen</em>, dann veröffentlichen – nicht umgekehrt.</p></div>
+  </div>
+
+  <div class="rfoot"><span>[DEINE AGENTUR] · [DEINE-WEBSITE.DE]</span><span class="pg">7</span></div>
+</section>
+
+<!-- ================= SEITE 8 · VERÖFFENTLICHEN ================= -->
+<section class="page">
+  <div class="rhead"><span class="agency">Kapitel 5</span><span>Veröffentlichen</span></div>
+
+  <div class="kicker">Kapitel 5</div>
+  <h2 class="sec">Veröffentlichen – der letzte Klick</h2>
+  <p class="lead">Alle Änderungen (Texte, Bilder, neue Blogbeiträge) werden mit <em>einem</em> Klick gemeinsam live geschaltet.</p>
+
+  <ol class="steps">
+    <li><h4>Alles noch einmal ansehen</h4><p>Gehen Sie Ihre Seite durch. Stimmen Texte und Bilder? Prüfen Sie kurz die <strong>Handy-Ansicht</strong> über die Umschaltung oben.</p></li>
+    <li><h4>Auf „Veröffentlichen“ klicken</h4><p>Klicken Sie oben rechts auf den grünen Knopf <span class="ui">Veröffentlichen</span> (bei DomainFactory teils <span class="ui">Speichern &amp; Veröffentlichen</span>). Kurz warten – fertig.</p></li>
+    <li><h4>Live kontrollieren</h4><p>Öffnen Sie Ihre echte Website in einem neuen Browser-Tab und prüfen Sie, ob die Änderung erscheint. Tipp: Seite mit <span class="kbd">Strg</span>+<span class="kbd">F5</span> neu laden.</p></li>
+  </ol>
+
+  <div class="callout key"><span class="tag">So merken Sie es sich</span><p><strong>Bearbeiten → Vorschau prüfen → Veröffentlichen → live kontrollieren.</strong> Immer in dieser Reihenfolge.</p></div>
+
+  <hr class="divider">
+
+  <div class="kicker">Vor dem Veröffentlichen</div>
+  <h2 class="sec" style="font-size:15pt;margin-bottom:6px">Kurze Checkliste</h2>
+  <ul class="check">
+    <li><span class="box"></span><span><b>Texte gelesen?</b><span>Keine Tippfehler, Namen und Zahlen korrekt.</span></span></li>
+    <li><span class="box"></span><span><b>Bilder richtig?</b><span>Passendes Motiv, nicht verzerrt, Rechte geklärt.</span></span></li>
+    <li><span class="box"></span><span><b>Links getestet?</b><span>Führen Buttons/Links zum richtigen Ziel?</span></span></li>
+    <li><span class="box"></span><span><b>Handy-Ansicht geprüft?</b><span>Sieht auf dem Smartphone alles ordentlich aus?</span></span></li>
+    <li><span class="box"></span><span><b>Dann: Veröffentlichen.</b><span>Und einmal live gegenchecken.</span></span></li>
+  </ul>
+
+  <div class="rfoot"><span>[DEINE AGENTUR] · [DEINE-WEBSITE.DE]</span><span class="pg">8</span></div>
+</section>
+
+<!-- ================= SEITE 9 · HILFE + NOTIZEN ================= -->
+<section class="page">
+  <div class="rhead"><span class="agency">Hilfe</span><span>Fragen &amp; Kontakt</span></div>
+
+  <div class="kicker">Wenn’s mal hakt</div>
+  <h2 class="sec">Häufige Fragen</h2>
+
+  <div class="cards" style="grid-template-columns:1fr 1fr;">
+    <div class="card"><h4>Meine Änderung ist nicht sichtbar</h4><p>Wahrscheinlich noch nicht veröffentlicht. Auf <strong>Veröffentlichen</strong> klicken und die Seite mit <span class="kbd">Strg</span>+<span class="kbd">F5</span> neu laden.</p></div>
+    <div class="card"><h4>Ich habe etwas verschoben/gelöscht</h4><p>Kein Problem: <span class="kbd">Strg</span>+<span class="kbd">Z</span> macht es rückgängig. Solange nicht veröffentlicht, ist online alles unverändert.</p></div>
+    <div class="card"><h4>Das Bild ist unscharf/verzerrt</h4><p>Größeres Original hochladen und den Ausschnitt über <strong>Zuschneiden</strong> anpassen, statt das Bild zu dehnen.</p></div>
+    <div class="card"><h4>Ich finde einen Menüpunkt nicht</h4><p>Bezeichnungen können je nach Version leicht abweichen. Melden Sie sich – wir schauen kurz gemeinsam drauf.</p></div>
+  </div>
+
+  <div class="callout key" style="margin-top:14px">
+    <span class="tag">Ihr direkter Draht zu uns</span>
+    <p style="font-size:10.6pt">Sie kommen nicht weiter oder möchten größere Änderungen? Melden Sie sich einfach – wir helfen gern.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-top:10px;font-size:10pt">
+      <div><strong>[DEINE AGENTUR]</strong></div>
+      <div>Web: <strong>[DEINE-WEBSITE.DE]</strong></div>
+      <div>E-Mail: <strong>[SUPPORT-EMAIL]</strong></div>
+      <div>Telefon: <strong>[SUPPORT-TELEFON]</strong></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+  <div class="kicker">Platz für Ihre Notizen</div>
+  <div class="notes" style="height:95mm;margin-top:8px"></div>
+
+  <div class="rfoot"><span>[DEINE AGENTUR] · [DEINE-WEBSITE.DE]</span><span class="pg">9</span></div>
+</section>
+
+</body>
+</html>
