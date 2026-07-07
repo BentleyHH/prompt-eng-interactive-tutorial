@@ -26,9 +26,19 @@ Die vier Leit-Routen heißen entsprechend **Fels · Land · Wasser · Sand**.
 
 | Datei | Beschreibung |
 |-------|--------------|
-| `index.html` | Interaktive Kampagnen-/Pitch-Website (Scroll-Story, Farbwelt der Hummerbuden, KI-Key-Visuals). Im Browser öffnen. |
-| `konzept-print.html` | Druckoptimierte A4-Fassung (12 Seiten), Quelle für das PDF. |
-| `Helgoland-Atmen-Konzept.pdf` | Präsentations-PDF, direkt vorführ-/versendbar. |
+| `vision.html` | **Brand Vision & Strategy Map** — die strategische Zuspitzung zur „Experience Brand" (Apple/Aesop/Muji-Niveau). Radikal reduziert, mit atmender Wortmarke. Im Browser öffnen. |
+| `Helgoland-Brand-Vision.pdf` | Die Strategy Map als 10-seitiges A4-PDF. |
+| `index.html` | Interaktive Kampagnen-/Pitch-Website (Scroll-Story, Helgoland-Dreiklang, KI-Visuals, Schaufenster). |
+| `konzept-print.html` | Druckoptimierte A4-Fassung des Kampagnen-Konzepts. |
+| `Helgoland-Atmen-Konzept.pdf` | Kampagnen-Konzept als Präsentations-PDF. |
+
+## Die zwei Ebenen
+
+1. **Strategie — `vision.html`:** Warum & wohin. Das Markensystem: vom Ort zum Zustand,
+   das „Atem"-Betriebssystem als Filter, fünf Brand Rituals, Confident Silence,
+   die visuelle Signatur, die 20-Jahre-Vision.
+2. **Umsetzung — `index.html`:** Wie es aussieht & klingt. Kampagne, Leitsystem,
+   Gastgeber-Aktionen, Ganzjahresstrategie, Schaufenster mit Plakaten & Merch.
 
 ## Bildwelt
 

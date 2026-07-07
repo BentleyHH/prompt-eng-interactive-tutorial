@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Helgoland — Brand Vision &amp; Strategy Map</title>
+<style>
+  @page{size:A4;margin:0;}
+  :root{
+    --tiefsee:#0B2D3C;--tiefsee-dunkel:#06171F;--schaum:#F5F1E9;--papier:#FBF9F4;
+    --rot:#B23A2E;--tinte:#16242B;--grau:#8A9AA0;--linie:rgba(22,36,43,0.14);--gruen:#3F6B4A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--tinte);line-height:1.7;}
+  .serif{font-family:Georgia,"Times New Roman",serif;font-weight:400;}
+  .page{width:210mm;height:297mm;padding:22mm 24mm;position:relative;page-break-after:always;overflow:hidden;background:var(--papier);}
+  .page:last-child{page-break-after:auto;}
+  .dark{background:var(--tiefsee);color:var(--schaum);}
+  .darker{background:var(--tiefsee-dunkel);color:var(--schaum);}
+  .center{display:flex;flex-direction:column;justify-content:center;}
+  .label{font-size:7.5pt;letter-spacing:0.26em;text-transform:uppercase;color:var(--grau);font-weight:600;margin-bottom:12mm;display:block;}
+  .dark .label,.darker .label{color:rgba(245,241,233,0.5);}
+  h1,h2{font-family:Georgia,serif;font-weight:400;letter-spacing:-0.015em;line-height:1.1;}
+  h2{font-size:24pt;margin-bottom:8mm;}
+  p{font-size:10.5pt;color:#38484E;}
+  .dark p,.darker p{color:rgba(245,241,233,0.8);}
+  p + p{margin-top:5mm;}
+  .lede{font-family:Georgia,serif;font-size:15pt;line-height:1.45;color:var(--tinte);}
+  .dark .lede{color:var(--schaum);}
+  .rot{color:var(--rot);}
+  .pagenum{position:absolute;bottom:14mm;right:26mm;font-size:7.5pt;letter-spacing:0.14em;color:var(--grau);text-transform:uppercase;}
+  .foot{position:absolute;bottom:14mm;left:26mm;font-size:7.5pt;letter-spacing:0.14em;color:var(--grau);text-transform:uppercase;}
+  .dark .pagenum,.dark .foot,.darker .pagenum,.darker .foot{color:rgba(245,241,233,0.45);}
+  .wordmark{font-family:Georgia,serif;letter-spacing:0.4em;}
+
+  /* cover */
+  .cover{background:var(--tiefsee);color:var(--schaum);text-align:center;align-items:center;}
+  .cover .eyebrow{font-size:7.5pt;letter-spacing:0.3em;text-transform:uppercase;color:rgba(245,241,233,0.55);margin-bottom:22mm;}
+  .cover .wm{font-family:Georgia,serif;font-size:46pt;letter-spacing:0.42em;padding-left:0.42em;}
+  .cover .say{margin-top:18mm;font-family:Georgia,serif;font-style:italic;font-size:13pt;color:rgba(245,241,233,0.82);}
+  .rule{display:flex;width:52mm;height:2.4mm;margin:24mm auto 0;}
+  .rule span{flex:1;}
+
+  /* shift */
+  .shift{border-top:0.5pt solid var(--linie);}
+  .shift .row{display:grid;grid-template-columns:1fr 10mm 1fr;align-items:center;padding:5mm 0;border-bottom:0.5pt solid var(--linie);}
+  .shift .from{text-align:right;color:var(--grau);font-size:11pt;}
+  .shift .arrow{text-align:center;color:var(--rot);font-size:9pt;}
+  .shift .to{font-family:Georgia,serif;font-size:13pt;color:var(--tinte);}
+
+  /* filter */
+  .filter{text-align:center;}
+  .filter .q{font-family:Georgia,serif;font-size:19pt;line-height:1.3;}
+  .filter .meta{margin-top:12mm;font-size:9.5pt;color:rgba(245,241,233,0.65);}
+
+  .princ .p{padding:6mm 0;border-top:0.5pt solid var(--linie);}
+  .princ .n{font-family:Georgia,serif;font-size:9pt;color:var(--rot);}
+  .princ h3{font-family:Georgia,serif;font-weight:400;font-size:14pt;margin:2mm 0;}
+  .princ p{font-size:9.5pt;}
+
+  /* rituals */
+  .ritual{padding:3.6mm 0;border-top:0.5pt solid var(--linie);}
+  .ritual:first-of-type{border-top:none;}
+  .ritual .rn{font-family:Georgia,serif;font-size:8pt;letter-spacing:0.18em;color:var(--rot);text-transform:uppercase;}
+  .ritual h3{font-family:Georgia,serif;font-weight:400;font-size:15pt;margin:1.5mm 0 2mm;}
+  .ritual .trig{font-size:7.5pt;letter-spacing:0.1em;text-transform:uppercase;color:var(--grau);margin-bottom:2mm;}
+  .ritual p{font-size:9.5pt;}
+  .ritual .take{margin-top:2mm;font-family:Georgia,serif;font-style:italic;font-size:10.5pt;color:var(--tinte);}
+
+  /* voice */
+  .voice{text-align:center;}
+  .voice .line{font-family:Georgia,serif;font-size:17pt;line-height:1.25;padding:7mm 0;color:var(--schaum);}
+  .voice .line.dim{color:rgba(245,241,233,0.5);}
+
+  /* signature notes */
+  .snrow{display:grid;grid-template-columns:42mm 1fr;gap:8mm;padding:4mm 0;border-top:0.5pt solid var(--linie);}
+  .snrow .k{font-size:7.5pt;letter-spacing:0.14em;text-transform:uppercase;color:var(--rot);}
+  .snrow .v{font-size:9.5pt;}
+  .snrow .v b{font-weight:600;}
+
+  /* proof */
+  .proof{display:grid;grid-template-columns:1fr 1fr;gap:12mm;margin-top:4mm;}
+  .proof .story{font-family:Georgia,serif;font-size:13pt;line-height:1.45;}
+  .proof .rtb{border-left:2pt solid var(--rot);padding-left:7mm;}
+  .proof .rtb .k{font-size:7.5pt;letter-spacing:0.18em;text-transform:uppercase;color:var(--grau);margin-bottom:5mm;}
+  .proof .rtb ul{list-style:none;}
+  .proof .rtb li{padding:2.5mm 0;border-bottom:0.5pt solid var(--linie);font-size:9.5pt;color:#38484E;}
+  .proof .rtb li b{font-family:Georgia,serif;color:var(--tinte);}
+
+  .metrics .m{padding:3.4mm 0;border-top:0.5pt solid var(--linie);display:grid;grid-template-columns:1fr 1fr;gap:8mm;align-items:baseline;}
+  .metrics .old{color:rgba(245,241,233,0.45);font-size:9.5pt;}
+  .metrics .new{font-family:Georgia,serif;font-size:11.5pt;color:var(--schaum);}
+
+  .monument{text-align:center;}
+  .monument h2{font-size:30pt;line-height:1.12;}
+  .monument .sub{margin-top:12mm;font-size:9.5pt;color:rgba(245,241,233,0.6);max-width:34em;margin:12mm auto 0;}
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<section class="page cover center">
+  <div class="eyebrow">Helgoland · Brand Vision &amp; Strategy Map · 2026 — 2046</div>
+  <div class="wm">ATMEN</div>
+  <div class="say">Deutschlands tiefster Atemzug.</div>
+  <div class="rule"><span style="background:var(--rot)"></span><span style="background:var(--gruen)"></span><span style="background:var(--schaum)"></span></div>
+</section>
+
+<!-- VISION MONUMENT -->
+<section class="page dark center monument">
+  <span class="label" style="text-align:center;">Die Vision · 20 Jahre</span>
+  <h2>In zwanzig Jahren ist Helgoland<br>kein Ort mehr, den man besucht.<br>Es ist der Atemzug,<br>den ein Land nimmt.</h2>
+  <p class="sub">Das Ziel ist nicht mehr Bekanntheit. Das Ziel ist, dass „einmal Helgoland“ zur Redewendung wird — für den Moment, in dem jemand endlich durchatmet. Wenn die Marke ihren Namen an einen Zustand verliert, hat sie gewonnen.</p>
+  <div class="foot">Helgoland · Atmen</div><div class="pagenum">02</div>
+</section>
+
+<!-- PRINZIP + SHIFT -->
+<section class="page">
+  <span class="label">Das Prinzip &amp; die Verschiebung</span>
+  <p class="lede" style="margin-bottom:6mm;">Dies ist keine Kampagne. Eine Kampagne endet. Ein Zustand bleibt.</p>
+  <p style="margin-bottom:10mm;">Helgoland verkauft kein Reiseziel, sondern eine Veränderung im Menschen — den Moment, in dem sich die Lunge zum ersten Mal seit langem ganz füllt. Alles dient einem Satz: <span class="rot">Werde die Person, die wieder atmen kann.</span></p>
+  <div class="shift">
+    <div class="row"><div class="from">ein Ort</div><div class="arrow">→</div><div class="to">ein Zustand</div></div>
+    <div class="row"><div class="from">Erholung</div><div class="arrow">→</div><div class="to">Erleichterung</div></div>
+    <div class="row"><div class="from">eine Kampagne</div><div class="arrow">→</div><div class="to">ein Betriebssystem</div></div>
+    <div class="row"><div class="from">Werbung</div><div class="arrow">→</div><div class="to">Rituale</div></div>
+    <div class="row"><div class="from">laut sein</div><div class="arrow">→</div><div class="to">souverän schweigen</div></div>
+    <div class="row"><div class="from">behaupten</div><div class="arrow">→</div><div class="to">beweisen</div></div>
+  </div>
+  <div class="foot">Helgoland · Atmen</div><div class="pagenum">03</div>
+</section>
+
+<!-- ORT ZU ZUSTAND -->
+<section class="page center">
+  <span class="label">01 · Vom Ort zum Zustand</span>
+  <h2>Wir verkaufen nicht die Insel.<br>Wir verkaufen die Rückkehr.</h2>
+  <p>Erholung bedeutet: Sie kommen ausgeruht zurück — als dieselbe Person. Erleichterung bedeutet: Sie kommen <em>leichter</em> zurück — als eine andere. Das ist der Unterschied zwischen einem Urlaub und einem Reset.</p>
+  <p>Das Produkt ist nicht der Meerblick. Das Produkt ist das Ausatmen. Der Beweis liegt nicht im Foto, sondern im ersten unwillkürlich tiefen Atemzug an der Landungsbrücke — dem Moment, in dem der Körper begreift, dass er angekommen ist, bevor der Kopf es tut.</p>
+  <p class="lede" style="margin-top:10mm;">„Sie fahren nicht nach Helgoland. Sie fahren zu sich zurück.“</p>
+  <div class="foot">Helgoland · Atmen</div><div class="pagenum">04</div>
+</section>
+
+<!-- OPERATING SYSTEM -->
+<section class="page dark">
+  <span class="label">02 · Das Betriebssystem</span>
+  <div class="filter" style="margin-bottom:12mm;">
+    <p class="q">Jede Entscheidung — ein Schild, ein Licht, ein Menü, ein Ton, eine Partnerschaft — durchläuft eine einzige Frage:</p>
+    <p class="q rot" style="margin-top:6mm;">„Macht das den Gast ruhiger und klarer?“</p>
+    <p class="meta">Wenn nein, wird es gestrichen. Nicht diskutiert. Gestrichen.</p>
+  </div>
+  <div class="princ">
+    <div class="p"><span class="n">i.</span> &nbsp;<span class="serif" style="font-size:13pt;">Weniger, aber tiefer.</span><p>Reduktion ist die Grundeinstellung. Ein großartiges Erlebnis schlägt zehn gute.</p></div>
+    <div class="p"><span class="n">ii.</span> &nbsp;<span class="serif" style="font-size:13pt;">Echt vor schön.</span><p>Ein verwittertes Schild mit einem wahren Satz schlägt die perfekte Broschüre mit einer Behauptung.</p></div>
+    <div class="p"><span class="n">iii.</span> &nbsp;<span class="serif" style="font-size:13pt;">Stille ist ein Feature.</span><p>Ruhe wird verteidigt wie andernorts das WLAN. Die leeren Stellen sind das Produkt.</p></div>
+    <div class="p"><span class="n">iv.</span> &nbsp;<span class="serif" style="font-size:13pt;">Der Körper entscheidet.</span><p>Erfolg wird physiologisch gemessen. Nie „Wie viele sahen es?“, sondern „Wer atmete tiefer?“.</p></div>
+  </div>
+  <p style="margin-top:8mm;font-size:9pt;color:rgba(245,241,233,0.6);">Governance: ein „Atem-Rat“ mit Veto — ein Stopp-, kein Freigabe-Mechanismus. Jedes Jahr entfernt die Insel eine Quelle von Lärm. Die Marke, die jedes Jahr leiser wird.</p>
+  <div class="foot">Helgoland · Atmen</div><div class="pagenum">05</div>
+</section>
+
+<!-- RITUALS -->
+<section class="page">
+  <span class="label" style="margin-bottom:7mm;">03 · Experience Design — Fünf Rituale</span>
+  <h2 style="margin-bottom:5mm;">Die Marke wird nicht erzählt.<br>Sie wird getan.</h2>
+  <div class="ritual"><div class="rn">Ritual Eins — Der Landfall</div><div class="trig">Ankunft · Landungsbrücke</div><p>Kein Willkommensschild. Eine Linie im Boden, vier Worte: „Sie sind da. Atmen.“ Das Handy kommt in die „Buddel“ am Anleger — das Festland bleibt im Wasser. Der erste Schritt an Land ist der erste tiefe Atemzug.</p><div class="take">„Ankommen ist kein Check-in. Es ist ein Loslassen.“</div></div>
+  <div class="ritual"><div class="rn">Ritual Zwei — Der Fels</div><div class="trig">Der Moment an der Langen Anna</div><p>Eine Bank am Klippenrand, in die Lehne graviert: vier Sekunden ein, sechs aus. Man atmet mit der See, bis der eigene Rhythmus der Brandung folgt. Kein Aussichtspunkt — ein Gleichtakt.</p><div class="take">„Atme mit der See. Sie war vor dir da.“</div></div>
+  <div class="ritual"><div class="rn">Ritual Drei — Die blaue Minute</div><div class="trig">Täglich · 12:00 Uhr · die ganze Insel</div><p>Sechzig Sekunden Innehalten. Keine Durchsage, kein Motor — nur Wind und Brandung. Die leiseste Minute Deutschlands, jeden Tag.</p><div class="take">„Eine Insel, die jeden Mittag gemeinsam Luft holt.“</div></div>
+  <div class="ritual"><div class="rn">Ritual Vier — Das Bad</div><div class="trig">Der körperliche Reset · Nordsee &amp; Thalasso</div><p>Der Sprung ins kalte Hochseewasser — oder der warme Thalasso-Gegenpol. Ein ehrlicher Moment, der den Kopf leert, weil der Körper keine Wahl lässt.</p><div class="take">„Kaltes Wasser diskutiert nicht. Es klärt.“</div></div>
+  <div class="ritual"><div class="rn">Ritual Fünf — Das Ablegen</div><div class="trig">Abschied · an der Reling</div><p>Ein letzter tiefer Atemzug, während der Fels kleiner wird. „Sie verlassen jetzt den ruhigen Sektor. Nehmen Sie etwas davon mit.“ Man fährt nicht weg. Man fährt leichter.</p><div class="take">„Man verlässt Helgoland nie ganz. Ein Atemzug bleibt.“</div></div>
+  <div class="foot">Helgoland · Atmen</div><div class="pagenum">06</div>
+</section>
+
+<!-- VOICE -->
+<section class="page darker center voice">
+  <span class="label" style="text-align:center;">04 · Tonalität — Confident Silence</span>
+  <h2 style="color:var(--schaum);margin-bottom:4mm;">So klingt Helgoland,<br>wenn es nichts mehr beweisen muss.</h2>
+  <p style="color:rgba(245,241,233,0.55);max-width:32em;margin:0 auto 6mm;">Ein Drittel der Gags gestrichen. Was bleibt, ist trocken, ehrlich, norddeutsch — und leise. Wer 70 Kilometer von allem entfernt ist, muss nicht laut werden.</p>
+  <div class="line">Atmen. Sie erinnern sich.</div>
+  <div class="line dim">Hier ist nichts los. Deshalb kommen Sie.</div>
+  <div class="line">Sie müssen nichts. Zum ersten Mal seit langem.</div>
+  <div class="line dim">Das Meer macht keine Termine.</div>
+  <div class="line">70 Kilometer. Genug Abstand.</div>
+  <div class="foot">Helgoland · Atmen</div><div class="pagenum">07</div>
+</section>
+
+<!-- VISUAL SIGNATURE -->
+<section class="page">
+  <span class="label">05 · Visuelle Identität — Die Signatur</span>
+  <h2>Kein Leuchtturm.<br>Eine Atmung, grafisch gemacht.</h2>
+  <p style="margin-bottom:8mm;">Die Signatur ist keine Bildmarke, sondern ein Verhalten: Raum. Wir verwalten Weißraum, wie Aesop Beige verwaltet. Neunzig Prozent leer zu lassen, ist die selbstbewussteste Aussage einer Marke.</p>
+  <div class="snrow"><div class="k">Die Atemlinie</div><div class="v"><b>Der Horizont ist das Logo.</b> Eine waagerechte Linie — See trifft Himmel — als grafische Grundkonstante, die sich im Takt 4 ein / 6 aus dehnt und schließt.</div></div>
+  <div class="snrow"><div class="k">Atmende Wortmarke</div><div class="v"><b>Das Wort atmet.</b> „ATMEN“ öffnet und schließt seine Laufweite in Bewegung — die einzige bewusste Animation. Ein Ruhepuls, kein Effekt.</div></div>
+  <div class="snrow"><div class="k">Weißraum</div><div class="v"><b>Leere ist Haltung.</b> Übergroße Ränder, viel Luft. Der Blick bekommt Platz zum Atmen, bevor er liest.</div></div>
+  <div class="snrow"><div class="k">Typografie</div><div class="v">Eine ruhige Serife für die Seele, eine präzise Grotesk für die Fakten. Sehr groß oder sehr klein — nie dazwischen.</div></div>
+  <div class="snrow"><div class="k">Farbe</div><div class="v">Tiefsee und Sand tragen alles. Buntsandstein-Rot erscheint selten und gezielt — wie ein Herzschlag, nicht wie ein Anstrich.</div></div>
+  <div class="snrow"><div class="k">Der Takt 4 / 6</div><div class="v">Einatmen vier, ausatmen sechs. Diese Kadenz ist das Timing jeder Bewegung — Web, Film, Leitsystem. Die Marke hat einen Puls.</div></div>
+  <div class="snrow"><div class="k">Was fehlt</div><div class="v">Keine Leuchttürme, keine Möwen-Klischees, keine Sonnenuntergangs-Sättigung. Die Abwesenheit der Postkarte ist die Signatur.</div></div>
+  <div class="foot">Helgoland · Atmen</div><div class="pagenum">08</div>
+</section>
+
+<!-- PROOF + METRICS -->
+<section class="page">
+  <span class="label">06 · Priorisierung der Beweise</span>
+  <h2>Die Story ist die Lunge.<br>Die Fakten stehen im Kleingedruckten.</h2>
+  <p style="margin-bottom:8mm;">„Pollenfrei“ und „autofrei“ sind keine Leitmotive, sondern der Beweis, der das Gefühl trägt. Wir reden über den Kopf des Menschen — die Fakten stehen darunter und stimmen bis auf die Nachkommastelle.</p>
+  <div class="proof">
+    <div class="story">Wir erzählen von der Erleichterung. Vom Reset. Vom klaren Kopf. Von dem einen tiefen Atemzug, der einen Menschen für einen Moment zu sich selbst zurückbringt.</div>
+    <div class="rtb"><div class="k">Reasons to Believe</div><ul>
+      <li><b>0 / 8</b> — Pollenindex, wenn das Festland bei acht liegt</li>
+      <li><b>0</b> — Autos auf der Insel</li>
+      <li><b>70 km</b> — Abstand zum Festland</li>
+      <li><b>Reizklima</b> — amtlich sauberste Luft Deutschlands</li>
+      <li><b>Seit 1826</b> — 200 Jahre Beweis</li>
+    </ul></div>
+  </div>
+  <div class="dark" style="margin:9mm -24mm -22mm;padding:11mm 24mm 16mm;">
+    <span class="label" style="margin-bottom:6mm;">Erfolg, neu definiert</span>
+    <h2 style="color:var(--schaum);font-size:18pt;margin-bottom:4mm;">Wir zählen nicht Klicks. Wir zählen Atemzüge.</h2>
+    <div class="metrics">
+      <div class="m"><div class="old">Impressionen</div><div class="new">Der erste tiefe Atemzug an der Brücke</div></div>
+      <div class="m"><div class="old">Reichweite</div><div class="new">Weiterempfehlung — die ehrlichste Zahl</div></div>
+      <div class="m"><div class="old">Kampagnen-Recall</div><div class="new">Ob „Helgoland“ zum Wort für Durchatmen wird</div></div>
+    </div>
+  </div>
+  <div class="foot" style="color:var(--grau);">Helgoland · Atmen</div><div class="pagenum" style="color:rgba(245,241,233,0.6);">09</div>
+</section>
+
+<!-- CLOSE -->
+<section class="page dark center" style="text-align:center;align-items:center;">
+  <div class="wordmark" style="font-size:34pt;">ATMEN</div>
+  <p style="margin-top:16mm;color:rgba(245,241,233,0.6);font-size:8.5pt;letter-spacing:0.04em;max-width:40em;line-height:1.9;">HELGOLAND · Brand Vision &amp; Strategy Map · 2026 — 2046.<br>Eine Experience Brand nach dem Vorbild von Apple, Patagonia, Muji, Aesop.<br>Radikal reduziert. Souverän still. Im Körper spürbar.</p>
+  <div class="rule" style="margin-top:20mm;"><span style="background:var(--rot)"></span><span style="background:var(--gruen)"></span><span style="background:var(--schaum)"></span></div>
+</section>
+
+</body>
+</html>
