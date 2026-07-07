@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HELGOLAND — Deutschlands tiefster Atemzug</title>
+<style>
+  :root{
+    --tiefsee:#0B2D3C;
+    --tiefsee-dunkel:#071E29;
+    --schaum:#F7F4EE;
+    --sand:#EFE7D8;
+    --bude-rot:#E4572E;
+    --bude-gelb:#F3A712;
+    --bude-tuerkis:#17A398;
+    --bude-blau:#2274A5;
+    --bude-gruen:#5A8F5B;
+    --text:#182830;
+    --muted:#5B7280;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:"Helvetica Neue",Helvetica,Arial,"Segoe UI",sans-serif;
+    background:var(--schaum);
+    color:var(--text);
+    line-height:1.65;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--bude-gelb);color:var(--tiefsee);}
+
+  h1,h2,h3,.display{font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing:-0.01em;}
+  .kicker{
+    font-family:"Helvetica Neue",Helvetica,sans-serif;
+    text-transform:uppercase;letter-spacing:0.22em;font-size:0.78rem;font-weight:700;
+    color:var(--bude-rot);margin-bottom:1rem;display:block;
+  }
+  section{padding:6rem 1.5rem;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  .wrap-narrow{max-width:760px;margin:0 auto;}
+  p.lead{font-size:1.35rem;line-height:1.6;color:var(--text);}
+  p + p{margin-top:1em;}
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0.9rem 1.5rem;
+    background:rgba(11,45,60,0.82);backdrop-filter:blur(10px);
+    color:var(--schaum);
+  }
+  nav .logo{font-family:Georgia,serif;font-size:1.05rem;letter-spacing:0.14em;text-transform:uppercase;}
+  nav .logo b{color:var(--bude-gelb);font-weight:400;}
+  nav ul{display:flex;gap:1.4rem;list-style:none;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.1em;}
+  nav a{color:var(--schaum);text-decoration:none;opacity:0.85;}
+  nav a:hover{opacity:1;color:var(--bude-gelb);}
+  @media(max-width:860px){nav ul{display:none;}}
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    min-height:100vh;
+    display:flex;flex-direction:column;justify-content:flex-end;
+    position:relative;color:var(--schaum);
+    background:var(--tiefsee);
+    background-image:linear-gradient(180deg,rgba(7,30,41,0.25) 0%,rgba(7,30,41,0.05) 40%,rgba(7,30,41,0.78) 100%),url("https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_060142_6f6eff13-20f2-42bb-a086-f3b0844d2f69.png");
+    background-size:cover;background-position:center;
+  }
+  .hero-inner{max-width:1080px;margin:0 auto;width:100%;padding:8rem 1.5rem 5rem;}
+  .hero h1{font-size:clamp(2.6rem,7vw,5.4rem);line-height:1.04;margin:0.5rem 0 1.2rem;}
+  .hero h1 em{font-style:italic;color:var(--bude-gelb);}
+  .hero .sub{font-size:clamp(1rem,2vw,1.3rem);max-width:34em;opacity:0.92;}
+  .hero .kicker{color:var(--bude-gelb);}
+
+  /* breathing badge */
+  .breath{
+    position:absolute;top:16vh;right:8vw;width:150px;height:150px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    border-radius:50%;border:1.5px solid rgba(247,244,238,0.85);
+    font-size:0.72rem;text-transform:uppercase;letter-spacing:0.18em;
+    animation:breathe 8s ease-in-out infinite;
+    background:rgba(11,45,60,0.25);backdrop-filter:blur(3px);
+  }
+  .breath span{display:block;padding:0 10px;}
+  @keyframes breathe{
+    0%,100%{transform:scale(0.82);opacity:0.75;}
+    45%,55%{transform:scale(1.12);opacity:1;}
+  }
+  @media(max-width:700px){.breath{width:110px;height:110px;top:12vh;right:6vw;font-size:0.6rem;}}
+
+  .scroll-hint{position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);font-size:0.7rem;letter-spacing:0.25em;text-transform:uppercase;opacity:0.7;color:var(--schaum);}
+
+  /* ---------- COLOR BAR (Hummerbuden) ---------- */
+  .budenband{display:flex;height:10px;}
+  .budenband div{flex:1;}
+
+  /* ---------- SECTIONS ---------- */
+  .dark{background:var(--tiefsee);color:var(--schaum);}
+  .dark .kicker{color:var(--bude-gelb);}
+  .dark p.lead{color:var(--schaum);}
+  .sandbg{background:var(--sand);}
+
+  h2{font-size:clamp(1.9rem,4.5vw,3rem);line-height:1.12;margin-bottom:1.6rem;}
+  h3{font-size:1.35rem;margin-bottom:0.6rem;}
+
+  /* claim wall */
+  .claimwall{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.2rem;margin-top:3rem;}
+  .claim{
+    padding:2.2rem 1.8rem;border-radius:6px;color:var(--schaum);
+    font-family:Georgia,serif;font-size:1.45rem;line-height:1.3;
+    display:flex;flex-direction:column;justify-content:space-between;min-height:220px;
+    transition:transform .25s ease;
+  }
+  .claim:hover{transform:translateY(-5px) rotate(-0.5deg);}
+  .claim small{font-family:"Helvetica Neue",sans-serif;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.18em;opacity:0.8;margin-top:1.6rem;}
+  .c-rot{background:var(--bude-rot);}
+  .c-blau{background:var(--bude-blau);}
+  .c-tuerkis{background:var(--bude-tuerkis);}
+  .c-gelb{background:var(--bude-gelb);color:var(--tiefsee);}
+  .c-tief{background:var(--tiefsee-dunkel);}
+  .c-gruen{background:var(--bude-gruen);}
+
+  /* pillars */
+  .pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;margin-top:2.5rem;}
+  .pillar{background:#fff;border-radius:8px;padding:2rem 1.7rem;box-shadow:0 8px 30px rgba(11,45,60,0.07);border-top:6px solid var(--bude-blau);}
+  .pillar:nth-child(2){border-top-color:var(--bude-gelb);}
+  .pillar:nth-child(3){border-top-color:var(--bude-rot);}
+  .pillar .num{font-family:Georgia,serif;font-size:2.2rem;color:var(--muted);opacity:0.4;}
+  .pillar ul{margin:0.8rem 0 0 1.1rem;color:var(--muted);font-size:0.95rem;}
+  .pillar ul li{margin-bottom:0.35rem;}
+
+  /* photos */
+  figure.photo{margin:3.5rem 0 0;border-radius:8px;overflow:hidden;box-shadow:0 16px 50px rgba(11,45,60,0.18);}
+  figure.photo img{width:100%;display:block;}
+  figure.photo figcaption{font-size:0.8rem;color:var(--muted);padding:0.7rem 1rem;background:#fff;}
+  .dark figure.photo figcaption{background:var(--tiefsee-dunkel);color:rgba(247,244,238,0.7);}
+
+  .photo-duo{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:3rem;}
+  @media(max-width:700px){.photo-duo{grid-template-columns:1fr;}}
+
+  /* routes / wayfinding */
+  .routen{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.2rem;margin-top:2.5rem;}
+  .route{border-radius:8px;padding:1.6rem 1.4rem;background:#fff;box-shadow:0 8px 30px rgba(11,45,60,0.07);}
+  .route .dot{width:44px;height:44px;border-radius:50%;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;font-family:"Helvetica Neue",sans-serif;}
+  .route h3{font-size:1.1rem;}
+  .route p{font-size:0.92rem;color:var(--muted);margin-top:0.4rem;}
+  .route .meta{font-size:0.78rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text);margin-top:0.9rem;font-weight:700;}
+
+  /* sign mockups */
+  .schild{
+    background:var(--tiefsee);color:var(--schaum);border-radius:10px;
+    padding:1.8rem 1.6rem;font-family:Georgia,serif;font-size:1.25rem;line-height:1.35;
+    border:3px solid var(--schaum);outline:3px solid var(--tiefsee);
+    box-shadow:0 12px 34px rgba(11,45,60,0.25);
+    position:relative;
+  }
+  .schild small{display:block;font-family:"Helvetica Neue",sans-serif;font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;margin-top:1.1rem;color:var(--bude-gelb);}
+  .schild::after{content:"";position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:8px;height:14px;background:#8a8f94;border-radius:2px 2px 0 0;}
+  .schilder{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2rem;margin-top:3rem;}
+
+  /* journey timeline */
+  .journey{margin-top:2.5rem;border-left:3px solid var(--bude-blau);padding-left:1.8rem;}
+  .jstep{margin-bottom:2.2rem;position:relative;}
+  .jstep::before{content:"";position:absolute;left:-2.45rem;top:0.35rem;width:14px;height:14px;border-radius:50%;background:var(--bude-gelb);border:3px solid var(--tiefsee);}
+  .jstep h3{font-size:1.15rem;}
+  .jstep p{color:var(--muted);font-size:0.97rem;margin-top:0.3rem;}
+  .dark .jstep p{color:rgba(247,244,238,0.75);}
+  .dark .journey{border-left-color:var(--bude-gelb);}
+  .dark .jstep::before{border-color:var(--schaum);background:var(--bude-rot);}
+
+  /* action cards */
+  .aktionen{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.3rem;margin-top:2.5rem;}
+  .aktion{background:#fff;border-radius:8px;padding:1.7rem 1.5rem;box-shadow:0 8px 30px rgba(11,45,60,0.07);}
+  .aktion .tag{display:inline-block;font-size:0.66rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:0.25rem 0.6rem;border-radius:3px;background:var(--bude-tuerkis);color:#fff;margin-bottom:0.9rem;}
+  .aktion .tag.hotel{background:var(--bude-blau);}
+  .aktion .tag.insel{background:var(--bude-rot);}
+  .aktion h3{font-size:1.12rem;}
+  .aktion p{font-size:0.93rem;color:var(--muted);margin-top:0.4rem;}
+
+  /* season */
+  .saison{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.2rem;margin-top:2.5rem;}
+  .quartal{background:rgba(247,244,238,0.06);border:1px solid rgba(247,244,238,0.18);border-radius:8px;padding:1.6rem 1.4rem;}
+  .quartal h3{color:var(--bude-gelb);font-size:1rem;text-transform:uppercase;letter-spacing:0.14em;font-family:"Helvetica Neue",sans-serif;font-weight:700;}
+  .quartal strong{display:block;font-family:Georgia,serif;font-size:1.3rem;margin:0.5rem 0;font-weight:400;}
+  .quartal p{font-size:0.9rem;color:rgba(247,244,238,0.75);}
+
+  /* higgsfield table */
+  .prodplan{width:100%;border-collapse:collapse;margin-top:2.5rem;font-size:0.92rem;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 8px 30px rgba(11,45,60,0.07);}
+  .prodplan th{background:var(--tiefsee);color:var(--schaum);text-align:left;padding:0.9rem 1rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.12em;}
+  .prodplan td{padding:0.9rem 1rem;border-bottom:1px solid #eee5d5;vertical-align:top;}
+  .prodplan tr:last-child td{border-bottom:none;}
+  .prodplan td:first-child{font-weight:700;white-space:nowrap;}
+  .table-scroll{overflow-x:auto;}
+
+  /* roadmap */
+  .roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.2rem;margin-top:2.5rem;}
+  .phase{background:#fff;border-radius:8px;padding:1.6rem 1.4rem;box-shadow:0 8px 30px rgba(11,45,60,0.07);border-left:6px solid var(--bude-gelb);}
+  .phase:nth-child(2){border-left-color:var(--bude-tuerkis);}
+  .phase:nth-child(3){border-left-color:var(--bude-blau);}
+  .phase:nth-child(4){border-left-color:var(--bude-rot);}
+  .phase .zeit{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--muted);font-weight:700;}
+  .phase h3{font-size:1.1rem;margin:0.4rem 0 0.6rem;}
+  .phase ul{margin-left:1.1rem;font-size:0.9rem;color:var(--muted);}
+  .phase ul li{margin-bottom:0.3rem;}
+
+  /* footer */
+  footer{background:var(--tiefsee-dunkel);color:rgba(247,244,238,0.8);padding:4rem 1.5rem 3rem;text-align:center;}
+  footer .display{font-size:clamp(1.6rem,4vw,2.6rem);color:var(--schaum);margin-bottom:1rem;}
+  footer .small{font-size:0.78rem;opacity:0.6;margin-top:2.5rem;line-height:1.8;}
+
+  .btn{
+    display:inline-block;margin-top:2rem;padding:0.95rem 2.2rem;border-radius:40px;
+    background:var(--bude-rot);color:#fff;text-decoration:none;font-weight:700;font-size:0.9rem;
+    letter-spacing:0.08em;text-transform:uppercase;transition:background .2s;
+  }
+  .btn:hover{background:#c94722;}
+
+  /* fade-in on scroll */
+  .fade{opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease;}
+  .fade.vis{opacity:1;transform:none;}
+
+  blockquote.big{
+    font-family:Georgia,serif;font-size:clamp(1.5rem,3.4vw,2.4rem);line-height:1.3;
+    max-width:22em;margin:0 auto;text-align:center;
+  }
+  blockquote.big em{color:var(--bude-rot);font-style:italic;}
+  .dark blockquote.big em{color:var(--bude-gelb);}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">HELGO<b>LAND</b> · ATMEN</div>
+  <ul>
+    <li><a href="#idee">Die Idee</a></li>
+    <li><a href="#kampagne">Kampagne</a></li>
+    <li><a href="#leitsystem">Leitsystem</a></li>
+    <li><a href="#gastgeber">Gastgeber</a></li>
+    <li><a href="#saison">365 Tage</a></li>
+    <li><a href="#produktion">Produktion</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+  </ul>
+</nav>
+
+<header class="hero">
+  <div class="breath"><span>Einatmen<br>·<br>Ausatmen</span></div>
+  <div class="hero-inner">
+    <span class="kicker">Seit 1826 Seebad · 200 Jahre · 2026</span>
+    <h1>Deutschlands<br><em>tiefster</em> Atemzug.</h1>
+    <p class="sub">Markenkonzept zur touristischen Neupositionierung der Hochseeinsel Helgoland. Ehrlich. Bodenständig. Und mit mehr Horizont als alle anderen.</p>
+    <a class="btn" href="#idee">Tief einatmen &amp; loslegen</a>
+  </div>
+  <div class="scroll-hint">Runterscrollen. Runterkommen.</div>
+</header>
+
+<div class="budenband">
+  <div style="background:var(--bude-rot)"></div>
+  <div style="background:var(--bude-gelb)"></div>
+  <div style="background:var(--bude-tuerkis)"></div>
+  <div style="background:var(--bude-blau)"></div>
+  <div style="background:var(--bude-gruen)"></div>
+</div>
+
+<!-- ================= INSIGHT ================= -->
+<section id="idee">
+  <div class="wrap-narrow fade">
+    <span class="kicker">Der Insight</span>
+    <h2>Alle Inseln versprechen Erholung.<br>Nur eine kann Atmen beweisen.</h2>
+    <p class="lead">Helgoland ist Deutschlands einzige Hochseeinsel: 70&nbsp;Kilometer vom Festland, praktisch pollenfrei, komplett autofrei, mit der saubersten Luft der Republik — amtlich gemessen. Was für andere Destinationen eine Werbe­behauptung ist, ist hier ein meteorologischer Fakt.</p>
+    <p>Genau da liegt die Marke: <strong>Wir versprechen nicht Meerblick. Wir versprechen einen körperlich spürbaren Zustand.</strong> Den Moment, in dem die Lunge merkt, dass sie 40 Jahre lang Stadt geatmet hat. Das ist kein Claim, das ist Physiologie — und damit die ehrlichste Positionierung, die eine deutsche Destination haben kann.</p>
+    <p>Und der Zeitpunkt könnte besser nicht sein: <strong>2026 wird das Seebad Helgoland 200 Jahre alt.</strong> Zwei Jahrhunderte, in denen Menschen genau dafür hierherkamen: um durchzuatmen.</p>
+  </div>
+
+  <div class="wrap">
+    <figure class="photo fade">
+      <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_060142_6f6eff13-20f2-42bb-a086-f3b0844d2f69.png" alt="Die Lange Anna, Helgolands roter Felsturm in der Nordsee">
+      <figcaption>Die Lange Anna — 47 Meter Buntsandstein, 0 Meter Bullshit. Das ehrlichste Wahrzeichen Deutschlands.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================= MARKE ================= -->
+<section class="dark">
+  <div class="wrap-narrow fade">
+    <span class="kicker">Die Markenidee</span>
+    <h2>ATMEN.<br>Ein Wort. Eine Insel. Ein Zustand.</h2>
+    <p class="lead">Die Marke Helgoland wird um ein einziges Verb gebaut. Kein Kunstbegriff, keine Agentur-Lyrik — das, was jeder Gast in den ersten zehn Sekunden am Anleger tut.</p>
+  </div>
+  <div class="wrap">
+    <div class="pillars fade">
+      <div class="pillar" style="background:rgba(247,244,238,0.97)">
+        <div class="num">01</div>
+        <h3>EINATMEN</h3>
+        <p style="color:var(--muted);font-size:0.95rem;">Die gesunde Insel. Reizklima, Thalasso, pollenarm — das medizinische Fundament.</p>
+        <ul>
+          <li>Allergiker- &amp; Asthma-Angebote mit ärztlicher Begleitung</li>
+          <li>„Durchatmer-Wochen“ in der Pollensaison des Festlands</li>
+          <li>Thalasso, Sauna am Meer, Winterluft-Kuren</li>
+        </ul>
+      </div>
+      <div class="pillar" style="background:rgba(247,244,238,0.97)">
+        <div class="num">02</div>
+        <h3>AUSATMEN</h3>
+        <p style="color:var(--muted);font-size:0.95rem;">Die entschleunigte Insel. Genuss, Stille, ehrliche Gastfreundschaft ohne Sehen-und-gesehen-werden.</p>
+        <ul>
+          <li>Knieper, Fischbrötchen, ehrliche Küche mit Zutaten aus dem Meer vor der Tür</li>
+          <li>Stille Orte: Atempunkte, Klippenbänke, Dünenabende</li>
+          <li>Digital-Detox mit Augenzwinkern („Ihr Handy hat hier eh nur einen Balken. Nutzen Sie ihn für ein Foto.“)</li>
+        </ul>
+      </div>
+      <div class="pillar" style="background:rgba(247,244,238,0.97)">
+        <div class="num">03</div>
+        <h3>DURCHATMEN</h3>
+        <p style="color:var(--muted);font-size:0.95rem;">Die aktive Insel. Hochsee-Abenteuer für alle, die Weite nicht nur angucken wollen.</p>
+        <ul>
+          <li>Wassersport: Kajak um den Felsen, Hochsee-Schwimmen, Tauchen im Felswatt</li>
+          <li>Vogelfelsen, Lummensprung, Robbenwinter auf der Düne</li>
+          <li>Lauf- &amp; Schwimm-Event „Rund um den Felsen“</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:4rem;text-align:center;" class="fade">
+      <blockquote class="big">„Sylt kann man sehen.<br>Helgoland muss man <em>atmen</em>.“</blockquote>
+      <p style="margin-top:1.5rem;font-size:0.85rem;opacity:0.7;">Positionierung gegenüber dem großen Nachbarn: kein Angriff, ein Augenzwinkern.<br>Wir sind nicht das kleine Sylt. Wir sind das echte Draußen.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= KAMPAGNE ================= -->
+<section id="kampagne" class="sandbg">
+  <div class="wrap-narrow fade">
+    <span class="kicker">Die Kampagne</span>
+    <h2>Headlines, die man zweimal liest.<br>Und einmal bucht.</h2>
+    <p class="lead">Tonalität: norddeutsch trocken, selbstbewusst, nie plump. Jede Zeile funktioniert als Plakat, als Post und als Postkarte.</p>
+  </div>
+  <div class="wrap">
+    <div class="claimwall fade">
+      <div class="claim c-rot">„Hier oben riecht es nach nichts.<br>Das ist das Beste, was Ihre Nase je erlebt hat.“<small>OOH · Pollensaison · Großstädte</small></div>
+      <div class="claim c-blau">„Die Schönen fahren nach Sylt.<br>Die Schlauen fahren weiter.“<small>OOH · Hamburg Landungsbrücken</small></div>
+      <div class="claim c-gelb">„Zollfrei. Pollenfrei.<br>Kopf frei.“<small>Key Claim · Duty-free-Insel</small></div>
+      <div class="claim c-tuerkis">„1.000 Geburtstage pro Winter.<br>Und Sie sind eingeladen.“<small>Robbenwinter · Kegelrobben-Geburten auf der Düne</small></div>
+      <div class="claim c-tief">„In 3,5 Stunden können Sie<br>wieder atmen. Abfahrt 9:00 Uhr.“<small>DOOH · dynamisch bei hohem Pollenflug-Index</small></div>
+      <div class="claim c-gruen">„200 Jahre Seebad.<br>Wir haben nur kurz durchgeatmet.“<small>Jubiläumskampagne 2026</small></div>
+    </div>
+
+    <div class="wrap-narrow" style="margin-top:5rem;" >
+      <h3 class="fade" style="font-size:1.5rem;">Mechaniken, die keiner erwartet</h3>
+      <div class="aktionen fade">
+        <div class="aktion"><span class="tag insel">DOOH-Taktik</span><h3>Der Pollen-Trigger</h3><p>Digitale Außenwerbung in Hamburg, Berlin, Köln, gekoppelt an den Live-Pollenflug-Index. Birke „extrem“? Dann spielt das Plakat aus: „Birkenpollen heute: 8/8. Helgoland: 0/8. Der Katamaran fährt morgen früh.“ Werbung, die exakt dann erscheint, wenn die Zielgruppe niest.</p></div>
+        <div class="aktion"><span class="tag insel">Audio</span><h3>30 Sekunden nichts</h3><p>Spotify- und Podcast-Spot: 27 Sekunden reines Meeresrauschen und Möwen. Dann eine trockene Stimme: „Das war Werbung. Für Helgoland.“ Der leiseste Spot des Jahres — und genau deshalb der auffälligste.</p></div>
+        <div class="aktion"><span class="tag insel">PR-Stunt</span><h3>Helgoländer Luft, ärztlich empfohlen</h3><p>Limitierte Dose „Helgoländer Hochseeluft — Inhalt: nichts. Wirkung: alles.“ Verschickt an Redaktionen, Apotheken und HNO-Wartezimmer, mit augenzwinkerndem „Beipackzettel“. Erlös an den Vogelschutz auf dem Lummenfelsen.</p></div>
+        <div class="aktion"><span class="tag insel">Kooperation</span><h3>Die Taschentuch-Box</h3><p>Kooperation mit Apotheken im Norden: Auf der Taschentuchbox in der Allergiesaison steht: „Oder Sie fahren einfach dahin, wo nichts blüht außer Ihnen.“ Mit QR-Code zur Buchung der Durchatmer-Woche.</p></div>
+        <div class="aktion"><span class="tag insel">B2B</span><h3>Denken auf Hochsee-Niveau</h3><p>„Frische-Luft-Klausur“: Offsite-Pakete für Firmen in der Nebensaison. Kein WLAN im Tagungsraum, dafür Horizont. Slogan: „Die besten Entscheidungen fallen 70 km von der nächsten Ausrede entfernt.“</p></div>
+        <div class="aktion"><span class="tag insel">Merch</span><h3>Ehrliche Souvenirs</h3><p>T-Shirts &amp; Beutel: „Ich war kurz weg. Richtig weg.“ / „0 Autos. 0 Pollen. 1 Fels.“ / „Atme. Der Horizont läuft nicht weg.“ Kein Kitsch, sondern Zeilen, die man freiwillig trägt — jedes Shirt ein wanderndes Plakat.</p></div>
+      </div>
+    </div>
+
+    <div class="photo-duo fade">
+      <figure class="photo" style="margin-top:0;"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_060148_649ccc30-66ce-4a3f-a4d2-a73edc5fe0df.png" alt="Katamaran auf dem Weg nach Helgoland"><figcaption>Die Anreise ist der erste Programmpunkt: 3,5 Stunden Hochsee statt 3,5 Stunden Stau.</figcaption></figure>
+      <figure class="photo" style="margin-top:0;"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_060147_cc2cb5cd-fbdb-4fc9-b215-795e630197d7.png" alt="Kegelrobben-Baby am Strand der Düne"><figcaption>Über 1.000 Geburtstage pro Winter: die Kegelrobben-Kinderstube auf der Düne.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LEITSYSTEM ================= -->
+<section id="leitsystem">
+  <div class="wrap-narrow fade">
+    <span class="kicker">Beschilderung &amp; Gästeführung</span>
+    <h2>Die Atemwege.<br>Ein Leitsystem, das man zitieren will.</h2>
+    <p class="lead">Vier farbige Rundwege — benannt und gefärbt nach den Hummerbuden am Hafen. Keine Wanderwege-Bürokratie, sondern ein Leitsystem mit Haltung: Emaille auf Eichenpfosten, Entfernungen in Schritten <em>und</em> Atemzügen, und an jeder Ecke eine Zeile, die man fotografieren möchte.</p>
+  </div>
+  <div class="wrap">
+    <div class="routen fade">
+      <div class="route"><div class="dot" style="background:var(--bude-rot)">R</div><h3>Die Rote Route — „Zum Fels“</h3><p>Klippenrandweg im Oberland bis zur Langen Anna und zum Lummenfelsen. Der Pflichttermin.</p><div class="meta">≈ 3.000 Schritte · ≈ 900 Atemzüge</div></div>
+      <div class="route"><div class="dot" style="background:var(--bude-blau)">B</div><h3>Die Blaue Route — „Ans Wasser“</h3><p>Hafenrunde: Hummerbuden, Börteboote, Fischbrötchen, Wassersportzentrum, Duty-free-Meile.</p><div class="meta">≈ 2.200 Schritte · ≈ 650 Atemzüge</div></div>
+      <div class="route"><div class="dot" style="background:var(--bude-gruen)">G</div><h3>Die Grüne Route — „Ins Land“</h3><p>Oberland-Schleife: Kartoffeläcker, Leuchtturm, Bunkergeschichte, stillste Ecken der Insel.</p><div class="meta">≈ 4.000 Schritte · ≈ 1.200 Atemzüge</div></div>
+      <div class="route"><div class="dot" style="background:var(--bude-gelb);color:var(--tiefsee)">D</div><h3>Die Gelbe Route — „Zur Düne“</h3><p>Mit der Dünenfähre rüber: weißer Sand, Robben, Badebucht, Flugplatz. Karibik mit Reizklima.</p><div class="meta">Fähre + ≈ 2.500 Schritte</div></div>
+    </div>
+
+    <div class="wrap-narrow" style="margin-top:4rem;">
+      <h3 class="fade" style="font-size:1.5rem;">Die Bausteine im Detail</h3>
+      <div class="journey fade" style="border-left-color:var(--bude-tuerkis);">
+        <div class="jstep"><h3>Atempunkte statt Aussichtspunkte</h3><p>15 Bänke an den schönsten Stellen, jede mit einer gravierten Atemübung (4 Sekunden ein, 6 Sekunden aus) und einer trockenen Zeile: „Setzen. Atmen. Der Horizont läuft nicht weg.“ Wer alle 15 im Atempass stempelt, bekommt in jeder teilnehmenden Gastronomie einen „Verschnaufer“ aufs Haus.</p></div>
+        <div class="jstep"><h3>Entfernungen, die entschleunigen</h3><p>Alle Wegweiser zeigen Schritte und Atemzüge statt Kilometer. „Lange Anna: noch 400 Atemzüge.“ Das ist Markenführung im Wortsinn — und der meistfotografierte Wegweiser Norddeutschlands.</p></div>
+        <div class="jstep"><h3>Insel-O-Ton statt Museumsdeutsch</h3><p>Jedes Schild trägt einen QR-Code. Dahinter: 90 Sekunden Audio — aber nicht vom Studiosprecher, sondern von echten Helgoländern. Der Börtebootführer erklärt den Hafen, die Vogelwartin den Lummensprung, op Platt un op Hochdüütsch. Ehrlichkeit kann man hören.</p></div>
+        <div class="jstep"><h3>Schilder mit Zwinkern</h3><p>Zehn „Ehrlichkeitsschilder“ an den richtigen Stellen sorgen für Lacher und Instagram-Reichweite (siehe unten). Wichtig: maximal zehn. Der Witz bleibt Gewürz, nicht Hauptgericht.</p></div>
+        <div class="jstep"><h3>Für alle lesbar</h3><p>Kontrastreiche Typografie, taktile Karten an den drei Hauptknoten (Landungsbrücke, Fahrstuhl Oberland, Dünenfähre), alle Audio-Inhalte auch als Text, alle Routen mit Rollstuhl-Alternativen ausgewiesen. Barrierefreiheit ist Teil der Gastfreundschaft, nicht der Fußnote.</p></div>
+      </div>
+    </div>
+
+    <div class="schilder fade">
+      <div class="schild">„Vorsicht: Möwen mit<br>krimineller Energie.“<small>Standort: Fischbude, Blaue Route</small></div>
+      <div class="schild">„Ab hier kein Empfang.<br>Endlich.“<small>Standort: Klippenrandweg, Rote Route</small></div>
+      <div class="schild">„Lange Anna: 400 Atemzüge.<br>Sie schafft das. Sie auch.“<small>Standort: Oberland, Abzweig Nordspitze</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GUEST JOURNEY ================= -->
+<section class="dark">
+  <div class="wrap-narrow fade">
+    <span class="kicker">Guest Journey</span>
+    <h2>Vom ersten Klick<br>bis zum ersten Atemzug.</h2>
+    <p class="lead">Die Anreise ist bei uns keine Hürde, sondern die Ouvertüre. Wir inszenieren sieben Momente — jeder einzelne so gestaltet, dass er erzählt wird.</p>
+    <div class="journey fade">
+      <div class="jstep"><h3>1 · Die Sehnsucht</h3><p>Kampagne trifft den Gast in seinem schlechtesten Moment: Pollenflug, Stau, Großraumbüro. Botschaft: Es gibt einen Ort, an dem nichts davon existiert.</p></div>
+      <div class="jstep"><h3>2 · Die Buchung</h3><p>Ein Portal, ein Warenkorb: Katamaran + Bett + Erlebnis in drei Klicks. Mit ehrlicher Wetterauskunft („Im Februar? Stürmisch. Großartig, wenn Sie es ernst meinen.“).</p></div>
+      <div class="jstep"><h3>3 · Die Anfahrt</h3><p>Der Katamaran ab Hamburg wird zur Bühne: Bord-Audio „Noch 70 km Festland in Ihrer Lunge“, Countdown zur ersten Felssichtung, letzter Pollenwert vs. Helgoland-Wert auf dem Bordschirm. Perspektivisch wieder ergänzt um den Inselflieger — 20 Minuten über dem Wattenmeer als Premium-Ouvertüre.</p></div>
+      <div class="jstep"><h3>4 · Der erste Atemzug</h3><p>Ankunftsritual an der Landungsbrücke: Die Begrüßungstafel zeigt live die aktuelle Luftqualität („Heute: 0 µg Feinstaub. Bitte bedienen Sie sich.“). Gastgeber begrüßen ihre Gäste persönlich am Anleger — wie seit 200 Jahren.</p></div>
+      <div class="jstep"><h3>5 · Das Erleben</h3><p>Atemwege, Atempunkte, Knieper-Stunde, Dünenabend. Alles fußläufig, alles ohne Auto, alles echt. Der Atempass verbindet die Erlebnisse zu einer Sammelmechanik.</p></div>
+      <div class="jstep"><h3>6 · Der Abschied</h3><p>Beim Ablegen spielt die Insel ihr letztes Augenzwinkern: Schild am Anleger — „Sie verlassen jetzt den pollenfreien Sektor. Gute Besserung.“ Dazu die Mini-Dose Inselluft als Bordgeschenk für Stammgäste.</p></div>
+      <div class="jstep"><h3>7 · Das Wiederkommen</h3><p>Vier Wochen später, zur nächsten Pollenwelle, erinnert eine E-Mail: „Ihre Lunge fragt, wann Sie wiederkommen.“ Stammgast-Programm „Insulaner ehrenhalber“ ab dem dritten Besuch.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GASTGEBER ================= -->
+<section id="gastgeber" class="sandbg">
+  <div class="wrap-narrow fade">
+    <span class="kicker">Gastronomie &amp; Hotellerie</span>
+    <h2>Kleine Aktionen.<br>Große Wirkung. Null Schickimicki.</h2>
+    <p class="lead">Die Marke lebt oder stirbt am Tresen. Deshalb bekommen Gastgeber keine Vorschriften, sondern Werkzeuge — einfach umzusetzen, sofort spürbar, hundertfach erzählt.</p>
+  </div>
+  <div class="wrap">
+    <div class="aktionen fade">
+      <div class="aktion"><span class="tag">Gastro</span><h3>Die Knieper-Stunde</h3><p>Täglich 17–18 Uhr in teilnehmenden Lokalen: Taschenkrebs-Scheren, Schwarzbrot, ein kurzes „So knackt man das“-Ritual vom Wirt. Helgolands Antwort auf die Happy Hour — nur mit besserer Geschichte.</p></div>
+      <div class="aktion"><span class="tag">Gastro</span><h3>Die ehrliche Karte</h3><p>Ein Satz unter jedem Gericht, der die Wahrheit sagt: „Der Kabeljau ist von hier. Die Zitrone leider nicht.“ Ehrlichkeit als Stilmittel — Gäste fotografieren Speisekarten, die so schreiben.</p></div>
+      <div class="aktion"><span class="tag">Gastro</span><h3>Die stille Stunde</h3><p>Einmal am Tag, eine Stunde: keine Musik, Handys ruhen in der „Buddel“ am Tisch. Wer durchhält, bekommt den „Verschnaufer“ (Espresso oder Köm) aufs Haus. Entschleunigung als Spiel, nicht als Verbot.</p></div>
+      <div class="aktion"><span class="tag hotel">Hotel</span><h3>Durchatmer-Zimmer</h3><p>Zertifiziert allergikerfreundlich: Encasing-Bettwäsche, glatte Böden, geprüfte Reinigung — plus Fensterplakette „Hier schläft eine glückliche Lunge“. Buchbar als Kategorie im Portal, vermarktet in der Pollensaison.</p></div>
+      <div class="aktion"><span class="tag hotel">Hotel</span><h3>Das Ankunftsritual</h3><p>Jeder Gast bekommt beim Check-in einen „Ersten Schluck Insel“: Tee bei Schietwetter, Sanddornschorle bei Sonne — und die Frage „Erstes Mal hier?“. Wenn ja: zwei Insider-Tipps vom Gastgeber, handschriftlich auf einer Atemwege-Karte.</p></div>
+      <div class="aktion"><span class="tag hotel">Hotel</span><h3>Die Schietwetter-Garantie</h3><p>Ab Windstärke 8 gilt: Gratis Tee &amp; Geschichten in den teilnehmenden Stuben, Sturmwanderung mit der Gästeführung inklusive. Aus dem größten Buchungshindernis wird das ehrlichste Erlebnisversprechen: „Sturm ist hier kein Wetter. Sturm ist Programm.“</p></div>
+      <div class="aktion"><span class="tag insel">Insel</span><h3>Der Ehrlich-Kodex</h3><p>Zehn Versprechen, die jeder teilnehmende Betrieb sichtbar aushängt: ehrliche Preise, echte Produkte, keine versteckten Gebühren, persönliche Begrüßung. Das Siegel dazu: eine kleine Hummerbude in Betriebsfarbe. Selbstverpflichtung statt Sterne-Bürokratie.</p></div>
+      <div class="aktion"><span class="tag insel">Insel</span><h3>Der Atempass</h3><p>Die Gästekarte als Sammelheft: Atempunkte, Knieper-Stunde, Dünenfähre, Museum. Voller Pass = „Insulaner ehrenhalber“-Urkunde plus Vorteil beim nächsten Besuch. Bindung über Spiel, nicht über Rabattschlacht.</p></div>
+      <div class="aktion"><span class="tag insel">Insel</span><h3>Eine Stimme, ein Ton</h3><p>Workshop-Reihe + Textbaukasten für alle Betriebe: Wie schreibt Helgoland? (Trocken, warm, ehrlich.) Damit die Marke am Frühstücksbuffet genauso klingt wie auf dem Großflächenplakat in Hamburg.</p></div>
+    </div>
+    <div class="wrap">
+      <figure class="photo fade">
+        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_060145_e7d0d527-7c47-46df-b505-f3c8edd48406.png" alt="Die bunten Hummerbuden am Hafen von Helgoland">
+        <figcaption>Die Hummerbuden: Farbpalette, Logo-Inspiration und Ehrlich-Siegel in einem. Corporate Design, das seit 100 Jahren am Hafen steht.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SAISON ================= -->
+<section id="saison" class="dark">
+  <div class="wrap-narrow fade">
+    <span class="kicker">Attraktionen &amp; Ganzjahresstrategie</span>
+    <h2>365 Tage Luft.<br>Vier Gründe pro Jahreszeit.</h2>
+    <p class="lead">Helgoland hat kein Sommerloch-Problem, sondern ein Winter-Schatz-Problem: Die stärksten Naturmomente liegen in der Nebensaison. Wir drehen den Kalender um.</p>
+  </div>
+  <div class="wrap">
+    <div class="saison fade">
+      <div class="quartal"><h3>Winter · Dez–Feb</h3><strong>Die 1.000 Geburtstage</strong><p>Kegelrobben-Geburtensaison auf der Düne: Ranger-Touren, respektvolle Foto-Spots, „Robben-Live“-Webcam als Dauerwerbesendung fürs Reisen. Dazu: Sturmwochen mit Schietwetter-Garantie.</p></div>
+      <div class="quartal"><h3>Frühjahr · Mär–Mai</h3><strong>Die Durchatmer-Wochen</strong><p>Wenn das Festland niest, atmet Helgoland: Pauschalen für Allergiker mit ärztlicher Begleitung, Thalasso und Pollenflucht-Marketing exakt zur Birkenblüte. Plus: Vogelzug für Birder.</p></div>
+      <div class="quartal"><h3>Sommer · Jun–Aug</h3><strong>Lummensprung &amp; Hochseesommer</strong><p>Das Naturschauspiel der springenden Lummenküken als Festival mit Vogelwarte. Dazu Wassersport, „Rund um den Felsen“-Schwimmen, lange Dünenabende, Jubiläumssommer 2026: „200 Jahre Seebad“.</p></div>
+      <div class="quartal"><h3>Herbst · Sep–Nov</h3><strong>Denken auf Hochsee-Niveau</strong><p>B2B-Klausuren, Schreib- und Kreativ-Residenzen („Das Atelier am Ende Deutschlands“), Zugvogeltage, Krabben &amp; Knieper kulinarisch. Die Insel als Deutschlands konzentriertester Arbeitsplatz.</p></div>
+    </div>
+    <div class="wrap-narrow" style="margin-top:4rem;" >
+      <div class="fade">
+        <h3 style="font-size:1.4rem;">Der Jubiläums-Stunt 2026: „Helgoland hält die Luft an“</h3>
+        <p style="color:rgba(247,244,238,0.8);margin-top:0.6rem;">Zum 200. Geburtstag des Seebads hält die ganze Insel am 1. August um 12:00 Uhr für eine Minute inne — kein Motor (gibt eh keine Autos), keine Durchsage, nur Wind und Brandung. Live übertragen als „die leiseste Minute Deutschlands“. Danach: der gemeinsame tiefste Atemzug des Landes, 1.500 Insulaner und Gäste gleichzeitig. Ein Bild, das jede Tagesschau nimmt — und das kein Budget der Welt kaufen könnte.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HIGGSFIELD ================= -->
+<section id="produktion">
+  <div class="wrap-narrow fade">
+    <span class="kicker">Content-Produktion mit Higgsfield</span>
+    <h2>Großes Kino.<br>Ohne großes Filmteam.</h2>
+    <p class="lead">Mit KI-Produktion über Higgsfield entsteht die komplette Kampagnen-Bildwelt in Tagen statt Monaten — vom Kinospot bis zur täglichen Social-Serie. Die Visuals auf dieser Seite? Genau so entstanden: vier Key-Visuals, produziert in Minuten, für unter zehn Credits.</p>
+  </div>
+  <div class="wrap">
+    <div class="table-scroll fade">
+      <table class="prodplan">
+        <tr><th>Format</th><th>Idee</th><th>Higgsfield-Umsetzung</th><th>Kanal</th></tr>
+        <tr><td>Hero-Film 45s</td><td>„Deutschlands tiefster Atemzug“ — eine einzige durchgehende Atembewegung: Stadt (eng, grau, hektisch) → Katamaran → Fels → Horizont. Sounddesign folgt dem Atemrhythmus.</td><td>generate_video (Kinolook) + generate_audio (Score aus Atem &amp; Brandung) + upscale auf 4K</td><td>Kino, YouTube, Landingpage</td></tr>
+        <tr><td>Social-Serie „Atemzüge“</td><td>Tägliche 30–60s-Meditationen in 9:16: ein Motiv, echter Ton, eingeblendete Atemübung. Die Insel als tägliche Verschnaufpause im Doomscroll.</td><td>generate_video 9:16 + reframe für alle Formate; virality_predictor testet Hooks vor Veröffentlichung</td><td>Instagram, TikTok, YouTube Shorts</td></tr>
+        <tr><td>Pollen-Taktik-Ads</td><td>Dynamische Kurzspots je Pollenart (Birke, Gräser, Ambrosia), automatisch ausgespielt nach Live-Index der Zielstadt.</td><td>Batch-Produktion via generate_image + animation; Varianten pro Stadt &amp; Pollenart</td><td>DOOH, Meta, YouTube Pre-Roll</td></tr>
+        <tr><td>„1.000 Geburtstage“</td><td>Winterserie aus der Robben-Kinderstube: Webcam-Material veredelt, mit trockenem Insulaner-Voiceover.</td><td>video_analysis für beste Momente + dubbing (DE/EN/DK/NL) für internationale Märkte</td><td>Social, PR, Bord-Programm Katamaran</td></tr>
+        <tr><td>B2B-Explainer</td><td>„Denken auf Hochsee-Niveau“ — 90 Sekunden für Entscheider: Warum die beste Klausur 70 km vom Festland stattfindet.</td><td>explainer_video mit eigenem Voice-Clone des Insel-Testimonials</td><td>LinkedIn, Direktvertrieb</td></tr>
+        <tr><td>Kampagnen-Site</td><td>Diese Seite — als buchbare Landingpage mit Pollen-Live-Vergleich (Ihre Stadt vs. Helgoland) als tägliches Argument.</td><td>create_website + deploy_website; Website-DB für Atempass-Registrierung</td><td>atmen.helgoland.de</td></tr>
+      </table>
+    </div>
+    <p class="fade" style="margin-top:1.5rem;font-size:0.9rem;color:var(--muted);">Governance: KI-Material wird ausschließlich für Stimmungs- und Kampagnenwelten genutzt und als solches gekennzeichnet; dokumentarische Inhalte (Robben, Lummensprung, Menschen der Insel) bleiben echt. Ehrlichkeit ist schließlich die Marke.</p>
+  </div>
+</section>
+
+<!-- ================= ROADMAP ================= -->
+<section id="roadmap" class="sandbg">
+  <div class="wrap-narrow fade">
+    <span class="kicker">Roadmap &amp; Erfolgsmessung</span>
+    <h2>Vom Konzept zum Katamaran-Stau.<br>In vier Phasen.</h2>
+  </div>
+  <div class="wrap">
+    <div class="roadmap fade">
+      <div class="phase"><div class="zeit">Phase 1 · Monat 0–3</div><h3>Fundament</h3><ul><li>Markenentscheid &amp; Design-Finalisierung</li><li>Ehrlich-Kodex mit Betrieben entwickeln (Workshops)</li><li>Higgsfield-Produktionspipeline aufsetzen</li><li>Landingpage + Buchungsstrecke live</li></ul></div>
+      <div class="phase"><div class="zeit">Phase 2 · Monat 3–6</div><h3>Sichtbar werden</h3><ul><li>Atemwege-Leitsystem: Rote &amp; Blaue Route</li><li>Erste 8 Atempunkte + Atempass-Start</li><li>Kampagnen-Launch zur Pollensaison</li><li>PR-Stunt „Luft in Dosen“</li></ul></div>
+      <div class="phase"><div class="zeit">Phase 3 · Monat 6–12</div><h3>Erlebbar werden</h3><ul><li>Grüne &amp; Gelbe Route, Insel-O-Ton komplett</li><li>Knieper-Stunde &amp; Durchatmer-Zimmer flächig</li><li>Jubiläum „200 Jahre Seebad“ + Stunt „Helgoland hält die Luft an“</li><li>Robbenwinter-Kampagne „1.000 Geburtstage“</li></ul></div>
+      <div class="phase"><div class="zeit">Phase 4 · Jahr 2</div><h3>Skalieren</h3><ul><li>Internationale Märkte (DK, NL, UK) via Dubbing</li><li>B2B-Klausuren &amp; Residenzen ausbauen</li><li>Stammgast-Programm „Insulaner ehrenhalber“</li><li>Flugverbindung als Premium-Anreise reaktivieren</li></ul></div>
+    </div>
+    <div class="wrap-narrow fade" style="margin-top:3rem;">
+      <h3 style="font-size:1.3rem;">Woran wir Erfolg messen</h3>
+      <p style="color:var(--muted);font-size:0.95rem;margin-top:0.6rem;">Übernachtungen in der Nebensaison (+30 % in 24 Monaten als Zielmarke), Auslastung Durchatmer-Zimmer in der Pollensaison, Atempass-Abschlussquote, Anteil Wiederkehrer, earned Media-Reichweite der Stunts, Direktbuchungsquote über die Kampagnen-Site — und die ehrlichste Kennzahl von allen: Weiterempfehlung. Wer einmal richtig durchgeatmet hat, erzählt es weiter.</p>
+    </div>
+  </div>
+</section>
+
+<div class="budenband">
+  <div style="background:var(--bude-gruen)"></div>
+  <div style="background:var(--bude-blau)"></div>
+  <div style="background:var(--bude-tuerkis)"></div>
+  <div style="background:var(--bude-gelb)"></div>
+  <div style="background:var(--bude-rot)"></div>
+</div>
+
+<footer>
+  <div class="display">Und jetzt: einmal tief durchatmen.</div>
+  <p>HELGOLAND · ATMEN — Konzept zur touristischen Neupositionierung · 200 Jahre Seebad · 2026</p>
+  <p class="small">Konzeptstudie. Bildwelten KI-generiert (Higgsfield) und als Kampagnen-Moodwelt gekennzeichnet.<br>Alle Aktionsideen sind auf Umsetzbarkeit mit lokalen Partnern ausgelegt: Gemeinde, Kurverwaltung, Vogelwarte, DEHOGA, Reedereien.</p>
+</footer>
+
+<script>
+  const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');obs.unobserve(e.target);}}),{threshold:0.12});
+  document.querySelectorAll('.fade').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>
