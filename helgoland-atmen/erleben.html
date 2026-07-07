@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Helgoland — Atmen</title>
-<meta name="description" content="Deutschlands einzige Hochseeinsel. 70 Kilometer draußen beginnt etwas, das drinnen fehlt: Luft, Fels und Zeit. Anreise, Erleben, Veranstaltungen, Gesundheit — Helgoland." />
+<title>Erleben — Helgoland · Atmen</title>
+<meta name="description" content="Klippenrandweg und Lange Anna, Lummenfelsen, Robben auf der Düne, Bluehouse, Bunkerführungen, Hummerbuden — und zollfreies Einkaufen mit allen Freimengen." />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%230B2D3C'/><path d='M9 40 H20 C25 40 27 22 32 22 S39 40 44 40 H55' fill='none' stroke='%23F5F1E9' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -345,6 +345,67 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
 @media(max-width:900px){.footer__grid{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.footer__grid{grid-template-columns:1fr}}
 .disclaimer{background:#040f14;color:var(--grau);text-align:center;font-family:var(--f-mono);font-size:.64rem;letter-spacing:.06em;padding:14px var(--gutter);line-height:1.7}
+
+/* ---------- Unterseiten ---------- */
+.subhero{position:relative;min-height:66vh;display:flex;align-items:flex-end;overflow:hidden;color:var(--schaum);background:var(--tiefsee)}
+.subhero__bg{position:absolute;inset:0;z-index:0}
+.subhero__bg img{width:100%;height:100%;object-fit:cover;transform:scale(1.04);animation:kenburns 30s ease-out forwards}
+.subhero__veil{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(6,23,31,0.55) 0%,rgba(6,23,31,0.15) 40%,rgba(6,23,31,0.9) 100%)}
+.subhero__inner{position:relative;z-index:2;width:100%;max-width:var(--wrap);margin:0 auto;padding:140px var(--gutter) clamp(44px,8vh,90px)}
+.crumb{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,241,233,0.7);margin-bottom:1.4rem;display:flex;gap:.9em;flex-wrap:wrap}
+.crumb a{color:rgba(245,241,233,0.7)}.crumb a:hover{color:var(--schaum)}
+.crumb .sep{color:var(--rot)}
+.subhero h1{font-size:clamp(2.8rem,7.5vw,6rem);line-height:.98}
+.subhero h1 .breath{display:inline-block;animation:breathe 10s ease-in-out infinite;font-style:italic}
+.subhero .sub{margin-top:1.4rem;max-width:46ch;font-size:clamp(1rem,1.6vw,1.22rem);color:rgba(245,241,233,0.88)}
+
+/* Zeilen (Anreise-Routen, Event-Liste) */
+.rows{margin-top:clamp(36px,5vh,56px);border-top:1px solid var(--linie)}
+.dark .rows,.darker .rows{border-top-color:var(--linie-hell)}
+.row{display:grid;grid-template-columns:190px 1fr 220px;gap:2rem;padding:2.3rem 0;border-bottom:1px solid var(--linie);align-items:baseline}
+.dark .row,.darker .row{border-bottom-color:var(--linie-hell)}
+.row .rk{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--rot)}
+.row .rk small{display:block;color:var(--grau);margin-top:.5em;letter-spacing:.1em}
+.row h3{font-size:1.7rem;margin-bottom:.45rem}
+.row p{font-size:.98rem;color:#3B4A50;max-width:56ch}
+.dark .row p,.darker .row p{color:rgba(245,241,233,0.78)}
+.row .rm{font-family:var(--f-mono);display:flex;flex-direction:column;gap:.85rem}
+.row .rm b{font-size:1.02rem;font-weight:700}
+.row .rm span{display:block;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--grau)}
+@media(max-width:860px){.row{grid-template-columns:1fr;gap:.8rem}.row .rm{flex-direction:row;gap:2rem}}
+
+/* Zolltafel */
+.tafel{background:var(--tiefsee);color:var(--schaum);border-radius:2px;padding:clamp(28px,4vw,46px)}
+.tafel .tk{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grau);display:flex;justify-content:space-between;margin-bottom:1.6rem}
+.tafel .li{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.95rem 0;border-top:1px dashed rgba(245,241,233,0.22);font-family:var(--f-mono)}
+.tafel .li .w{font-size:.88rem;color:rgba(245,241,233,0.85);letter-spacing:.02em}
+.tafel .li .m{font-size:1rem;font-weight:700;white-space:nowrap}
+.tafel .note{margin-top:1.6rem;font-family:var(--f-serif);font-style:italic;font-size:1.12rem;color:rgba(245,241,233,0.9)}
+
+/* Karten (Unterkünfte, Angebote) */
+.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:clamp(36px,5vh,56px)}
+@media(max-width:900px){.cards3{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.cards3{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--linie);border-radius:2px;padding:28px 26px;display:flex;flex-direction:column;gap:.5rem;transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
+.card:hover{transform:translateY(-5px);box-shadow:0 24px 50px -28px rgba(11,45,60,.4)}
+.card .ck{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--rot)}
+.card h3{font-size:1.5rem;margin-top:.4rem}
+.card p{font-size:.94rem;color:#54636A;flex:1}
+.card .cm{font-family:var(--f-mono);font-size:.78rem;color:var(--tinte);margin-top:1rem;padding-top:1rem;border-top:1px solid var(--linie)}
+.card.dunkel{background:var(--tiefsee);border-color:transparent;color:var(--schaum)}
+.card.dunkel p{color:rgba(245,241,233,0.78)}
+.card.dunkel .cm{color:var(--schaum);border-top-color:var(--linie-hell)}
+
+/* Saison-Kalender */
+.kal{margin-top:clamp(36px,5vh,56px);display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:900px){.kal{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.kal{grid-template-columns:1fr}}
+.kq{border-top:2px solid var(--rot);background:var(--tiefsee);color:var(--schaum);padding:24px 22px;min-height:200px;display:flex;flex-direction:column;gap:.5rem}
+.kq:nth-child(2){border-top-color:var(--gruen)}
+.kq:nth-child(3){border-top-color:var(--schaum)}
+.kq .s{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grau)}
+.kq h3{font-size:1.4rem;margin-top:auto}
+.kq p{font-size:.88rem;color:rgba(245,241,233,0.78)}
 </style>
 </head>
 <body>
@@ -352,7 +413,6 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
 <div class="cursor" id="cursor" aria-hidden="true"></div>
 <div class="progress" id="progress"></div>
 
-<!-- ============ INSEL-PULS ============ -->
 <div class="puls" id="puls" aria-hidden="true">
   <div class="track">
     <span class="it"><span class="live"></span><span class="v">Insel-Puls</span></span>
@@ -371,15 +431,14 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
   </div>
 </div>
 
-<!-- ============ NAV ============ -->
 <nav class="nav" id="nav">
-  <a class="brand" href="#top" data-cursor>
+  <a class="brand" href="index.html" data-cursor>
     <svg class="glyph" viewBox="0 0 64 40" aria-hidden="true"><path d="M4 32 H20 C25 32 27 10 32 10 S39 32 44 32 H60" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span class="wm">Helgo<b>land</b></span>
   </a>
   <div class="nav-links" id="navLinks">
-    <a href="#insel">Die Insel</a>
-    <a href="erleben.html">Erleben</a>
+    <a href="index.html#insel">Die Insel</a>
+    <a href="erleben.html" class="active">Erleben</a>
     <a href="veranstaltungen.html">Veranstaltungen</a>
     <a href="gesundheit.html">Gesundheit</a>
     <a href="anreise.html">Anreise</a>
@@ -395,7 +454,7 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
 
 <div class="mobile" id="mobile">
   <button class="mclose" id="mclose">schließen ✕</button>
-  <a href="#insel"><b>01</b>Die Insel</a>
+  <a href="index.html#insel"><b>01</b>Die Insel</a>
   <a href="erleben.html"><b>02</b>Erleben</a>
   <a href="veranstaltungen.html"><b>03</b>Veranstaltungen</a>
   <a href="gesundheit.html"><b>04</b>Gesundheit</a>
@@ -403,309 +462,119 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
   <a href="unterkuenfte.html"><b>06</b>Unterkünfte</a>
 </div>
 
-<!-- ============ HERO ============ -->
-<header class="hero" id="top">
-  <div class="hero__bg">
-    <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072813_e70e9dbf-8782-4321-9932-d841865c7d8f.png" alt="Die rote Felsküste Helgolands in der Nordsee bei ruhiger See" fetchpriority="high" />
+<header class="subhero">
+  <div class="subhero__bg"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072826_d522c419-feab-4528-acc8-29b3d1be4b5d.png" alt="Der Klippenrandweg über der Nordsee auf Helgoland" fetchpriority="high" /></div>
+  <div class="subhero__veil"></div>
+  <div class="subhero__inner">
+    <div class="crumb"><a href="index.html">Helgoland</a><span class="sep">→</span><span>Erleben</span></div>
+    <h1>Wenig los.<br/>Zum <span class="breath">Glück.</span></h1>
+    <p class="sub">Kein Programm, das man abarbeitet. Sondern Orte, die man nur hier findet — und nach denen man anders atmet.</p>
   </div>
-  <div class="hero__veil"></div>
-  <div class="hero__inner">
-    <div>
-      <div class="over"><span>Die einzige deutsche Hochseeinsel</span><span>54°11′N&nbsp;·&nbsp;7°53′E</span></div>
-      <h1>Deutschlands<br/>tiefster <span class="breath">Atemzug.</span></h1>
-      <p class="sub">Siebzig Kilometer draußen beginnt etwas, das drinnen fehlt. Kein Auto, kein Durchgangsverkehr, kein Drüben. Nur Luft, Fels und Zeit.</p>
-      <div class="hero__cta">
-        <a href="#insel" class="btn btn--schaum" data-cursor><span>Die Insel entdecken</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </a>
-        <a href="anreise.html" class="btn btn--ghost" data-cursor><span>Anreise planen</span></a>
-      </div>
-    </div>
-    <div class="guide" aria-hidden="true">
-      <div class="guide__ring"><i></i><i></i><span class="guide__dot"></span></div>
-      <div class="guide__lbl"><span class="in">Einatmen</span><span class="out">Ausatmen</span></div>
-    </div>
-  </div>
-  <div class="scrollcue">weiter</div>
 </header>
 
-<!-- ============ MARQUEE ============ -->
-<div class="marquee" aria-hidden="true">
-  <div class="marquee__track">
-    <span>0 Autos</span><span>0 Pollen</span><span>0 Ausreden</span><span>1 Fels</span><span>70 km Abstand</span><span>200 Jahre Seebad</span>
-    <span>0 Autos</span><span>0 Pollen</span><span>0 Ausreden</span><span>1 Fels</span><span>70 km Abstand</span><span>200 Jahre Seebad</span>
-  </div>
-</div>
 
-<!-- ============ DER ZUSTAND ============ -->
-<section class="section dark zustand">
+<section class="section">
   <div class="wrap">
-    <span class="eyebrow fade"><span class="dot">■</span>&nbsp; Willkommen</span>
-    <h2 class="rl" style="margin-top:1.6rem">
-      <span><i>Man kommt nicht her,</i></span>
-      <span><i>um etwas zu sehen.</i></span>
-      <span><i>Man kommt her, um</i></span>
-      <span><i>etwas loszuwerden.</i></span>
-    </h2>
-    <p class="body fade d2" style="margin-top:.5rem">Helgoland ist keine Postkarte, die man abhakt. Die Insel ist ein Ortswechsel im Kopf — rau, klar, ehrlich. Wir versprechen nichts. Und halten es.</p>
-  </div>
-</section>
-
-<div class="divider" data-draw>
-  <svg viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-</div>
-
-<!-- ============ DIE INSEL ============ -->
-<section class="section" id="insel">
-  <div class="wrap">
-    <div class="split">
-      <div class="split__media fade" data-cursor>
-        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072819_88a80f2d-261b-4625-a53e-a3e42fc55bd8.png" alt="Der rote Buntsandsteinfels Helgolands über der Nordsee" />
-        <svg class="glyph" viewBox="0 0 64 64" aria-hidden="true"><path d="M7 58 L7 33 L21 28 L23 58 Z" fill="currentColor"/><path d="M35 58 L37 24 L41 15 L45 26 L43 58 Z" fill="currentColor"/></svg>
-      </div>
-      <div class="fade d1">
-        <span class="eyebrow">Die Hauptinsel</span>
-        <h2 class="h-md">Der einzige Fels,<br/>der aus dem Meer wächst.</h2>
-        <p class="body">Rotes Buntsandstein-Land, oben grün, unten Hafen. Der Klippenrandweg führt in vierhundert Atemzügen zur Langen Anna — dem freistehenden Felsturm, den keine andere deutsche Küste besitzt. Kein Auto stört den Weg, nur der Wind.</p>
-        <div class="facts">
-          <div><b data-count="47" data-suffix="m">0</b><span>Lange Anna</span></div>
-          <div><b data-count="61" data-suffix="m">0</b><span>höchste Klippe</span></div>
-          <div><b data-count="0">0</b><span>Autos</span></div>
+    <div class="head fade">
+      <span class="eyebrow">Die Orte · Was die Insel trägt</span>
+      <h2 class="h-lg" style="margin-top:1.4rem">Sechs Orte,<br/>null Eintrittsschlangen.</h2>
+    </div>
+    <div class="rows">
+      <div class="row fade">
+        <div class="rk">01 · Oberland<small>immer offen</small></div>
+        <div>
+          <h3>Klippenrandweg &amp; Lange Anna</h3>
+          <p>Einmal um das grüne Oberland, immer das Meer im Blick, bis zum 47 Meter hohen freistehenden Felsturm am Nordende. Rund 400 Atemzüge — und ab der halben Strecke kein Empfang. Endlich.</p>
         </div>
+        <div class="rm"><div><b>47 m</b><span>Lange Anna</span></div><div><b>≈ 3 km</b><span>Rundweg</span></div></div>
       </div>
-    </div>
-    <div class="split rev" style="margin-top:clamp(48px,8vh,110px)">
-      <div class="split__media fade" data-cursor>
-        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091315_769688d3-9e2b-4b3f-848e-67d06f4b4852.png" alt="Der weiße Sandstrand der Helgoländer Düne mit türkisem Wasser" />
-        <svg class="glyph" viewBox="0 0 64 64" aria-hidden="true"><g fill="currentColor"><circle cx="32" cy="15" r="2.6"/><circle cx="25" cy="27" r="2.6"/><circle cx="39" cy="27" r="2.6"/><circle cx="18" cy="39" r="2.6"/><circle cx="32" cy="39" r="2.6"/><circle cx="46" cy="39" r="2.6"/><circle cx="12" cy="51" r="2.6"/><circle cx="25" cy="51" r="2.6"/><circle cx="39" cy="51" r="2.6"/><circle cx="52" cy="51" r="2.6"/></g></svg>
-      </div>
-      <div class="fade d1">
-        <span class="eyebrow">Die Düne</span>
-        <h2 class="h-md">Karibik<br/>mit Reizklima.</h2>
-        <p class="body">Ein paar Fährminuten weiter liegt die Badedüne: heller Sand, klares Wasser — und im Winter über tausend Kegelrobben, die hier ihre Jungen zur Welt bringen. Deutschlands größtes Robbenwunder, mitten in der Nordsee.</p>
-        <div class="facts">
-          <div><b data-count="1049">0</b><span>Robbengeburten / Saison</span></div>
-          <div><b data-count="2" data-suffix="km²">0</b><span>weißer Sand</span></div>
+      <div class="row fade">
+        <div class="rk">02 · Vogelfelsen<small>Frühjahr bis Sommer</small></div>
+        <div>
+          <h3>Der Lummenfelsen</h3>
+          <p>Deutschlands einziger Vogelfelsen: Trottellummen, Basstölpel und Dreizehenmöwen brüten zu Tausenden in der roten Wand. Im Juni springen die Lummenküken — noch flugunfähig — die Klippe hinab ins Meer. Ein Schauspiel, das es nur hier gibt.</p>
         </div>
+        <div class="rm"><div><b>Juni</b><span>Lummensprung</span></div><div><b>1.000e</b><span>Brutpaare</span></div></div>
+      </div>
+      <div class="row fade">
+        <div class="rk">03 · Düne<small>Fähre ab Hafen</small></div>
+        <div>
+          <h3>Robben auf der Düne</h3>
+          <p>Ein paar Fährminuten zur Nachbarinsel: weißer Sand, klares Wasser — und Kegelrobben, die sich davon nicht stören lassen. Im Winter kommen hier über tausend Junge zur Welt. Dreißig Meter Abstand, bitte. Hier wird geschlafen.</p>
+        </div>
+        <div class="rm"><div><b>1.049</b><span>Geburten/Saison</span></div><div><b>30 m</b><span>Abstand</span></div></div>
+      </div>
+      <div class="row fade">
+        <div class="rk">04 · Forschung<small>neu</small></div>
+        <div>
+          <h3>Bluehouse Helgoland</h3>
+          <p>Die neue Meeresausstellung des Alfred-Wegener-Instituts: 80.000 Liter lebende Nordsee unter einem Dach — Hummer, Kelpwald, Felswatt. Forschung zum Anfassen, hundert Meter vom Anleger.</p>
+        </div>
+        <div class="rm"><div><b>80.000 l</b><span>Nordsee</span></div><div><b>AWI</b><span>Forschung seit 1892</span></div></div>
+      </div>
+      <div class="row fade">
+        <div class="rk">05 · Geschichte<small>Führungen</small></div>
+        <div>
+          <h3>Der Bunker</h3>
+          <p>Unter der Insel liegen kilometerlange Stollen aus dem Zweiten Weltkrieg. Die Führung erzählt vom Krieg, vom „Big Bang“ 1947 — der größten nicht-nuklearen Sprengung der Geschichte — und vom Wiederaufbau. Unbequem, ehrlich, wichtig.</p>
+        </div>
+        <div class="rm"><div><b>1947</b><span>Big Bang</span></div><div><b>1952</b><span>Rückkehr der Insulaner</span></div></div>
+      </div>
+      <div class="row fade">
+        <div class="rk">06 · Unterland<small>täglich</small></div>
+        <div>
+          <h3>Hummerbuden &amp; Museum</h3>
+          <p>Die bunten Buden am Binnenhafen: früher Werkstätten der Hummerfischer, heute Galerien, Läden und die beste Fischfrikadelle weit und breit. Daneben das Museum Helgoland mit der ganzen Inselgeschichte.</p>
+        </div>
+        <div class="rm"><div><b>anno</b><span>Fischerhandwerk</span></div><div><b>Knieper</b><span>Spezialität</span></div></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ ZAHLEN ============ -->
-<section class="section darker">
-  <div class="wrap">
-    <div class="head fade">
-      <span class="eyebrow">Die Zahl-Stimme · Beweise statt Adjektive</span>
-      <h2 class="h-lg" style="margin-top:1.4rem;color:var(--schaum)">Diese Insel hat<br/>kein Ideenproblem.</h2>
-    </div>
-    <div class="zahlen" style="margin-top:clamp(40px,6vh,64px)">
-      <div class="zahl fade"><b data-count="1049">0</b><div class="l">Kegelrobben</div><div class="d">Geburten in einer Saison — Rekord. Ein Naturschauspiel ohne Gegenstück.</div></div>
-      <div class="zahl fade d1"><b data-count="1826">0</b><div class="l">Seit … Seebad</div><div class="d">Zweihundert Jahre Heilbad. Pollenarme Hochseeluft, amtlich.</div></div>
-      <div class="zahl fade d2"><b data-count="1925">0</b><div class="l">Heisenberg</div><div class="d">Hier fand er die Quantenmechanik. Hundert Jahre Weltniveau.</div></div>
-      <div class="zahl fade"><b data-count="70"><span class="u">km</span></b><div class="l">Abstand</div><div class="d">Siebzig Kilometer Wasser zwischen Alltag und Atemzug.</div></div>
-      <div class="zahl fade d1"><b data-count="2018">0</b><div class="l">Kulturerbe</div><div class="d">Die Börteboote — immaterielles Erbe, das keine Küste kopieren kann.</div></div>
-      <div class="zahl fade d2"><b data-count="400"><span class="u">×</span></b><div class="l">Atemzüge</div><div class="d">So weit ist es über den Klippenrandweg zur Langen Anna.</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ ERLEBEN ============ -->
-<section class="section sand" id="erleben">
-  <div class="wrap">
-    <div class="head fade">
-      <span class="eyebrow">Erleben · Was die Insel trägt</span>
-      <h2 class="h-lg" style="margin-top:1.4rem">Wenig los.<br/>Das ist kein Versehen.</h2>
-      <p class="body">Kein Programm, das man abarbeitet. Sondern Dinge, die man nur hier tut — und danach anders atmet.</p>
-    </div>
-    <div class="bento fade" style="margin-top:clamp(40px,6vh,60px)">
-      <div class="tile w2 h2" data-cursor>
-        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072826_d522c419-feab-4528-acc8-29b3d1be4b5d.png" alt="Klippenrandweg über der Nordsee" />
-        <span class="k">Am Klippenrand</span>
-        <h3>Der Klippenrandweg</h3>
-        <p>Einmal um das grüne Oberland, immer das Meer im Blick, bis zur Langen Anna. Ab hier kein Empfang. Endlich.</p>
-      </div>
-      <div class="tile" data-cursor>
-        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091346_139071bb-d6d0-42ad-b0e6-835a8e2678c5.png" alt="Kegelrobbe am Strand der Düne" />
-        <span class="k">Auf der Düne</span>
-        <h3>Robben sehen</h3>
-        <p>Auge in Auge, mit Abstand. Bitte leise — hier wird geschlafen.</p>
-      </div>
-      <div class="tile" data-cursor>
-        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072831_17beea67-1acc-4d16-9279-801c9a6d07e2.png" alt="Der belebte Lummenfelsen" />
-        <span class="k">Der Vogelfelsen</span>
-        <h3>Lummenfelsen</h3>
-        <p>Tausend Vögel als Muster. Der lauteste Ort der Nordsee.</p>
-      </div>
-      <div class="tile w2" data-cursor>
-        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072821_fe0bba4c-254f-4250-8050-91304c1e7d3d.png" alt="Bunte Hummerbuden am Hafen" />
-        <span class="k">Zollfrei &amp; Bude</span>
-        <h3>Budenwandern</h3>
-        <p>Ein Gang pro Hummerbude, an Sommerabenden wird die Budenzeile zur Menü-Meile. Zollfrei sowieso.</p>
-      </div>
-      <div class="tile--solid tile" data-cursor>
-        <span class="k">Unter der Insel</span>
-        <h3>Bunker &amp;<br/>Bluehouse</h3>
-        <p>Kilometerlange Tunnel, der „Big Bang“ von 1947 — und darüber 80.000 Liter Nordsee in der neuen AWI-Meeresausstellung.</p>
-      </div>
-    </div>
-    <div class="fade" style="margin-top:clamp(28px,4vh,40px);display:flex;justify-content:center">
-      <a href="erleben.html" class="btn btn--ghost" data-cursor><span>Alles erleben — samt Zolltafel</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
-    </div>
-  </div>
-</section>
-
-<div class="divider" data-draw>
-  <svg viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-</div>
-
-<!-- ============ SCENE — BÖRTEBOOTE ============ -->
-<section class="scene" data-scene>
-  <div class="scene__bg"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072833_2fe145b3-fe9f-4c1b-9405-451325d9de14.png" alt="Traditionelle Börteboote vor Helgoland" /></div>
-  <div class="scene__veil"></div>
-  <div class="scene__inner">
-    <p class="quote fade">„Was trägt, bleibt.<br/>Dazwischen wächst Neues.“</p>
-    <div class="attr fade d1">Die Börteboote · Ausbooten seit 1826 · Immaterielles Kulturerbe</div>
-  </div>
-</section>
-
-<!-- ============ VERANSTALTUNGEN ============ -->
-<section class="section dark" id="veranstaltungen">
-  <div class="wrap">
-    <div class="head fade">
-      <span class="eyebrow">Veranstaltungen · Aus einer Saison wird ein Jahr</span>
-      <h2 class="h-lg" style="margin-top:1.4rem;color:var(--schaum)">Das Jahr, das atmet.</h2>
-    </div>
-    <div class="events fade">
-      <div class="event">
-        <span class="season">Winter</span>
-        <span class="date">Nov – Jan</span>
-        <h3>Robbenzeit</h3>
-        <p>Über tausend Geburten auf der Düne. Wintererlebnispfad, Fotobuchten, Ranger. Staunen in der stillsten Zeit.</p>
-      </div>
-      <div class="event">
-        <span class="season">Frühjahr</span>
-        <span class="date">Mär – Mai</span>
-        <h3>Durchatmen</h3>
-        <p>Die Gesundheitswochen, wenn drüben die Pollen fliegen. Dazu die Lummentage am Vogelfelsen.</p>
-      </div>
-      <div class="event">
-        <span class="season">Sommer</span>
-        <span class="date">Jun – Aug</span>
-        <h3>Die Lange Tafel</h3>
-        <p>Eine weiße Tafel vom Unterland bis zur Landungsbrücke. Budenwandern, Hafenklang, Nordseewoche.</p>
-      </div>
-      <div class="event">
-        <span class="season">Herbst</span>
-        <span class="date">Sep – Okt</span>
-        <h3>Knieper-Wochen</h3>
-        <p>Ein Gericht, das nur dieser Insel gehört — zum Saisonausklang. Dazu der große Vogelzug.</p>
-      </div>
-    </div>
-    <div class="fade" style="margin-top:clamp(28px,4vh,40px);display:flex;justify-content:center">
-      <a href="veranstaltungen.html" class="btn btn--schaum" data-cursor><span>Alle Termine 2026</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- ============ GESUNDHEIT + POLLEN ============ -->
-<section class="section" id="gesundheit">
+<section class="section dark" id="zollfrei">
   <div class="wrap gesund">
     <div class="fade">
-      <span class="eyebrow" style="display:block;margin-bottom:1.2rem">Gesundheit · 200 Jahre Heilbad</span>
-      <h2 class="h-md">Atmen.<br/>Diesmal auf Rezept.</h2>
-      <p class="body" style="margin-top:1.2rem">Jeden Frühling niest sich halb Deutschland durch die Pollen. Siebzig Kilometer draußen ist die Luft frei davon — seit zweihundert Jahren Heilbad, so aktuell wie nie. Mare Frisicum Spa, Seewasserkur, Atemwandern am Klippenrand.</p>
-      <a href="gesundheit.html" class="btn btn--rot" style="margin-top:2rem" data-cursor><span>Gesundheitswochen ansehen</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
+      <span class="eyebrow" style="display:block;margin-bottom:1.2rem">Zollfrei · Kein EU-Zollgebiet</span>
+      <h2 class="h-md" style="color:var(--schaum)">Einkaufen<br/>ohne Aufschlag.</h2>
+      <p class="body" style="margin-top:1.2rem">Helgoland gehört weder zum Zollgebiet der EU noch zum deutschen Steuergebiet — eine Eigenheit aus der Geschichte der Insel. Parfum, Spirituosen und Tabak kosten hier, was sie kosten. Ohne Mehrwertsteuer, ohne Zoll.</p>
+      <p class="body" style="margin-top:1rem">Die ehrliche Stimme dazu: Die Freimengen gelten pro Person und Rückfahrt. Mehr geht auch — dann winkt der Zoll am Festland.</p>
     </div>
-    <div class="pollen fade d1" data-pollen>
-      <div class="pk"><span>Pollenbelastung heute</span><span class="live">● live</span></div>
-      <div class="gauge hh">
-        <div class="top"><span class="place">Hamburg</span><span class="val">8/8</span></div>
-        <div class="bar"><div class="fill"></div></div>
-      </div>
-      <div class="gauge hgl">
-        <div class="top"><span class="place">Helgoland</span><span class="val">0/8</span></div>
-        <div class="bar"><div class="fill"></div></div>
-      </div>
-      <p class="note">Ihre Lunge hat angerufen.</p>
+    <div class="tafel fade d1">
+      <div class="tk"><span>Ihre Freimengen · pro Person</span><span>ab 18</span></div>
+      <div class="li"><span class="w">Zigaretten</span><span class="m">200 Stück</span></div>
+      <div class="li"><span class="w">— oder Zigarren</span><span class="m">50 Stück</span></div>
+      <div class="li"><span class="w">— oder Rauchtabak</span><span class="m">250 g</span></div>
+      <div class="li"><span class="w">Spirituosen über 22 % vol.</span><span class="m">1 Liter</span></div>
+      <div class="li"><span class="w">— oder bis 22 % vol.</span><span class="m">2 Liter</span></div>
+      <div class="li"><span class="w">Wein (nicht schäumend), zusätzlich</span><span class="m">4 Liter</span></div>
+      <div class="li"><span class="w">Sonstige Waren, mit Schiff oder Flug</span><span class="m">bis 430 €</span></div>
+      <div class="li"><span class="w">— mit eigenem Boot</span><span class="m">bis 300 €</span></div>
+      <p class="note">Genug für ein gutes Gewissen.</p>
     </div>
   </div>
 </section>
 
-<!-- ============ ANREISE ============ -->
-<section class="section sand" id="anreise">
-  <div class="wrap">
-    <div class="head fade">
-      <span class="eyebrow">Anreise · Die Reise ist der erste Programmpunkt</span>
-      <h2 class="h-lg" style="margin-top:1.4rem">Legen Sie ab.</h2>
-      <p class="body">Ob schnell per Katamaran oder gemütlich mit dem Seebäderschiff — das letzte Stück an Land gehört einer zweihundert Jahre alten Tradition.</p>
-    </div>
-    <div class="routes fade">
-      <div class="route" data-cursor>
-        <div class="no">Route 01 · schnell</div>
-        <h3>Halunder Jet<br/>ab Hamburg</h3>
-        <p>Elegant die Elbe hinunter und aufs offene Meer — mitten aus der Stadt auf die Insel.</p>
-        <div class="meta"><div><b>≈ 4 Std</b><span>Reisezeit</span></div><div><b>tägl.</b><span>Saison</span></div></div>
-      </div>
-      <div class="route" data-cursor>
-        <div class="no">Route 02 · gemütlich</div>
-        <h3>Seebäderschiff<br/>ab Cuxhaven</h3>
-        <p>Deck, Wind, Möwen und der erste Blick auf die rote Silhouette am Horizont.</p>
-        <div class="meta"><div><b>≈ 2,5 Std</b><span>Reisezeit</span></div><div><b>Tagestour</b><span>oder länger</span></div></div>
-      </div>
-      <div class="route" data-cursor>
-        <div class="no">Route 03 · Tradition</div>
-        <h3>Ausbooten<br/>per Börteboot</h3>
-        <p>Kein großes Schiff legt direkt an — offene Holzboote bringen Sie an Land. Seit 1826.</p>
-        <div class="meta"><div><b>1826</b><span>seit</span></div><div><b>Erbe</b><span>Kulturerbe</span></div></div>
-      </div>
-    </div>
-  </div>
-</section>
+<div class="divider" data-draw>
+  <svg viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
 
-<!-- ============ UNTERKÜNFTE / STAY / CTA ============ -->
-<section class="stay" id="unterkunft">
-  <div class="stay__bg"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_065915_785d4f3a-7dda-4a5d-af76-ff38d906f931.png" alt="Stille See vor Helgoland in der Dämmerung" /></div>
-  <div class="stay__veil"></div>
-  <div class="stay__inner fade">
-    <span class="eyebrow" style="display:block;margin-bottom:1.4rem">Bleiben · Tun Sie nichts. Wir passen auf.</span>
-    <h2>Einmal richtig<br/><span class="breath">weg.</span></h2>
-    <p>Vom Reetdachhotel bis zur Kapitänswohnung über dem Hafen: Wer über Nacht bleibt, bekommt die Insel, die die Tagesgäste nie sehen — den leeren Klippenweg im Morgenlicht, die Sterne ohne eine einzige Straßenlaterne.</p>
-    <div class="signup">
-      <a href="unterkuenfte.html" class="btn btn--schaum" data-cursor><span>Unterkunft finden</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
-      <a href="#top" class="btn btn--ghost" data-cursor style="color:var(--schaum)"><span>Prospekt bestellen</span></a>
-    </div>
-  </div>
-</section>
-
-<!-- ============ NEWSLETTER ============ -->
-<section class="section darker">
+<section class="section" style="padding-top:0">
   <div class="wrap" style="text-align:center;max-width:640px">
-    <span class="eyebrow fade" style="display:block;margin-bottom:1.4rem">Insel-Post</span>
-    <h2 class="h-md fade d1" style="color:var(--schaum)">Wir schreiben selten.<br/>Und nie ohne Grund.</h2>
-    <p class="body fade d2" style="margin:1.2rem auto 2rem;color:rgba(245,241,233,0.82)">Neue Veranstaltungen, ehrliche Anreise-Tipps, der Robbenzähler im Winter. Kein Marktgeschrei — nur Insel.</p>
-    <form class="signup fade d2" onsubmit="event.preventDefault();this.querySelector('input').value='';this.querySelector('.btn span').textContent='Moin — dabei.';">
-      <input type="email" required placeholder="Ihre E-Mail" aria-label="E-Mail" />
-      <button class="btn btn--rot" type="submit" data-cursor><span>Abonnieren</span></button>
-      <span class="note">Konzeptstudie · Formular ohne Funktion</span>
-    </form>
+    <h2 class="h-md fade">Und wann sind Sie dran?</h2>
+    <p class="body fade d1" style="margin:1rem auto 2rem">Das Jahr auf der Insel hat mehr Termine, als man einer Hochseeinsel zutraut.</p>
+    <div class="fade d2" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="veranstaltungen.html" class="btn btn--rot" data-cursor><span>Veranstaltungen ansehen</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <a href="anreise.html" class="btn btn--ghost" data-cursor><span>Anreise planen</span></a>
+    </div>
   </div>
 </section>
 
-<!-- ============ FOOTER ============ -->
 <footer class="footer">
   <div class="wrap">
     <div class="footer__grid">
       <div class="footer__intro">
-        <a class="brand" href="#top" data-cursor>
+        <a class="brand" href="index.html" data-cursor>
           <svg class="glyph" viewBox="0 0 64 40" aria-hidden="true"><path d="M4 32 H20 C25 32 27 10 32 10 S39 32 44 32 H60" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span class="wm">Helgo<b>land</b></span>
         </a>
@@ -724,7 +593,7 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
       <div>
         <h5>Insel</h5>
         <ul>
-          <li><a href="#insel">Die Insel &amp; Düne</a></li>
+          <li><a href="index.html#insel">Die Insel &amp; Düne</a></li>
           <li><a href="erleben.html">Erleben</a></li>
           <li><a href="veranstaltungen.html">Veranstaltungen</a></li>
           <li><a href="gesundheit.html">Gesundheit</a></li>
@@ -733,10 +602,10 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
       <div>
         <h5>Service</h5>
         <ul>
-          <li><a href="#top">Webcams</a></li>
-          <li><a href="#top">Wetter &amp; Seegang</a></li>
-          <li><a href="#top">Insel-Puls App</a></li>
-          <li><a href="#top">Kontakt</a></li>
+          <li><a href="index.html#top">Webcams</a></li>
+          <li><a href="index.html#top">Wetter &amp; Seegang</a></li>
+          <li><a href="index.html#top">Insel-Puls App</a></li>
+          <li><a href="index.html#top">Kontakt</a></li>
         </ul>
       </div>
     </div>
@@ -746,13 +615,11 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
     </div>
   </div>
 </footer>
-<div class="disclaimer">Konzeptstudie zur Marke „ATMEN“ · kein offizieller Auftritt. Bildwelten KI-generiert (Higgsfield) und als solche gekennzeichnet · Insel-Puls- und Pollenwerte beispielhaft.</div>
+<div class="disclaimer">Konzeptstudie zur Marke „ATMEN“ · kein offizieller Auftritt. Bildwelten KI-generiert (Higgsfield) und als solche gekennzeichnet · Fahrplan-, Preis- und Pulsangaben beispielhaft — verbindlich sind die Reedereien und die Gemeinde Helgoland.</div>
 
 <script>
 (function(){
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  /* ---- cursor (breath dot) ---- */
   var cur = document.getElementById('cursor');
   if(matchMedia('(hover:hover) and (pointer:fine)').matches && !reduce){
     var cx=innerWidth/2, cy=innerHeight/2, tx=cx, ty=cy;
@@ -763,11 +630,7 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
       el.addEventListener('mouseleave',function(){cur.classList.remove('big');});
     });
   }
-
-  /* ---- puls + nav + progress ---- */
   var puls=document.getElementById('puls'), nav=document.getElementById('nav'), prog=document.getElementById('progress');
-  var links=[].slice.call(document.querySelectorAll('#navLinks a'));
-  var secs=[].slice.call(document.querySelectorAll('section[id],header[id]'));
   function onScroll(){
     var y=scrollY;
     puls.classList.toggle('hide', y>60);
@@ -775,26 +638,17 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
     nav.classList.toggle('solid', y>60);
     var h=document.documentElement.scrollHeight-innerHeight;
     prog.style.width=(h>0?y/h*100:0)+'%';
-    var cur='';
-    secs.forEach(function(s){ if(y>=s.offsetTop-140) cur=s.id; });
-    links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href')==='#'+cur); });
   }
   addEventListener('scroll',onScroll,{passive:true}); onScroll();
-
-  /* ---- mobile menu ---- */
   var burger=document.getElementById('burger'), mob=document.getElementById('mobile'), mclose=document.getElementById('mclose');
   function setMenu(o){mob.classList.toggle('open',o);burger.setAttribute('aria-expanded',o);}
   burger.addEventListener('click',function(){setMenu(true);});
   mclose.addEventListener('click',function(){setMenu(false);});
   mob.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){setMenu(false);});});
-
-  /* ---- reveal (fade + line + divider + scene) ---- */
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target);}});},{threshold:.16,rootMargin:'0px 0px -6% 0px'});
   document.querySelectorAll('.fade,.rl,[data-draw]').forEach(function(el){io.observe(el);});
   var sio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('vis');});},{threshold:.2});
   document.querySelectorAll('[data-scene]').forEach(function(el){sio.observe(el);});
-
-  /* ---- counters ---- */
   function fmt(n){return n.toLocaleString('de-DE');}
   function run(el){
     var t=+el.dataset.count, suf=el.dataset.suffix||'', dur=1500, s=null;
@@ -805,19 +659,13 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
   }
   var cio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){run(e.target);cio.unobserve(e.target);}});},{threshold:.6});
   document.querySelectorAll('[data-count]').forEach(function(el){cio.observe(el);});
-
-  /* ---- pollen gauges ---- */
   var pio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.querySelectorAll('.gauge').forEach(function(g){g.classList.add('vis');});pio.unobserve(e.target);}});},{threshold:.4});
   document.querySelectorAll('[data-pollen]').forEach(function(el){pio.observe(el);});
-
-  /* ---- insel-puls tiny live feel ---- */
   if(!reduce){
     var jets=['ab 09:00','ab 11:30','ab 16:00'], temps=['9°C · klar','8°C · frisch','10°C · Sonne'];
     var i=0;
     setInterval(function(){i++;var j=document.getElementById('pJet'),w=document.getElementById('pWetter');if(j)j.textContent=jets[i%jets.length];if(w)w.textContent=temps[i%temps.length];},4200);
   }
-
-  /* ---- magnetic buttons ---- */
   if(!reduce && matchMedia('(pointer:fine)').matches){
     document.querySelectorAll('.btn').forEach(function(b){
       b.addEventListener('mousemove',function(e){var r=b.getBoundingClientRect();b.style.transform='translate('+((e.clientX-r.left-r.width/2)*.2)+'px,'+((e.clientY-r.top-r.height/2)*.3)+'px)';});
