@@ -78,11 +78,34 @@
 
   .fade{opacity:0;transform:translateY(20px);transition:opacity 1s ease,transform 1s ease;}
   .fade.vis{opacity:1;transform:none;}
+
+  /* consistent mark bug in every caption */
+  .c .mkbug{width:26px;height:14px;color:var(--tiefsee);margin-bottom:0.35rem;}
+  .c .mkbug svg{width:100%;height:100%;display:block;}
+  .pc .c .mkbug{margin-left:auto;margin-right:auto;}
+
+  /* wave-constant panel */
+  .konstante{background:var(--tiefsee);color:var(--schaum);}
+  .konstante .wrap{max-width:820px;margin:0 auto;text-align:center;}
+  .konstante .big{color:var(--schaum);margin:1.4rem 0 1.2rem;}
+  .konstante .lead{color:rgba(245,241,233,0.8);font-size:clamp(1rem,1.5vw,1.15rem);}
+  .wavescale{margin-top:3.4rem;display:flex;align-items:center;justify-content:center;gap:2.4rem;flex-wrap:wrap;}
+  .wavescale .u{display:flex;flex-direction:column;align-items:center;gap:0.8rem;}
+  .wavescale .g{color:var(--schaum);}
+  .wavescale .g svg{width:100%;height:100%;display:block;}
+  .wavescale .cap{font-size:0.58rem;letter-spacing:0.16em;text-transform:uppercase;color:rgba(245,241,233,0.5);}
+  .wavescale .sq{width:70px;height:70px;border-radius:18px;background:rgba(245,241,233,0.08);border:1px solid rgba(245,241,233,0.16);display:flex;align-items:center;justify-content:center;}
+  .wavescale .sq .g{width:42px;height:24px;}
+  .konstante .note{margin-top:3rem;font-size:0.82rem;color:rgba(245,241,233,0.6);max-width:52ch;margin-left:auto;margin-right:auto;line-height:1.6;}
 </style>
 </head>
 <body>
 
 <a class="back" href="index.html">← ATMEN</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="m-atem" viewBox="0 0 64 64"><path d="M6 40 H20 C25 40 27 20 32 20 S39 40 44 40 H58" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
 
 <!-- HERO -->
 <header class="hero">
@@ -96,7 +119,23 @@
   <div class="col-wide chead fade" style="max-width:720px;margin:0 auto;text-align:center;">
     <span class="eyebrow" style="display:block;">Die Regel hinter allem</span>
     <h2 class="display" style="margin:1.5rem 0 1.4rem;color:var(--schaum);">Wir werben gegen den flachen Atem.<br>Nie gegen eine andere Insel.</h2>
-    <p class="body" style="color:rgba(245,241,233,0.8);">Drei Stimmen tragen jedes Motiv: die <em>ehrliche</em> (unbequeme Wahrheit zuerst), die <em>Atem-Stimme</em> (leise Erlaubnis) und die <em>Zahl</em> (Beweis statt Adjektiv). Frech ja — gegen den Alltag, gegen uns selbst, gegen das Wetter. Nie gegen den Gast.</p>
+    <p class="body" style="color:rgba(245,241,233,0.8);">Drei Stimmen tragen jedes Motiv: die <em>ehrliche</em> (unbequeme Wahrheit zuerst), die <em>Atem-Stimme</em> (leise Erlaubnis) und die <em>Zahl</em> (Beweis statt Adjektiv). Frech ja — gegen den Alltag, gegen uns selbst, auch mal gegen das Wetter. Die Sonne feiern wir genauso ehrlich. Nie gegen den Gast.</p>
+  </div>
+</section>
+
+<!-- DIE KONSTANTE / EINE WELLE -->
+<section class="chapter konstante">
+  <div class="wrap fade">
+    <span class="eyebrow" style="display:block;color:rgba(245,241,233,0.5);">Die Konstante</span>
+    <h2 class="display big">Eine Welle.<br>Immer dieselbe.</h2>
+    <p class="lead">Das Zeichen ist keine Stimmung, sondern eine feste Form: die Atemlinie. Ob auf der Fähre, der Gästekarte, der App oder dem Becher — es ist überall exakt <em>diese</em> Welle, in jeder Größe identisch.</p>
+    <div class="wavescale">
+      <div class="u"><div class="g" style="width:26px;height:15px;"><svg><use href="#m-atem"/></svg></div><span class="cap">Bug</span></div>
+      <div class="u"><div class="g" style="width:56px;height:32px;"><svg><use href="#m-atem"/></svg></div><span class="cap">Klein</span></div>
+      <div class="u"><div class="g" style="width:120px;height:68px;"><svg><use href="#m-atem"/></svg></div><span class="cap">Groß</span></div>
+      <div class="u"><div class="sq"><div class="g"><svg><use href="#m-atem"/></svg></div></div><span class="cap">App-Icon</span></div>
+    </div>
+    <p class="note">Wichtig: In den fotorealistischen Moodbildern auf dieser Seite ist die Welle ein KI-Entwurf — sie variiert von Bild zu Bild. Verbindlich ist allein diese eine SVG-Marke. In der Reinzeichnung wird sie exakt so auf jedes Motiv gesetzt (Compositing), nicht neu gezeichnet. Als Erinnerung trägt jede Bildunterschrift hier bereits die echte Welle.</p>
   </div>
 </section>
 
@@ -105,9 +144,9 @@
   <div class="col-wide">
     <div class="chead fade"><span class="eyebrow">01 · Ankunft &amp; Anreise</span><h2 class="display" style="margin-top:1rem;">Die Reise ist der erste Programmpunkt.</h2></div>
     <div class="lbgrid fade">
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091256_9e6acf25-e282-42ff-a808-1f882063d628.png" alt=""><div class="c"><div class="t">Fähre · Deck</div><div class="l">„Legen Sie ab.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091259_622302ce-b1eb-4d20-8671-bdb89111a29a.png" alt=""><div class="c"><div class="t">Landungsbrücke · Willkommen</div><div class="l">„Heute: 0 µg Feinstaub. Bitte bedienen Sie sich.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091302_f7b5a17a-2694-4708-8069-4ffbc77908e6.png" alt=""><div class="c"><div class="t">Anleger · Bodenmarke</div><div class="l">„Sie sind da. Atmen.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091256_9e6acf25-e282-42ff-a808-1f882063d628.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Fähre · Deck</div><div class="l">„Legen Sie ab.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091259_622302ce-b1eb-4d20-8671-bdb89111a29a.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Landungsbrücke · Willkommen</div><div class="l">„Heute: 0 µg Feinstaub. Bitte bedienen Sie sich.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091302_f7b5a17a-2694-4708-8069-4ffbc77908e6.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Anleger · Bodenmarke</div><div class="l">„Sie sind da. Atmen.“</div></div></div>
     </div>
   </div>
 </section>
@@ -117,10 +156,10 @@
   <div class="col-wide">
     <div class="chead fade"><span class="eyebrow">02 · Leitsystem &amp; Beschilderung</span><h2 class="display" style="margin-top:1rem;">Wegweiser, die man zitieren will.</h2></div>
     <div class="lbgrid fade">
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091305_8af68eb5-16a8-4381-96d3-9a55a80897d9.png" alt=""><div class="c"><div class="t">Klippenweg · Emaille</div><div class="l">„Lange Anna — 400 Atemzüge.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091307_65f96d6d-a78d-4dc1-bf22-34f377e5ca8b.png" alt=""><div class="c"><div class="t">Atempunkt · Bank</div><div class="l">„Einatmen vier. Ausatmen sechs.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091310_10d5052e-d9c6-4a9c-86da-6afdf98c90e8.png" alt=""><div class="c"><div class="t">Oberland · Schild</div><div class="l">„Ab hier kein Empfang. Endlich.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091313_9ce76e69-81b2-4bd2-8662-d7a6d09a2c80.png" alt=""><div class="c"><div class="t">Hafen · Fischbude</div><div class="l">„Vorsicht: Möwen mit krimineller Energie.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091305_8af68eb5-16a8-4381-96d3-9a55a80897d9.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Klippenweg · Emaille</div><div class="l">„Lange Anna — 400 Atemzüge.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091307_65f96d6d-a78d-4dc1-bf22-34f377e5ca8b.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Atempunkt · Bank</div><div class="l">„Einatmen vier. Ausatmen sechs.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091310_10d5052e-d9c6-4a9c-86da-6afdf98c90e8.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Oberland · Schild</div><div class="l">„Ab hier kein Empfang. Endlich.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091313_9ce76e69-81b2-4bd2-8662-d7a6d09a2c80.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Hafen · Fischbude</div><div class="l">„Vorsicht: Möwen mit krimineller Energie.“</div></div></div>
     </div>
   </div>
 </section>
@@ -130,23 +169,37 @@
   <div class="col-wide">
     <div class="chead fade"><span class="eyebrow">03 · Strand &amp; Düne</span><h2 class="display" style="margin-top:1rem;">Karibik mit Reizklima.</h2></div>
     <div class="lbgrid fade">
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091315_769688d3-9e2b-4b3f-848e-67d06f4b4852.png" alt=""><div class="c"><div class="t">Düne · Beachflag</div><div class="l">„Sie müssen nichts.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091342_c18b91e5-fb18-4154-b74f-eb625bbd5e6a.png" alt=""><div class="c"><div class="t">Düne · Strandgut</div><div class="l">Sand, Petrol, ein Handtuch. Mehr Programm gibt es nicht.</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091346_139071bb-d6d0-42ad-b0e6-835a8e2678c5.png" alt=""><div class="c"><div class="t">Robbenstrand · Schild</div><div class="l">„Bitte leise. Hier wird geschlafen.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091315_769688d3-9e2b-4b3f-848e-67d06f4b4852.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Düne · Beachflag</div><div class="l">„Sie müssen nichts.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091342_c18b91e5-fb18-4154-b74f-eb625bbd5e6a.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Düne · Strandgut</div><div class="l">Sand, Petrol, ein Handtuch. Mehr Programm gibt es nicht.</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091346_139071bb-d6d0-42ad-b0e6-835a8e2678c5.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Robbenstrand · Schild</div><div class="l">„Bitte leise. Hier wird geschlafen.“</div></div></div>
     </div>
   </div>
 </section>
 
-<!-- 4 POSTKARTEN -->
+<!-- 4 GUTES WETTER -->
+<section class="chapter">
+  <div class="col-wide">
+    <div class="chead fade"><span class="eyebrow">04 · Gutes Wetter</span><h2 class="display" style="margin-top:1rem;">Die Sonne gibt's hier auch.</h2><p class="body" style="max-width:46ch;">Nicht immer Schietwetter: Helgoland kann blauen Himmel, warmen Sand und den Sonnenuntergang, für den man kein Foto schönfärben muss. Ehrlich schön statt Hochglanz-Lüge.</p></div>
+    <div class="lbgrid fade">
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_093218_b30dc8a8-a27c-408c-a425-1c38c4d34d48.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Düne · Sommertag</div><div class="l">„Sonne gibt's hier auch. Nur ehrlicher.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_092859_cde51fcf-1616-4fd0-b281-0af2723ebc16.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Hafen · Sonne</div><div class="l">„Blauer Himmel. Auch ungefiltert.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_092857_885fb129-49e6-40ea-ab06-6e15c610a348.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Klippe · Sonnenuntergang</div><div class="l">„Der beste Sonnenuntergang braucht keinen Filter.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_092900_5501fb2f-44b0-469f-b478-0b228e23f7ff.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Düne · Baden</div><div class="l">„Kurze Hose. Nordsee. Kein Auto.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_092902_f46d4375-8cd0-42e2-a23c-a009a2706427.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Düne · Sundowner</div><div class="l">„Windstill? Kommt vor. Genießen Sie's.“</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 POSTKARTEN -->
 <section class="chapter dark">
   <div class="col-wide">
-    <div class="chead fade" style="max-width:720px;"><span class="eyebrow">04 · Die Postkarten-Serie</span><h2 class="display" style="margin-top:1rem;color:var(--schaum);">Natur, ungefiltert.<br>Und man freut sich sogar drüber.</h2><p class="body" style="color:rgba(245,241,233,0.8);">Die frechste Ecke der Marke: kein Hochglanz, sondern echte Momente — Wind, Nässe, kaltes Wasser, eine Möwe mit Zielwasser. Wer das mitmacht, hat die Insel gespürt.</p></div>
+    <div class="chead fade" style="max-width:720px;"><span class="eyebrow">05 · Die Postkarten-Serie</span><h2 class="display" style="margin-top:1rem;color:var(--schaum);">Natur, ungefiltert.<br>Und man freut sich sogar drüber.</h2><p class="body" style="color:rgba(245,241,233,0.8);">Die frechste Ecke der Marke: kein Hochglanz, sondern echte Momente — Wind, Nässe, kaltes Wasser, eine Möwe mit Zielwasser. Wer das mitmacht, hat die Insel gespürt.</p></div>
     <div class="pcards fade">
-      <div class="pc"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091349_05aaae4b-9a0f-4f7a-a377-5df69a841605.png" alt=""><div class="c"><div class="l">„Frisch getauft.“</div><div class="t">Willkommen auf Helgoland</div></div></div>
-      <div class="pc"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091351_43b2afd5-c0e3-41e3-b290-3f7bdfc51751.png" alt=""><div class="c"><div class="l">„Der Wind. Inklusive.“</div><div class="t">Föhnfrei seit 1826</div></div></div>
-      <div class="pc"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091828_98f2022e-5592-49f4-a877-1cebdeaed342.png" alt=""><div class="c"><div class="l">„Kaltes Wasser diskutiert nicht.“</div><div class="t">Der ehrlichste Reset</div></div></div>
-      <div class="pc"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091353_25cdd3f0-7fc4-4c1c-b6a6-7cacea5f29fd.png" alt=""><div class="c"><div class="l">„Ihre Aussicht heute: exklusiv nichts.“</div><div class="t">Nebel ist auch ein Erlebnis</div></div></div>
-      <div class="pc"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091358_17735af6-d98b-46a7-b20c-43b06802a8c6.png" alt=""><div class="c"><div class="l">„Teilen ist nicht vorgesehen.“</div><div class="t">Der Möwe egal</div></div></div>
+      <div class="pc"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091349_05aaae4b-9a0f-4f7a-a377-5df69a841605.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="l">„Frisch getauft.“</div><div class="t">Willkommen auf Helgoland</div></div></div>
+      <div class="pc"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091351_43b2afd5-c0e3-41e3-b290-3f7bdfc51751.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="l">„Der Wind. Inklusive.“</div><div class="t">Föhnfrei seit 1826</div></div></div>
+      <div class="pc"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091828_98f2022e-5592-49f4-a877-1cebdeaed342.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="l">„Kaltes Wasser diskutiert nicht.“</div><div class="t">Der ehrlichste Reset</div></div></div>
+      <div class="pc"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091353_25cdd3f0-7fc4-4c1c-b6a6-7cacea5f29fd.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="l">„Ihre Aussicht heute: exklusiv nichts.“</div><div class="t">Nebel ist auch ein Erlebnis</div></div></div>
+      <div class="pc"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091358_17735af6-d98b-46a7-b20c-43b06802a8c6.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="l">„Teilen ist nicht vorgesehen.“</div><div class="t">Der Möwe egal</div></div></div>
     </div>
   </div>
 </section>
@@ -154,12 +207,12 @@
 <!-- 5 PLAKATE -->
 <section class="chapter">
   <div class="col-wide">
-    <div class="chead fade"><span class="eyebrow">05 · Plakate &amp; OOH · Quellmarkt Hamburg</span><h2 class="display" style="margin-top:1rem;">Werbung, die man zweimal liest.</h2></div>
+    <div class="chead fade"><span class="eyebrow">06 · Plakate &amp; OOH · Quellmarkt Hamburg</span><h2 class="display" style="margin-top:1rem;">Werbung, die man zweimal liest.</h2></div>
     <div class="lbgrid fade">
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_085753_41f892a1-e644-4c57-83c9-ea97d0f47f03.png" alt=""><div class="c"><div class="t">City-Light · Hamburg</div><div class="l">„Ihre Lunge hat angerufen.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091401_8190290d-50a6-4773-a0a7-4c7d64b1449c.png" alt=""><div class="c"><div class="t">U-Bahn · Hamburg</div><div class="l">„0 Autos. 0 Pollen. 0 Ausreden.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091426_23f28f25-c2db-400c-a5db-2994cc521b4c.png" alt=""><div class="c"><div class="t">DOOH · Pollen-Trigger, live</div><div class="l">„Birkenpollen heute: 8/8. Helgoland: 0/8.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091430_f2a3de30-c17b-4c83-af0d-202c8b9046c2.png" alt=""><div class="c"><div class="t">Fassade · Hamburg</div><div class="l">„Bei uns ist nichts los. Deshalb kommen Sie.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_085753_41f892a1-e644-4c57-83c9-ea97d0f47f03.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">City-Light · Hamburg</div><div class="l">„Ihre Lunge hat angerufen.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091401_8190290d-50a6-4773-a0a7-4c7d64b1449c.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">U-Bahn · Hamburg</div><div class="l">„0 Autos. 0 Pollen. 0 Ausreden.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091426_23f28f25-c2db-400c-a5db-2994cc521b4c.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">DOOH · Pollen-Trigger, live</div><div class="l">„Birkenpollen heute: 8/8. Helgoland: 0/8.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091430_f2a3de30-c17b-4c83-af0d-202c8b9046c2.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Fassade · Hamburg</div><div class="l">„Bei uns ist nichts los. Deshalb kommen Sie.“</div></div></div>
     </div>
   </div>
 </section>
@@ -167,11 +220,11 @@
 <!-- 6 GASTRO -->
 <section class="chapter sand">
   <div class="col-wide">
-    <div class="chead fade"><span class="eyebrow">06 · Gastronomie &amp; Bude</span><h2 class="display" style="margin-top:1rem;">Ehrlich bis auf die Zitrone.</h2></div>
+    <div class="chead fade"><span class="eyebrow">07 · Gastronomie &amp; Bude</span><h2 class="display" style="margin-top:1rem;">Ehrlich bis auf die Zitrone.</h2></div>
     <div class="lbgrid fade">
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_082048_b51ab9e9-7e89-414c-b0dc-326d3bc941ad.png" alt=""><div class="c"><div class="t">Hummerbude · Fenster</div><div class="l">„Von hier. Bis auf die Zitrone.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091435_c2b761aa-5636-46aa-bb9f-78e54a953ab0.png" alt=""><div class="c"><div class="t">Bude · Menükarte</div><div class="l">„Knieper · Schwarzbrot · Zeit.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091445_b1637f67-794f-4c6b-83ab-8480d571e795.png" alt=""><div class="c"><div class="t">Café · Emaillebecher</div><div class="l">„Atmen.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_082048_b51ab9e9-7e89-414c-b0dc-326d3bc941ad.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Hummerbude · Fenster</div><div class="l">„Von hier. Bis auf die Zitrone.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091435_c2b761aa-5636-46aa-bb9f-78e54a953ab0.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Bude · Menükarte</div><div class="l">„Knieper · Schwarzbrot · Zeit.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091445_b1637f67-794f-4c6b-83ab-8480d571e795.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Café · Emaillebecher</div><div class="l">„Atmen.“</div></div></div>
     </div>
   </div>
 </section>
@@ -179,11 +232,11 @@
 <!-- 7 GESUNDHEIT -->
 <section class="chapter">
   <div class="col-wide">
-    <div class="chead fade"><span class="eyebrow">07 · Gesundheitsinsel &amp; Spa</span><h2 class="display" style="margin-top:1rem;">Atmen. Diesmal auf Rezept.</h2></div>
+    <div class="chead fade"><span class="eyebrow">08 · Gesundheitsinsel &amp; Spa</span><h2 class="display" style="margin-top:1rem;">Atmen. Diesmal auf Rezept.</h2></div>
     <div class="lbgrid fade">
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091447_f5e56eb8-f583-4d49-b5ad-06ad128b5371.png" alt=""><div class="c"><div class="t">Spa · Mare Frisicum</div><div class="l">„Einatmen vier. Ausatmen sechs.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091449_2de6a7da-132a-4bb9-b9b9-377806d8365d.png" alt=""><div class="c"><div class="t">Kurmittelhaus · Eingang</div><div class="l">„Durchatmen. Auf Rezept.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091450_879ba512-8b68-4399-a7f8-f0f67cd11cbb.png" alt=""><div class="c"><div class="t">Atemwandern · Klippe</div><div class="l">„Reizklima. Amtlich.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091447_f5e56eb8-f583-4d49-b5ad-06ad128b5371.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Spa · Mare Frisicum</div><div class="l">„Einatmen vier. Ausatmen sechs.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091449_2de6a7da-132a-4bb9-b9b9-377806d8365d.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Kurmittelhaus · Eingang</div><div class="l">„Durchatmen. Auf Rezept.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091450_879ba512-8b68-4399-a7f8-f0f67cd11cbb.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Atemwandern · Klippe</div><div class="l">„Reizklima. Amtlich.“</div></div></div>
     </div>
   </div>
 </section>
@@ -191,11 +244,11 @@
 <!-- 8 MERCH -->
 <section class="chapter sand">
   <div class="col-wide">
-    <div class="chead fade"><span class="eyebrow">08 · Merch &amp; Alltag</span><h2 class="display" style="margin-top:1rem;">Zeilen, die man freiwillig trägt.</h2></div>
+    <div class="chead fade"><span class="eyebrow">09 · Merch &amp; Alltag</span><h2 class="display" style="margin-top:1rem;">Zeilen, die man freiwillig trägt.</h2></div>
     <div class="lbgrid fade">
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091507_48e87932-06e4-4c98-8113-92bdbbbc7a5e.png" alt=""><div class="c"><div class="t">Jutebeutel</div><div class="l">„Ich war kurz weg. Richtig weg.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091510_30019dcf-c382-438b-a800-cd0ad7e26187.png" alt=""><div class="c"><div class="t">T-Shirt</div><div class="l">„0 Autos · 0 Pollen · 1 Fels.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091513_d1165713-2d0b-42b9-984f-c39c850d62b9.png" alt=""><div class="c"><div class="t">Regenjacke</div><div class="l">„Schietwetter ist auch nur Wetter.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091507_48e87932-06e4-4c98-8113-92bdbbbc7a5e.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Jutebeutel</div><div class="l">„Ich war kurz weg. Richtig weg.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091510_30019dcf-c382-438b-a800-cd0ad7e26187.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">T-Shirt</div><div class="l">„0 Autos · 0 Pollen · 1 Fels.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091513_d1165713-2d0b-42b9-984f-c39c850d62b9.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Regenjacke</div><div class="l">„Schietwetter ist auch nur Wetter.“</div></div></div>
     </div>
   </div>
 </section>
@@ -203,10 +256,10 @@
 <!-- 9 DIGITAL -->
 <section class="chapter">
   <div class="col-wide">
-    <div class="chead fade"><span class="eyebrow">09 · Digital</span><h2 class="display" style="margin-top:1rem;">Ein Blick statt fünf Anrufe.</h2></div>
+    <div class="chead fade"><span class="eyebrow">10 · Digital</span><h2 class="display" style="margin-top:1rem;">Ein Blick statt fünf Anrufe.</h2></div>
     <div class="lbgrid fade">
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091516_21eb7589-0479-40f9-ac1a-06f8a8bb9b8e.png" alt=""><div class="c"><div class="t">App · Insel-Puls</div><div class="l">„Fährt der Kat? Ein Blick statt fünf Anrufe.“</div></div></div>
-      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091519_f5d1ba4d-c144-42bb-a575-ba852de72589.png" alt=""><div class="c"><div class="t">Gästekarte · HelgolandCard</div><div class="l">„Eine Karte. Die ganze Insel.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091516_21eb7589-0479-40f9-ac1a-06f8a8bb9b8e.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">App · Insel-Puls</div><div class="l">„Fährt der Kat? Ein Blick statt fünf Anrufe.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091519_f5d1ba4d-c144-42bb-a575-ba852de72589.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Gästekarte · HelgolandCard</div><div class="l">„Eine Karte. Die ganze Insel.“</div></div></div>
     </div>
   </div>
 </section>
@@ -223,7 +276,7 @@
 
 <footer>
   <p class="line">Zurück zur Marke: <a href="index.html">HELGOLAND · ATMEN</a></p>
-  <p class="fine">Kampagnen-Lookbook · rund 30 Motive über das ganze Spektrum. Alle Bilder als KI-Moodwelt (Higgsfield) erzeugt und als solche gekennzeichnet — erste Entwürfe zur Stimmung; Zeichen, Claims und Schriftbild werden in der Reinzeichnung final gesetzt. Der eine erlaubte Ausnahme-Moment (ein Launch-Stunt, der mit „den großen Inseln“ zwinkert) bleibt namenlos.</p>
+  <p class="fine">Kampagnen-Lookbook · rund 35 Motive über das ganze Spektrum, gutes Wetter wie schlechtes. Alle Bilder als KI-Moodwelt (Higgsfield) erzeugt und als solche gekennzeichnet — erste Entwürfe zur Stimmung. Die Welle in den Fotos variiert (KI-Skizze); verbindlich ist allein die eine SVG-Marke aus „Eine Welle. Immer dieselbe." — sie wird in der Reinzeichnung exakt so auf jedes Motiv gesetzt. Der eine erlaubte Ausnahme-Moment (ein Launch-Stunt, der mit „den großen Inseln“ zwinkert) bleibt namenlos.</p>
 </footer>
 
 <script>
