@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Helgoland — Atmen</title>
+<meta name="description" content="Deutschlands einzige Hochseeinsel. 70 Kilometer draußen beginnt etwas, das drinnen fehlt: Luft, Fels und Zeit. Anreise, Erleben, Veranstaltungen, Gesundheit — Helgoland." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%230B2D3C'/><path d='M9 40 H20 C25 40 27 22 32 22 S39 40 44 40 H55' fill='none' stroke='%23F5F1E9' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ==========================================================================
+   HELGOLAND — ATMEN
+   Markenwelt: Tiefseeblau · Felsenrot · Schaum. Signet: die Atemlinie.
+   Drei Stimmen, drei Schriften: Serif (Seele) · Sans (Klarheit) · Mono (Zahl).
+   ========================================================================== */
+:root{
+  --tiefsee:#0B2D3C; --tiefsee-dunkel:#06171F; --tiefsee-hell:#134155;
+  --papier:#F5F1E9; --sand:#EBE3D4;
+  --rot:#B23A2E; --rot-hell:#CC5142;
+  --gruen:#3F6B4A;
+  --tinte:#16242B; --grau:#7C8B91;
+  --schaum:#F5F1E9;
+  --linie:rgba(22,36,43,0.14); --linie-hell:rgba(245,241,233,0.16);
+
+  --f-serif:"Instrument Serif", Georgia, "Times New Roman", serif;
+  --f-sans:"Instrument Sans", system-ui, -apple-system, sans-serif;
+  --f-mono:"Space Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --wrap:1180px;
+  --gutter:clamp(20px,5vw,60px);
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--f-sans);background:var(--papier);color:var(--tinte);line-height:1.65;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+::selection{background:var(--tiefsee);color:var(--schaum)}
+
+/* ---------- type roles ---------- */
+.serif{font-family:var(--f-serif);font-weight:400;letter-spacing:-.01em;line-height:1.04}
+.mono{font-family:var(--f-mono)}
+.eyebrow{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--grau);font-weight:400}
+.eyebrow .dot{color:var(--rot)}
+h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-height:1.03;text-wrap:balance}
+.h-xl{font-size:clamp(2.6rem,8vw,6.2rem)}
+.h-lg{font-size:clamp(2.2rem,6vw,4.4rem)}
+.h-md{font-size:clamp(1.8rem,4vw,3rem)}
+.lede{font-family:var(--f-serif);font-size:clamp(1.5rem,3vw,2.3rem);line-height:1.35;letter-spacing:-.01em}
+.body{font-size:clamp(1rem,1.35vw,1.14rem);color:#3B4A50;line-height:1.7;max-width:52ch}
+.dark .body{color:rgba(245,241,233,0.82)}
+
+/* ---------- buttons ---------- */
+.btn{--bg:var(--tinte);--fg:var(--schaum);
+  display:inline-flex;align-items:center;gap:.7em;background:var(--bg);color:var(--fg);
+  font-family:var(--f-mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:1.05em 1.5em;border-radius:2px;transition:transform .5s var(--ease),background .3s,color .3s;will-change:transform}
+.btn svg{width:1.2em;height:1.2em;transition:transform .4s var(--ease)}
+.btn:hover svg{transform:translateX(4px)}
+.btn--rot{--bg:var(--rot);--fg:var(--schaum)}
+.btn--schaum{--bg:var(--schaum);--fg:var(--tinte)}
+.btn--ghost{--bg:transparent;--fg:currentColor;box-shadow:inset 0 0 0 1.5px currentColor}
+.btn--ghost:hover{--bg:currentColor}
+.btn--ghost:hover span{color:var(--tiefsee)}
+:focus-visible{outline:2px solid var(--rot);outline-offset:3px}
+
+/* ==========================================================================
+   ANIMATIONS — all breathing on the 10s cycle (4s ein · 6s aus)
+   ========================================================================== */
+@keyframes breathe{0%{letter-spacing:.1em;opacity:.78}40%{letter-spacing:.42em;opacity:1}100%{letter-spacing:.1em;opacity:.78}}
+@keyframes ring{0%{transform:scale(.5);opacity:.35}40%{transform:scale(1);opacity:.9}100%{transform:scale(.5);opacity:.35}}
+@keyframes lblIn{0%,44%{opacity:0}6%,38%{opacity:1}46%,100%{opacity:0}}
+@keyframes lblOut{0%,46%{opacity:0}54%,94%{opacity:1}100%{opacity:0}}
+@keyframes lineb{0%{transform:scaleX(.45);opacity:.4}40%{transform:scaleX(1);opacity:.9}100%{transform:scaleX(.45);opacity:.4}}
+@keyframes kenburns{0%{transform:scale(1.02)}100%{transform:scale(1.14)}}
+@keyframes marquee{to{transform:translateX(-50%)}}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition-duration:.01ms!important}
+  .rl i{transform:none!important}
+  .fade{opacity:1!important;transform:none!important}
+}
+
+/* reveal */
+.fade{opacity:0;transform:translateY(24px);transition:opacity 1s var(--ease),transform 1s var(--ease)}
+.fade.vis{opacity:1;transform:none}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}.d4{transition-delay:.4s}
+/* line reveal */
+.rl span{display:block;overflow:hidden}
+.rl i{display:block;font-style:normal;transform:translateY(112%);transition:transform .95s var(--ease)}
+.rl.vis i{transform:none}
+.rl.vis span:nth-child(2) i{transition-delay:.1s}
+.rl.vis span:nth-child(3) i{transition-delay:.2s}
+.rl.vis span:nth-child(4) i{transition-delay:.3s}
+
+/* ==========================================================================
+   CURSOR (breath dot)
+   ========================================================================== */
+.cursor{position:fixed;top:0;left:0;width:9px;height:9px;border-radius:50%;background:var(--rot);
+  pointer-events:none;z-index:120;transform:translate(-50%,-50%);transition:width .3s var(--ease),height .3s var(--ease),background .3s,opacity .3s;mix-blend-mode:normal;opacity:0}
+.cursor.on{opacity:1}
+.cursor.big{width:46px;height:46px;background:rgba(178,58,46,0.18);border:1px solid var(--rot)}
+@media(hover:none){.cursor{display:none}}
+
+/* progress horizon */
+.progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--rot);z-index:110;transition:width .1s linear}
+
+/* ==========================================================================
+   INSEL-PULS utility bar
+   ========================================================================== */
+.puls{position:fixed;top:0;left:0;right:0;z-index:60;background:var(--tiefsee-dunkel);color:rgba(245,241,233,0.82);
+  font-family:var(--f-mono);font-size:.68rem;letter-spacing:.08em;
+  display:flex;align-items:center;justify-content:center;gap:0;height:34px;overflow:hidden;
+  transition:transform .5s var(--ease)}
+.puls.hide{transform:translateY(-100%)}
+.puls .track{display:flex;align-items:center;gap:1.6rem;white-space:nowrap;padding:0 var(--gutter)}
+.puls .it{display:inline-flex;align-items:center;gap:.5em}
+.puls .k{color:var(--grau)}
+.puls .v{color:var(--schaum)}
+.puls .live{width:7px;height:7px;border-radius:50%;background:var(--rot);animation:pulse 2.4s ease-in-out infinite}
+.puls .sep{color:rgba(245,241,233,0.25)}
+@media(max-width:720px){.puls .track{gap:1.1rem;font-size:.62rem}.puls .hideS{display:none}}
+
+/* ==========================================================================
+   NAV
+   ========================================================================== */
+.nav{position:fixed;top:34px;left:0;right:0;z-index:55;display:flex;align-items:center;justify-content:space-between;
+  padding:16px var(--gutter);color:var(--schaum);
+  transition:top .5s var(--ease),padding .4s var(--ease),background .4s,box-shadow .4s,backdrop-filter .4s}
+.nav.up{top:0}
+.nav.solid{background:rgba(6,23,31,0.86);backdrop-filter:blur(12px);padding:11px var(--gutter);box-shadow:0 1px 0 var(--linie-hell)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .glyph{width:40px;height:26px;color:var(--schaum);transition:transform .6s var(--ease)}
+.brand:hover .glyph{transform:scale(1.06) translateY(-1px)}
+.brand .wm{font-family:var(--f-serif);font-size:1.15rem;letter-spacing:.24em;text-transform:uppercase;line-height:1}
+.brand .wm b{color:var(--rot);font-weight:400}
+.nav-links{display:flex;gap:2px;align-items:center}
+.nav-links a{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;padding:.6em .8em;color:rgba(245,241,233,0.8);position:relative;transition:color .3s}
+.nav-links a:hover{color:var(--schaum)}
+.nav-links a::after{content:"";position:absolute;left:.8em;right:.8em;bottom:.35em;height:1px;background:var(--rot);transform:scaleX(0);transform-origin:left;transition:transform .35s var(--ease)}
+.nav-links a:hover::after,.nav-links a.active::after{transform:scaleX(1)}
+.nav-right{display:flex;align-items:center;gap:14px}
+.nav .btn{padding:.7em 1.1em}
+.burger{display:none;flex-direction:column;gap:5px;padding:8px}
+.burger span{width:24px;height:2px;background:currentColor;transition:.3s var(--ease)}
+@media(max-width:1024px){.nav-links,.nav .btn{display:none}.burger{display:flex}}
+
+.mobile{position:fixed;inset:0;z-index:58;background:var(--tiefsee);color:var(--schaum);display:flex;flex-direction:column;justify-content:center;gap:2px;padding:var(--gutter);transform:translateX(100%);transition:transform .5s var(--ease)}
+.mobile.open{transform:none}
+.mobile a{font-family:var(--f-serif);font-size:2rem;padding:.28em 0;border-bottom:1px solid var(--linie-hell);display:flex;gap:1rem;align-items:baseline}
+.mobile a b{font-family:var(--f-mono);font-size:.8rem;color:var(--rot);font-weight:400}
+.mclose{position:absolute;top:20px;right:var(--gutter);font-family:var(--f-mono);font-size:.72rem;letter-spacing:.15em;text-transform:uppercase}
+
+/* ==========================================================================
+   HERO
+   ========================================================================== */
+.hero{position:relative;min-height:100svh;display:flex;align-items:flex-end;overflow:hidden;color:var(--schaum);background:var(--tiefsee)}
+.hero__bg{position:absolute;inset:0;z-index:0}
+.hero__bg img{width:100%;height:100%;object-fit:cover;transform:scale(1.05);animation:kenburns 34s ease-out forwards;will-change:transform}
+.hero__veil{position:absolute;inset:0;z-index:1;background:
+  linear-gradient(180deg,rgba(6,23,31,0.5) 0%,rgba(6,23,31,0.1) 30%,rgba(6,23,31,0.25) 60%,rgba(6,23,31,0.92) 100%)}
+.hero__inner{position:relative;z-index:2;width:100%;max-width:var(--wrap);margin:0 auto;padding:0 var(--gutter) clamp(52px,10vh,120px);
+  display:grid;grid-template-columns:1fr auto;align-items:end;gap:40px}
+.hero .over{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,241,233,0.7);margin-bottom:1.6rem;display:flex;gap:1rem;flex-wrap:wrap}
+.hero h1{font-size:clamp(3rem,9.5vw,8rem);line-height:.98;text-shadow:0 3px 50px rgba(6,23,31,.35)}
+.hero h1 .breath{display:inline-block;animation:breathe 10s ease-in-out infinite;font-style:italic}
+.hero .sub{margin:1.7rem 0 2rem;max-width:42ch;font-size:clamp(1.05rem,1.7vw,1.28rem);color:rgba(245,241,233,0.9)}
+.hero__cta{display:flex;gap:12px;flex-wrap:wrap}
+
+/* breathing guide */
+.guide{display:flex;flex-direction:column;align-items:center;gap:1rem;padding-bottom:.5rem}
+.guide__ring{width:132px;height:132px;position:relative;display:grid;place-items:center}
+.guide__ring i{position:absolute;inset:0;border:1.5px solid var(--schaum);border-radius:50%;animation:ring 10s ease-in-out infinite}
+.guide__ring i:nth-child(2){inset:22px;opacity:.5;animation-delay:0s}
+.guide__dot{width:7px;height:7px;border-radius:50%;background:var(--rot)}
+.guide__lbl{position:relative;height:1.2em;width:120px;text-align:center}
+.guide__lbl span{position:absolute;inset:0;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(245,241,233,0.85)}
+.guide__lbl .in{animation:lblIn 10s ease-in-out infinite}
+.guide__lbl .out{animation:lblOut 10s ease-in-out infinite}
+@media(max-width:860px){.hero__inner{grid-template-columns:1fr}.guide{display:none}}
+
+.scrollcue{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:3;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(245,241,233,0.55);display:flex;flex-direction:column;align-items:center;gap:8px}
+.scrollcue::after{content:"";width:1px;height:34px;background:linear-gradient(rgba(245,241,233,0.6),transparent)}
+
+/* ==========================================================================
+   MARQUEE
+   ========================================================================== */
+.marquee{background:var(--rot);color:var(--schaum);overflow:hidden;white-space:nowrap;border-block:1px solid rgba(245,241,233,0.18)}
+.marquee__track{display:inline-flex;gap:2.4rem;padding:13px 0;font-family:var(--f-mono);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;animation:marquee 42s linear infinite}
+.marquee__track span{display:inline-flex;gap:2.4rem;align-items:center}
+.marquee__track span::after{content:"◦";opacity:.6}
+
+/* ==========================================================================
+   SECTIONS
+   ========================================================================== */
+.wrap{max-width:var(--wrap);margin:0 auto;padding-inline:var(--gutter)}
+.section{padding:clamp(90px,15vh,180px) 0}
+.dark{background:var(--tiefsee);color:var(--schaum)}
+.dark .eyebrow{color:rgba(245,241,233,0.55)}
+.darker{background:var(--tiefsee-dunkel);color:var(--schaum)}
+.sand{background:var(--sand)}
+.head{max-width:62ch}
+.head .eyebrow{display:block;margin-bottom:1.4rem}
+.head .body{margin-top:1.6rem}
+
+/* breath divider */
+.divider{display:flex;justify-content:center;padding:clamp(60px,10vh,120px) 0;color:var(--tinte)}
+.dark .divider,.darker .divider{color:var(--schaum)}
+.divider svg{width:130px;height:44px;color:currentColor;opacity:.75}
+.divider path{stroke-dasharray:200;stroke-dashoffset:200;transition:stroke-dashoffset 1.6s var(--ease)}
+.divider.vis path{stroke-dashoffset:0}
+.divider .line{width:120px;height:1px;background:currentColor;transform-origin:center;animation:lineb 10s ease-in-out infinite;margin-top:20px}
+
+/* zustand */
+.zustand .rl{font-size:clamp(2rem,6vw,4.4rem);margin-bottom:2.4rem}
+.zustand .rl i{font-style:normal}
+
+/* insel / düne split */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,5vw,72px);align-items:center}
+.split.rev{direction:rtl}.split.rev>*{direction:ltr}
+.split__media{position:relative;overflow:hidden;border-radius:2px;aspect-ratio:4/3;background:var(--tiefsee)}
+.split__media img{width:100%;height:100%;object-fit:cover;transform:scale(1.06);transition:transform 1.4s var(--ease)}
+.split__media:hover img{transform:scale(1.12)}
+.split__media .glyph{position:absolute;left:18px;bottom:16px;width:44px;height:30px;color:var(--schaum);opacity:.9}
+.split .eyebrow{display:block;margin-bottom:1.2rem}
+.split h2{margin-bottom:1.2rem}
+.split .facts{display:flex;gap:2.2rem;margin-top:1.8rem;flex-wrap:wrap}
+.split .facts b{font-family:var(--f-mono);font-size:1.5rem;font-weight:700;display:block;color:var(--rot);font-variant-numeric:tabular-nums}
+.split .facts span{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--grau)}
+@media(max-width:820px){.split{grid-template-columns:1fr}.split.rev{direction:ltr}}
+
+/* zahlen band */
+.zahlen{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--linie-hell);border:1px solid var(--linie-hell)}
+.zahl{background:var(--tiefsee);padding:clamp(28px,4vw,48px) clamp(20px,3vw,36px)}
+.zahl b{font-family:var(--f-mono);font-weight:700;font-size:clamp(2.4rem,5vw,3.8rem);line-height:1;display:block;color:var(--schaum);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.zahl b .u{color:var(--rot);font-size:.5em}
+.zahl .l{margin-top:1rem;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--grau)}
+.zahl .d{margin-top:.5rem;font-size:.92rem;color:rgba(245,241,233,0.7);line-height:1.5}
+@media(max-width:760px){.zahlen{grid-template-columns:1fr 1fr}}
+@media(max-width:460px){.zahlen{grid-template-columns:1fr}}
+
+/* erleben bento */
+.bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:230px;gap:14px}
+.tile{position:relative;overflow:hidden;border-radius:2px;color:var(--schaum);background:var(--tiefsee);isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;padding:24px}
+.tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transform:scale(1.03);transition:transform 1.2s var(--ease)}
+.tile::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(6,23,31,0.15) 30%,rgba(6,23,31,0.86))}
+.tile:hover img{transform:scale(1.11)}
+.tile .k{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--rot-hell);position:absolute;top:22px;left:24px}
+.tile h3{font-size:1.6rem;line-height:1.05}
+.tile p{font-size:.9rem;color:rgba(245,241,233,0.82);margin-top:.4rem;max-width:32ch;max-height:0;opacity:0;overflow:hidden;transition:max-height .5s var(--ease),opacity .4s,margin .4s}
+.tile:hover p{max-height:90px;opacity:1;margin-top:.5rem}
+.tile.w2{grid-column:span 2}.tile.h2{grid-row:span 2}
+.tile--solid{background:var(--rot)}
+.tile--solid::after{display:none}
+.tile--solid .k{color:rgba(245,241,233,0.7)}
+.tile--solid h3{font-size:1.9rem}
+.tile--solid p{max-height:none;opacity:1;margin-top:.6rem}
+@media(max-width:900px){.bento{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.bento{grid-template-columns:1fr}.tile.w2,.tile.h2{grid-column:span 1;grid-row:span 1}}
+
+/* full-bleed scene */
+.scene{position:relative;min-height:88vh;display:flex;align-items:center;overflow:hidden;color:var(--schaum);background:var(--tiefsee)}
+.scene__bg{position:absolute;inset:0;z-index:0}
+.scene__bg img{width:100%;height:100%;object-fit:cover;transform:scale(1.03)}
+.scene.vis .scene__bg img{animation:kenburns 24s ease-out forwards}
+.scene__veil{position:absolute;inset:0;z-index:1;background:radial-gradient(120% 90% at 30% 50%,rgba(6,23,31,0.35),rgba(6,23,31,0.85))}
+.scene__inner{position:relative;z-index:2;width:100%;max-width:var(--wrap);margin:0 auto;padding:0 var(--gutter)}
+.scene .quote{font-family:var(--f-serif);font-style:italic;font-size:clamp(1.8rem,4.5vw,3.4rem);line-height:1.25;max-width:20ch}
+.scene .attr{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(245,241,233,0.6);margin-top:1.6rem}
+
+/* veranstaltungen */
+.events{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:clamp(36px,5vh,56px)}
+.event{background:var(--tiefsee);color:var(--schaum);border-radius:2px;padding:26px 24px;display:flex;flex-direction:column;gap:.6rem;min-height:270px;border-top:2px solid var(--rot);transition:transform .5s var(--ease)}
+.event:nth-child(2){border-top-color:var(--gruen)}
+.event:nth-child(3){border-top-color:var(--schaum)}
+.event:nth-child(4){border-top-color:var(--rot)}
+.event:hover{transform:translateY(-6px)}
+.event .season{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grau)}
+.event .date{font-family:var(--f-mono);font-size:.82rem;color:var(--rot-hell)}
+.event h3{font-size:1.55rem;margin-top:auto}
+.event p{font-size:.9rem;color:rgba(245,241,233,0.78)}
+@media(max-width:900px){.events{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.events{grid-template-columns:1fr}}
+
+/* gesundheit + pollen gauge */
+.gesund{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(32px,6vw,80px);align-items:center}
+@media(max-width:820px){.gesund{grid-template-columns:1fr}}
+.pollen{background:var(--tiefsee);border-radius:2px;padding:clamp(28px,4vw,44px);color:var(--schaum)}
+.pollen .pk{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grau);display:flex;justify-content:space-between}
+.pollen .pk .live{color:var(--rot)}
+.gauge{margin-top:1.6rem}
+.gauge+.gauge{margin-top:1.5rem}
+.gauge .top{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--f-mono);margin-bottom:.6rem}
+.gauge .top .place{font-size:.9rem;letter-spacing:.06em}
+.gauge .top .val{font-size:1.1rem;font-weight:700}
+.gauge .bar{height:12px;background:rgba(245,241,233,0.12);border-radius:2px;overflow:hidden}
+.gauge .fill{height:100%;width:0;border-radius:2px;transition:width 1.6s var(--ease)}
+.gauge.hh .fill{background:var(--rot)}
+.gauge.hgl .fill{background:var(--gruen);width:100%}
+.gauge.vis.hh .fill{width:100%}
+.gauge.vis.hgl .fill{width:6%}
+.pollen .note{margin-top:1.8rem;font-family:var(--f-serif);font-style:italic;font-size:1.15rem;color:rgba(245,241,233,0.9);line-height:1.4}
+
+/* anreise */
+.routes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:clamp(36px,5vh,56px)}
+.route{border:1px solid var(--linie);border-radius:2px;padding:30px 28px;background:#fff;transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
+.route:hover{transform:translateY(-5px);box-shadow:0 24px 50px -28px rgba(11,45,60,.4)}
+.route .no{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--rot)}
+.route h3{font-size:1.6rem;margin:.6rem 0 .5rem}
+.route p{font-size:.95rem;color:#54636A}
+.route .meta{display:flex;gap:1.6rem;margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--linie);font-family:var(--f-mono)}
+.route .meta b{font-size:1.05rem;display:block;color:var(--tinte)}
+.route .meta span{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--grau)}
+@media(max-width:820px){.routes{grid-template-columns:1fr}}
+
+/* stay / cta */
+.stay{position:relative;overflow:hidden;color:var(--schaum);background:var(--tiefsee-dunkel)}
+.stay__bg{position:absolute;inset:0;z-index:0;opacity:.42}
+.stay__bg img{width:100%;height:100%;object-fit:cover}
+.stay__veil{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(6,23,31,0.7),rgba(6,23,31,0.92))}
+.stay__inner{position:relative;z-index:2;text-align:center;max-width:680px;margin:0 auto;padding:clamp(90px,15vh,170px) var(--gutter)}
+.stay h2{font-size:clamp(2.6rem,7vw,5rem)}
+.stay .breath{display:inline-block;animation:breathe 10s ease-in-out infinite;font-style:italic}
+.stay p{margin:1.4rem auto 2.2rem;max-width:44ch;color:rgba(245,241,233,0.86)}
+.signup{display:flex;gap:10px;max-width:440px;margin:0 auto;flex-wrap:wrap;justify-content:center}
+.signup input{flex:1;min-width:200px;padding:1.05em 1.3em;border-radius:2px;border:1px solid rgba(245,241,233,0.32);background:rgba(245,241,233,0.08);color:var(--schaum);font-family:var(--f-mono);font-size:.82rem}
+.signup input::placeholder{color:rgba(245,241,233,0.55)}
+.signup .note{flex-basis:100%;font-family:var(--f-mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,233,0.5);margin-top:8px}
+
+/* footer */
+.footer{background:var(--tiefsee-dunkel);color:rgba(245,241,233,0.7);padding:clamp(70px,10vh,120px) 0 40px}
+.footer__grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px;padding-bottom:52px;border-bottom:1px solid var(--linie-hell)}
+.footer .brand{margin-bottom:16px}
+.footer__intro p{max-width:32ch;font-size:.95rem}
+.footer__coord{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;color:var(--grau);margin-top:16px}
+.footer h5{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--schaum);margin-bottom:16px;font-weight:400}
+.footer ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+.footer ul a{font-size:.92rem;transition:color .3s,padding-left .3s}
+.footer ul a:hover{color:var(--schaum);padding-left:4px}
+.footer__bottom{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding-top:24px;font-family:var(--f-mono);font-size:.66rem;letter-spacing:.06em;color:var(--grau)}
+@media(max-width:900px){.footer__grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.footer__grid{grid-template-columns:1fr}}
+.disclaimer{background:#040f14;color:var(--grau);text-align:center;font-family:var(--f-mono);font-size:.64rem;letter-spacing:.06em;padding:14px var(--gutter);line-height:1.7}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor" aria-hidden="true"></div>
+<div class="progress" id="progress"></div>
+
+<!-- ============ INSEL-PULS ============ -->
+<div class="puls" id="puls" aria-hidden="true">
+  <div class="track">
+    <span class="it"><span class="live"></span><span class="v">Insel-Puls</span></span>
+    <span class="sep">·</span>
+    <span class="it"><span class="k">Wetter</span><span class="v" id="pWetter">9°C · klar</span></span>
+    <span class="sep">·</span>
+    <span class="it hideS"><span class="k">Wind</span><span class="v">5 Bft · NW</span></span>
+    <span class="sep hideS">·</span>
+    <span class="it"><span class="k">Halunder&nbsp;Jet</span><span class="v" id="pJet">ab 09:00</span></span>
+    <span class="sep">·</span>
+    <span class="it hideS"><span class="k">Seegang</span><span class="v">ruhig</span></span>
+    <span class="sep hideS">·</span>
+    <span class="it"><span class="k">Pollen</span><span class="v">0/8</span></span>
+    <span class="sep">·</span>
+    <span class="it"><span class="k">Webcam</span><span class="v">● live</span></span>
+  </div>
+</div>
+
+<!-- ============ NAV ============ -->
+<nav class="nav" id="nav">
+  <a class="brand" href="#top" data-cursor>
+    <svg class="glyph" viewBox="0 0 64 40" aria-hidden="true"><path d="M4 32 H20 C25 32 27 10 32 10 S39 32 44 32 H60" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span class="wm">Helgo<b>land</b></span>
+  </a>
+  <div class="nav-links" id="navLinks">
+    <a href="#insel">Die Insel</a>
+    <a href="#erleben">Erleben</a>
+    <a href="#veranstaltungen">Veranstaltungen</a>
+    <a href="#gesundheit">Gesundheit</a>
+    <a href="#anreise">Anreise</a>
+    <a href="#unterkunft">Unterkünfte</a>
+  </div>
+  <div class="nav-right">
+    <a href="#anreise" class="btn btn--rot" data-cursor><span>Anreise</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="burger" id="burger" aria-label="Menü" aria-expanded="false"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="mobile" id="mobile">
+  <button class="mclose" id="mclose">schließen ✕</button>
+  <a href="#insel"><b>01</b>Die Insel</a>
+  <a href="#erleben"><b>02</b>Erleben</a>
+  <a href="#veranstaltungen"><b>03</b>Veranstaltungen</a>
+  <a href="#gesundheit"><b>04</b>Gesundheit</a>
+  <a href="#anreise"><b>05</b>Anreise</a>
+  <a href="#unterkunft"><b>06</b>Unterkünfte</a>
+</div>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <div class="hero__bg">
+    <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072813_e70e9dbf-8782-4321-9932-d841865c7d8f.png" alt="Die rote Felsküste Helgolands in der Nordsee bei ruhiger See" fetchpriority="high" />
+  </div>
+  <div class="hero__veil"></div>
+  <div class="hero__inner">
+    <div>
+      <div class="over"><span>Die einzige deutsche Hochseeinsel</span><span>54°11′N&nbsp;·&nbsp;7°53′E</span></div>
+      <h1>Deutschlands<br/>tiefster <span class="breath">Atemzug.</span></h1>
+      <p class="sub">Siebzig Kilometer draußen beginnt etwas, das drinnen fehlt. Kein Auto, kein Durchgangsverkehr, kein Drüben. Nur Luft, Fels und Zeit.</p>
+      <div class="hero__cta">
+        <a href="#insel" class="btn btn--schaum" data-cursor><span>Die Insel entdecken</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="#anreise" class="btn btn--ghost" data-cursor><span>Anreise planen</span></a>
+      </div>
+    </div>
+    <div class="guide" aria-hidden="true">
+      <div class="guide__ring"><i></i><i></i><span class="guide__dot"></span></div>
+      <div class="guide__lbl"><span class="in">Einatmen</span><span class="out">Ausatmen</span></div>
+    </div>
+  </div>
+  <div class="scrollcue">weiter</div>
+</header>
+
+<!-- ============ MARQUEE ============ -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee__track">
+    <span>0 Autos</span><span>0 Pollen</span><span>0 Ausreden</span><span>1 Fels</span><span>70 km Abstand</span><span>200 Jahre Seebad</span>
+    <span>0 Autos</span><span>0 Pollen</span><span>0 Ausreden</span><span>1 Fels</span><span>70 km Abstand</span><span>200 Jahre Seebad</span>
+  </div>
+</div>
+
+<!-- ============ DER ZUSTAND ============ -->
+<section class="section dark zustand">
+  <div class="wrap">
+    <span class="eyebrow fade"><span class="dot">■</span>&nbsp; Willkommen</span>
+    <h2 class="rl" style="margin-top:1.6rem">
+      <span><i>Man kommt nicht her,</i></span>
+      <span><i>um etwas zu sehen.</i></span>
+      <span><i>Man kommt her, um</i></span>
+      <span><i>etwas loszuwerden.</i></span>
+    </h2>
+    <p class="body fade d2" style="margin-top:.5rem">Helgoland ist keine Postkarte, die man abhakt. Die Insel ist ein Ortswechsel im Kopf — rau, klar, ehrlich. Wir versprechen nichts. Und halten es.</p>
+  </div>
+</section>
+
+<div class="divider" data-draw>
+  <svg viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
+
+<!-- ============ DIE INSEL ============ -->
+<section class="section" id="insel">
+  <div class="wrap">
+    <div class="split">
+      <div class="split__media fade" data-cursor>
+        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072819_88a80f2d-261b-4625-a53e-a3e42fc55bd8.png" alt="Der rote Buntsandsteinfels Helgolands über der Nordsee" />
+        <svg class="glyph" viewBox="0 0 64 64" aria-hidden="true"><path d="M7 58 L7 33 L21 28 L23 58 Z" fill="currentColor"/><path d="M35 58 L37 24 L41 15 L45 26 L43 58 Z" fill="currentColor"/></svg>
+      </div>
+      <div class="fade d1">
+        <span class="eyebrow">Die Hauptinsel</span>
+        <h2 class="h-md">Der einzige Fels,<br/>der aus dem Meer wächst.</h2>
+        <p class="body">Rotes Buntsandstein-Land, oben grün, unten Hafen. Der Klippenrandweg führt in vierhundert Atemzügen zur Langen Anna — dem freistehenden Felsturm, den keine andere deutsche Küste besitzt. Kein Auto stört den Weg, nur der Wind.</p>
+        <div class="facts">
+          <div><b data-count="47" data-suffix="m">0</b><span>Lange Anna</span></div>
+          <div><b data-count="61" data-suffix="m">0</b><span>höchste Klippe</span></div>
+          <div><b data-count="0">0</b><span>Autos</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="split rev" style="margin-top:clamp(48px,8vh,110px)">
+      <div class="split__media fade" data-cursor>
+        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091315_769688d3-9e2b-4b3f-848e-67d06f4b4852.png" alt="Der weiße Sandstrand der Helgoländer Düne mit türkisem Wasser" />
+        <svg class="glyph" viewBox="0 0 64 64" aria-hidden="true"><g fill="currentColor"><circle cx="32" cy="15" r="2.6"/><circle cx="25" cy="27" r="2.6"/><circle cx="39" cy="27" r="2.6"/><circle cx="18" cy="39" r="2.6"/><circle cx="32" cy="39" r="2.6"/><circle cx="46" cy="39" r="2.6"/><circle cx="12" cy="51" r="2.6"/><circle cx="25" cy="51" r="2.6"/><circle cx="39" cy="51" r="2.6"/><circle cx="52" cy="51" r="2.6"/></g></svg>
+      </div>
+      <div class="fade d1">
+        <span class="eyebrow">Die Düne</span>
+        <h2 class="h-md">Karibik<br/>mit Reizklima.</h2>
+        <p class="body">Ein paar Fährminuten weiter liegt die Badedüne: heller Sand, klares Wasser — und im Winter über tausend Kegelrobben, die hier ihre Jungen zur Welt bringen. Deutschlands größtes Robbenwunder, mitten in der Nordsee.</p>
+        <div class="facts">
+          <div><b data-count="1049">0</b><span>Robbengeburten / Saison</span></div>
+          <div><b data-count="2" data-suffix="km²">0</b><span>weißer Sand</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ZAHLEN ============ -->
+<section class="section darker">
+  <div class="wrap">
+    <div class="head fade">
+      <span class="eyebrow">Die Zahl-Stimme · Beweise statt Adjektive</span>
+      <h2 class="h-lg" style="margin-top:1.4rem;color:var(--schaum)">Diese Insel hat<br/>kein Ideenproblem.</h2>
+    </div>
+    <div class="zahlen" style="margin-top:clamp(40px,6vh,64px)">
+      <div class="zahl fade"><b data-count="1049">0</b><div class="l">Kegelrobben</div><div class="d">Geburten in einer Saison — Rekord. Ein Naturschauspiel ohne Gegenstück.</div></div>
+      <div class="zahl fade d1"><b data-count="1826">0</b><div class="l">Seit … Seebad</div><div class="d">Zweihundert Jahre Heilbad. Pollenarme Hochseeluft, amtlich.</div></div>
+      <div class="zahl fade d2"><b data-count="1925">0</b><div class="l">Heisenberg</div><div class="d">Hier fand er die Quantenmechanik. Hundert Jahre Weltniveau.</div></div>
+      <div class="zahl fade"><b data-count="70"><span class="u">km</span></b><div class="l">Abstand</div><div class="d">Siebzig Kilometer Wasser zwischen Alltag und Atemzug.</div></div>
+      <div class="zahl fade d1"><b data-count="2018">0</b><div class="l">Kulturerbe</div><div class="d">Die Börteboote — immaterielles Erbe, das keine Küste kopieren kann.</div></div>
+      <div class="zahl fade d2"><b data-count="400"><span class="u">×</span></b><div class="l">Atemzüge</div><div class="d">So weit ist es über den Klippenrandweg zur Langen Anna.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ERLEBEN ============ -->
+<section class="section sand" id="erleben">
+  <div class="wrap">
+    <div class="head fade">
+      <span class="eyebrow">Erleben · Was die Insel trägt</span>
+      <h2 class="h-lg" style="margin-top:1.4rem">Wenig los.<br/>Das ist kein Versehen.</h2>
+      <p class="body">Kein Programm, das man abarbeitet. Sondern Dinge, die man nur hier tut — und danach anders atmet.</p>
+    </div>
+    <div class="bento fade" style="margin-top:clamp(40px,6vh,60px)">
+      <div class="tile w2 h2" data-cursor>
+        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072826_d522c419-feab-4528-acc8-29b3d1be4b5d.png" alt="Klippenrandweg über der Nordsee" />
+        <span class="k">Am Klippenrand</span>
+        <h3>Der Klippenrandweg</h3>
+        <p>Einmal um das grüne Oberland, immer das Meer im Blick, bis zur Langen Anna. Ab hier kein Empfang. Endlich.</p>
+      </div>
+      <div class="tile" data-cursor>
+        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091346_139071bb-d6d0-42ad-b0e6-835a8e2678c5.png" alt="Kegelrobbe am Strand der Düne" />
+        <span class="k">Auf der Düne</span>
+        <h3>Robben sehen</h3>
+        <p>Auge in Auge, mit Abstand. Bitte leise — hier wird geschlafen.</p>
+      </div>
+      <div class="tile" data-cursor>
+        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072831_17beea67-1acc-4d16-9279-801c9a6d07e2.png" alt="Der belebte Lummenfelsen" />
+        <span class="k">Der Vogelfelsen</span>
+        <h3>Lummenfelsen</h3>
+        <p>Tausend Vögel als Muster. Der lauteste Ort der Nordsee.</p>
+      </div>
+      <div class="tile w2" data-cursor>
+        <img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072821_fe0bba4c-254f-4250-8050-91304c1e7d3d.png" alt="Bunte Hummerbuden am Hafen" />
+        <span class="k">Zollfrei &amp; Bude</span>
+        <h3>Budenwandern</h3>
+        <p>Ein Gang pro Hummerbude, an Sommerabenden wird die Budenzeile zur Menü-Meile. Zollfrei sowieso.</p>
+      </div>
+      <div class="tile--solid tile" data-cursor>
+        <span class="k">Unter der Insel</span>
+        <h3>Bunker &amp;<br/>Bluehouse</h3>
+        <p>Kilometerlange Tunnel, der „Big Bang“ von 1947 — und darüber 80.000 Liter Nordsee in der neuen AWI-Meeresausstellung.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider" data-draw>
+  <svg viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
+
+<!-- ============ SCENE — BÖRTEBOOTE ============ -->
+<section class="scene" data-scene>
+  <div class="scene__bg"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_072833_2fe145b3-fe9f-4c1b-9405-451325d9de14.png" alt="Traditionelle Börteboote vor Helgoland" /></div>
+  <div class="scene__veil"></div>
+  <div class="scene__inner">
+    <p class="quote fade">„Was trägt, bleibt.<br/>Dazwischen wächst Neues.“</p>
+    <div class="attr fade d1">Die Börteboote · Ausbooten seit 1826 · Immaterielles Kulturerbe</div>
+  </div>
+</section>
+
+<!-- ============ VERANSTALTUNGEN ============ -->
+<section class="section dark" id="veranstaltungen">
+  <div class="wrap">
+    <div class="head fade">
+      <span class="eyebrow">Veranstaltungen · Aus einer Saison wird ein Jahr</span>
+      <h2 class="h-lg" style="margin-top:1.4rem;color:var(--schaum)">Das Jahr, das atmet.</h2>
+    </div>
+    <div class="events fade">
+      <div class="event">
+        <span class="season">Winter</span>
+        <span class="date">Nov – Jan</span>
+        <h3>Robbenzeit</h3>
+        <p>Über tausend Geburten auf der Düne. Wintererlebnispfad, Fotobuchten, Ranger. Staunen in der stillsten Zeit.</p>
+      </div>
+      <div class="event">
+        <span class="season">Frühjahr</span>
+        <span class="date">Mär – Mai</span>
+        <h3>Durchatmen</h3>
+        <p>Die Gesundheitswochen, wenn drüben die Pollen fliegen. Dazu die Lummentage am Vogelfelsen.</p>
+      </div>
+      <div class="event">
+        <span class="season">Sommer</span>
+        <span class="date">Jun – Aug</span>
+        <h3>Die Lange Tafel</h3>
+        <p>Eine weiße Tafel vom Unterland bis zur Landungsbrücke. Budenwandern, Hafenklang, Nordseewoche.</p>
+      </div>
+      <div class="event">
+        <span class="season">Herbst</span>
+        <span class="date">Sep – Okt</span>
+        <h3>Knieper-Wochen</h3>
+        <p>Ein Gericht, das nur dieser Insel gehört — zum Saisonausklang. Dazu der große Vogelzug.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GESUNDHEIT + POLLEN ============ -->
+<section class="section" id="gesundheit">
+  <div class="wrap gesund">
+    <div class="fade">
+      <span class="eyebrow" style="display:block;margin-bottom:1.2rem">Gesundheit · 200 Jahre Heilbad</span>
+      <h2 class="h-md">Atmen.<br/>Diesmal auf Rezept.</h2>
+      <p class="body" style="margin-top:1.2rem">Jeden Frühling niest sich halb Deutschland durch die Pollen. Siebzig Kilometer draußen ist die Luft frei davon — seit zweihundert Jahren Heilbad, so aktuell wie nie. Mare Frisicum Spa, Seewasserkur, Atemwandern am Klippenrand.</p>
+      <a href="#anreise" class="btn btn--rot" style="margin-top:2rem" data-cursor><span>Gesundheitswochen ansehen</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+    <div class="pollen fade d1" data-pollen>
+      <div class="pk"><span>Pollenbelastung heute</span><span class="live">● live</span></div>
+      <div class="gauge hh">
+        <div class="top"><span class="place">Hamburg</span><span class="val">8/8</span></div>
+        <div class="bar"><div class="fill"></div></div>
+      </div>
+      <div class="gauge hgl">
+        <div class="top"><span class="place">Helgoland</span><span class="val">0/8</span></div>
+        <div class="bar"><div class="fill"></div></div>
+      </div>
+      <p class="note">Ihre Lunge hat angerufen.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ANREISE ============ -->
+<section class="section sand" id="anreise">
+  <div class="wrap">
+    <div class="head fade">
+      <span class="eyebrow">Anreise · Die Reise ist der erste Programmpunkt</span>
+      <h2 class="h-lg" style="margin-top:1.4rem">Legen Sie ab.</h2>
+      <p class="body">Ob schnell per Katamaran oder gemütlich mit dem Seebäderschiff — das letzte Stück an Land gehört einer zweihundert Jahre alten Tradition.</p>
+    </div>
+    <div class="routes fade">
+      <div class="route" data-cursor>
+        <div class="no">Route 01 · schnell</div>
+        <h3>Halunder Jet<br/>ab Hamburg</h3>
+        <p>Elegant die Elbe hinunter und aufs offene Meer — mitten aus der Stadt auf die Insel.</p>
+        <div class="meta"><div><b>≈ 4 Std</b><span>Reisezeit</span></div><div><b>tägl.</b><span>Saison</span></div></div>
+      </div>
+      <div class="route" data-cursor>
+        <div class="no">Route 02 · gemütlich</div>
+        <h3>Seebäderschiff<br/>ab Cuxhaven</h3>
+        <p>Deck, Wind, Möwen und der erste Blick auf die rote Silhouette am Horizont.</p>
+        <div class="meta"><div><b>≈ 2,5 Std</b><span>Reisezeit</span></div><div><b>Tagestour</b><span>oder länger</span></div></div>
+      </div>
+      <div class="route" data-cursor>
+        <div class="no">Route 03 · Tradition</div>
+        <h3>Ausbooten<br/>per Börteboot</h3>
+        <p>Kein großes Schiff legt direkt an — offene Holzboote bringen Sie an Land. Seit 1826.</p>
+        <div class="meta"><div><b>1826</b><span>seit</span></div><div><b>Erbe</b><span>Kulturerbe</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UNTERKÜNFTE / STAY / CTA ============ -->
+<section class="stay" id="unterkunft">
+  <div class="stay__bg"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_065915_785d4f3a-7dda-4a5d-af76-ff38d906f931.png" alt="Stille See vor Helgoland in der Dämmerung" /></div>
+  <div class="stay__veil"></div>
+  <div class="stay__inner fade">
+    <span class="eyebrow" style="display:block;margin-bottom:1.4rem">Bleiben · Tun Sie nichts. Wir passen auf.</span>
+    <h2>Einmal richtig<br/><span class="breath">weg.</span></h2>
+    <p>Vom Reetdachhotel bis zur Kapitänswohnung über dem Hafen: Wer über Nacht bleibt, bekommt die Insel, die die Tagesgäste nie sehen — den leeren Klippenweg im Morgenlicht, die Sterne ohne eine einzige Straßenlaterne.</p>
+    <div class="signup">
+      <a href="#anreise" class="btn btn--schaum" data-cursor><span>Unterkunft finden</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <a href="#top" class="btn btn--ghost" data-cursor style="color:var(--schaum)"><span>Prospekt bestellen</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NEWSLETTER ============ -->
+<section class="section darker">
+  <div class="wrap" style="text-align:center;max-width:640px">
+    <span class="eyebrow fade" style="display:block;margin-bottom:1.4rem">Insel-Post</span>
+    <h2 class="h-md fade d1" style="color:var(--schaum)">Wir schreiben selten.<br/>Und nie ohne Grund.</h2>
+    <p class="body fade d2" style="margin:1.2rem auto 2rem;color:rgba(245,241,233,0.82)">Neue Veranstaltungen, ehrliche Anreise-Tipps, der Robbenzähler im Winter. Kein Marktgeschrei — nur Insel.</p>
+    <form class="signup fade d2" onsubmit="event.preventDefault();this.querySelector('input').value='';this.querySelector('.btn span').textContent='Moin — dabei.';">
+      <input type="email" required placeholder="Ihre E-Mail" aria-label="E-Mail" />
+      <button class="btn btn--rot" type="submit" data-cursor><span>Abonnieren</span></button>
+      <span class="note">Konzeptstudie · Formular ohne Funktion</span>
+    </form>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__grid">
+      <div class="footer__intro">
+        <a class="brand" href="#top" data-cursor>
+          <svg class="glyph" viewBox="0 0 64 40" aria-hidden="true"><path d="M4 32 H20 C25 32 27 10 32 10 S39 32 44 32 H60" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="wm">Helgo<b>land</b></span>
+        </a>
+        <p>Die einzige deutsche Hochseeinsel. Siebzig Kilometer draußen — und drinnen ein anderer Takt.</p>
+        <div class="footer__coord">54°11′N · 7°53′E · Nordsee</div>
+      </div>
+      <div>
+        <h5>Reise</h5>
+        <ul>
+          <li><a href="#anreise">Anreise</a></li>
+          <li><a href="#unterkunft">Unterkünfte</a></li>
+          <li><a href="#erleben">Zollfrei einkaufen</a></li>
+          <li><a href="#anreise">Prospekt bestellen</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Insel</h5>
+        <ul>
+          <li><a href="#insel">Die Insel &amp; Düne</a></li>
+          <li><a href="#erleben">Erleben</a></li>
+          <li><a href="#veranstaltungen">Veranstaltungen</a></li>
+          <li><a href="#gesundheit">Gesundheit</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Service</h5>
+        <ul>
+          <li><a href="#top">Webcams</a></li>
+          <li><a href="#top">Wetter &amp; Seegang</a></li>
+          <li><a href="#top">Insel-Puls App</a></li>
+          <li><a href="#top">Kontakt</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <div>© 2026 Helgoland — Atmen · Konzeptstudie zur Markenwelt</div>
+      <div>Grön is dat Land · rot is de Kant · witt is de Sand</div>
+    </div>
+  </div>
+</footer>
+<div class="disclaimer">Konzeptstudie zur Marke „ATMEN“ · kein offizieller Auftritt. Bildwelten KI-generiert (Higgsfield) und als solche gekennzeichnet · Insel-Puls- und Pollenwerte beispielhaft.</div>
+
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- cursor (breath dot) ---- */
+  var cur = document.getElementById('cursor');
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches && !reduce){
+    var cx=innerWidth/2, cy=innerHeight/2, tx=cx, ty=cy;
+    addEventListener('mousemove',function(e){tx=e.clientX;ty=e.clientY;cur.classList.add('on');});
+    (function loop(){cx+=(tx-cx)*.2;cy+=(ty-cy)*.2;cur.style.transform='translate('+cx+'px,'+cy+'px) translate(-50%,-50%)';requestAnimationFrame(loop);})();
+    document.querySelectorAll('a,button,[data-cursor]').forEach(function(el){
+      el.addEventListener('mouseenter',function(){cur.classList.add('big');});
+      el.addEventListener('mouseleave',function(){cur.classList.remove('big');});
+    });
+  }
+
+  /* ---- puls + nav + progress ---- */
+  var puls=document.getElementById('puls'), nav=document.getElementById('nav'), prog=document.getElementById('progress');
+  var links=[].slice.call(document.querySelectorAll('#navLinks a'));
+  var secs=[].slice.call(document.querySelectorAll('section[id],header[id]'));
+  function onScroll(){
+    var y=scrollY;
+    puls.classList.toggle('hide', y>60);
+    nav.classList.toggle('up', y>60);
+    nav.classList.toggle('solid', y>60);
+    var h=document.documentElement.scrollHeight-innerHeight;
+    prog.style.width=(h>0?y/h*100:0)+'%';
+    var cur='';
+    secs.forEach(function(s){ if(y>=s.offsetTop-140) cur=s.id; });
+    links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href')==='#'+cur); });
+  }
+  addEventListener('scroll',onScroll,{passive:true}); onScroll();
+
+  /* ---- mobile menu ---- */
+  var burger=document.getElementById('burger'), mob=document.getElementById('mobile'), mclose=document.getElementById('mclose');
+  function setMenu(o){mob.classList.toggle('open',o);burger.setAttribute('aria-expanded',o);}
+  burger.addEventListener('click',function(){setMenu(true);});
+  mclose.addEventListener('click',function(){setMenu(false);});
+  mob.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){setMenu(false);});});
+
+  /* ---- reveal (fade + line + divider + scene) ---- */
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target);}});},{threshold:.16,rootMargin:'0px 0px -6% 0px'});
+  document.querySelectorAll('.fade,.rl,[data-draw]').forEach(function(el){io.observe(el);});
+  var sio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('vis');});},{threshold:.2});
+  document.querySelectorAll('[data-scene]').forEach(function(el){sio.observe(el);});
+
+  /* ---- counters ---- */
+  function fmt(n){return n.toLocaleString('de-DE');}
+  function run(el){
+    var t=+el.dataset.count, suf=el.dataset.suffix||'', dur=1500, s=null;
+    var hadU=el.querySelector('.u'); var uHTML=hadU?hadU.outerHTML:'';
+    if(reduce){el.innerHTML=fmt(t)+(uHTML||suf);return;}
+    function step(ts){if(!s)s=ts;var p=Math.min((ts-s)/dur,1);var v=Math.round(t*(1-Math.pow(1-p,3)));el.innerHTML=fmt(v)+(uHTML||suf);if(p<1)requestAnimationFrame(step);}
+    requestAnimationFrame(step);
+  }
+  var cio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){run(e.target);cio.unobserve(e.target);}});},{threshold:.6});
+  document.querySelectorAll('[data-count]').forEach(function(el){cio.observe(el);});
+
+  /* ---- pollen gauges ---- */
+  var pio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.querySelectorAll('.gauge').forEach(function(g){g.classList.add('vis');});pio.unobserve(e.target);}});},{threshold:.4});
+  document.querySelectorAll('[data-pollen]').forEach(function(el){pio.observe(el);});
+
+  /* ---- insel-puls tiny live feel ---- */
+  if(!reduce){
+    var jets=['ab 09:00','ab 11:30','ab 16:00'], temps=['9°C · klar','8°C · frisch','10°C · Sonne'];
+    var i=0;
+    setInterval(function(){i++;var j=document.getElementById('pJet'),w=document.getElementById('pWetter');if(j)j.textContent=jets[i%jets.length];if(w)w.textContent=temps[i%temps.length];},4200);
+  }
+
+  /* ---- magnetic buttons ---- */
+  if(!reduce && matchMedia('(pointer:fine)').matches){
+    document.querySelectorAll('.btn').forEach(function(b){
+      b.addEventListener('mousemove',function(e){var r=b.getBoundingClientRect();b.style.transform='translate('+((e.clientX-r.left-r.width/2)*.2)+'px,'+((e.clientY-r.top-r.height/2)*.3)+'px)';});
+      b.addEventListener('mouseleave',function(){b.style.transform='';});
+    });
+  }
+})();
+</script>
+</body>
+</html>
