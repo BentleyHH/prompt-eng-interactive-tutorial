@@ -199,6 +199,20 @@ const footer = `<footer class="footer">
 const script = `<script>
 (function(){
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function lockBreath(){
+    document.querySelectorAll('.breath').forEach(function(el){
+      el.style.width='auto';
+      var max=(getComputedStyle(el).getPropertyValue('--br-max')||'').trim()||'0.42em';
+      var pa=el.style.animation, pl=el.style.letterSpacing;
+      el.style.animation='none'; el.style.letterSpacing=max;
+      var w=el.getBoundingClientRect().width;
+      el.style.letterSpacing=pl; el.style.animation=pa;
+      el.style.width=Math.ceil(w)+'px';
+    });
+  }
+  lockBreath();
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(lockBreath);}
+  var bt; addEventListener('resize',function(){clearTimeout(bt);bt=setTimeout(lockBreath,150);});
   var cur = document.getElementById('cursor');
   if(matchMedia('(hover:hover) and (pointer:fine)').matches && !reduce){
     var cx=innerWidth/2, cy=innerHeight/2, tx=cx, ty=cy;

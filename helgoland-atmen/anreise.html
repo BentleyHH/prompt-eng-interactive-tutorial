@@ -71,7 +71,10 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
 /* ==========================================================================
    ANIMATIONS — all breathing on the 10s cycle (4s ein · 6s aus)
    ========================================================================== */
-@keyframes breathe{0%{letter-spacing:.1em;opacity:.78}40%{letter-spacing:.42em;opacity:1}100%{letter-spacing:.1em;opacity:.78}}
+@keyframes breathe{0%{letter-spacing:var(--br-min,.1em);opacity:.78}40%{letter-spacing:var(--br-max,.42em);opacity:1}100%{letter-spacing:var(--br-min,.1em);opacity:.78}}
+/* Atem-Wörter: Breite wird per JS im Maximalzustand reserviert, damit die Zeile nie umbricht */
+.breath{display:inline-block;white-space:nowrap}
+@media(max-width:560px){.breath{--br-max:.22em}}
 @keyframes ring{0%{transform:scale(.5);opacity:.35}40%{transform:scale(1);opacity:.9}100%{transform:scale(.5);opacity:.35}}
 @keyframes lblIn{0%,44%{opacity:0}6%,38%{opacity:1}46%,100%{opacity:0}}
 @keyframes lblOut{0%,46%{opacity:0}54%,94%{opacity:1}100%{opacity:0}}
@@ -606,6 +609,20 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
 <script>
 (function(){
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function lockBreath(){
+    document.querySelectorAll('.breath').forEach(function(el){
+      el.style.width='auto';
+      var max=(getComputedStyle(el).getPropertyValue('--br-max')||'').trim()||'0.42em';
+      var pa=el.style.animation, pl=el.style.letterSpacing;
+      el.style.animation='none'; el.style.letterSpacing=max;
+      var w=el.getBoundingClientRect().width;
+      el.style.letterSpacing=pl; el.style.animation=pa;
+      el.style.width=Math.ceil(w)+'px';
+    });
+  }
+  lockBreath();
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(lockBreath);}
+  var bt; addEventListener('resize',function(){clearTimeout(bt);bt=setTimeout(lockBreath,150);});
   var cur = document.getElementById('cursor');
   if(matchMedia('(hover:hover) and (pointer:fine)').matches && !reduce){
     var cx=innerWidth/2, cy=innerHeight/2, tx=cx, ty=cy;
