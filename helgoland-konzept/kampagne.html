@@ -97,6 +97,28 @@
   .wavescale .sq{width:70px;height:70px;border-radius:18px;background:rgba(245,241,233,0.08);border:1px solid rgba(245,241,233,0.16);display:flex;align-items:center;justify-content:center;}
   .wavescale .sq .g{width:42px;height:24px;}
   .konstante .note{margin-top:3rem;font-size:0.82rem;color:rgba(245,241,233,0.6);max-width:52ch;margin-left:auto;margin-right:auto;line-height:1.6;}
+
+  /* ---- Akt II: Deät Lun ---- */
+  .aktdivider{background:var(--tiefsee-dunkel);color:var(--schaum);text-align:center;padding:16vh 2rem;}
+  .aktdivider .k{font-size:0.7rem;letter-spacing:0.32em;text-transform:uppercase;color:rgba(245,241,233,0.5);}
+  .aktdivider h2{font-family:Georgia,serif;font-weight:400;font-size:clamp(2.2rem,6vw,4.2rem);line-height:1.08;margin:1.6rem 0 1.4rem;}
+  .aktdivider p{color:rgba(245,241,233,0.75);max-width:38em;margin:0 auto;font-size:clamp(0.98rem,1.4vw,1.12rem);}
+
+  .zeit{max-width:720px;margin:3.5rem auto 0;border-left:2px solid rgba(245,241,233,0.22);padding-left:2rem;text-align:left;}
+  .zeit .z{position:relative;padding-bottom:2.2rem;}
+  .zeit .z:last-child{padding-bottom:0;}
+  .zeit .z::before{content:"";position:absolute;left:-2.55rem;top:0.45rem;width:11px;height:11px;border-radius:50%;background:var(--rot);border:2.5px solid var(--tiefsee-dunkel);}
+  .zeit .jahr{font-family:Georgia,serif;font-size:1rem;color:var(--rot);letter-spacing:0.08em;}
+  .zeit h3{font-family:Georgia,serif;font-weight:400;font-size:1.3rem;margin:0.25rem 0 0.3rem;color:var(--schaum);}
+  .zeit p{font-size:0.95rem;color:rgba(245,241,233,0.72);max-width:none;margin:0;}
+
+  .mechgrid{margin-top:3rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;}
+  @media(max-width:900px){.mechgrid{grid-template-columns:1fr 1fr;}}
+  @media(max-width:600px){.mechgrid{grid-template-columns:1fr;}}
+  .mech{background:#fff;border-radius:2px;padding:2rem 1.7rem 1.9rem;border-top:3px solid var(--rot);box-shadow:0 12px 36px rgba(11,45,60,0.07);}
+  .mech .n{font-family:Georgia,serif;font-size:0.85rem;color:var(--rot);}
+  .mech h3{font-family:Georgia,serif;font-weight:400;font-size:1.3rem;margin:0.5rem 0 0.55rem;}
+  .mech p{font-size:0.9rem;color:#54636A;line-height:1.55;}
 </style>
 </head>
 <body>
@@ -120,6 +142,7 @@
     <span class="eyebrow" style="display:block;">Die Regel hinter allem</span>
     <h2 class="display" style="margin:1.5rem 0 1.4rem;color:var(--schaum);">Wir werben gegen den flachen Atem.<br>Nie gegen eine andere Insel.</h2>
     <p class="body" style="color:rgba(245,241,233,0.8);">Drei Stimmen tragen jedes Motiv: die <em>ehrliche</em> (unbequeme Wahrheit zuerst), die <em>Atem-Stimme</em> (leise Erlaubnis) und die <em>Zahl</em> (Beweis statt Adjektiv). Frech ja — gegen den Alltag, gegen uns selbst, auch mal gegen das Wetter. Die Sonne feiern wir genauso ehrlich. Nie gegen den Gast.</p>
+    <p class="body" style="color:rgba(245,241,233,0.6);margin-top:1.2rem;">Und die Kampagne hat zwei Richtungen: <em>Akt I</em> nach draußen — für die Gäste. <em>Akt II</em> nach innen — für die Insel. Ohne den zweiten ist der erste nichts wert.</p>
   </div>
 </section>
 
@@ -264,6 +287,75 @@
   </div>
 </section>
 
+<!-- ============ AKT II: DEÄT LUN ============ -->
+<section class="aktdivider" id="stolz">
+  <div class="fade">
+    <span class="k">Akt II · Die Innenseite der Marke</span>
+    <h2>Deät Lun.</h2>
+    <p>Auf Halunder heißt Helgoland einfach: <em>das Land</em>. Nicht eine Insel unter vielen — das Land. Eine Marke, die die Gäste gewinnen will, muss zuerst die 1.300 gewinnen, die sie tragen. Ohne die Insulaner ist alles andere Deko.</p>
+  </div>
+</section>
+
+<!-- HERKUNFT -->
+<section class="chapter dark">
+  <div class="col-wide">
+    <div class="chead fade" style="max-width:720px;margin-left:auto;margin-right:auto;text-align:center;">
+      <span class="eyebrow">11 · Die Herkunft</span>
+      <h2 class="display" style="margin-top:1rem;color:var(--schaum);">Warum diese Insel<br>niemanden beeindrucken muss.</h2>
+      <p class="body" style="color:rgba(245,241,233,0.78);">Der Stolz dieser Marke ist keine Behauptung. Er hat ein Datum.</p>
+    </div>
+    <div class="zeit fade">
+      <div class="z"><div class="jahr">1945</div><h3>Die Räumung.</h3><p>Bomben, Evakuierung. Die Helgoländer verlieren ihre Insel — aber nicht ihren Anspruch auf sie.</p></div>
+      <div class="z"><div class="jahr">18. April 1947</div><h3>Der Versuch, einen Fels zu sprengen.</h3><p>Tausende Tonnen Sprengstoff, eine der größten nicht-nuklearen Detonationen der Geschichte. Die Insel bebt, verliert ihre Südspitze — und bleibt.</p></div>
+      <div class="z"><div class="jahr">20. Dezember 1950</div><h3>Zwei Studenten, eine Flagge.</h3><p>Zwei junge Männer besetzen den gesperrten Felsen friedlich und hissen die Flagge. Ein Land schaut hin — und versteht.</p></div>
+      <div class="z"><div class="jahr">1. März 1952</div><h3>Die Heimkehr.</h3><p>Die Helgoländer kehren zurück und bauen ihre Insel wieder auf. Bude für Bude, Stein für Stein. In den Farben, die heute die Marke tragen.</p></div>
+      <div class="z"><div class="jahr">Heute</div><h3>Rund 1.300 Menschen, 70 Kilometer draußen.</h3><p>Eine Insel, die das überstanden hat, muss niemanden beeindrucken. Deshalb heißt die Marke ATMEN: Dieser Fels hat nie damit aufgehört.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- STOLZ-MOTIVE -->
+<section class="chapter">
+  <div class="col-wide">
+    <div class="chead fade"><span class="eyebrow">12 · Der Stolz · nach draußen</span><h2 class="display" style="margin-top:1rem;">Subtil. Norddeutsch.<br>Aber unübersehbar.</h2></div>
+    <div class="lbgrid fade">
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_183858_bf16c0db-277c-414b-871c-befd49661154.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Plakat · Hamburg</div><div class="l">„Man wollte diesen Fels sprengen. Er atmet noch.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_183855_084023e9-a476-4b1b-b22e-ba43ac99a972.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Der Fels · Erstes Licht</div><div class="l">Kein Claim nötig. Der Fels ist der Beweis.</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_183900_187a6c3f-bba4-403e-a8af-a9ffd1bf41a7.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Fähranleger · Ortsschild</div><div class="l">„Deät Lun. Für uns: einfach das Land.“</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- DIE 1300 / PORTRAITS -->
+<section class="chapter sand">
+  <div class="col-wide">
+    <div class="chead fade"><span class="eyebrow">13 · Die Insulaner · Gesichter statt Models</span><h2 class="display" style="margin-top:1rem;">Limitierte Auflage: <br>rund 1.300 Menschen.</h2><p class="body" style="max-width:46ch;">Jede Helgoländerin, jeder Helgoländer bekommt eine Nummer — auf Troyer, Becher, Haustür. Nicht käuflich, nur lebbar. Die Kampagne zeigt echte Insulaner mit Namen und Beruf. Wer mag, wird Plakat. Niemand muss.</p></div>
+    <div class="lbgrid fade">
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_183848_b094683d-a271-425f-a401-86046941ba85.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Börtebootführer · Nr. 231</div><div class="l">„Ich fahre Gäste an Land, seit ich fünfzehn bin. Der Fels war immer da.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_183850_4e722af4-2b94-4ac7-accc-232d02b5966a.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Vogelwartin · Nr. 872</div><div class="l">„Zehntausend Lummen. Und jede einzelne gehört hierher. Wie wir.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_183852_a47e428d-414f-4f77-89e3-010aab6deb40.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Generationen · Pier</div><div class="l">Der Stolz wird nicht erklärt. Er wird weitergegeben.</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_183902_239696d9-444e-4551-931c-56a6d199ea22.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">Insulaner-Troyer · unverkäuflich</div><div class="l">„Wir sind nicht viele. Wir sind genug.“</div></div></div>
+      <div class="lb"><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_183905_833ac59d-d543-489c-b44f-a8d4f64b9595.png" alt=""><div class="c"><div class="mkbug"><svg><use href="#m-atem"/></svg></div><div class="t">1. März · Tag der Heimkehr</div><div class="l">Der Tag, an dem die Insel wieder atmete — jedes Jahr ein Markenmoment.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- MECHANIKEN INNEN -->
+<section class="chapter">
+  <div class="col-wide">
+    <div class="chead fade"><span class="eyebrow">14 · Die Regeln · so nehmen wir die Insel mit</span><h2 class="display" style="margin-top:1rem;">Erst die Insel.<br>Dann das Festland.</h2></div>
+    <div class="mechgrid fade">
+      <div class="mech"><div class="n">i.</div><h3>Inside First</h3><p>Jede Kampagne hängt zuerst 14 Tage auf der Insel, bevor sie aufs Festland geht. Der Atem-Rat hat ein Veto. Keine Zeile verlässt die Insel, die hier nicht hängen durfte.</p></div>
+      <div class="mech"><div class="n">ii.</div><h3>Die Nummer</h3><p>Jede gemeldete Insulanerin, jeder Insulaner trägt seine Nummer — Troyer, Becher, Tür. Gäste können sie nicht kaufen, nur „Insulaner ehrenhalber“ werden. Ab dem dritten Besuch.</p></div>
+      <div class="mech"><div class="n">iii.</div><h3>Deät Lun spricht</h3><p>Jedes Schild trägt ein Wort Halunder. Die Marke finanziert die Halunder-AG der Inselschule. Eine Sprache, die bleibt, ist der leiseste Stolz von allen.</p></div>
+      <div class="mech"><div class="n">iv.</div><h3>Der 1. März</h3><p>Der Tag der Heimkehr wird der Feiertag der Marke: Börteboote unter Flaggen, die blaue Minute wird zur Stunde. Kein Event für Gäste — ein Fest der Insel, zu dem Gäste willkommen sind.</p></div>
+      <div class="mech"><div class="n">v.</div><h3>Die Hälfte bleibt hier</h3><p>Ein fester Anteil jedes Merch-Erlöses geht an Inselvereine — Feuerwehr, Vogelschutz, Schule. Auf jedem Etikett steht, wohin.</p></div>
+      <div class="mech"><div class="n">vi.</div><h3>Gesichter statt Models</h3><p>Kein gebuchtes Gesicht. Die Plakate zeigen Insulaner mit Namen, Beruf und Nummer — und den Podcast „Inselstimmen“ dazu. Die Insel erzählt sich selbst.</p></div>
+    </div>
+    <p class="fade" style="margin-top:2.4rem;font-size:0.85rem;color:var(--grau);max-width:56ch;">Wichtig für die Umsetzung: Die Herkunfts-Kapitel berühren Kriegsgeschichte — Tonalität und Fakten werden mit Gemeinde, Museum Helgoland und Zeitzeugen-Familien abgestimmt, bevor irgendetwas davon nach draußen geht. Würde vor Wirkung. Und: Es ist Inselstolz, kein Nationalpathos — norddeutsch leise, deshalb glaubwürdig.</p>
+  </div>
+</section>
+
 <!-- CLOSER -->
 <section class="closer">
   <div class="bg" style="background-image:url('https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260707_091521_f28b6cd8-2fc8-43d1-af50-f347f766eccc.png')"></div>
@@ -276,7 +368,7 @@
 
 <footer>
   <p class="line">Zurück zur Marke: <a href="index.html">HELGOLAND · ATMEN</a></p>
-  <p class="fine">Kampagnen-Lookbook · rund 35 Motive über das ganze Spektrum, gutes Wetter wie schlechtes. Alle Bilder als KI-Moodwelt (Higgsfield) erzeugt und als solche gekennzeichnet — erste Entwürfe zur Stimmung. Die Welle in den Fotos variiert (KI-Skizze); verbindlich ist allein die eine SVG-Marke aus „Eine Welle. Immer dieselbe." — sie wird in der Reinzeichnung exakt so auf jedes Motiv gesetzt. Der eine erlaubte Ausnahme-Moment (ein Launch-Stunt, der mit „den großen Inseln“ zwinkert) bleibt namenlos.</p>
+  <p class="fine">Kampagnen-Lookbook in zwei Akten · rund 45 Motive: Akt I nach draußen (Gäste), Akt II nach innen (die Insel — Herkunft, die Nummer, Deät Lun). Gutes Wetter wie schlechtes. Alle Bilder als KI-Moodwelt (Higgsfield) erzeugt und als solche gekennzeichnet — erste Entwürfe zur Stimmung. Die Welle in den Fotos variiert (KI-Skizze); verbindlich ist allein die eine SVG-Marke aus „Eine Welle. Immer dieselbe." — sie wird in der Reinzeichnung exakt so auf jedes Motiv gesetzt. Der eine erlaubte Ausnahme-Moment (ein Launch-Stunt, der mit „den großen Inseln“ zwinkert) bleibt namenlos.</p>
 </footer>
 
 <script>
