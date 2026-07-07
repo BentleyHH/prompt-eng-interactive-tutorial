@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HELGOLAND — ATMEN</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%230B2D3C'/><path d='M9 40 H20 C25 40 27 22 32 22 S39 40 44 40 H55' fill='none' stroke='%23F5F1E9' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <style>
   :root{
     --tiefsee:#0B2D3C;
@@ -142,6 +143,115 @@
   .fade{opacity:0;transform:translateY(22px);transition:opacity 1.1s cubic-bezier(.2,.7,.2,1),transform 1.1s cubic-bezier(.2,.7,.2,1);}
   .fade.vis{opacity:1;transform:none;}
   .d1{transition-delay:.12s;} .d2{transition-delay:.24s;} .d3{transition-delay:.36s;}
+
+  /* ============ IDENTITY SYSTEM ============ */
+  .glyph{display:inline-block;color:var(--tiefsee);}
+  .glyph svg{width:100%;height:100%;display:block;}
+
+  /* --- Das Zeichen: directions --- */
+  .dirs{margin-top:4.5rem;display:grid;grid-template-columns:repeat(4,1fr);gap:1.4rem;}
+  @media(max-width:920px){.dirs{grid-template-columns:1fr 1fr;}}
+  @media(max-width:520px){.dirs{grid-template-columns:1fr;}}
+  .dir{background:#fff;border:1px solid var(--linie);border-radius:2px;padding:2.6rem 1.6rem 2.2rem;text-align:center;}
+  .dir .glyph{width:84px;height:84px;margin:0 auto 1.7rem;}
+  .dir .tag{font-size:0.58rem;letter-spacing:0.24em;text-transform:uppercase;color:var(--rot);font-weight:700;}
+  .dir h3{font-family:Georgia,serif;font-weight:400;font-size:1.22rem;margin:0.55rem 0 0.6rem;}
+  .dir .r{font-size:0.84rem;color:#54636A;line-height:1.55;}
+  .dir.lead{background:var(--tiefsee);border-color:transparent;}
+  .dir.lead .glyph{color:var(--schaum);}
+  .dir.lead h3{color:var(--schaum);}
+  .dir.lead .r{color:rgba(245,241,233,0.74);}
+
+  /* --- scale proof --- */
+  .scaleshow{margin-top:2.4rem;background:var(--sand);border-radius:2px;padding:3.4rem 2rem;
+    display:flex;align-items:flex-end;justify-content:center;gap:2.6rem;flex-wrap:wrap;}
+  .scaleshow .u{display:flex;flex-direction:column;align-items:center;gap:0.9rem;}
+  .scaleshow .glyph{color:var(--tiefsee);}
+  .scaleshow .cap{font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--grau);}
+  .chip{background:var(--tiefsee);border-radius:3px;padding:14px;display:flex;align-items:center;justify-content:center;}
+  .chip .glyph{color:var(--schaum);}
+  .squircle{width:74px;height:74px;border-radius:20px;background:var(--tiefsee);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(11,45,60,0.24);}
+  .squircle .glyph{width:44px;height:44px;color:var(--schaum);}
+  .tabmock{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--linie);border-radius:8px 8px 0 0;padding:8px 12px;box-shadow:0 -1px 0 var(--linie) inset;}
+  .tabmock .glyph{width:15px;height:15px;}
+  .tabmock span{font-size:0.72rem;color:var(--grau);}
+
+  /* --- Farbe --- */
+  .farbe{margin-top:4.5rem;display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-radius:2px;overflow:hidden;}
+  @media(max-width:760px){.farbe{grid-template-columns:1fr 1fr;}}
+  @media(max-width:440px){.farbe{grid-template-columns:1fr;}}
+  .cf{padding:2.6rem 1.6rem 2rem;min-height:300px;display:flex;flex-direction:column;justify-content:flex-end;}
+  .cf .n{font-family:Georgia,serif;font-size:1.35rem;}
+  .cf .hex{font-size:0.64rem;letter-spacing:0.18em;text-transform:uppercase;opacity:0.55;margin:0.4rem 0 1rem;}
+  .cf .r{font-size:0.86rem;line-height:1.55;}
+  .cf.light{color:var(--schaum);} .cf.light .r{color:rgba(245,241,233,0.8);}
+  .cf.dark{color:var(--tinte);} .cf.dark .r{color:#54636A;}
+
+  /* --- Typografie --- */
+  .typespec{margin-top:4.5rem;display:grid;grid-template-columns:1fr 1fr;gap:2.4rem;}
+  @media(max-width:760px){.typespec{grid-template-columns:1fr;}}
+  .spec{border-top:1px solid var(--linie);padding-top:1.8rem;}
+  .spec .big{font-size:clamp(4rem,9vw,6.5rem);line-height:0.9;color:var(--tinte);}
+  .spec.se .big{font-family:Georgia,serif;}
+  .spec.sa .big{font-family:"Helvetica Neue",Arial,sans-serif;font-weight:600;letter-spacing:-0.01em;}
+  .spec .set{font-size:0.82rem;letter-spacing:0.04em;color:var(--grau);margin:1.1rem 0 1.2rem;word-spacing:0.1em;}
+  .spec.se .set{font-family:Georgia,serif;}
+  .spec .use{font-size:0.9rem;color:#54636A;line-height:1.55;}
+  .spec .use b{color:var(--tinte);font-weight:600;}
+
+  /* --- Rhythmus demonstrator --- */
+  .rhythmus{min-height:78vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+  .rhythmus .bl{width:120px;height:1px;background:var(--schaum);opacity:0.6;transform-origin:center;animation:lineb 10s ease-in-out infinite;margin-bottom:3rem;}
+
+  /* --- Mockups --- */
+  .mockgrid{margin-top:4.5rem;display:grid;grid-template-columns:repeat(2,1fr);gap:1.6rem;}
+  @media(max-width:760px){.mockgrid{grid-template-columns:1fr;}}
+  .mock{background:var(--sand);border-radius:2px;padding:3rem 2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;min-height:360px;}
+  .mock.span{grid-column:1 / -1;}
+  .mock .cap{font-size:0.6rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--grau);}
+  .mrow{display:flex;align-items:center;justify-content:center;gap:2rem;flex-wrap:wrap;}
+
+  /* enamel sign */
+  .sign{background:var(--tiefsee);color:var(--schaum);border:2px solid var(--schaum);outline:3px solid var(--tiefsee);border-radius:5px;padding:1.6rem 1.9rem;text-align:center;width:min(280px,90%);}
+  .sign .glyph{width:38px;height:38px;color:var(--schaum);margin:0 auto 1rem;}
+  .sign .pl{font-size:1.15rem;letter-spacing:0.14em;font-weight:600;}
+  .sign .hr{height:1px;background:rgba(245,241,233,0.3);margin:0.9rem 0;}
+  .sign .di{font-size:0.72rem;letter-spacing:0.1em;color:rgba(245,241,233,0.75);}
+
+  /* phone */
+  .phone{width:186px;height:376px;border-radius:34px;background:var(--tiefsee);border:7px solid #05141b;padding:1.7rem 1.3rem 1.4rem;color:var(--schaum);display:flex;flex-direction:column;box-shadow:0 18px 44px rgba(11,45,60,0.28);}
+  .phone .notch{width:52px;height:5px;border-radius:3px;background:rgba(245,241,233,0.3);margin:0 auto 1.8rem;}
+  .phone .glyph{width:40px;height:40px;color:var(--schaum);margin:0 auto 0.7rem;}
+  .phone .wm{text-align:center;font-family:Georgia,serif;letter-spacing:0.24em;font-size:0.9rem;padding-left:0.24em;}
+  .phone .pulse{margin-top:auto;background:rgba(245,241,233,0.08);border:1px solid rgba(245,241,233,0.14);border-radius:10px;padding:0.9rem 1rem;}
+  .phone .pulse .k{font-size:0.54rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--rot);}
+  .phone .pulse .li{display:flex;justify-content:space-between;gap:0.7rem;font-size:0.72rem;margin-top:0.5rem;color:rgba(245,241,233,0.82);white-space:nowrap;}
+  .phone .pulse .li span:last-child{color:#fff;}
+
+  /* helgolandcard */
+  .hcard{width:min(300px,94%);aspect-ratio:1.586;border-radius:12px;background:linear-gradient(135deg,#0e3a4c,var(--tiefsee));color:var(--schaum);padding:1.4rem 1.5rem;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;box-shadow:0 14px 40px rgba(11,45,60,0.24);}
+  .hcard::after{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;background:linear-gradient(180deg,var(--gruen),var(--rot),var(--schaum));}
+  .hcard .top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .hcard .glyph{width:30px;height:30px;color:var(--schaum);}
+  .hcard .lbl{font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(245,241,233,0.6);}
+  .hcard .nm{font-family:Georgia,serif;font-size:1.05rem;}
+  .hcard .no{font-size:0.66rem;letter-spacing:0.16em;color:rgba(245,241,233,0.7);}
+
+  /* mug + menu */
+  .mug{position:relative;width:132px;height:108px;background:var(--schaum);border:3px solid var(--tiefsee);border-radius:8px 8px 12px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.4rem;}
+  .mug::after{content:"";position:absolute;right:-30px;top:22px;width:30px;height:46px;border:3px solid var(--tiefsee);border-left:none;border-radius:0 22px 22px 0;}
+  .mug .glyph{width:34px;height:34px;color:var(--tiefsee);}
+  .mug .w{font-family:Georgia,serif;font-size:0.6rem;letter-spacing:0.24em;color:var(--tiefsee);}
+  .menu{background:#fff;border:1px solid var(--linie);width:170px;padding:1.4rem 1.3rem;text-align:center;}
+  .menu .glyph{width:26px;height:26px;color:var(--tiefsee);margin:0 auto 0.7rem;}
+  .menu .h{font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--grau);margin-bottom:0.8rem;}
+  .menu .it{font-family:Georgia,serif;font-size:0.92rem;padding:0.3rem 0;border-top:1px solid var(--linie);}
+
+  /* ferry banner */
+  .banner{width:100%;background:var(--tiefsee);color:var(--schaum);border-radius:2px;padding:1.8rem 2.2rem;display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap;}
+  .banner .glyph{width:44px;height:44px;color:var(--schaum);}
+  .banner .wm{font-family:Georgia,serif;font-size:clamp(1.6rem,5vw,2.6rem);letter-spacing:0.2em;padding-left:0.2em;}
+  .banner .sm{margin-left:auto;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:rgba(245,241,233,0.6);}
 </style>
 </head>
 <body>
@@ -155,6 +265,7 @@
     <li><a href="#leuchttuerme">Leuchttürme</a></li>
     <li><a href="#formate">Formate</a></li>
     <li><a href="#jahr">Das Jahr</a></li>
+    <li><a href="#zeichen">Das Zeichen</a></li>
   </ul>
 </nav>
 
@@ -310,6 +421,124 @@
   <div class="content">
     <div class="wordmark fade" style="font-size:clamp(2rem,7vw,4.5rem);">ATMEN</div>
     <p class="fade d1" style="margin-top:2rem;font-family:Georgia,serif;font-style:italic;font-size:clamp(1.1rem,2.4vw,1.5rem);color:rgba(245,241,233,0.82);">Alles Weitere macht der Wind.</p>
+  </div>
+</section>
+
+<!-- ============ SVG MARK SPRITE ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="m-atem" viewBox="0 0 64 64"><path d="M6 40 H20 C25 40 27 20 32 20 S39 40 44 40 H58" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="m-fels" viewBox="0 0 64 64"><path d="M7 58 L7 33 L21 28 L23 58 Z" fill="currentColor"/><path d="M35 58 L37 24 L41 15 L45 26 L43 58 Z" fill="currentColor"/></symbol>
+  <symbol id="m-boot" viewBox="0 0 64 64"><path d="M10 31 H54 M11 31 Q32 51 53 31 M32 31 L41 13" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="m-lumme" viewBox="0 0 64 64"><g fill="currentColor"><circle cx="32" cy="15" r="2.6"/><circle cx="25" cy="27" r="2.6"/><circle cx="39" cy="27" r="2.6"/><circle cx="18" cy="39" r="2.6"/><circle cx="32" cy="39" r="2.6"/><circle cx="46" cy="39" r="2.6"/><circle cx="12" cy="51" r="2.6"/><circle cx="25" cy="51" r="2.6"/><circle cx="39" cy="51" r="2.6"/><circle cx="52" cy="51" r="2.6"/></g></symbol>
+</svg>
+
+<!-- ============ DAS ZEICHEN ============ -->
+<section class="chapter" id="zeichen">
+  <div class="col-wide">
+    <div class="col fade" style="margin:0;">
+      <span class="eyebrow">Das Zeichen · Eine Suchbewegung</span>
+      <h2 class="display" style="margin:1.6rem 0 1.8rem;">Ein Zeichen, das ohne Worte<br>funktioniert. Und in zwanzig<br>Jahren noch stimmt.</h2>
+      <p class="body" style="max-width:46ch;">Nike hat einen Haken. Apple einen Apfel. Aman das Schweigen. Helgoland hat bisher nur eine Insel — und alles, was ein Zeichen braucht, liegt längst vor der Küste: der rote Fels, das Börteboot, der Horizont, der Atem selbst.</p>
+      <p class="body" style="max-width:46ch;margin-top:1.2rem;">Ein Zeichen wird nicht erfunden. Es wird <em>destilliert</em>. Und es grenzt uns ab: Sylt verkauft einen Lebensstil mit einer Wortmarke. Helgoland setzt ein Naturzeichen — rau, klar, unkopierbar. Keine andere deutsche Insel hat einen Fels, der aus dem Meer wächst.</p>
+    </div>
+
+    <div class="dirs fade">
+      <div class="dir lead"><div class="glyph"><svg><use href="#m-atem"/></svg></div><span class="tag">Favorit</span><h3>Die Atemlinie</h3><p class="r">Der Horizont, der sich hebt. Zugleich Meereskante, Inselprofil und ein einziger Atemzug. Das Zeichen trägt den Namen der Marke in sich.</p></div>
+      <div class="dir"><div class="glyph"><svg><use href="#m-fels"/></svg></div><span class="tag">Symbol</span><h3>Der Fels</h3><p class="r">Die Lange Anna, frei vor der Klippe. Das einzige Rot Deutschlands, das aus dem Meer wächst.</p></div>
+      <div class="dir"><div class="glyph"><svg><use href="#m-boot"/></svg></div><span class="tag">Herkunft</span><h3>Das Börteboot</h3><p class="r">Immaterielles Kulturerbe als Piktogramm. Ein Handwerk, das keine andere Küste besitzt.</p></div>
+      <div class="dir"><div class="glyph"><svg><use href="#m-lumme"/></svg></div><span class="tag">Natur</span><h3>Der Lummenfels</h3><p class="r">Der belebte Fels. Tausend Vögel als Muster — Natur als Dichte, nicht als Motiv.</p></div>
+    </div>
+
+    <p class="fade" style="margin-top:3.2rem;font-size:0.9rem;color:var(--grau);max-width:52ch;">Noch keine Antwort — eine Richtung. Die Atemlinie führt, weil sie das Seltenste kann: ein Zeichen sein, das den Markennamen <em>ist</em>. Ein gutes Zeichen trägt von der Tab-Leiste bis zur Fährwand.</p>
+
+    <div class="scaleshow fade">
+      <div class="u"><div class="glyph" style="width:20px;height:20px;"><svg><use href="#m-atem"/></svg></div><span class="cap">20 px</span></div>
+      <div class="u"><div class="glyph" style="width:40px;height:40px;"><svg><use href="#m-atem"/></svg></div><span class="cap">40 px</span></div>
+      <div class="u"><div class="glyph" style="width:72px;height:72px;"><svg><use href="#m-atem"/></svg></div><span class="cap">72 px</span></div>
+      <div class="u"><div class="chip"><div class="glyph" style="width:40px;height:40px;"><svg><use href="#m-atem"/></svg></div></div><span class="cap">invertiert</span></div>
+      <div class="u"><div class="squircle"><div class="glyph"><svg><use href="#m-atem"/></svg></div></div><span class="cap">App-Icon</span></div>
+      <div class="u"><div class="tabmock"><div class="glyph"><svg><use href="#m-atem"/></svg></div><span>Helgoland — Atmen</span></div><span class="cap">Browser-Tab</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DIE FARBE ============ -->
+<section class="chapter sand">
+  <div class="col-wide">
+    <div class="col fade" style="margin:0;">
+      <span class="eyebrow">Die Farbe · Vier Begründungen</span>
+      <h2 class="display" style="margin:1.6rem 0 0;">Farben, die von hier sind.</h2>
+    </div>
+    <div class="farbe fade">
+      <div class="cf light" style="background:#0B2D3C;"><div class="n">Tiefseeblau</div><div class="hex">#0B2D3C</div><div class="r">Die Farbe des Abstands. Siebzig Kilometer Wasser in einem einzigen Ton.</div></div>
+      <div class="cf light" style="background:#B23A2E;"><div class="n">Felsenrot</div><div class="hex">#B23A2E</div><div class="r">Das einzige Rot Deutschlands, das aus dem Meer wächst. Buntsandstein.</div></div>
+      <div class="cf dark" style="background:#F5F1E9;"><div class="n">Schaum</div><div class="hex">#F5F1E9</div><div class="r">Die Farbe der Luft. Der Weißraum, in dem die Marke atmet.</div></div>
+      <div class="cf light" style="background:#16242B;"><div class="n">Tinte</div><div class="hex">#16242B</div><div class="r">Die Farbe der Ehrlichkeit. Geschrieben wird schwarz auf hell, ohne Effekt.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DIE SCHRIFT ============ -->
+<section class="chapter">
+  <div class="col-wide">
+    <div class="col fade" style="margin:0;">
+      <span class="eyebrow">Die Schrift · Zwei Stimmen</span>
+      <h2 class="display" style="margin:1.6rem 0 0;">Würde und Klarheit.<br>Mehr braucht es nicht.</h2>
+    </div>
+    <div class="typespec fade">
+      <div class="spec se"><div class="big">Aa</div><div class="set">ABCDEFG · abcdefg · 1826</div><p class="use"><b>Die Serife — für die Seele.</b> Tiefe, Würde, zweihundert Jahre Seebad. Sie trägt die großen Sätze und die stillen Momente.</p></div>
+      <div class="spec sa"><div class="big">Aa</div><div class="set">ABCDEFG · abcdefg · 1826</div><p class="use"><b>Die Grotesk — für die Fakten.</b> Klar, sachlich, norddeutsch. Kein Schnörkel, keine Verspieltheit, keine Tourismusschrift. Sie beschriftet, sie behauptet nicht.</p></div>
+    </div>
+    <p class="fade" style="margin-top:2.6rem;font-size:0.9rem;color:var(--grau);">Die Regel dahinter: sehr groß oder sehr klein. Nichts dazwischen. Der Kontrast ist die Haltung.</p>
+  </div>
+</section>
+
+<!-- ============ RHYTHMUS / WEISSRAUM ============ -->
+<section class="chapter dark rhythmus">
+  <div class="col fade" style="text-align:center;">
+    <div class="bl"></div>
+    <span class="eyebrow" style="display:block;">Rhythmus &amp; Weißraum</span>
+    <h2 class="display" style="margin:1.6rem 0 0;color:var(--schaum);">Die Marke atmet.<br>Auch der leere Raum<br>gehört zum System.</h2>
+    <p class="body" style="max-width:34ch;margin:2rem auto 0;">Pausen. Stille. Luft zwischen den Dingen. Nicht jede Fläche wird gefüllt, nicht jede Sekunde bespielt. Das Weglassen ist die Gestaltung.</p>
+  </div>
+</section>
+
+<!-- ============ DIE MARKE IN DER WELT / MOCKUPS ============ -->
+<section class="chapter sand">
+  <div class="col-wide">
+    <div class="col fade" style="margin:0;">
+      <span class="eyebrow">Erste Entwürfe · Die Marke in der Welt</span>
+      <h2 class="display" style="margin:1.6rem 0 1.6rem;">Kein Prospekt.<br>Ein System, das trägt.</h2>
+      <p class="body" style="max-width:46ch;">Skizzen, keine Reinzeichnung — aber jede zeigt dasselbe: Das Zeichen hält. Vom Klippenweg bis zum App-Icon, vom Emaillebecher bis zur Fährwand.</p>
+    </div>
+    <div class="mockgrid fade">
+      <div class="mock">
+        <div class="sign"><div class="glyph"><svg><use href="#m-atem"/></svg></div><div class="pl">LANGE ANNA</div><div class="hr"></div><div class="di">↑ 400 Atemzüge · Klippenrandweg</div></div>
+        <div class="cap">Wegweiser · Oberland</div>
+      </div>
+      <div class="mock">
+        <div class="mrow">
+          <div class="phone"><div class="notch"></div><div class="glyph"><svg><use href="#m-atem"/></svg></div><div class="wm">ATMEN</div><div class="pulse"><div class="k">Insel-Puls</div><div class="li"><span>Katamaran</span><span>9:00</span></div><div class="li"><span>Seegang</span><span>ruhig</span></div><div class="li"><span>Heute</span><span>Hafenklang</span></div></div></div>
+          <div class="squircle" style="width:66px;height:66px;"><div class="glyph" style="width:40px;height:40px;"><svg><use href="#m-atem"/></svg></div></div>
+        </div>
+        <div class="cap">Digital · App &amp; Icon</div>
+      </div>
+      <div class="mock">
+        <div class="hcard"><div class="top"><div class="glyph"><svg><use href="#m-atem"/></svg></div><div class="lbl">Gästekarte</div></div><div><div class="nm">HelgolandCard</div><div class="no">2026 · N. Benthaus · Kurabgabe inkl.</div></div></div>
+        <div class="cap">Digital · Gästekarte</div>
+      </div>
+      <div class="mock">
+        <div class="mrow">
+          <div class="mug"><div class="glyph"><svg><use href="#m-atem"/></svg></div><div class="w">ATMEN</div></div>
+          <div class="menu"><div class="glyph"><svg><use href="#m-atem"/></svg></div><div class="h">Hummerbude No. 7</div><div class="it">Knieper</div><div class="it">Schwarzbrot</div><div class="it">Köm</div></div>
+        </div>
+        <div class="cap">Produkt · Bude &amp; Becher</div>
+      </div>
+      <div class="mock span">
+        <div class="banner"><div class="glyph"><svg><use href="#m-atem"/></svg></div><div class="wm">ATMEN</div><div class="sm">M/S · Hamburg — Helgoland</div></div>
+        <div class="cap">Öffentlicher Raum · Fähre</div>
+      </div>
+    </div>
   </div>
 </section>
 
