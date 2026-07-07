@@ -1,13 +1,17 @@
 # HELGOLAND · ATMEN
 
-Konzept zur touristischen Neupositionierung der Hochseeinsel Helgoland — anlässlich
-**200 Jahre Seebad (2026)**. Markenidee, Kampagne, Leitsystem, Guest Journey,
-Gastro-/Hotellerie-Aktionen, Ganzjahresstrategie und ein Higgsfield-Produktionsplan.
+Eine immersive Marken-Website für die einzige deutsche Hochseeinsel — auf dem
+Niveau, mit dem Apple, Aman oder Aesop ihre Marken inszenieren. Keine Tourismusseite,
+keine Broschüre: eine Brand Experience.
 
-Leitgedanke: Helgoland ist Deutschlands einzige Hochseeinsel — pollenarm, autofrei,
-mit amtlich sauberster Luft. Die Marke wird um ein einziges Verb gebaut: **ATMEN**
-(Einatmen / Ausatmen / Durchatmen). Ehrlich, bodenständig, mit Augenzwinkern.
-Das kleine, echte Pendant zu Sylt.
+Der Markenkern ist ein einziges Wort — **ATMEN**. Kein Claim, sondern die Haltung:
+Luft, Weite, Zeit, Gemeinschaft, Ehrlichkeit, Klarheit, Hochsee, Reset. Die Tonalität
+ist norddeutsch, ehrlich, reduziert — ohne Superlative, ohne Werbesprache.
+
+Die Website verschmilzt zwei Grundlagen: das **Impulspapier „Helgoland weiterdenken"**
+(konkrete Formate, Events, Strategie) und die **Markenwelt ATMEN**. Die Ideen werden
+nicht aufgezählt, sondern emotional aufgeladen — jede beantwortet: *Warum gehört dieses
+Erlebnis zu ATMEN?*
 
 ## Farbwelt — der Helgoland-Dreiklang
 
@@ -26,40 +30,45 @@ Die vier Leit-Routen heißen entsprechend **Fels · Land · Wasser · Sand**.
 
 | Datei | Beschreibung |
 |-------|--------------|
-| `vision.html` | **Brand Vision & Strategy Map** — die strategische Zuspitzung zur „Experience Brand" (Apple/Aesop/Muji-Niveau). Radikal reduziert, mit atmender Wortmarke. Im Browser öffnen. |
+| `index.html` | **Die immersive Marken-Website.** Verschmilzt das Impulspapier „Helgoland weiterdenken" mit der Markenwelt ATMEN zu einer Brand Experience auf Apple-/Aman-/Aesop-Niveau: monumentale Bildsprache, Atemrhythmus-Dramaturgie, jedes Format emotional aufgeladen. |
+| `vision.html` | **Brand Vision & Strategy Map** — die strategische Zuspitzung (vom Ort zum Zustand, das ATMEN-Betriebssystem, fünf Rituale, die 20-Jahre-Vision). |
 | `Helgoland-Brand-Vision.pdf` | Die Strategy Map als 10-seitiges A4-PDF. |
-| `index.html` | Interaktive Kampagnen-/Pitch-Website (Scroll-Story, Helgoland-Dreiklang, KI-Visuals, Schaufenster). |
-| `konzept-print.html` | Druckoptimierte A4-Fassung des Kampagnen-Konzepts. |
-| `Helgoland-Atmen-Konzept.pdf` | Kampagnen-Konzept als Präsentations-PDF. |
+| `konzept-print.html` · `Helgoland-Atmen-Konzept.pdf` | Frühere taktische Kampagnen-Fassung (Leitsystem, Gastgeber-Aktionen). Archiv. |
 
-## Die zwei Ebenen
+## Die drei Ebenen
 
-1. **Strategie — `vision.html`:** Warum & wohin. Das Markensystem: vom Ort zum Zustand,
-   das „Atem"-Betriebssystem als Filter, fünf Brand Rituals, Confident Silence,
-   die visuelle Signatur, die 20-Jahre-Vision.
-2. **Umsetzung — `index.html`:** Wie es aussieht & klingt. Kampagne, Leitsystem,
-   Gastgeber-Aktionen, Ganzjahresstrategie, Schaufenster mit Plakaten & Merch.
+1. **Erleben — `index.html`:** Die Website als Reise. Der Zustand, die Insel („kein
+   Ideenproblem"), der N-S-O-W-Kompass, die drei Leuchttürme (Lange Tafel, Durchatmen,
+   Klausur), die sechs Formate, das Jahr, das ehrliche Nachwort.
+2. **Verstehen — `vision.html`:** Warum & wohin. Das Markensystem und die 20-Jahre-Vision.
+3. **Umsetzen — Impulspapier:** Die konkreten Formate, Piloten und die ersten 100 Tage
+   (Quelle: „Helgoland weiterdenken", Nils Benthaus, Juli 2026).
+
+## Substanz aus dem Impulspapier — als Ausdruck der Marke
+
+Jede Idee trägt einen emotionalen Schlüssel (warum sie zu ATMEN gehört):
+
+- **Die Lange Tafel** → Gemeinschaft · **Durchatmen / Gesundheitsinsel** → Regeneration ·
+  **Klausur am Ende der Welt** → Klarheit (die drei Leuchttürme)
+- **Budenwandern** → Entschleunigung · **Hafenklang** → Leben · **Knieper-Wochen** → Zeit ·
+  **Lummensprung** → Übermut · **Insel-Puls** → Klarheit · **Inselstimmen** → Stimmen
+- **Robbenwinter** → Staunen · **Quanten-Erbe** → Weltniveau · **Börteboote** → Marke ·
+  **Bluehouse** → Neugier (der Bestand, „diese Insel hat kein Ideenproblem")
 
 ## Bildwelt
 
-Alle Visuals wurden mit **Higgsfield** (KI) als Kampagnen-Moodwelt erzeugt und sind
-als solche gekennzeichnet. Sie werden von der Website als Remote-Assets geladen und
-öffnen sich in jedem Browser ohne weitere Einrichtung.
+Nicht Postkarte, nicht Stockfoto: Wind, Salz, Felsen, Haut, Licht, Horizont — große
+Flächen, kleine Menschen, echte Momente, monumentale Natur. Alle Visuals mit
+**Higgsfield** (KI) als Moodwelt erzeugt und als solche gekennzeichnet; sie laden in
+jedem Browser als Remote-Assets. Die dokumentarischen Motive der Insel bleiben echt.
 
-- **4 Key-Visuals:** Lange Anna, Hummerbuden, Kegelrobbe, Katamaran
-- **3 Plakate in-situ:** „Zollfrei. Pollenfrei. Kopffrei." (Hafen), „Die Schönen
-  fahren nach Sylt…" (Hamburg), „ATMEN" (City-Light-Promenade)
-- **3 Merch-Mockups:** Shirt „Ich war kurz weg. Richtig weg.", Kollektions-Flatlay
-  „0 Autos · 0 Pollen · 1 Fels", Jutebeutel „Atme. Der Horizont läuft nicht weg."
-- **2 Stimmungsbilder:** Atmen auf der Klippe, Abend in der Hummerbude
-
-Die Schaufenster-Motive erscheinen im Abschnitt **„So sieht ,Atmen' aus"** der Website.
-Sobald die hochauflösenden Dateien aus Higgsfield vorliegen, lassen sie sich zusätzlich
-ins PDF einbauen.
+Motive u. a.: die roten Klippen & Lange Anna (Hero), die Lange Tafel aus der Luft,
+das Ablegen an der Reling, Atemwandern am Klippenrand, Budenwandern, Hafenklang,
+Knieper, Börteboote, Robbenwinter, ein Gesicht im Wind, der leere Horizont.
 
 ## Nächste Schritte
 
-1. Markenentscheid & Design-Finalisierung
-2. Ehrlich-Kodex mit lokalen Betrieben (Gemeinde, Kurverwaltung, DEHOGA, Vogelwarte, Reedereien)
-3. Higgsfield-Produktionspipeline für Bewegtbild (Hero-Film, Social-Serie „Atemzüge“, Pollen-Taktik-Ads)
-4. Landingpage `atmen.helgoland.de` mit Live-Pollenvergleich (Ihre Stadt vs. Helgoland)
+1. Website live stellen (eigene Domain) · hochauflösende Bilder aus Higgsfield nachziehen
+2. Der 45-Sek-Manifest-Film „ATMEN" (Higgsfield), im Atemtakt 4/6 geschnitten
+3. Abstimmung der Formate mit Gemeinde, Naturschutz, Gremien und Partnern vor Ort
+4. „Inselstimmen"-Podcast & „Insel-Puls" als erste schnell sichtbare Piloten
