@@ -247,7 +247,7 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
 @media(max-width:460px){.zahlen{grid-template-columns:1fr}}
 
 /* erleben bento */
-.bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:230px;gap:14px}
+.bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:minmax(230px,auto);gap:14px}
 .tile{position:relative;overflow:hidden;border-radius:2px;color:var(--schaum);background:var(--tiefsee);isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;padding:24px}
 .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transform:scale(1.03);transition:transform 1.2s var(--ease)}
 .tile::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(6,23,31,0.15) 30%,rgba(6,23,31,0.86))}
@@ -259,7 +259,8 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
 .tile.w2{grid-column:span 2}.tile.h2{grid-row:span 2}
 .tile--solid{background:var(--rot)}
 .tile--solid::after{display:none}
-.tile--solid .k{color:rgba(245,241,233,0.7)}
+/* Label im Textfluss statt absolut, damit es bei viel Inhalt nicht mit der Headline kollidiert */
+.tile--solid .k{color:rgba(245,241,233,0.7);position:static;margin-bottom:auto;padding-bottom:14px}
 .tile--solid h3{font-size:1.9rem}
 .tile--solid p{max-height:none;opacity:1;margin-top:.6rem}
 @media(max-width:900px){.bento{grid-template-columns:repeat(2,1fr)}}
