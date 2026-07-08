@@ -2,16 +2,17 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8" />
-<title>ATMEN — CI-Richtlinien (Print)</title>
+<title>ATMEN — CI-Manual (Print XL)</title>
 <style>
 @font-face{font-family:'Instrument Serif';src:url('fonts-pkg/node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2') format('woff2');font-weight:400;font-style:normal}
 @font-face{font-family:'Instrument Serif';src:url('fonts-pkg/node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2') format('woff2');font-weight:400;font-style:italic}
 @font-face{font-family:'Instrument Sans';src:url('fonts-pkg/node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-400-normal.woff2') format('woff2');font-weight:400}
+@font-face{font-family:'Instrument Sans';src:url('fonts-pkg/node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-500-normal.woff2') format('woff2');font-weight:500}
 @font-face{font-family:'Instrument Sans';src:url('fonts-pkg/node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-600-normal.woff2') format('woff2');font-weight:600}
 @font-face{font-family:'Space Mono';src:url('fonts-pkg/node_modules/@fontsource/space-mono/files/space-mono-latin-400-normal.woff2') format('woff2');font-weight:400}
 @font-face{font-family:'Space Mono';src:url('fonts-pkg/node_modules/@fontsource/space-mono/files/space-mono-latin-700-normal.woff2') format('woff2');font-weight:700}
 :root{
-  --tiefsee:#0B2D3C;--tiefsee-dunkel:#06171F;--papier:#F5F1E9;--sand:#EBE3D4;
+  --tiefsee:#0B2D3C;--tiefsee-dunkel:#06171F;--tiefsee-hell:#134155;--papier:#F5F1E9;--sand:#EBE3D4;
   --rot:#B23A2E;--rot-hell:#CC5142;--gruen:#3F6B4A;--tinte:#16242B;--grau:#7C8B91;--schaum:#F5F1E9;
   --linie:rgba(22,36,43,.14);--linie-hell:rgba(245,241,233,.16);
   --serif:'Instrument Serif',Georgia,serif;--sans:'Instrument Sans',Arial,sans-serif;--mono:'Space Mono',monospace;
@@ -19,89 +20,232 @@
 *{margin:0;padding:0;box-sizing:border-box}
 @page{size:A4 landscape;margin:0}
 body{font-family:var(--sans);color:var(--tinte);-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.pg{width:297mm;height:209.5mm;position:relative;overflow:hidden;background:var(--papier);padding:16mm 18mm 20mm;page-break-after:always;display:flex;flex-direction:column}
+.pg{width:297mm;height:209.5mm;position:relative;overflow:hidden;background:var(--papier);padding:15mm 18mm 18mm;page-break-after:always;display:flex;flex-direction:column}
 .pg.dark{background:var(--tiefsee);color:var(--schaum)}
+.pg.darker{background:var(--tiefsee-dunkel);color:var(--schaum)}
 .pg.sand{background:var(--sand)}
-.pgfoot{position:absolute;left:18mm;right:18mm;bottom:8mm;display:flex;justify-content:space-between;font-family:var(--mono);font-size:6.4pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau)}
+.pgfoot{position:absolute;left:18mm;right:18mm;bottom:7mm;display:flex;justify-content:space-between;font-family:var(--mono);font-size:6.2pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau)}
+.pg.dark .pgfoot,.pg.darker .pgfoot{color:rgba(245,241,233,.4)}
 .serif{font-family:var(--serif);font-weight:400}
 .mono{font-family:var(--mono)}
-.eyebrow{font-family:var(--mono);font-size:7.5pt;letter-spacing:.24em;text-transform:uppercase;color:var(--rot);display:flex;align-items:center;gap:4mm;margin-bottom:7mm}
+.eyebrow{font-family:var(--mono);font-size:7.2pt;letter-spacing:.24em;text-transform:uppercase;color:var(--rot);display:flex;align-items:center;gap:4mm;margin-bottom:6mm}
 .eyebrow::after{content:"";flex:1;height:.3mm;background:currentColor;opacity:.3}
-.pg.dark .eyebrow{color:var(--rot-hell)}
+.pg.dark .eyebrow,.pg.darker .eyebrow{color:var(--rot-hell)}
 h1,h2,h3{font-family:var(--serif);font-weight:400;line-height:1.05;letter-spacing:-.01em}
-.h1{font-size:34pt}.h2{font-size:24pt}.h3{font-size:15pt}
-.body{font-size:10pt;line-height:1.6;color:#3B4A50;max-width:130mm}
-.pg.dark .body{color:rgba(245,241,233,.83)}
+.h1{font-size:33pt}.h2{font-size:23pt}.h3{font-size:14pt}
+.body{font-size:9.6pt;line-height:1.6;color:#3B4A50;max-width:130mm}
+.pg.dark .body,.pg.darker .body{color:rgba(245,241,233,.83)}
 .grid{display:grid;gap:6mm;align-content:start}
 .cols2{grid-template-columns:1fr 1fr}.cols3{grid-template-columns:1fr 1fr 1fr}.cols4{grid-template-columns:repeat(4,1fr)}
-.cap{font-family:var(--mono);font-size:6.4pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau);margin-top:2.5mm}
-.pg.dark .cap{color:rgba(245,241,233,.55)}
-table{width:100%;border-collapse:collapse;font-size:8.6pt;margin-top:5mm}
-th{font-family:var(--mono);font-size:6.2pt;letter-spacing:.16em;text-transform:uppercase;color:var(--grau);text-align:left;font-weight:400;padding:2mm 2.5mm;border-bottom:.4mm solid var(--tinte)}
-.pg.dark th{border-bottom-color:var(--schaum)}
-td{padding:2.2mm 2.5mm;border-bottom:.2mm solid var(--linie);vertical-align:top}
-.pg.dark td{border-bottom-color:var(--linie-hell)}
-td.m{font-family:var(--mono);font-size:7.8pt;white-space:nowrap}
-td small{color:var(--grau);display:block;font-size:7pt}
+.cap{font-family:var(--mono);font-size:6.2pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau);margin-top:2.5mm;line-height:1.7}
+.pg.dark .cap,.pg.darker .cap{color:rgba(245,241,233,.55)}
+table{width:100%;border-collapse:collapse;font-size:8.4pt;margin-top:5mm}
+th{font-family:var(--mono);font-size:6pt;letter-spacing:.16em;text-transform:uppercase;color:var(--grau);text-align:left;font-weight:400;padding:2mm 2.5mm;border-bottom:.4mm solid var(--tinte)}
+.pg.dark th,.pg.darker th{border-bottom-color:var(--schaum)}
+td{padding:2mm 2.5mm;border-bottom:.2mm solid var(--linie);vertical-align:top}
+.pg.dark td,.pg.darker td{border-bottom-color:var(--linie-hell)}
+td.m{font-family:var(--mono);font-size:7.6pt;white-space:nowrap}
+td small{color:var(--grau);display:block;font-size:6.8pt}
 .demo{border-radius:1mm;display:grid;place-items:center;padding:8mm;border:.2mm solid var(--linie-hell);background:var(--tiefsee-dunkel)}
 .dont{background:var(--tiefsee);border-radius:1mm;aspect-ratio:4/3;display:grid;place-items:center;position:relative;overflow:hidden}
 .dont img,.dont svg{width:60%}
 .dont::after{content:"✕";position:absolute;top:2.5mm;right:3.5mm;color:var(--rot-hell);font-family:var(--mono);font-weight:700;font-size:10pt}
-.dont .lbl{position:absolute;left:3mm;bottom:2.5mm;font-family:var(--mono);font-size:5.6pt;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,241,233,.7)}
+.dont .lbl{position:absolute;left:3mm;bottom:2.5mm;font-family:var(--mono);font-size:5.4pt;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,241,233,.7)}
 .sw{border-radius:1mm;overflow:hidden;border:.2mm solid var(--linie);background:#fff}
-.sw .c{height:18mm}
-.sw .i{padding:3mm 3.5mm}
-.sw .n{font-family:var(--serif);font-size:10.5pt}
-.sw .v{font-family:var(--mono);font-size:6pt;color:var(--grau);margin-top:1mm;line-height:1.7}
-.sw .u{font-size:7pt;color:#54636A;margin-top:1mm;line-height:1.45}
+.sw .c{height:16mm}
+.sw .i{padding:2.6mm 3.2mm}
+.sw .n{font-family:var(--serif);font-size:10pt}
+.sw .v{font-family:var(--mono);font-size:5.8pt;color:var(--grau);margin-top:.8mm;line-height:1.7}
+.sw .u{font-size:6.8pt;color:#54636A;margin-top:1mm;line-height:1.45}
+.shot{border-radius:1.4mm;overflow:hidden;box-shadow:0 3mm 9mm rgba(11,45,60,.35);border:.25mm solid rgba(11,45,60,.25)}
+.shot img{width:100%;display:block}
+.browser .bar{background:#0A1E28;display:flex;align-items:center;gap:1.6mm;padding:2.2mm 3mm}
+.browser .bar i{width:2.2mm;height:2.2mm;border-radius:50%;background:rgba(245,241,233,.25)}
+.browser .bar .url{margin-left:3mm;flex:1;background:rgba(245,241,233,.08);border-radius:1mm;color:rgba(245,241,233,.6);font-family:var(--mono);font-size:5.6pt;letter-spacing:.08em;padding:1mm 2.5mm}
+.phone{border-radius:5.5mm;border:1.4mm solid #05141b;overflow:hidden;box-shadow:0 3mm 8mm rgba(11,45,60,.4);position:relative;background:#05141b}
+.phone img{width:100%;display:block;border-radius:4mm}
+.tile{aspect-ratio:1;display:flex;flex-direction:column;justify-content:space-between;padding:4.5mm;color:var(--schaum);position:relative;overflow:hidden}
+.tile .k{font-family:var(--mono);font-size:5pt;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,241,233,.65)}
+.tile .t{font-family:var(--serif);font-size:11pt;line-height:1.15}
+.tile .wv{width:12mm}
+.mm{font-family:var(--mono);font-size:5.6pt;letter-spacing:.08em;color:var(--rot)}
+.pg.dark .mm{color:var(--rot-hell)}
+.dim{stroke:#CC5142;stroke-width:.8}
+.check{list-style:none;margin-top:6mm;columns:2;column-gap:12mm}
+.check li{break-inside:avoid;position:relative;padding:2.6mm 0 2.6mm 8mm;border-bottom:.2mm solid var(--linie-hell);font-size:9pt;line-height:1.5;color:rgba(245,241,233,.85)}
+.check li::before{content:"";position:absolute;left:0;top:3.4mm;width:4mm;height:4mm;border:.35mm solid var(--rot-hell);border-radius:.8mm}
+.wave-i{display:block}
 </style>
 </head>
 <body>
 
+<!-- ============ TEIL A ============ -->
+
 <!-- 1 COVER -->
 <div class="pg dark" style="align-items:center;justify-content:center;text-align:center">
-  <div class="mono" style="font-size:7.5pt;letter-spacing:.32em;text-transform:uppercase;color:rgba(245,241,233,.65);margin-bottom:12mm">Helgoland · Corporate Identity · Version 1.0</div>
-  <img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:95mm" />
-  <p class="serif" style="font-style:italic;font-size:13pt;margin-top:11mm;color:rgba(245,241,233,.85)">Die Richtlinien. Kurz genug, um sie zu lesen.<br/>Klar genug, um sie zu halten.</p>
-  <div class="mono" style="font-size:6.4pt;letter-spacing:.24em;text-transform:uppercase;color:rgba(245,241,233,.5);margin-top:13mm">Zeichen · Farbe · Schrift · Web · Werkzeugkasten</div>
-  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>Konzeptstudie</span><span>Helgoland — Atmen</span></div>
+  <div class="mono" style="font-size:7.5pt;letter-spacing:.32em;text-transform:uppercase;color:rgba(245,241,233,.65);margin-bottom:11mm">Helgoland · Corporate Identity · Das Manual · Version 1.1</div>
+  <img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:92mm" />
+  <p class="serif" style="font-style:italic;font-size:13pt;margin-top:10mm;color:rgba(245,241,233,.85)">Fünfzig Seiten. Eine Welle.<br/>Alles, was die Marke braucht — und nichts sonst.</p>
+  <div class="mono" style="font-size:6.2pt;letter-spacing:.24em;text-transform:uppercase;color:rgba(245,241,233,.5);margin-top:12mm">Zeichen · Farbe · Schrift · Web · Social · Print · Raum · Werkzeugkasten</div>
+  <div class="pgfoot"><span>Konzeptstudie</span><span>Helgoland — Atmen</span></div>
 </div>
 
-<!-- 2 PRINZIP -->
+<!-- 2 INHALT -->
 <div class="pg">
-  <div class="eyebrow">01 · Das Prinzip</div>
-  <h2 class="h1">Eine Regel steht über allen:<br/><em style="font-style:italic">weniger.</em></h2>
-  <p class="body" style="margin-top:7mm;max-width:150mm">ATMEN ist eine leise Marke in einer lauten Kategorie. Jede Gestaltungsentscheidung folgt daraus: viel Fläche, wenig Elemente, kurze Sätze, eine Welle. Wenn etwas weggelassen werden kann, wird es weggelassen. Dieses Dokument regelt das Wenige, das bleibt — verbindlich.</p>
-  <p class="body" style="margin-top:5mm;max-width:150mm">Drei Bausteine tragen alles: das <b>Zeichen</b> (die Atemlinie), die <b>Farbe</b> (Tiefsee mit Schaum) und die <b>Schrift</b> (drei Stimmen, drei Schnitte). Wer diese drei richtig einsetzt, kann nichts falsch machen.</p>
-  <div class="pgfoot"><span>ATMEN · CI-Richtlinien</span><span>02</span></div>
+  <div class="eyebrow">Inhalt</div>
+  <h2 class="h1">Acht Teile.</h2>
+  <div class="grid cols2" style="margin-top:8mm;gap:0 14mm">
+    <div>
+      <table style="margin-top:0">
+        <tr><td class="m" style="color:var(--rot)">A</td><td><b>Grundlagen</b><small>Prinzip · Markenmodell · Die drei Stimmen</small></td></tr>
+        <tr><td class="m" style="color:var(--rot)">B</td><td><b>Das Zeichen</b><small>Varianten · Konstruktion · Schutzraum · Größen · Farbfassungen · Don’ts · Co-Branding</small></td></tr>
+        <tr><td class="m" style="color:var(--rot)">C</td><td><b>Die Farbe</b><small>Palette · Anteile · Kontrast · Farbklima</small></td></tr>
+        <tr><td class="m" style="color:var(--rot)">D</td><td><b>Die Typografie</b><small>Schriften · Skala · Satzregeln · Don’ts</small></td></tr>
+      </table>
+    </div>
+    <div>
+      <table style="margin-top:0">
+        <tr><td class="m" style="color:var(--rot)">E</td><td><b>Digital</b><small>Website Desktop &amp; Mobile · UI · Animation · App · E-Mail</small></td></tr>
+        <tr><td class="m" style="color:var(--rot)">F</td><td><b>Social Media</b><small>Formate · Profile · Instagram · Stories · LinkedIn · Facebook · Redaktion</small></td></tr>
+        <tr><td class="m" style="color:var(--rot)">G</td><td><b>Print &amp; Raum</b><small>Plakat · Anzeigen · Geschäftsausstattung · Beschilderung · Textil · Fähre</small></td></tr>
+        <tr><td class="m" style="color:var(--rot)">H</td><td><b>Bild &amp; Organisation</b><small>Bildwelt · Werkzeugkasten · Freigabe-Checkliste</small></td></tr>
+      </table>
+    </div>
+  </div>
+  <p class="body" style="margin-top:8mm">So lesen Sie dieses Manual: Jede Seite ist eine Regel oder ein Bauplan. Grau ist Erklärung, <span class="mono" style="color:var(--rot);font-size:8pt">Rot ist Maß</span>. Wer es eilig hat, liest nur die Überschriften — sie ergeben zusammen die Marke.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
 </div>
 
-<!-- 3 ZEICHEN VARIANTEN -->
+<!-- 3 PRINZIP -->
+<div class="pg">
+  <div class="eyebrow">A · Das Prinzip</div>
+  <h2 class="h1">Eine Regel steht über allen:<br/><em style="font-style:italic">weniger.</em></h2>
+  <p class="body" style="margin-top:7mm;max-width:150mm">ATMEN ist eine leise Marke in einer lauten Kategorie. Jede Gestaltungsentscheidung folgt daraus: viel Fläche, wenig Elemente, kurze Sätze, eine Welle. Wenn etwas weggelassen werden kann, wird es weggelassen. Dieses Manual regelt das Wenige, das bleibt — verbindlich.</p>
+  <p class="body" style="margin-top:5mm;max-width:150mm">Drei Bausteine tragen alles: das <b>Zeichen</b> (die Atemlinie), die <b>Farbe</b> (Tiefsee mit Schaum) und die <b>Schrift</b> (drei Stimmen, drei Schnitte). Wer diese drei richtig einsetzt, kann nichts falsch machen.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 4 MARKENMODELL -->
 <div class="pg dark">
-  <div class="eyebrow">02 · Das Zeichen — die Atemlinie</div>
+  <div class="eyebrow">A · Das Markenmodell</div>
+  <h2 class="h2">Was die Marke ist — auf einer Seite.</h2>
+  <div class="grid cols2" style="margin-top:7mm">
+    <div style="background:var(--tiefsee-dunkel);border:.2mm solid var(--linie-hell);border-radius:1mm;padding:7mm">
+      <div class="mono" style="font-size:6pt;letter-spacing:.22em;text-transform:uppercase;color:var(--rot-hell)">Kern</div>
+      <div class="serif" style="font-size:15pt;margin-top:2mm">Helgoland ist kein Reiseziel.<br/>Helgoland ist ein Zustand.</div>
+    </div>
+    <div style="background:var(--tiefsee-dunkel);border:.2mm solid var(--linie-hell);border-radius:1mm;padding:7mm">
+      <div class="mono" style="font-size:6pt;letter-spacing:.22em;text-transform:uppercase;color:var(--rot-hell)">Versprechen</div>
+      <div class="serif" style="font-size:15pt;margin-top:2mm">Deutschlands tiefster Atemzug.</div>
+    </div>
+    <div style="background:var(--tiefsee-dunkel);border:.2mm solid var(--linie-hell);border-radius:1mm;padding:7mm">
+      <div class="mono" style="font-size:6pt;letter-spacing:.22em;text-transform:uppercase;color:var(--rot-hell)">Haltung</div>
+      <p style="font-size:9pt;color:rgba(245,241,233,.85);margin-top:2mm;line-height:1.6">Ehrlich vor schön. Leise vor laut. Beweis vor Behauptung. Wir werben gegen den flachen Atem — nie gegen eine andere Insel, nie gegen den Gast.</p>
+    </div>
+    <div style="background:var(--tiefsee-dunkel);border:.2mm solid var(--linie-hell);border-radius:1mm;padding:7mm">
+      <div class="mono" style="font-size:6pt;letter-spacing:.22em;text-transform:uppercase;color:var(--rot-hell)">Beweise</div>
+      <p class="mono" style="font-size:8.6pt;color:rgba(245,241,233,.9);margin-top:2mm;line-height:2">70 km Abstand · 0 Autos · 0/8 Pollen<br/>200 Jahre Heilbad · 1.049 Robbengeburten<br/>Börte seit 1826 · Kulturerbe seit 2018</p>
+    </div>
+  </div>
+  <p class="body" style="margin-top:6mm">Jede Veröffentlichung muss auf mindestens eines der vier Felder einzahlen. Tut sie es nicht, erscheint sie nicht.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 5 STIMMEN -->
+<div class="pg">
+  <div class="eyebrow">A · Die drei Stimmen</div>
+  <h2 class="h2">So klingt die Marke.</h2>
+  <div class="grid cols3" style="margin-top:7mm">
+    <div style="background:#fff;border-radius:1mm;padding:6mm;border-top:1.2mm solid var(--rot);box-shadow:0 2mm 6mm rgba(11,45,60,.12)">
+      <div class="mono" style="font-size:6pt;letter-spacing:.2em;text-transform:uppercase;color:var(--grau);font-weight:700">Haltung</div>
+      <h3 class="h3" style="margin:2mm 0 1.5mm">Die ehrliche Stimme</h3>
+      <p style="font-size:8.4pt;color:#54636A;line-height:1.5">Die unbequeme Wahrheit zuerst — über Wetter, Anreise, Kleinheit.</p>
+      <p class="serif" style="font-size:9.5pt;margin-top:3mm;border-top:.2mm solid var(--linie);padding-top:2.5mm">„Wir versprechen nichts. Und halten es.“</p>
+    </div>
+    <div style="background:#fff;border-radius:1mm;padding:6mm;border-top:1.2mm solid var(--gruen);box-shadow:0 2mm 6mm rgba(11,45,60,.12)">
+      <div class="mono" style="font-size:6pt;letter-spacing:.2em;text-transform:uppercase;color:var(--grau);font-weight:700">Herz</div>
+      <h3 class="h3" style="margin:2mm 0 1.5mm">Die Atem-Stimme</h3>
+      <p style="font-size:8.4pt;color:#54636A;line-height:1.5">Eine leise Anweisung. Die Erlaubnis, nichts zu tun.</p>
+      <p class="serif" style="font-size:9.5pt;margin-top:3mm;border-top:.2mm solid var(--linie);padding-top:2.5mm">„Sie sind da. Atmen.“</p>
+    </div>
+    <div style="background:#fff;border-radius:1mm;padding:6mm;border-top:1.2mm solid var(--tiefsee);box-shadow:0 2mm 6mm rgba(11,45,60,.12)">
+      <div class="mono" style="font-size:6pt;letter-spacing:.2em;text-transform:uppercase;color:var(--grau);font-weight:700">Beweis</div>
+      <h3 class="h3" style="margin:2mm 0 1.5mm">Die Zahl-Stimme</h3>
+      <p style="font-size:8.4pt;color:#54636A;line-height:1.5">Deadpan-Fakten statt Adjektive — nachprüfbar.</p>
+      <p class="serif" style="font-size:9.5pt;margin-top:3mm;border-top:.2mm solid var(--linie);padding-top:2.5mm">„0 Autos. 0 Pollen. 0 Ausreden.“</p>
+    </div>
+  </div>
+  <table style="margin-top:6mm">
+    <tr><th>Immer</th><th>Nie</th></tr>
+    <tr><td>Kurze Sätze. Punkt. Viel Luft.</td><td>Ausrufezeichen, Superlative, „traumhaft“, „Perle“</td></tr>
+    <tr><td>Zahlen als Beweis, Einheit dahinter</td><td>Vergleiche mit anderen Inseln, Namen von Wettbewerbern</td></tr>
+    <tr><td>Selbstironie über Wetter &amp; Größe</td><td>Witze über Gäste, Belehrung, Moralisieren</td></tr>
+  </table>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- ============ TEIL B ============ -->
+
+<!-- 6 EINE WELLE -->
+<div class="pg dark">
+  <div class="eyebrow">B · Das Zeichen — die Atemlinie</div>
   <h2 class="h2">Es gibt genau eine Welle.</h2>
   <p class="body" style="margin-top:3mm;max-width:170mm">Ein Atemzug als Linie: ruhig, symmetrisch, ein einziger Bogen. Die Atemlinie wird nie nachgezeichnet — sie kommt immer als Datei aus dem Werkzeugkasten. Strichstärke, Rundung und Proportion sind Teil des Zeichens.</p>
-  <div class="grid cols3" style="margin-top:8mm">
-    <div><div class="demo" style="aspect-ratio:4/3"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:75%"/></div><div class="cap">Primär · gestapelt — Cover, Plakat, Textil</div></div>
-    <div><div class="demo" style="aspect-ratio:4/3"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-horizontal-schaum.svg" style="width:88%"/></div><div class="cap">Sekundär · horizontal — Navigation, Briefkopf</div></div>
-    <div><div class="demo" style="aspect-ratio:4/3"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atemlinie-schaum.svg" style="width:70%"/></div><div class="cap">Solo · nur die Linie — klein, Muster, Stickerei</div></div>
+  <div class="grid cols3" style="margin-top:7mm">
+    <div><div class="demo" style="aspect-ratio:4/3"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:75%"/></div><div class="cap">01 · Primär · gestapelt — Cover, Plakat, Textil</div></div>
+    <div><div class="demo" style="aspect-ratio:4/3"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-horizontal-schaum.svg" style="width:88%"/></div><div class="cap">02 · Sekundär · horizontal — Navigation, Briefkopf</div></div>
+    <div><div class="demo" style="aspect-ratio:4/3"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atemlinie-schaum.svg" style="width:70%"/></div><div class="cap">03 · Solo · nur die Linie — klein, Muster, Stickerei</div></div>
   </div>
-  <table>
-    <tr><th>Variante</th><th>Digital min.</th><th>Print min.</th><th>Wann</th></tr>
-    <tr><td>Lockup gestapelt</td><td class="m">90 px Breite</td><td class="m">24 mm</td><td>Cover, Plakat, Fahne, Textil — der Standard.</td></tr>
-    <tr><td>Lockup horizontal</td><td class="m">140 px Breite</td><td class="m">35 mm</td><td>Navigation, Briefkopf, schmale Banner.</td></tr>
-    <tr><td>Atemlinie solo</td><td class="m">32 px Breite</td><td class="m">8 mm</td><td>Unter 90 px, Stickerei, Prägung, Muster.</td></tr>
-    <tr><td>Favicon / App-Icon</td><td class="m">16 px / 1024 px</td><td class="m">—</td><td>Immer nur die Linie auf Tiefsee-Kachel.</td></tr>
-  </table>
-  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>ATMEN · CI-Richtlinien</span><span>03</span></div>
+  <p class="body" style="margin-top:6mm">Die Wortmarke ohne Linie existiert nicht als Logo. Ausnahme: das Wort „ATMEN“ im Fließtext — dann als normaler Text, ohne Sperrung.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
 </div>
 
-<!-- 4 SCHUTZRAUM -->
+<!-- 7 KONSTRUKTION -->
 <div class="pg dark">
-  <div class="eyebrow">02 · Schutzraum &amp; Position</div>
+  <div class="eyebrow">B · Konstruktion</div>
+  <h2 class="h2">Die Geometrie des Atems.</h2>
+  <div style="display:flex;gap:12mm;margin-top:6mm;align-items:center">
+    <svg viewBox="0 0 150 78" style="width:150mm;flex:none" font-family="Space Mono, monospace">
+      <defs><pattern id="gr" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="rgba(245,241,233,.12)" stroke-width=".3"/></pattern></defs>
+      <rect x="10" y="8" width="130" height="44" fill="url(#gr)"/>
+      <g transform="translate(10,8)" fill="none" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124"/></g>
+      <g class="dim" fill="none">
+        <path d="M54 66 H96" marker-start="url(#a)"/><path d="M10 60 H140"/>
+        <path d="M10 58 V62 M140 58 V62 M54 64 V68 M96 64 V68"/>
+        <path d="M146 16 V38 M144 16 H148 M144 38 H148"/>
+      </g>
+      <g font-size="4.2" fill="#CC5142" letter-spacing=".4">
+        <text x="63" y="72">B/3 · BOGEN</text>
+        <text x="63" y="58">130 E · BREITE</text>
+        <text x="143" y="13" >22 E</text>
+        <text x="4" y="30" transform="rotate(-90 8 30)">44 E</text>
+      </g>
+      <g font-size="4" fill="#7C8B91" letter-spacing=".3">
+        <text x="10" y="5">STRICH = 3 E (2,3 % DER BREITE) · KAPPEN &amp; ECKEN RUND</text>
+      </g>
+    </svg>
+    <div>
+      <table style="margin-top:0">
+        <tr><th>Maß</th><th>Wert</th></tr>
+        <tr><td>Zeichenfläche</td><td class="m">130 × 44 E</td></tr>
+        <tr><td>Bogenbreite</td><td class="m">42 E ≈ B/3, zentriert</td></tr>
+        <tr><td>Bogenhöhe</td><td class="m">22 E = H/2</td></tr>
+        <tr><td>Strichstärke</td><td class="m">3 E = 2,3 % von B</td></tr>
+        <tr><td>Linienenden</td><td class="m">rund (Cap: round)</td></tr>
+        <tr><td>Kurve</td><td class="m">2 Bézier-Segmente, symmetrisch</td></tr>
+      </table>
+      <p class="body" style="margin-top:4mm;font-size:8.4pt">E = Konstruktionseinheit. Alle Ableitungen entstehen durch Skalieren der Originaldatei — nie durch Nachbauen.</p>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 8 SCHUTZRAUM -->
+<div class="pg dark">
+  <div class="eyebrow">B · Schutzraum &amp; Position</div>
   <h2 class="h2">Schutzraum: ein Atem.</h2>
   <div style="display:flex;gap:12mm;margin-top:6mm;align-items:center">
-    <svg viewBox="0 0 560 340" style="width:120mm;flex:none">
+    <svg viewBox="0 0 560 340" style="width:118mm;flex:none">
       <rect x="80" y="55" width="400" height="230" fill="none" stroke="#CC5142" stroke-width="1" stroke-dasharray="5 5"/>
       <g transform="translate(150,88) scale(2)" fill="none" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124"/></g>
       <text x="280" y="255" text-anchor="middle" font-family="Instrument Serif, Georgia" font-size="66" letter-spacing="15" fill="#F5F1E9">ATMEN</text>
@@ -111,17 +255,53 @@ td small{color:var(--grau);display:block;font-size:7pt}
       </g>
     </svg>
     <div>
-      <p class="body">Der Freiraum um das Zeichen entspricht rundum der <b>Höhe des Wellenbogens</b> („ein Atem“). In diesem Raum steht nichts — kein Text, kein Bildmotiv, keine Kante.</p>
-      <p class="body" style="margin-top:4mm"><b>Position:</b> Auf Plakaten und Motiven steht das Zeichen unten links oder unten zentriert. Im Web oben links. Es schwebt nie mitten im Motiv und konkurriert nie mit einer Headline gleicher Größe.</p>
+      <p class="body">Der Freiraum um das Zeichen entspricht rundum der <b>Höhe des Wellenbogens</b> („ein Atem“). In diesem Raum steht nichts — kein Text, kein Bildmotiv, keine Kante, kein zweites Logo.</p>
+      <p class="body" style="margin-top:4mm"><b>Position:</b> Auf Plakaten und Motiven unten links oder unten zentriert. Im Web oben links. Nie mittig im Motiv schwebend, nie in Konkurrenz zu einer gleich großen Headline.</p>
       <p class="body" style="margin-top:4mm"><b>Auf Fotografie:</b> nur in Schaum, nur mit Scrim (Tiefsee dunkel, 30–90 %).</p>
     </div>
   </div>
-  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>ATMEN · CI-Richtlinien</span><span>04</span></div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
 </div>
 
-<!-- 5 DONTS -->
+<!-- 9 GRÖSSEN -->
+<div class="pg">
+  <div class="eyebrow">B · Größen</div>
+  <h2 class="h2">Von der Fahne bis zum Favicon.</h2>
+  <div style="display:flex;align-items:flex-end;gap:10mm;margin-top:9mm;background:var(--tiefsee);border-radius:1mm;padding:10mm 8mm">
+    <div style="text-align:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:58mm"/><div class="cap" style="color:rgba(245,241,233,.55)">frei skalierbar</div></div>
+    <div style="text-align:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:36mm"/><div class="cap" style="color:rgba(245,241,233,.55)">36 mm</div></div>
+    <div style="text-align:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:24mm"/><div class="cap" style="color:rgba(245,241,233,.55)">24 mm · Minimum</div></div>
+    <div style="text-align:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atemlinie-schaum.svg" style="width:16mm"/><div class="cap" style="color:rgba(245,241,233,.55)">&lt; 24 mm: nur Linie</div></div>
+    <div style="text-align:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atemlinie-schaum.svg" style="width:8mm"/><div class="cap" style="color:rgba(245,241,233,.55)">8 mm · Minimum Linie</div></div>
+    <div style="text-align:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/favicon.svg" style="width:6mm"/><div class="cap" style="color:rgba(245,241,233,.55)">Favicon</div></div>
+  </div>
+  <table style="margin-top:6mm">
+    <tr><th>Variante</th><th>Digital min.</th><th>Print min.</th><th>Wann</th></tr>
+    <tr><td>Lockup gestapelt</td><td class="m">90 px Breite</td><td class="m">24 mm</td><td>Cover, Plakat, Fahne, Textil — der Standard.</td></tr>
+    <tr><td>Lockup horizontal</td><td class="m">140 px Breite</td><td class="m">35 mm</td><td>Navigation, Briefkopf, schmale Banner.</td></tr>
+    <tr><td>Atemlinie solo</td><td class="m">32 px Breite</td><td class="m">8 mm</td><td>Unterhalb der Lockup-Minima, Stickerei, Prägung, Muster.</td></tr>
+    <tr><td>Favicon / App-Icon</td><td class="m">16 px / 1024 px</td><td class="m">—</td><td>Immer nur die Linie auf Tiefsee-Kachel.</td></tr>
+  </table>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 10 FARBFASSUNGEN -->
 <div class="pg sand">
-  <div class="eyebrow">02 · Was nie passiert</div>
+  <div class="eyebrow">B · Farbfassungen des Zeichens</div>
+  <h2 class="h2">Zwei Farben. Vier Gründe.</h2>
+  <div class="grid cols4" style="margin-top:7mm">
+    <div><div style="background:var(--tiefsee);border-radius:1mm;aspect-ratio:1;display:grid;place-items:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:70%"/></div><div class="cap">Schaum auf Tiefsee — Standard</div></div>
+    <div><div style="background:var(--papier);border:.2mm solid var(--linie);border-radius:1mm;aspect-ratio:1;display:grid;place-items:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-tiefsee.svg" style="width:70%"/></div><div class="cap">Tiefsee auf Schaum — helle Medien</div></div>
+    <div><div style="background:var(--sand);border:.2mm solid var(--linie);border-radius:1mm;aspect-ratio:1;display:grid;place-items:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-tiefsee.svg" style="width:70%"/></div><div class="cap">Tiefsee auf Sand — Papier &amp; Karton</div></div>
+    <div><div style="background:linear-gradient(180deg,#134155 0%,#0B2D3C 55%,rgba(6,23,31,.95) 100%);border-radius:1mm;aspect-ratio:1;display:grid;place-items:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:70%"/></div><div class="cap">Auf Bild — nur mit Scrim (30–90 %)</div></div>
+  </div>
+  <p class="body" style="margin-top:6mm">Es gibt keine rote, grüne oder mehrfarbige Fassung des Zeichens. Auf Felsenrot steht das Zeichen nie — Rot ist Satzzeichen, nicht Bühne. Sonderverfahren (Prägung, Gravur, Stick) verwenden die Kontur der Originaldatei, einfarbig.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 11 DONTS -->
+<div class="pg sand">
+  <div class="eyebrow">B · Was nie passiert</div>
   <h2 class="h2">Acht Wege, es falsch zu machen.</h2>
   <div class="grid cols4" style="margin-top:7mm">
     <div class="dont"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="transform:scaleX(1.6)"/><span class="lbl">verzerren</span></div>
@@ -133,12 +313,35 @@ td small{color:var(--grau);display:block;font-size:7pt}
     <div class="dont"><svg viewBox="0 0 400 230"><g transform="translate(70,10) scale(2)" fill="none" stroke="#F5F1E9" stroke-width="8" stroke-linecap="round"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124"/></g><text x="200" y="195" text-anchor="middle" font-family="Instrument Serif" font-size="60" letter-spacing="13" fill="#F5F1E9">ATMEN</text></svg><span class="lbl">Strichstärke ändern</span></div>
     <div class="dont"><svg viewBox="0 0 400 230"><text x="200" y="135" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="58" letter-spacing="5" fill="#F5F1E9">ATMEN</text></svg><span class="lbl">fremde Schrift</span></div>
   </div>
-  <div class="pgfoot"><span>ATMEN · CI-Richtlinien</span><span>05</span></div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
 </div>
 
-<!-- 6 FARBEN -->
+<!-- 12 CO-BRANDING -->
 <div class="pg">
-  <div class="eyebrow">03 · Die Farbe</div>
+  <div class="eyebrow">B · Co-Branding &amp; Partner</div>
+  <h2 class="h2">Gemeinsam, aber geordnet.</h2>
+  <p class="body" style="margin-top:3mm;max-width:160mm">Mit Gemeinde, Reedereien und Partnern tritt die Marke regelmäßig gemeinsam auf. Regel: gleiche optische Höhe, Trennlinie, dazwischen zwei Atem Abstand. ATMEN steht links (Absender), der Partner rechts.</p>
+  <div style="background:var(--tiefsee);border-radius:1mm;padding:12mm;margin-top:7mm;display:flex;align-items:center;justify-content:center;gap:14mm">
+    <img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-horizontal-schaum.svg" style="width:64mm"/>
+    <div style="width:.35mm;height:16mm;background:rgba(245,241,233,.35)"></div>
+    <div style="font-family:var(--sans);font-weight:600;color:var(--schaum);font-size:12pt;letter-spacing:.06em;display:flex;align-items:center;gap:4mm"><div style="width:11mm;height:11mm;border:.5mm solid rgba(245,241,233,.6);border-radius:1mm;display:grid;place-items:center;font-size:7pt;font-family:var(--mono)">LOGO</div> PARTNER</div>
+  </div>
+  <div class="cap">Co-Branding-Leiste · Höhe Partner-Logo = Höhe der Wortmarke · Abstand je 2 Atem zur Trennlinie</div>
+  <table style="margin-top:6mm">
+    <tr><th>Situation</th><th>Regel</th></tr>
+    <tr><td>ATMEN ist Absender (Kampagne, Event)</td><td>ATMEN links/oben, Partner in der Co-Branding-Leiste unten.</td></tr>
+    <tr><td>Partner ist Absender (z.&nbsp;B. Reederei-Anzeige)</td><td>Atemlinie solo als Gastzeichen, min. 8 mm, im Schutzraum.</td></tr>
+    <tr><td>Förderhinweise / Behörden</td><td>Immer in der Fußzone, nie neben dem Zeichen.</td></tr>
+    <tr><td>Mehr als zwei Partner</td><td>Partnerzeile in Grau (Mono, Versalien), keine Logo-Parade.</td></tr>
+  </table>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- ============ TEIL C ============ -->
+
+<!-- 13 PALETTE -->
+<div class="pg">
+  <div class="eyebrow">C · Die Farbe</div>
   <h2 class="h2">Tiefsee trägt. Rot ist ein Satzzeichen.</h2>
   <div class="grid cols4" style="margin-top:6mm">
     <div class="sw"><div class="c" style="background:#0B2D3C"></div><div class="i"><div class="n">Tiefseeblau</div><div class="v">HEX 0B2D3C · RGB 11 45 60<br/>CMYK* 82 25 0 76</div><div class="u">Grundfarbe: Flächen, Plakate, dunkle Kapitel.</div></div></div>
@@ -150,15 +353,15 @@ td small{color:var(--grau);display:block;font-size:7pt}
     <div class="sw"><div class="c" style="background:#06171F"></div><div class="i"><div class="n">Tiefsee dunkel</div><div class="v">HEX 06171F · RGB 6 23 31<br/>CMYK* 80 40 0 92</div><div class="u">Footer, Scrim, Abdunkelung.</div></div></div>
     <div class="sw"><div class="c" style="background:#CC5142"></div><div class="i"><div class="n">Felsenrot hell</div><div class="v">HEX CC5142 · RGB 204 81 66<br/>CMYK* 0 60 68 20</div><div class="u">Nur auf Tiefsee: Labels &amp; Akzente.</div></div></div>
   </div>
-  <p class="body" style="margin-top:4mm;font-size:8pt;color:var(--grau)">* CMYK unkalibrierte Richtwerte — vor Produktion Proof erstellen. Verläufe gibt es nicht; einzige Ausnahme ist der Scrim hinter Bildern.</p>
-  <div class="pgfoot"><span>ATMEN · CI-Richtlinien</span><span>06</span></div>
+  <p class="body" style="margin-top:4mm;font-size:8pt;color:var(--grau)">* CMYK unkalibrierte Richtwerte — vor Produktion Proof erstellen. Sonderfarben: auf Anfrage HKS/Pantone-Abstimmung am Andruck, nie am Bildschirm.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
 </div>
 
-<!-- 7 ANTEILE + KONTRAST -->
+<!-- 14 ANTEILE -->
 <div class="pg">
-  <div class="eyebrow">03 · Anteile &amp; Kontrast</div>
-  <h2 class="h2">Wie viel wovon — und was lesbar ist.</h2>
-  <div style="display:flex;height:14mm;border-radius:1mm;overflow:hidden;margin-top:7mm;font-family:var(--mono);font-size:6.5pt">
+  <div class="eyebrow">C · Anteile &amp; Regeln</div>
+  <h2 class="h2">Wie viel wovon.</h2>
+  <div style="display:flex;height:16mm;border-radius:1mm;overflow:hidden;margin-top:8mm;font-family:var(--mono);font-size:6.5pt">
     <div style="flex:50;background:#0B2D3C;color:#F5F1E9;display:grid;place-items:center">50</div>
     <div style="flex:30;background:#F5F1E9;color:#16242B;display:grid;place-items:center;border-block:.2mm solid var(--linie)">30</div>
     <div style="flex:10;background:#EBE3D4;color:#16242B;display:grid;place-items:center">10</div>
@@ -168,105 +371,826 @@ td small{color:var(--grau);display:block;font-size:7pt}
   </div>
   <div class="cap">Tiefsee · Schaum · Sand · Tinte · Rot · Grün — Richtwerte je Anwendung</div>
   <table style="margin-top:7mm">
-    <tr><th>Kombination</th><th>Kontrast</th><th>WCAG</th><th>Einsatz</th></tr>
-    <tr><td><span style="background:#0B2D3C;color:#F5F1E9;padding:.5mm 2mm;font-family:var(--serif)">Schaum auf Tiefsee</span></td><td class="m">≈ 12,5 : 1</td><td class="m">AAA ✓</td><td>Standard für dunkle Flächen.</td></tr>
-    <tr><td><span style="background:#F5F1E9;color:#16242B;padding:.5mm 2mm;border:.2mm solid var(--linie);font-family:var(--serif)">Tinte auf Schaum</span></td><td class="m">≈ 13,8 : 1</td><td class="m">AAA ✓</td><td>Standard für helle Flächen.</td></tr>
-    <tr><td><span style="background:#F5F1E9;color:#B23A2E;padding:.5mm 2mm;border:.2mm solid var(--linie);font-family:var(--serif)">Felsenrot auf Schaum</span></td><td class="m">≈ 5,1 : 1</td><td class="m">AA ✓</td><td>Labels &amp; Akzente auf hell.</td></tr>
-    <tr><td><span style="background:#0B2D3C;color:#CC5142;padding:.5mm 2mm;font-family:var(--serif)">Felsenrot hell auf Tiefsee</span></td><td class="m">≈ 3,3 : 1</td><td class="m">AA groß ✓</td><td>Nur große Labels/Versalien auf dunkel.</td></tr>
-    <tr><td><span style="background:#0B2D3C;color:#B23A2E;padding:.5mm 2mm;font-family:var(--serif)">Felsenrot auf Tiefsee</span></td><td class="m">≈ 2,4 : 1</td><td class="m">✗</td><td>Nur dekorativ — nie für Text.</td></tr>
+    <tr><th>Regel</th><th>Begründung</th></tr>
+    <tr><td>Felsenrot nie als Fläche über 10 % des Formats</td><td>Rot ist Signal. Wird es Fläche, schreit die Marke.</td></tr>
+    <tr><td>Keine Verläufe — außer dem Scrim hinter Bildern</td><td>Flächen sind ruhig; Tiefe entsteht durch Fotografie, nicht durch Effekte.</td></tr>
+    <tr><td>Grün nur in Natur-Kontexten (Ranger, Robben, Karten)</td><td>Zweiter Akzent bleibt zweite Geige.</td></tr>
+    <tr><td>Weiß (reines #FFF) existiert nicht</td><td>Unsere „weiße“ Fläche ist Schaum — wärmer, nordischer.</td></tr>
+    <tr><td>Schwarz (reines #000) existiert nicht</td><td>Unsere dunkelste Fläche ist Tiefsee dunkel.</td></tr>
   </table>
-  <div class="pgfoot"><span>ATMEN · CI-Richtlinien</span><span>07</span></div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
 </div>
 
-<!-- 8 TYPO BEISPIELE -->
-<div class="pg sand">
-  <div class="eyebrow">04 · Die Typografie</div>
-  <h2 class="h2">Drei Stimmen. Drei Schriften. Fertig.</h2>
-  <div style="background:#fff;border:.2mm solid var(--linie);border-radius:1mm;padding:8mm;margin-top:6mm">
-    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0;border-bottom:.2mm solid var(--linie)"><div class="mono" style="font-size:6.2pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">Display · Serif 400<br/>56–96 px · LH 1.04</div><div class="serif" style="font-size:24pt;line-height:1.05">Deutschlands tiefster Atemzug.</div></div>
-    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0;border-bottom:.2mm solid var(--linie)"><div class="mono" style="font-size:6.2pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">Lede · Serif kursiv · 22 px</div><div class="serif" style="font-style:italic;font-size:13pt">„Bei uns ist nichts los. Das ist kein Versehen.“</div></div>
-    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0;border-bottom:.2mm solid var(--linie)"><div class="mono" style="font-size:6.2pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">Fließtext · Sans 400 · 18 px</div><div style="font-size:9.5pt;line-height:1.6;color:#3B4A50;max-width:120mm">Siebzig Kilometer draußen beginnt etwas, das drinnen fehlt. Zeilenlänge 45–65 Zeichen, niemals Blocksatz.</div></div>
-    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0;border-bottom:.2mm solid var(--linie)"><div class="mono" style="font-size:6.2pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">Label · Mono 400 · 12 px</div><div class="mono" style="font-size:7pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau)">Anreise · Die Reise ist der erste Programmpunkt</div></div>
-    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0"><div class="mono" style="font-size:6.2pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">Zahl · Mono 700</div><div class="mono" style="font-size:13pt;font-weight:700">0 Autos · 0/8 Pollen · 70 km</div></div>
-  </div>
-  <div class="pgfoot"><span>ATMEN · CI-Richtlinien</span><span>08</span></div>
-</div>
-
-<!-- 9 TYPO TABELLE -->
+<!-- 15 KONTRAST -->
 <div class="pg">
-  <div class="eyebrow">04 · Größen &amp; Regeln</div>
-  <h2 class="h2">Die Skala.</h2>
+  <div class="eyebrow">C · Kontrast &amp; Barrierefreiheit</div>
+  <h2 class="h2">Was lesbar ist — gemessen, nicht gefühlt.</h2>
+  <table style="margin-top:7mm">
+    <tr><th>Kombination</th><th>Kontrast</th><th>WCAG 2.1</th><th>Einsatz</th></tr>
+    <tr><td><span style="background:#0B2D3C;color:#F5F1E9;padding:.6mm 2.2mm;font-family:var(--serif)">Schaum auf Tiefsee</span></td><td class="m">≈ 12,5 : 1</td><td class="m">AAA ✓</td><td>Standard für dunkle Flächen — Fließtext erlaubt.</td></tr>
+    <tr><td><span style="background:#F5F1E9;color:#16242B;padding:.6mm 2.2mm;border:.2mm solid var(--linie);font-family:var(--serif)">Tinte auf Schaum</span></td><td class="m">≈ 13,8 : 1</td><td class="m">AAA ✓</td><td>Standard für helle Flächen — Fließtext erlaubt.</td></tr>
+    <tr><td><span style="background:#F5F1E9;color:#B23A2E;padding:.6mm 2.2mm;border:.2mm solid var(--linie);font-family:var(--serif)">Felsenrot auf Schaum</span></td><td class="m">≈ 5,1 : 1</td><td class="m">AA ✓</td><td>Labels &amp; Akzente auf hell.</td></tr>
+    <tr><td><span style="background:#F5F1E9;color:#3F6B4A;padding:.6mm 2.2mm;border:.2mm solid var(--linie);font-family:var(--serif)">Klippengrün auf Schaum</span></td><td class="m">≈ 5,4 : 1</td><td class="m">AA ✓</td><td>Natur-Labels auf hell.</td></tr>
+    <tr><td><span style="background:#0B2D3C;color:#CC5142;padding:.6mm 2.2mm;font-family:var(--serif)">Felsenrot hell auf Tiefsee</span></td><td class="m">≈ 3,3 : 1</td><td class="m">AA groß ✓</td><td>Nur große Labels/Versalien ≥ 14 pt auf dunkel.</td></tr>
+    <tr><td><span style="background:#0B2D3C;color:#B23A2E;padding:.6mm 2.2mm;font-family:var(--serif)">Felsenrot auf Tiefsee</span></td><td class="m">≈ 2,4 : 1</td><td class="m">✗</td><td>Nur dekorativ (Linien, Punkte) — nie für Text.</td></tr>
+    <tr><td><span style="background:#EBE3D4;color:#16242B;padding:.6mm 2.2mm;font-family:var(--serif)">Tinte auf Sand</span></td><td class="m">≈ 12,1 : 1</td><td class="m">AAA ✓</td><td>Fließtext auf Sand-Kapiteln.</td></tr>
+  </table>
+  <p class="body" style="margin-top:5mm">Faustregel: Fließtext nur in den AAA-Kombinationen. Alles unter 4,5 : 1 ist Dekoration und trägt keine Information allein.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 16 FARBKLIMA -->
+<div class="pg">
+  <div class="eyebrow">C · Farbklima</div>
+  <h2 class="h2">Drei Bühnen, ein Stück.</h2>
+  <div class="grid cols3" style="margin-top:7mm">
+    <div>
+      <div style="background:var(--tiefsee);border-radius:1mm;aspect-ratio:3/4;padding:6mm;display:flex;flex-direction:column">
+        <div class="mono" style="font-size:5pt;letter-spacing:.2em;color:#CC5142;text-transform:uppercase">Kapitel · dunkel</div>
+        <div class="serif" style="color:var(--schaum);font-size:13pt;margin-top:2.5mm;line-height:1.15">Die große Bühne:<br/>Tiefsee.</div>
+        <div style="margin-top:auto"><svg class="wave-i" width="52" height="16" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"/></svg><div class="mono" style="font-size:4.6pt;letter-spacing:.24em;color:rgba(245,241,233,.6);margin-top:2mm">HELGOLAND · ATMEN</div></div>
+      </div><div class="cap">Hero, Kampagne, Emotion</div>
+    </div>
+    <div>
+      <div style="background:var(--papier);border:.2mm solid var(--linie);border-radius:1mm;aspect-ratio:3/4;padding:6mm;display:flex;flex-direction:column">
+        <div class="mono" style="font-size:5pt;letter-spacing:.2em;color:var(--rot);text-transform:uppercase">Kapitel · hell</div>
+        <div class="serif" style="font-size:13pt;margin-top:2.5mm;line-height:1.15">Die Arbeitsfläche:<br/>Schaum.</div>
+        <p style="font-size:7pt;color:#54636A;margin-top:2.5mm;line-height:1.6">Inhalte, Listen, Service. Tinte auf Schaum, Rot nur als Label.</p>
+        <div style="margin-top:auto"><svg class="wave-i" width="52" height="16" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#0B2D3C" stroke-width="3" stroke-linecap="round"/></svg></div>
+      </div><div class="cap">Inhalt, Service, Lesbarkeit</div>
+    </div>
+    <div>
+      <div style="background:var(--sand);border:.2mm solid var(--linie);border-radius:1mm;aspect-ratio:3/4;padding:6mm;display:flex;flex-direction:column">
+        <div class="mono" style="font-size:5pt;letter-spacing:.2em;color:var(--rot);text-transform:uppercase">Kapitel · Sand</div>
+        <div class="serif" style="font-size:13pt;margin-top:2.5mm;line-height:1.15">Der Rhythmus:<br/>Sand.</div>
+        <p style="font-size:7pt;color:#54636A;margin-top:2.5mm;line-height:1.6">Wechselflächen zwischen dunklen und hellen Kapiteln — die Atempause des Layouts.</p>
+        <div style="margin-top:auto"><svg class="wave-i" width="52" height="16" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#0B2D3C" stroke-width="3" stroke-linecap="round"/></svg></div>
+      </div><div class="cap">Zwischenkapitel, Ruhe</div>
+    </div>
+  </div>
+  <p class="body" style="margin-top:6mm">Seitenfolgen wechseln wie Atemzüge: dunkel — hell — Sand — dunkel. Nie zwei laute Seiten hintereinander.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- ============ TEIL D ============ -->
+
+<!-- 17 SCHRIFTEN -->
+<div class="pg sand">
+  <div class="eyebrow">D · Die Typografie</div>
+  <h2 class="h2">Drei Stimmen. Drei Schriften. Fertig.</h2>
+  <div class="grid cols3" style="margin-top:7mm">
+    <div style="background:#fff;border:.2mm solid var(--linie);border-radius:1mm;padding:6mm">
+      <div class="serif" style="font-size:34pt;line-height:1">Aa</div>
+      <div class="mono" style="font-size:5.6pt;letter-spacing:.16em;text-transform:uppercase;color:var(--rot);margin-top:2mm">Instrument Serif · die Seele</div>
+      <p class="serif" style="font-size:9pt;margin-top:2.5mm;line-height:1.45">ABCDEFGHIJKLM<br/>abcdefghijklm · 1826 · „“</p>
+      <p style="font-size:7.4pt;color:#54636A;margin-top:2.5mm;line-height:1.55">Headlines, Zitate, Wortmarke. Nur Schnitt 400 — regulär und kursiv. Nie fett.</p>
+    </div>
+    <div style="background:#fff;border:.2mm solid var(--linie);border-radius:1mm;padding:6mm">
+      <div style="font-family:var(--sans);font-weight:500;font-size:34pt;line-height:1">Aa</div>
+      <div class="mono" style="font-size:5.6pt;letter-spacing:.16em;text-transform:uppercase;color:var(--rot);margin-top:2mm">Instrument Sans · die Klarheit</div>
+      <p style="font-size:9pt;margin-top:2.5mm;line-height:1.45">ABCDEFGHIJKLM<br/>abcdefghijklm · 0123456789</p>
+      <p style="font-size:7.4pt;color:#54636A;margin-top:2.5mm;line-height:1.55">Fließtext und Interface. Schnitte 400/500/600 — 600 nur für Zwischentitel.</p>
+    </div>
+    <div style="background:#fff;border:.2mm solid var(--linie);border-radius:1mm;padding:6mm">
+      <div class="mono" style="font-size:34pt;line-height:1">Aa</div>
+      <div class="mono" style="font-size:5.6pt;letter-spacing:.16em;text-transform:uppercase;color:var(--rot);margin-top:2mm">Space Mono · die Zahl</div>
+      <p class="mono" style="font-size:8.4pt;margin-top:2.5mm;line-height:1.5">ABCDEFGHIJKLM<br/>0123456789 · 54°11′N</p>
+      <p style="font-size:7.4pt;color:#54636A;margin-top:2.5mm;line-height:1.55">Labels, Fakten, Koordinaten — Versalien mit Laufweite. Schnitte 400/700.</p>
+    </div>
+  </div>
+  <p class="body" style="margin-top:6mm">Es gibt keine vierte Schrift. Systemschrift-Fallbacks: Georgia (Serif), Arial/Helvetica (Sans), Courier (Mono) — nur wo Webfonts technisch unmöglich sind (z.&nbsp;B. E-Mail).</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 18 SKALA -->
+<div class="pg">
+  <div class="eyebrow">D · Die Skala</div>
+  <h2 class="h2">Größen mit Absicht.</h2>
+  <div style="background:#fff;border:.2mm solid var(--linie);border-radius:1mm;padding:8mm;margin-top:6mm">
+    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0;border-bottom:.2mm solid var(--linie)"><div class="mono" style="font-size:6pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">Display · Serif 400<br/>56–96 px · LH 1.04</div><div class="serif" style="font-size:24pt;line-height:1.05">Deutschlands tiefster Atemzug.</div></div>
+    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0;border-bottom:.2mm solid var(--linie)"><div class="mono" style="font-size:6pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">H2 · Serif 400 · 34 px</div><div class="serif" style="font-size:17pt">Wegweiser, die man zitiert.</div></div>
+    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0;border-bottom:.2mm solid var(--linie)"><div class="mono" style="font-size:6pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">Lede · Serif kursiv · 22 px</div><div class="serif" style="font-style:italic;font-size:12.5pt">„Bei uns ist nichts los. Das ist kein Versehen.“</div></div>
+    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0;border-bottom:.2mm solid var(--linie)"><div class="mono" style="font-size:6pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">Fließtext · Sans 400 · 18 px</div><div style="font-size:9.5pt;line-height:1.6;color:#3B4A50;max-width:120mm">Siebzig Kilometer draußen beginnt etwas, das drinnen fehlt. Zeilenlänge 45–65 Zeichen, niemals Blocksatz.</div></div>
+    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0;border-bottom:.2mm solid var(--linie)"><div class="mono" style="font-size:6pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">Label · Mono 400 · 12 px</div><div class="mono" style="font-size:7pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau)">Anreise · Die Reise ist der erste Programmpunkt</div></div>
+    <div style="display:grid;grid-template-columns:44mm 1fr;gap:5mm;align-items:baseline;padding:3mm 0"><div class="mono" style="font-size:6pt;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)">Zahl · Mono 700</div><div class="mono" style="font-size:13pt;font-weight:700">0 Autos · 0/8 Pollen · 70 km</div></div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 19 TABELLE -->
+<div class="pg">
+  <div class="eyebrow">D · Größen &amp; Mikrotypografie</div>
+  <h2 class="h2">Die Tabelle für alle Fälle.</h2>
   <table style="margin-top:6mm">
     <tr><th>Rolle</th><th>Schnitt</th><th>Web</th><th>Print</th><th>Regeln</th></tr>
     <tr><td>Display / H1</td><td class="m">Serif 400</td><td class="m">56–96 px</td><td class="m">34 pt</td><td>LH 1.04 · LS −0.015em · nie fett</td></tr>
     <tr><td>H2 / H3</td><td class="m">Serif 400</td><td class="m">34 / 24 px</td><td class="m">25 / 14 pt</td><td>ausbalancierte Umbrüche</td></tr>
     <tr><td>Lede / Zitat</td><td class="m">Serif 400 kursiv</td><td class="m">22 px</td><td class="m">15 pt</td><td>max. 22–34 Zeichen breit</td></tr>
     <tr><td>Fließtext</td><td class="m">Sans 400</td><td class="m">18 px <small>min. 16 px</small></td><td class="m">10,5 pt <small>min. 9 pt</small></td><td>LH 1.65 · 45–65 Zeichen/Zeile</td></tr>
-    <tr><td>UI / Betonung</td><td class="m">Sans 500–600</td><td class="m">14–18 px</td><td class="m">—</td><td>600 nur für Zwischentitel</td></tr>
+    <tr><td>UI / Zwischentitel</td><td class="m">Sans 500–600</td><td class="m">14–18 px</td><td class="m">—</td><td>600 nur für Zwischentitel</td></tr>
     <tr><td>Label / Eyebrow</td><td class="m">Mono 400</td><td class="m">12 px <small>min. 11 px</small></td><td class="m">6,4–7,5 pt</td><td>VERSALIEN · LS 0.12–0.22em</td></tr>
     <tr><td>Zahlen / KPI</td><td class="m">Mono 700</td><td class="m">frei</td><td class="m">frei</td><td>tabular-nums · Einheit in Rot</td></tr>
   </table>
-  <p class="body" style="margin-top:5mm">Download: Alle drei Schriften liegen als WOFF2 im Werkzeugkasten (SIL Open Font License, frei auch kommerziell) und auf Google Fonts: <span class="mono" style="font-size:8pt">Instrument Serif · Instrument Sans · Space Mono</span>. Keine vierte Schrift, kein Bold-Serif, keine Ausrufezeichen.</p>
-  <div class="pgfoot"><span>ATMEN · CI-Richtlinien</span><span>09</span></div>
+  <p class="body" style="margin-top:5mm">Mikrotypografie: Zeilenabstand Fließtext 1,6–1,7 · Headlines 1,04 · Mono 1,5. Absatzabstand statt Einzug. Hurenkinder und Schusterjungen werden aufgelöst — auch im Web (balance).</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
 </div>
 
-<!-- 10 WEB -->
+<!-- 20 SATZREGELN -->
+<div class="pg">
+  <div class="eyebrow">D · Satzregeln</div>
+  <h2 class="h2">Zeichen setzen — wörtlich.</h2>
+  <table style="margin-top:6mm">
+    <tr><th>Fall</th><th>Richtig</th><th>Falsch</th></tr>
+    <tr><td>Anführungszeichen</td><td class="m">„Legen Sie ab.“</td><td class="m">"Legen Sie ab." · »…«</td></tr>
+    <tr><td>Gedankenstrich</td><td class="m">Halbgeviert mit Leerraum — so</td><td class="m">Bindestrich - so · ohne—Leerraum</td></tr>
+    <tr><td>Tausendertrennung</td><td class="m">1.049 Robben</td><td class="m">1049 · 1,049</td></tr>
+    <tr><td>Uhrzeit / Datum</td><td class="m">9:00 Uhr · 22.–25. Mai 2026</td><td class="m">09.00h · 22.-25.5.</td></tr>
+    <tr><td>Einheiten</td><td class="m">70 km · 0/8 · 27 °C <small>(schmales Leerzeichen)</small></td><td class="m">70km · 27°C</td></tr>
+    <tr><td>Aufzählungs-Trenner</td><td class="m">Knieper · Schwarzbrot · Zeit</td><td class="m">Knieper, Schwarzbrot &amp; Zeit!!!</td></tr>
+    <tr><td>Auslassung</td><td class="m">… <small>(ein Zeichen, Leerraum davor)</small></td><td class="m">...</td></tr>
+    <tr><td>Ausrufezeichen</td><td class="m">existiert nicht</td><td class="m">!</td></tr>
+    <tr><td>Versalsatz</td><td class="m">nur Mono-Labels &amp; Wortmarke</td><td class="m">HEADLINES IN VERSALIEN</td></tr>
+    <tr><td>Anrede</td><td class="m">Sie — warm, nie devot</td><td class="m">du in offizieller Kommunikation</td></tr>
+  </table>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 21 TYPO DONTS -->
+<div class="pg sand">
+  <div class="eyebrow">D · Typo-Don’ts</div>
+  <h2 class="h2">Sechs typografische Todsünden.</h2>
+  <div class="grid cols3" style="margin-top:7mm">
+    <div class="dont" style="aspect-ratio:16/9"><div class="serif" style="font-weight:700;font-size:15pt;color:var(--schaum);-webkit-text-stroke:.3mm #F5F1E9">Fette Serife.</div><span class="lbl">Serif nie fett</span></div>
+    <div class="dont" style="aspect-ratio:16/9"><div style="font-size:7pt;color:var(--schaum);text-align:justify;padding:0 6mm;line-height:1.3">Blocksatz erzeugt Löcher im Text und zerstört den ruhigen Flatterrand, den die Marke braucht, um leise zu wirken.</div><span class="lbl">kein Blocksatz</span></div>
+    <div class="dont" style="aspect-ratio:16/9"><div class="serif" style="font-size:15pt;color:var(--schaum);text-shadow:1mm 1.2mm 1mm rgba(0,0,0,.9)">Schlagschatten.</div><span class="lbl">keine Texteffekte</span></div>
+    <div class="dont" style="aspect-ratio:16/9"><div class="serif" style="font-size:15pt;background:linear-gradient(90deg,#CC5142,#7FB08A,#F5F1E9);-webkit-background-clip:text;background-clip:text;color:transparent">Bunte Schrift.</div><span class="lbl">Schrift nur in Systemfarben</span></div>
+    <div class="dont" style="aspect-ratio:16/9"><div class="serif" style="font-size:13pt;color:var(--schaum);line-height:.85">Zu enge Zeilen<br/>ersticken den<br/>Atem der Marke</div><span class="lbl">LH nie unter 1.0</span></div>
+    <div class="dont" style="aspect-ratio:16/9"><div style="font-family:'Comic Sans MS',cursive;font-size:12pt;color:var(--schaum)">Vierte Schrift?</div><span class="lbl">niemals</span></div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- ============ TEIL E ============ -->
+
+<!-- 22 DIGITAL PRINZIP -->
 <div class="pg dark">
-  <div class="eyebrow">05 · Web &amp; App</div>
+  <div class="eyebrow">E · Digital</div>
   <h2 class="h2">Präzise Pixel.</h2>
+  <p class="body" style="margin-top:3mm;max-width:165mm">Grundlage ist ein 8-px-Raster, Container max. 1180 px, Eckenradius 2 px. Die Website ist die Referenz-Anwendung der Marke — die folgenden Seiten zeigen sie als verbindliches Muster (Bildflächen schematisch).</p>
   <table style="margin-top:6mm">
     <tr><th>Element</th><th>Maß</th><th>Spezifikation</th></tr>
     <tr><td>Logo · Navigation</td><td class="m">Linie 34 × 22 px</td><td>Horizontal-Lockup; Wortzug 18–19 px, LS 0.22em, Versalien.</td></tr>
     <tr><td>Wortmarke · Hero</td><td class="m">min. 40 px</td><td>Mit Atem-Animation oder statisch LS 0.14em.</td></tr>
-    <tr><td>Favicon</td><td class="m">16 / 32 / 512 px</td><td>Nur Atemlinie auf Tiefsee-Kachel (favicon.svg).</td></tr>
-    <tr><td>App- / Touch-Icon</td><td class="m">1024 px · rx 232</td><td>Linie zentriert, Strich ≈ 3,2 % der Kante.</td></tr>
+    <tr><td>Favicon / App-Icon</td><td class="m">16–512 / 1024 px</td><td>Nur Atemlinie auf Tiefsee-Kachel; App-Radius rx = 22,6 %.</td></tr>
     <tr><td>UI-Icons</td><td class="m">24-px-Raster</td><td>Strich 2 px, runde Kappen — wie die Atemlinie.</td></tr>
-    <tr><td>Button</td><td class="m">Mono 12,5 px</td><td>LS 0.12em, Versalien, Padding 1.05em/1.5em, Radius 2 px.</td></tr>
+    <tr><td>Button</td><td class="m">Mono 12,5 px</td><td>LS 0.12em, Versalien, Padding 1.05em / 1.5em, Radius 2 px.</td></tr>
     <tr><td>Fokus-Ring</td><td class="m">2 px Felsenrot</td><td>outline-offset 3 px — Pflicht auf allen Interaktionen.</td></tr>
-    <tr><td>Raster &amp; Container</td><td class="m">8 px · max. 1180 px</td><td>Seitenränder 20–60 px, fließend.</td></tr>
+    <tr><td>Insel-Puls-Leiste</td><td class="m">34 px hoch</td><td>Mono 11 px, Tiefsee dunkel, Live-Punkt Felsenrot pulsierend.</td></tr>
+    <tr><td>Haarlinien</td><td class="m">1 px</td><td>Linie-Token: 14 % (hell) / 16 % (dunkel) Deckung.</td></tr>
   </table>
-  <h3 class="h3" style="margin-top:7mm">Die Atem-Animation</h3>
-  <table>
-    <tr><th>Parameter</th><th>Wert</th><th>Anmerkung</th></tr>
-    <tr><td>Zyklus</td><td class="m">10 s</td><td>4 s einatmen (0→40 %), 6 s ausatmen (40→100 %).</td></tr>
-    <tr><td>Laufweite</td><td class="m">0.10em → 0.42em</td><td>Mobil (&lt; 560 px): max. 0.22em.</td></tr>
-    <tr><td>Deckkraft</td><td class="m">0.78 → 1.0</td><td>Synchron zur Laufweite.</td></tr>
-    <tr><td>Layout-Schutz</td><td class="m">width-lock</td><td>Breite im Maximalzustand reservieren — Zeile bricht nie um.</td></tr>
-    <tr><td>Reduced Motion</td><td class="m">Pflicht</td><td>Animation aus; statisch LS 0.14em.</td></tr>
-  </table>
-  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>ATMEN · CI-Richtlinien</span><span>10</span></div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
 </div>
 
-<!-- 11 BILDWELT + WERKZEUGKASTEN -->
+<!-- 23 WEB HERO -->
+<div class="pg darker">
+  <div class="eyebrow">E · Website — Startseite</div>
+  <h2 class="h2">Die Referenz.</h2>
+  <div class="shot browser" style="margin-top:6mm;max-width:230mm">
+    <div class="bar"><i></i><i></i><i></i><div class="url">helgoland.de — Deutschlands tiefster Atemzug</div></div>
+    <img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/screens/web-hero.png"/>
+  </div>
+  <div class="cap">Startseite · Hero mit Insel-Puls-Leiste, Navigation, Koordinaten-Zeile, Atem-Ring rechts · Bildfläche schematisch</div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 24 WEB SEKTIONEN -->
+<div class="pg darker">
+  <div class="eyebrow">E · Website — Muster-Sektionen</div>
+  <h2 class="h2">Zahlen beweisen. Balken vergleichen.</h2>
+  <div class="grid cols2" style="margin-top:6mm">
+    <div><div class="shot"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/screens/web-zahlen.png"/></div><div class="cap">Zahlen-Band · Mono 700, Einheiten in Felsenrot, 1-px-Raster</div></div>
+    <div><div class="shot"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/screens/web-pollen.png"/></div><div class="cap">Pollen-Vergleich · das Live-Modul der Marke (8/8 → 0/8)</div></div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 25 WEB UNTERSEITE -->
+<div class="pg darker">
+  <div class="eyebrow">E · Website — Unterseiten</div>
+  <h2 class="h2">Ein Muster für alle Inhalte.</h2>
+  <div class="grid cols2" style="margin-top:6mm">
+    <div><div class="shot browser"><div class="bar"><i></i><i></i><i></i><div class="url">helgoland.de/anreise</div></div><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/screens/web-anreise.png"/></div><div class="cap">Subhero · Breadcrumb, Serif-Titel mit Atem-Wort, 66 vh</div></div>
+    <div><div class="shot"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/screens/web-rows.png"/></div><div class="cap">Zeilen-Muster · Mono-Rubrik links, Serif-Titel, Fakten rechts</div></div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 26 MOBILE -->
+<div class="pg dark">
+  <div class="eyebrow">E · Website — Mobil</div>
+  <h2 class="h2">Klein, aber atmet.</h2>
+  <div style="display:flex;gap:10mm;margin-top:6mm;justify-content:center">
+    <div class="phone" style="width:52mm"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/screens/mob-hero.png"/></div>
+    <div class="phone" style="width:52mm"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/screens/mob-pollen.png"/></div>
+    <div class="phone" style="width:52mm"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/screens/mob-events.png"/></div>
+  </div>
+  <div class="cap" style="text-align:center">390 px Referenzbreite · Atem-Amplitude reduziert (0.22em) · Fließtext bleibt 16 px+ · Karten stapeln einspaltig</div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 27 UI KOMPONENTEN -->
+<div class="pg dark">
+  <div class="eyebrow">E · UI-Komponenten</div>
+  <h2 class="h2">Die Bauteile.</h2>
+  <div class="grid cols2" style="margin-top:6mm">
+    <div>
+      <div style="background:var(--tiefsee-dunkel);border:.2mm solid var(--linie-hell);border-radius:1mm;padding:6mm;display:flex;gap:4mm;flex-wrap:wrap;align-items:center">
+        <span style="background:var(--rot);color:var(--schaum);font-family:var(--mono);font-size:7pt;letter-spacing:.12em;text-transform:uppercase;padding:2.6mm 4mm;border-radius:.6mm">Anreise planen →</span>
+        <span style="border:.35mm solid var(--schaum);color:var(--schaum);font-family:var(--mono);font-size:7pt;letter-spacing:.12em;text-transform:uppercase;padding:2.6mm 4mm;border-radius:.6mm">Mehr erfahren</span>
+        <span style="background:var(--schaum);color:var(--tinte);font-family:var(--mono);font-size:7pt;letter-spacing:.12em;text-transform:uppercase;padding:2.6mm 4mm;border-radius:.6mm">Unterkunft finden</span>
+      </div><div class="cap">Buttons · primär (Rot), ghost, invers — nie mehr als zwei pro Ansicht</div>
+      <div style="background:var(--tiefsee-dunkel);border:.2mm solid var(--linie-hell);border-radius:1mm;padding:4mm 6mm;margin-top:5mm;font-family:var(--mono);font-size:6.4pt;color:rgba(245,241,233,.85);display:flex;gap:4mm;align-items:center"><span style="width:2mm;height:2mm;border-radius:50%;background:var(--rot)"></span><b>Insel-Puls</b><span style="color:var(--grau)">·</span>Wetter <b>9°C</b><span style="color:var(--grau)">·</span>Jet <b>ab 9:00</b><span style="color:var(--grau)">·</span>Pollen <b>0/8</b></div>
+      <div class="cap">Insel-Puls-Leiste · 34 px, immer oben, verschwindet beim Scrollen</div>
+    </div>
+    <div>
+      <div style="background:var(--tiefsee-dunkel);border:.2mm solid var(--linie-hell);border-radius:1mm;padding:6mm">
+        <div class="mono" style="font-size:5.4pt;letter-spacing:.2em;text-transform:uppercase;color:var(--rot-hell)">Karte · Event</div>
+        <div class="serif" style="font-size:12pt;color:var(--schaum);margin-top:2mm">Die Lange Tafel</div>
+        <p style="font-size:7.4pt;color:rgba(245,241,233,.78);margin-top:1.5mm;line-height:1.5">Ein Abend im Juli. Border-top 2 px in Akzentfarbe, Radius 2 px, Hover: −6 px translateY.</p>
+      </div><div class="cap">Karten · border-top als Akzent, kein Schatten im Ruhezustand</div>
+      <div style="margin-top:5mm;display:flex;gap:4mm;align-items:center">
+        <span style="font-family:var(--mono);font-size:7pt;padding:2.6mm 4mm;border:.5mm solid var(--rot);outline:.5mm solid var(--rot);outline-offset:.8mm;color:var(--schaum);border-radius:.6mm">Fokus-Zustand</span>
+        <span style="font-size:7.4pt;color:rgba(245,241,233,.7)">2 px Felsenrot, Offset 3 px — auf jedem interaktiven Element.</span>
+      </div>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 28 ANIMATION -->
+<div class="pg dark">
+  <div class="eyebrow">E · Die Atem-Animation</div>
+  <h2 class="h2">Ein Element atmet. Sonst nichts.</h2>
+  <div style="display:flex;gap:10mm;margin-top:6mm;align-items:center">
+    <svg viewBox="0 0 300 120" style="width:110mm;flex:none">
+      <path d="M10 100 C40 100 50 20 80 20 C150 20 170 100 290 100" fill="none" stroke="#CC5142" stroke-width="2"/>
+      <g font-family="Space Mono, monospace" font-size="9" fill="#7C8B91" letter-spacing="1">
+        <text x="10" y="115">0s</text><text x="72" y="115">4s · MAX</text><text x="270" y="115">10s</text>
+        <text x="10" y="12" fill="#F5F1E9">LAUFWEITE</text>
+        <text x="120" y="40">AUSATMEN (6s)</text><text x="24" y="55" >EIN (4s)</text>
+      </g>
+      <line x1="10" y1="104" x2="290" y2="104" stroke="rgba(245,241,233,.3)" stroke-width=".5"/>
+    </svg>
+    <table style="margin-top:0">
+      <tr><th>Parameter</th><th>Wert</th></tr>
+      <tr><td>Zyklus</td><td class="m">10 s · ease-in-out · endlos</td></tr>
+      <tr><td>Kurve</td><td class="m">0 → 40 % ein · 40 → 100 % aus</td></tr>
+      <tr><td>Laufweite</td><td class="m">0.10em → 0.42em <small>mobil max. 0.22em</small></td></tr>
+      <tr><td>Deckkraft</td><td class="m">0.78 → 1.0</td></tr>
+      <tr><td>Layout-Schutz</td><td class="m">width-lock (Maximalbreite reservieren)</td></tr>
+      <tr><td>Reduced Motion</td><td class="m">Pflicht: statisch, LS 0.14em</td></tr>
+    </table>
+  </div>
+  <p class="body" style="margin-top:5mm">Alles andere bewegt sich höchstens beim Eintritt (Fade, 1 s, 24 px Versatz) — oder gar nicht. Parallax sparsam, nie auf Text.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 29 APP -->
+<div class="pg dark">
+  <div class="eyebrow">E · App &amp; Icons</div>
+  <h2 class="h2">Insel-Puls: die nützlichste Werbung.</h2>
+  <div style="display:flex;gap:12mm;margin-top:6mm;align-items:center">
+    <div style="width:46mm;border-radius:8mm;background:var(--tiefsee);border:1.6mm solid #05141b;padding:7mm 5mm;box-shadow:0 4mm 9mm rgba(0,0,0,.4)">
+      <div style="width:12mm;height:1.3mm;border-radius:1mm;background:rgba(245,241,233,.3);margin:0 auto 6mm"></div>
+      <svg style="display:block;margin:0 auto 2mm" width="40" height="14" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg>
+      <div class="serif" style="text-align:center;color:var(--schaum);letter-spacing:.22em;font-size:9pt;padding-left:.22em">ATMEN</div>
+      <div style="margin-top:6mm;background:rgba(245,241,233,.08);border:.3mm solid rgba(245,241,233,.16);border-radius:2.4mm;padding:4mm">
+        <div class="mono" style="font-size:5.6pt;letter-spacing:.2em;text-transform:uppercase;color:var(--rot-hell)">Insel-Puls</div>
+        <div class="mono" style="display:flex;justify-content:space-between;font-size:6.8pt;margin-top:2.2mm;color:rgba(245,241,233,.85)"><span>Katamaran</span><span>9:00 ✓</span></div>
+        <div class="mono" style="display:flex;justify-content:space-between;font-size:6.8pt;margin-top:2mm;color:rgba(245,241,233,.85)"><span>Seegang</span><span>ruhig</span></div>
+        <div class="mono" style="display:flex;justify-content:space-between;font-size:6.8pt;margin-top:2mm;color:rgba(245,241,233,.85)"><span>Pollen</span><span>0/8</span></div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex;align-items:flex-end;gap:8mm">
+        <div style="text-align:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/app-icon.svg" style="width:26mm;border-radius:6mm"/><div class="cap">1024 px · Store</div></div>
+        <div style="text-align:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/app-icon.svg" style="width:14mm;border-radius:3.2mm"/><div class="cap">180 px · Home</div></div>
+        <div style="text-align:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/app-icon.svg" style="width:7mm;border-radius:1.6mm"/><div class="cap">48 px</div></div>
+        <div style="text-align:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/favicon.svg" style="width:5mm"/><div class="cap">Favicon 16–32</div></div>
+      </div>
+      <p class="body" style="margin-top:6mm">Eine App, eine Aufgabe: „Fährt der Kat?“ in einem Blick. Widgets zeigen Puls-Daten im gleichen Mono-Layout. Push-Nachrichten sprechen die Atem-Stimme: kurz, leise, nie mehr als eine pro Tag.</p>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 30 EMAIL -->
 <div class="pg">
-  <div class="eyebrow">06 · Bildwelt &nbsp;·&nbsp; 07 · Werkzeugkasten</div>
-  <h2 class="h2">Dokumentarisch — und alles dabei.</h2>
-  <p class="body" style="margin-top:4mm;max-width:170mm"><b>Bildwelt:</b> Nordisches Licht, gedeckte Farben, echte Momente — Wind, Nässe und Nebel sind Motive, keine Fehler. Keine HDR-Sättigung, keine gestellte Idylle. Schrift auf Bild nur mit Scrim (Tiefsee dunkel, 30–90 %). KI-Motive werden gekennzeichnet.</p>
+  <div class="eyebrow">E · E-Mail &amp; Newsletter</div>
+  <h2 class="h2">Insel-Post: selten, aber schön.</h2>
+  <div style="display:flex;gap:12mm;margin-top:6mm">
+    <div style="width:96mm;flex:none;background:#fff;border:.2mm solid var(--linie);border-radius:1mm;overflow:hidden;box-shadow:0 2mm 7mm rgba(11,45,60,.18)">
+      <div style="background:var(--tiefsee);padding:8mm;text-align:center">
+        <svg width="46" height="16" viewBox="0 0 130 44" fill="none" style="display:block;margin:0 auto"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"/></svg>
+        <div class="mono" style="font-size:5.4pt;letter-spacing:.26em;color:rgba(245,241,233,.7);margin-top:2.5mm">INSEL-POST · FEBRUAR</div>
+      </div>
+      <div style="padding:7mm">
+        <div class="serif" style="font-size:13pt;line-height:1.15">Der Robbenzähler steht bei 1.049.</div>
+        <p style="font-size:7.6pt;color:#54636A;margin-top:2.5mm;line-height:1.6">Rekord. Die Ranger bitten weiter um 30 Meter Abstand — die Kleinen danken es mit Schlaf. Drüben fliegen ab März die Pollen; hier bleibt es bei 0/8.</p>
+        <div style="margin-top:4mm"><span style="background:var(--rot);color:var(--schaum);font-family:var(--mono);font-size:6pt;letter-spacing:.12em;text-transform:uppercase;padding:2.2mm 3.6mm;border-radius:.6mm">Robbenzeit ansehen</span></div>
+      </div>
+      <div style="border-top:.2mm solid var(--linie);padding:4mm 7mm;font-family:var(--mono);font-size:5.2pt;color:var(--grau);letter-spacing:.08em">HELGOLAND · ATMEN — ABMELDEN JEDERZEIT. WIR SCHREIBEN SELTEN.</div>
+    </div>
+    <div>
+      <table style="margin-top:0">
+        <tr><th>Element</th><th>Regel</th></tr>
+        <tr><td>Breite</td><td class="m">600 px, einspaltig</td></tr>
+        <tr><td>Header</td><td>Tiefsee-Kachel, nur Linie + Mono-Zeile.</td></tr>
+        <tr><td>Schriften</td><td>System-Fallback: Georgia / Arial / Courier.</td></tr>
+        <tr><td>Betreff</td><td>Zahl-Stimme, max. 45 Zeichen, kein Emoji.</td></tr>
+        <tr><td>Frequenz</td><td>Selten und nie ohne Grund — max. 1× / Monat.</td></tr>
+        <tr><td>CTA</td><td>Genau einer.</td></tr>
+      </table>
+      <p class="body" style="margin-top:4mm"><b>Signatur (Text):</b><br/><span class="mono" style="font-size:7.6pt;line-height:1.8">—<br/>Vorname Name · Helgoland — Atmen<br/>54°11′N · 7°53′E · helgoland.de</span></p>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- ============ TEIL F — SOCIAL ============ -->
+
+<!-- 31 SOCIAL PRINZIP -->
+<div class="pg dark">
+  <div class="eyebrow">F · Social Media</div>
+  <h2 class="h2">Leise im lauten Feed.</h2>
+  <p class="body" style="margin-top:3mm;max-width:165mm">Social ist der lauteste Ort der Welt — genau deshalb funktioniert dort die leiseste Marke. Wir posten Zustand statt Content: ein Bild, eine Zeile, eine Zahl. Drei Kacheltypen tragen alle Kanäle.</p>
+  <table style="margin-top:6mm">
+    <tr><th>Format</th><th>Maß</th><th>Verwendung</th></tr>
+    <tr><td>Profilbild (alle Kanäle)</td><td class="m">1000 × 1000 px</td><td>App-Icon-Motiv: Linie auf Tiefsee — rund beschnitten sicher.</td></tr>
+    <tr><td>Instagram Post</td><td class="m">1080 × 1350 px (4:5)</td><td>Standard-Kachel; 1:1 nur im Grid-System.</td></tr>
+    <tr><td>Instagram Story / Reel</td><td class="m">1080 × 1920 px (9:16)</td><td>Safe-Zone: oben 220 px, unten 320 px freihalten.</td></tr>
+    <tr><td>LinkedIn Post-Bild</td><td class="m">1200 × 627 px</td><td>Zahl- oder Zitat-Kachel quer.</td></tr>
+    <tr><td>LinkedIn Banner</td><td class="m">1584 × 396 px</td><td>Atemlinie + Claim, sonst nichts.</td></tr>
+    <tr><td>Facebook Cover / Event</td><td class="m">820 × 312 / 1920 × 1005 px</td><td>Event-Kacheln (Lange Tafel, Robbenzeit).</td></tr>
+  </table>
+  <p class="body" style="margin-top:5mm">Bewegtbild: erste Sekunde still (kein Jump-Cut), Untertitel Pflicht, Ton optional — die Brandung reicht.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 32 PROFILE -->
+<div class="pg dark">
+  <div class="eyebrow">F · Profile</div>
+  <h2 class="h2">Der erste Eindruck: aufgeräumt.</h2>
+  <div style="display:flex;gap:10mm;margin-top:7mm;align-items:center">
+    <div style="text-align:center"><div style="width:30mm;height:30mm;border-radius:50%;overflow:hidden;border:.4mm solid var(--linie-hell)"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/favicon.svg" style="width:100%;height:100%"/></div><div class="cap">Avatar · rund sicher</div></div>
+    <div style="flex:1">
+      <div style="border-radius:1.6mm;overflow:hidden;border:.2mm solid var(--linie-hell)">
+        <div style="background:var(--tiefsee-dunkel);aspect-ratio:1584/396;display:flex;align-items:center;justify-content:space-between;padding:0 12mm">
+          <img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-horizontal-schaum.svg" style="width:52mm"/>
+          <div class="serif" style="font-style:italic;color:rgba(245,241,233,.85);font-size:11pt">Deutschlands tiefster Atemzug.</div>
+        </div>
+      </div>
+      <div class="cap">LinkedIn-Banner 1584 × 396 · Linie links, Claim rechts, sonst nichts</div>
+    </div>
+  </div>
+  <table style="margin-top:6mm">
+    <tr><th>Feld</th><th>Text (verbindlich)</th></tr>
+    <tr><td>Name</td><td class="m">Helgoland — Atmen</td></tr>
+    <tr><td>Bio / Tagline</td><td>Deutschlands einzige Hochseeinsel. 70 km draußen. 0 Autos, 0/8 Pollen. Wir schreiben selten.</td></tr>
+    <tr><td>Link</td><td class="m">helgoland.de</td></tr>
+    <tr><td>Standort</td><td class="m">54°11′N · 7°53′E</td></tr>
+  </table>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 33 IG GRID -->
+<div class="pg darker">
+  <div class="eyebrow">F · Instagram — das Feed-System</div>
+  <h2 class="h2">Drei Kacheln, ein Rhythmus.</h2>
+  <div style="display:flex;gap:12mm;margin-top:6mm;align-items:center">
+    <div style="width:96mm;flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:1mm;background:#05141b;padding:1mm;border-radius:1.6mm">
+      <div class="tile" style="background:linear-gradient(180deg,#134155,#0B2D3C)"><span class="k">Motiv</span><svg class="wv" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg></div>
+      <div class="tile" style="background:var(--tiefsee)"><span class="k">Zahl</span><div class="t mono" style="font-weight:700;font-size:13pt">0/8</div><span class="k">Pollen heute</span></div>
+      <div class="tile" style="background:var(--tiefsee-dunkel)"><span class="k">Zitat</span><div class="t" style="font-style:italic;font-size:8.6pt">„Bei uns ist nichts los.“</div></div>
+      <div class="tile" style="background:var(--tiefsee)"><span class="k">Zahl</span><div class="t mono" style="font-weight:700;font-size:11pt">1.049</div><span class="k">Robben</span></div>
+      <div class="tile" style="background:var(--tiefsee-dunkel)"><span class="k">Zitat</span><div class="t" style="font-style:italic;font-size:8.6pt">„Sie sind da. Atmen.“</div></div>
+      <div class="tile" style="background:linear-gradient(180deg,#134155,#0B2D3C)"><span class="k">Motiv</span><svg class="wv" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg></div>
+      <div class="tile" style="background:var(--tiefsee-dunkel)"><span class="k">Zitat</span><div class="t" style="font-style:italic;font-size:8.6pt">„Der Wind. Inklusive.“</div></div>
+      <div class="tile" style="background:linear-gradient(180deg,#134155,#0B2D3C)"><span class="k">Motiv</span><svg class="wv" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg></div>
+      <div class="tile" style="background:var(--tiefsee)"><span class="k">Zahl</span><div class="t mono" style="font-weight:700;font-size:11pt">70 km</div><span class="k">Abstand</span></div>
+    </div>
+    <div>
+      <p class="body">Der Feed folgt einem Dreier-Rhythmus: <b>Motiv</b> (Fotografie, Bildwelt-Regeln), <b>Zahl</b> (Mono 700 auf Tiefsee), <b>Zitat</b> (Serif kursiv auf Tiefsee dunkel). Nie zwei gleiche Typen nebeneinander.</p>
+      <p class="body" style="margin-top:4mm">Motiv-Kacheln tragen die Atemlinie klein unten links — Zahl- und Zitat-Kacheln nur die Typografie. Der Account wirkt so aus zwei Metern Entfernung wie ein Plakat.</p>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 34 IG KACHELN -->
+<div class="pg darker">
+  <div class="eyebrow">F · Instagram — Kachel-Templates</div>
+  <h2 class="h2">Die drei Bausteine im Detail.</h2>
+  <div class="grid cols3" style="margin-top:6mm">
+    <div>
+      <div style="aspect-ratio:4/5;background:linear-gradient(180deg,#134155 0%,#0B2D3C 60%,rgba(6,23,31,.96) 100%);border-radius:1mm;padding:6mm;display:flex;flex-direction:column;justify-content:flex-end">
+        <div class="serif" style="color:var(--schaum);font-size:12pt;line-height:1.2">Heute: Nebel.<br/><em style="font-style:italic">Auch schön.</em></div>
+        <svg width="34" height="12" viewBox="0 0 130 44" fill="none" style="margin-top:3.5mm"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3.4" stroke-linecap="round"/></svg>
+      </div><div class="cap">Motiv-Kachel · Foto + Scrim + 1 Zeile + Linie unten links</div>
+    </div>
+    <div>
+      <div style="aspect-ratio:4/5;background:var(--tiefsee);border-radius:1mm;padding:6mm;display:flex;flex-direction:column;justify-content:space-between">
+        <div class="mono" style="font-size:5.4pt;letter-spacing:.22em;text-transform:uppercase;color:var(--rot-hell)">● live · Pollenflug</div>
+        <div><div class="mono" style="color:var(--schaum);font-weight:700;font-size:30pt;line-height:1">0/8</div><div class="mono" style="font-size:6pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau);margin-top:2mm">Hamburg heute: 8/8</div></div>
+        <div class="mono" style="font-size:5pt;letter-spacing:.24em;color:rgba(245,241,233,.6)">HELGOLAND · ATMEN</div>
+      </div><div class="cap">Zahl-Kachel · Mono 700, eine Zahl, ein Vergleich</div>
+    </div>
+    <div>
+      <div style="aspect-ratio:4/5;background:var(--tiefsee-dunkel);border-radius:1mm;padding:6mm;display:flex;flex-direction:column;justify-content:center;text-align:center">
+        <div class="serif" style="font-style:italic;color:var(--schaum);font-size:13pt;line-height:1.3">„Wir versprechen<br/>nichts. Und<br/>halten es.“</div>
+        <svg width="30" height="11" viewBox="0 0 130 44" fill="none" style="margin:4mm auto 0"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3.4" stroke-linecap="round"/></svg>
+      </div><div class="cap">Zitat-Kachel · Serif kursiv zentriert, Linie darunter</div>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 35 STORIES -->
+<div class="pg darker">
+  <div class="eyebrow">F · Instagram — Stories &amp; Reels</div>
+  <h2 class="h2">Neun zu sechzehn, ein Atemzug.</h2>
+  <div style="display:flex;gap:9mm;margin-top:6mm;justify-content:center">
+    <div style="width:44mm;aspect-ratio:9/16;background:var(--tiefsee);border-radius:3mm;padding:5mm;display:flex;flex-direction:column;justify-content:space-between;border:.2mm solid var(--linie-hell)">
+      <div class="mono" style="font-size:5pt;letter-spacing:.2em;color:var(--rot-hell);text-transform:uppercase;margin-top:8mm">● live · 12. April</div>
+      <div><div class="mono" style="color:var(--schaum);font-weight:700;font-size:22pt;line-height:1.05">8/8<br/><span style="color:var(--gruen)">→</span> 0/8</div><div class="mono" style="font-size:5.6pt;letter-spacing:.16em;text-transform:uppercase;color:var(--grau);margin-top:2.5mm">Birkenpollen · HH vs. Helgoland</div></div>
+      <div style="margin-bottom:10mm"><div style="border:.35mm solid var(--schaum);color:var(--schaum);font-family:var(--mono);font-size:5.6pt;letter-spacing:.14em;text-transform:uppercase;padding:2mm;text-align:center;border-radius:.6mm">Hochschauen ↑ Fähre buchen</div></div>
+    </div>
+    <div style="width:44mm;aspect-ratio:9/16;background:linear-gradient(180deg,#134155,#06171F);border-radius:3mm;padding:5mm;display:flex;flex-direction:column;justify-content:space-between;border:.2mm solid var(--linie-hell)">
+      <div class="mono" style="font-size:5pt;letter-spacing:.2em;color:rgba(245,241,233,.6);text-transform:uppercase;margin-top:8mm">Robbenzeit · Tag 34</div>
+      <div><div class="mono" style="color:var(--schaum);font-weight:700;font-size:22pt">1.049</div><div class="serif" style="font-style:italic;color:rgba(245,241,233,.9);font-size:9pt;margin-top:2mm">Geburten. Und es ist erst Januar.</div></div>
+      <div style="margin-bottom:10mm"><svg width="30" height="11" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3.4" stroke-linecap="round"/></svg></div>
+    </div>
+    <div style="width:44mm;aspect-ratio:9/16;background:var(--tiefsee-dunkel);border-radius:3mm;padding:5mm;display:flex;flex-direction:column;justify-content:center;text-align:center;border:.2mm solid var(--linie-hell)">
+      <div class="serif" style="font-style:italic;color:var(--schaum);font-size:11.5pt;line-height:1.35">„Das war eine Minute<br/>Helgoland.<br/>Es gibt auch drei Tage.“</div>
+      <div class="mono" style="font-size:5pt;letter-spacing:.24em;color:rgba(245,241,233,.55);margin-top:4mm">60 SEKUNDEN BRANDUNG</div>
+    </div>
+  </div>
+  <div class="cap" style="text-align:center">Safe-Zones: oben 220 px, unten 320 px · Text nie hinter UI-Elementen · max. 1 Sticker, keine GIFs</div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 36 LINKEDIN -->
+<div class="pg">
+  <div class="eyebrow">F · LinkedIn</div>
+  <h2 class="h2">B2B heißt: dieselbe Ruhe, mehr Zahl.</h2>
+  <div style="display:flex;gap:10mm;margin-top:6mm">
+    <div style="width:104mm;flex:none">
+      <div style="background:#fff;border:.2mm solid var(--linie);border-radius:1.6mm;overflow:hidden;box-shadow:0 2mm 6mm rgba(11,45,60,.14)">
+        <div style="padding:4mm;display:flex;gap:3mm;align-items:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/favicon.svg" style="width:8mm;border-radius:50%"/><div><div style="font-weight:600;font-size:7.6pt">Helgoland — Atmen</div><div class="mono" style="font-size:5.4pt;color:var(--grau)">1.302 Follower · Tourismus</div></div></div>
+        <div style="padding:0 4mm 3mm;font-size:7.4pt;line-height:1.55;color:#3B4A50">Ihr Team war dieses Jahr in 214 Meetings. Und in wie vielen Gedanken? Klausur am Ende der Welt: kein Auto, kein Durchgangsverkehr, keine Ausrede. 48 Stunden Hochsee — und die Sturmgarantie als beste Anekdote.</div>
+        <div style="background:var(--tiefsee);aspect-ratio:1200/627;padding:6mm;display:flex;flex-direction:column;justify-content:space-between">
+          <div class="mono" style="font-size:5.4pt;letter-spacing:.2em;color:var(--rot-hell);text-transform:uppercase">Klausur am Ende der Welt</div>
+          <div class="serif" style="color:var(--schaum);font-size:14pt;line-height:1.15">48 Stunden Hochsee ersetzen<br/><em style="font-style:italic">4 Wochen Meetings.</em></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end"><svg width="34" height="12" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3.4" stroke-linecap="round"/></svg><span class="mono" style="font-size:5pt;letter-spacing:.2em;color:rgba(245,241,233,.6)">HELGOLAND · ATMEN</span></div>
+        </div>
+      </div>
+      <div class="cap">LinkedIn-Post · Bild 1200 × 627 · Zahl-Stimme im Text, Serif im Bild</div>
+    </div>
+    <div>
+      <table style="margin-top:0">
+        <tr><th>Regel</th><th>Wert</th></tr>
+        <tr><td>Tonalität</td><td>Zahl-Stimme führt; keine Buzzwords, kein „Synergien“.</td></tr>
+        <tr><td>Posttext</td><td class="m">max. 500 Zeichen, 0–1 Emoji</td></tr>
+        <tr><td>Hashtags</td><td class="m">max. 3 · #Helgoland #Atmen + 1 thematisch</td></tr>
+        <tr><td>Frequenz</td><td class="m">1–2 / Woche</td></tr>
+        <tr><td>Zielgruppen</td><td>Klausuren/Teams, Gesundheitswirtschaft, Presse.</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 37 FACEBOOK -->
+<div class="pg">
+  <div class="eyebrow">F · Facebook</div>
+  <h2 class="h2">Der Kanal für die Insel-Familie.</h2>
+  <div style="display:flex;gap:10mm;margin-top:6mm">
+    <div style="width:110mm;flex:none">
+      <div style="border-radius:1.6mm;overflow:hidden;border:.2mm solid var(--linie);box-shadow:0 2mm 6mm rgba(11,45,60,.14)">
+        <div style="background:linear-gradient(120deg,#134155,#0B2D3C);aspect-ratio:1920/1005;padding:7mm;display:flex;flex-direction:column;justify-content:space-between">
+          <div class="mono" style="font-size:5.6pt;letter-spacing:.22em;color:var(--rot-hell);text-transform:uppercase">Ein Abend im Juli · Unterland</div>
+          <div class="serif" style="color:var(--schaum);font-size:17pt;line-height:1.1">Die Lange Tafel.<br/><em style="font-style:italic">Ein Abend. Eine Tafel. Die ganze Insel.</em></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end">
+            <svg width="40" height="14" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3.2" stroke-linecap="round"/></svg>
+            <span class="mono" style="font-size:5.4pt;letter-spacing:.18em;color:rgba(245,241,233,.65)">EINTRITT: EIN GEDECK VON ZUHAUS</span>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Event-Header 1920 × 1005 · Veranstaltungen sind der Facebook-Kern</div>
+    </div>
+    <div>
+      <table style="margin-top:0">
+        <tr><th>Nutzung</th><th>Regel</th></tr>
+        <tr><td>Events</td><td>Jedes Inselformat als FB-Event mit Marken-Header.</td></tr>
+        <tr><td>Community</td><td>Antworten in der Atem-Stimme, per Sie, binnen 24 h.</td></tr>
+        <tr><td>Service</td><td>Fähr-Änderungen: Zahl-Stimme, Fakten zuerst.</td></tr>
+        <tr><td>Teilen</td><td>Inselstimmen-Porträts &amp; Presse — kein Meme-Recycling.</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 38 REDAKTION -->
+<div class="pg">
+  <div class="eyebrow">F · Redaktionsregeln</div>
+  <h2 class="h2">Posten wie die Insel spricht.</h2>
+  <table style="margin-top:6mm">
+    <tr><th>Regel</th><th>Konkret</th></tr>
+    <tr><td>Ein Post, ein Gedanke</td><td>Nie zwei Botschaften in einer Kachel. Lieber morgen noch einen.</td></tr>
+    <tr><td>Emojis</td><td class="m">max. 1 pro Post · nur 🌊 ❄️ ☀️ 🦭 — nie im Bild</td></tr>
+    <tr><td>Hashtags</td><td class="m">max. 3 · immer: #Helgoland · nie: #instatravel-Wüsten</td></tr>
+    <tr><td>Live-Daten schlagen Content</td><td>Pollenstand, Robbenzähler, Seegang — die Marke hat echte Zahlen, nutze sie.</td></tr>
+    <tr><td>Antworten</td><td>Atem-Stimme, per Sie, mit Namen. Kritik ehrlich beantworten — nie löschen (außer Hass).</td></tr>
+    <tr><td>Wetter-Ehrlichkeit</td><td>Nebel und Sturm werden gepostet, nicht versteckt. „Ihre Aussicht heute: exklusiv nichts.“</td></tr>
+    <tr><td>KI-Kennzeichnung</td><td>Generierte Motive tragen den Hinweis in der Caption.</td></tr>
+    <tr><td>Krise</td><td>Fähre fällt aus / Unglück: nur Zahl-Stimme, keine Kampagnen-Posts, Puls-Daten stündlich.</td></tr>
+  </table>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 39 SOCIAL DONTS -->
+<div class="pg sand">
+  <div class="eyebrow">F · Social-Don’ts</div>
+  <h2 class="h2">Sechs schnelle Wege, die Marke zu verbrennen.</h2>
+  <div class="grid cols3" style="margin-top:7mm">
+    <div class="dont" style="aspect-ratio:16/10"><div style="font-size:6.4pt;color:var(--schaum);padding:0 5mm;text-align:center;line-height:1.6">#helgoland #nordsee #island #travelgram #wanderlust #beach #sunset #instagood #vitaminsea #ocean…</div><span class="lbl">Hashtag-Wüste</span></div>
+    <div class="dont" style="aspect-ratio:16/10"><div style="font-size:8.5pt;color:var(--schaum);text-align:center">🌊😍🔥DU wirst NICHT glauben, was auf dieser Insel passiert!!🤯👉</div><span class="lbl">Clickbait &amp; Emoji-Salat</span></div>
+    <div class="dont" style="aspect-ratio:16/10"><div class="serif" style="font-size:9.5pt;color:var(--schaum);text-align:center;padding:0 4mm">„Traumhafte Sonnenuntergänge im Postkarten-Paradies“</div><span class="lbl">Floskel-Romantik</span></div>
+    <div class="dont" style="aspect-ratio:16/10"><div style="font-size:8.5pt;color:var(--schaum);text-align:center;padding:0 4mm">Antwort auf Kritik:<br/>gelöscht.</div><span class="lbl">Löschen statt antworten</span></div>
+    <div class="dont" style="aspect-ratio:16/10"><div style="font-size:8.5pt;color:var(--schaum);text-align:center;padding:0 4mm">„Besser als Sylt 😏“</div><span class="lbl">Vergleiche mit Inseln</span></div>
+    <div class="dont" style="aspect-ratio:16/10"><div style="display:grid;grid-template-columns:1fr 1fr;gap:1mm;width:70%"><div style="aspect-ratio:1;background:#c8a24a"></div><div style="aspect-ratio:1;background:#7fd0e0"></div><div style="aspect-ratio:1;background:#d078b0"></div><div style="aspect-ratio:1;background:#88c860"></div></div><span class="lbl">Fremde Farbwelten im Feed</span></div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- ============ TEIL G ============ -->
+
+<!-- 40 PLAKAT -->
+<div class="pg dark">
+  <div class="eyebrow">G · Plakat &amp; Out-of-Home</div>
+  <h2 class="h2">Das Plakat-Raster.</h2>
+  <div style="display:flex;gap:12mm;margin-top:6mm;align-items:center">
+    <div style="width:62mm;flex:none;position:relative">
+      <div style="aspect-ratio:2/3;background:var(--tiefsee-dunkel);border:.2mm solid var(--linie-hell);border-radius:1mm;padding:9%;display:flex;flex-direction:column;justify-content:space-between;position:relative">
+        <div style="position:absolute;inset:9%;border:.3mm dashed rgba(204,81,66,.55);pointer-events:none"></div>
+        <div class="serif" style="color:var(--schaum);font-size:13.5pt;line-height:1.12;position:relative">Ihre Lunge<br/>hat angerufen.</div>
+        <div style="position:relative"><svg width="42" height="15" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"/></svg><div class="mono" style="font-size:4.6pt;letter-spacing:.26em;color:rgba(245,241,233,.7);margin-top:2mm">HELGOLAND · ATMEN</div></div>
+      </div>
+      <div class="cap">City-Light 118,5 × 175 cm · schematisch</div>
+    </div>
+    <table style="margin-top:0">
+      <tr><th>Element</th><th>Maß</th></tr>
+      <tr><td>Rand (alle Seiten)</td><td class="m">9 % der Formatbreite</td></tr>
+      <tr><td>Headline</td><td class="m">Serif 400 · Breite / 9 <small>City-Light: ≈ 13 cm Versalhöhe</small></td></tr>
+      <tr><td>Headline-Position</td><td class="m">oben links, max. 3 Zeilen</td></tr>
+      <tr><td>Zeichen</td><td class="m">unten links · Breite / 5</td></tr>
+      <tr><td>Absender-Zeile</td><td class="m">Mono · Breite / 40 · LS 0.26em</td></tr>
+      <tr><td>Farbfassung</td><td>Tiefsee-Fläche oder Motiv mit Scrim ≥ 55 % unten.</td></tr>
+      <tr><td>Lesezeit-Test</td><td>Verständlich in 3 Sekunden aus 5 Metern — sonst kürzen.</td></tr>
+    </table>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 41 ANZEIGEN -->
+<div class="pg">
+  <div class="eyebrow">G · Anzeigen</div>
+  <h2 class="h2">Drei Formate, ein Aufbau.</h2>
+  <div style="display:flex;gap:8mm;margin-top:7mm;align-items:flex-end">
+    <div style="flex:2">
+      <div style="aspect-ratio:210/280;background:var(--tiefsee);border-radius:1mm;padding:8%;display:flex;flex-direction:column;justify-content:space-between"><div class="serif" style="color:var(--schaum);font-size:13pt;line-height:1.12">0 Autos.<br/>0 Pollen.<br/>0 Ausreden.</div><div><svg width="34" height="12" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"/></svg><div class="mono" style="font-size:4.4pt;letter-spacing:.24em;color:rgba(245,241,233,.7);margin-top:1.6mm">HELGOLAND · ATMEN · HELGOLAND.DE</div></div></div>
+      <div class="cap">1/1 · Magazin</div>
+    </div>
+    <div style="flex:2.4">
+      <div style="aspect-ratio:2/0.9;background:var(--tiefsee);border-radius:1mm;padding:6%;display:flex;justify-content:space-between;align-items:flex-end"><div class="serif" style="color:var(--schaum);font-size:11pt;line-height:1.15">In 4 Stunden:<br/><em style="font-style:italic">Atmen.</em></div><svg width="30" height="11" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"/></svg></div>
+      <div class="cap">1/2 quer · Zeitung</div>
+    </div>
+    <div style="flex:1.3">
+      <div style="aspect-ratio:1/1.05;background:var(--tiefsee);border-radius:1mm;padding:8%;display:flex;flex-direction:column;justify-content:space-between"><div class="mono" style="color:var(--schaum);font-weight:700;font-size:12pt">0/8</div><div class="serif" style="color:var(--schaum);font-size:7.4pt;line-height:1.25">Pollen heute.<br/>Bei uns.</div><svg width="22" height="8" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3.4" stroke-linecap="round"/></svg></div>
+      <div class="cap">1/4 · Kompakt</div>
+    </div>
+  </div>
+  <p class="body" style="margin-top:6mm">Anzeigen sind Plakate im Kleinen: gleiche Ränder (9 %), gleiche Hierarchie, immer helgoland.de in der Absenderzeile. Unter 1/4-Format läuft nur die Zahl-Kachel.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 42 GESCHÄFTSAUSSTATTUNG -->
+<div class="pg">
+  <div class="eyebrow">G · Geschäftsausstattung</div>
+  <h2 class="h2">Papier, das leiser macht.</h2>
+  <div style="display:flex;gap:12mm;margin-top:6mm;align-items:flex-start">
+    <div style="width:74mm;flex:none">
+      <div style="aspect-ratio:210/297;background:#fff;border:.2mm solid var(--linie);border-radius:.8mm;box-shadow:0 2mm 6mm rgba(11,45,60,.14);position:relative;padding:9.5% 9.5% 8%">
+        <img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-horizontal-tiefsee.svg" style="width:34%"/>
+        <div style="position:absolute;top:9.5%;right:9.5%;text-align:right;font-family:var(--mono);font-size:4pt;line-height:2;color:var(--grau)">HELGOLAND — ATMEN<br/>LUNG WAI 28 · 27498 HELGOLAND<br/>54°11′N · 7°53′E</div>
+        <div style="margin-top:18%;font-size:5pt;color:#3B4A50;line-height:1.8">Moin Frau Petersen,<br/><br/>wir schreiben selten. Aber heute gern …</div>
+        <div style="position:absolute;bottom:6%;left:9.5%;right:9.5%;border-top:.2mm solid var(--linie);padding-top:2mm;font-family:var(--mono);font-size:3.6pt;letter-spacing:.08em;color:var(--grau);display:flex;justify-content:space-between"><span>HELGOLAND.DE</span><span>KURVERWALTUNG · GEMEINDE HELGOLAND</span></div>
+      </div>
+      <div class="cap">Briefbogen DIN A4 · schematisch</div>
+    </div>
+    <div style="flex:1">
+      <table style="margin-top:0">
+        <tr><th>Briefbogen A4</th><th>Maß</th></tr>
+        <tr><td>Logo horizontal, oben links</td><td class="m">60 mm breit · x 20 / y 16 mm</td></tr>
+        <tr><td>Absenderblock, oben rechts</td><td class="m">Mono 6,5 pt · rechtsbündig</td></tr>
+        <tr><td>Satzspiegel</td><td class="m">links 20 · rechts 20 · oben 45 mm</td></tr>
+        <tr><td>Brieftext</td><td class="m">Sans 10,5 pt · ZA 1,5 · linksbündig</td></tr>
+        <tr><td>Fußzeile</td><td class="m">Mono 6 pt · Haarlinie darüber</td></tr>
+        <tr><td>Papier</td><td>Naturpapier gebrochen weiß („Schaum“), 100–120 g, ungestrichen.</td></tr>
+      </table>
+      <div style="display:flex;gap:6mm;margin-top:6mm;align-items:flex-start">
+        <div style="width:40mm">
+          <div style="aspect-ratio:85/55;background:var(--tiefsee);border-radius:1mm;display:grid;place-items:center"><img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:55%"/></div>
+          <div style="aspect-ratio:85/55;background:#fff;border:.2mm solid var(--linie);border-radius:1mm;margin-top:2.5mm;padding:3.5mm;display:flex;flex-direction:column;justify-content:space-between"><div style="font-size:5.6pt;font-weight:600">Nils Benthaus</div><div class="mono" style="font-size:3.8pt;line-height:1.9;color:var(--grau)">MARKENFÜHRUNG<br/>NILS@HELGOLAND.DE<br/>+49 4725 …</div></div>
+        </div>
+        <div class="cap" style="margin-top:0">Visitenkarte 85 × 55 mm<br/>Vorderseite: nur das Zeichen.<br/>Rückseite: Name Sans 600,<br/>Rest Mono — kein Titel-Zoo.</div>
+      </div>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 43 BESCHILDERUNG -->
+<div class="pg dark">
+  <div class="eyebrow">G · Beschilderung &amp; Außenraum</div>
+  <h2 class="h2">Emaille statt Aluverbund.</h2>
+  <div style="display:flex;gap:12mm;margin-top:6mm;align-items:center">
+    <div style="width:60mm;flex:none;background:var(--tiefsee);color:var(--schaum);border:1mm solid var(--schaum);outline:1.8mm solid var(--tiefsee);border-radius:1.5mm;padding:7mm;text-align:center">
+      <svg width="34" height="12" viewBox="0 0 130 44" fill="none" style="margin:0 auto 3mm;display:block"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg>
+      <div style="font-family:var(--sans);font-weight:600;font-size:10.5pt;letter-spacing:.14em;text-transform:uppercase">Lange Anna</div>
+      <div style="height:.3mm;background:rgba(245,241,233,.35);margin:3.5mm 0"></div>
+      <div class="mono" style="font-size:7pt;letter-spacing:.08em;color:rgba(245,241,233,.8)">↑ 400 Atemzüge · Klippenrandweg</div>
+    </div>
+    <table style="margin-top:0">
+      <tr><th>Spezifikation</th><th>Wert</th></tr>
+      <tr><td>Material</td><td>Stahlemaille, 2–3 mm, gebördelte Kante — altert würdevoll.</td></tr>
+      <tr><td>Farben</td><td>Tiefsee-Grund, Schaum-Schrift; Farbabstimmung am Emaille-Muster, nie am Bildschirm.</td></tr>
+      <tr><td>Aufbau</td><td class="m">Linie → Ortsname (Sans 600) → Haarlinie → Distanz in Atemzügen (Mono)</td></tr>
+      <tr><td>Distanzlogik</td><td class="m">1 Atemzug ≈ 0,75 m Gehweg <small>gerundet auf 50er-Schritte</small></td></tr>
+      <tr><td>Montage</td><td>Sichtbare Edelstahlschrauben, 4 ×, Ecken — Ehrlichkeit auch im Detail.</td></tr>
+      <tr><td>Nachts</td><td>Keine Leuchtkästen. Wo nötig: indirekte, warmweiße Anstrahlung ≤ 3000 K.</td></tr>
+    </table>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 44 TEXTIL -->
+<div class="pg dark">
+  <div class="eyebrow">G · Textil &amp; Merchandise</div>
+  <h2 class="h2">Getragen, nicht beworben.</h2>
+  <div style="display:flex;gap:12mm;margin-top:6mm;align-items:center">
+    <div style="width:64mm;flex:none;background:var(--tiefsee-dunkel);border:.2mm solid var(--linie-hell);border-radius:1mm;padding:8mm;display:grid;place-items:center">
+      <svg viewBox="0 0 200 220" style="width:44mm">
+        <path d="M60 20 L85 8 Q100 18 115 8 L140 20 L160 50 L138 62 L138 200 L62 200 L62 62 L40 50 Z" fill="#0B2D3C" stroke="rgba(245,241,233,.2)" stroke-width="1"/>
+        <g transform="translate(76,70) scale(0.36)" fill="none" stroke="#F5F1E9" stroke-width="3.4" stroke-linecap="round"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124"/></g>
+      </svg>
+    </div>
+    <table style="margin-top:0">
+      <tr><th>Spezifikation</th><th>Wert</th></tr>
+      <tr><td>Stick (bevorzugt)</td><td class="m">Atemlinie solo · min. 60 mm breit · Garn Schaum auf Tiefsee</td></tr>
+      <tr><td>Position</td><td class="m">Brust links · 100 mm unter Schulternaht — oder Nacken-Label</td></tr>
+      <tr><td>Druck</td><td>Einfarbig Schaum; Sprüche-Shirts tragen Serif-Zeilen, kein Logo vorn groß.</td></tr>
+      <tr><td>Textilfarben</td><td class="m">Tiefsee · Schaum · Sand — sonst keine</td></tr>
+      <tr><td>Qualität</td><td>Schwer, langlebig, reparierbar — Merch ist Bekenntnis, kein Streuartikel.</td></tr>
+      <tr><td>Verkauf</td><td>In den Hummerbuden — Marge bleibt auf der Insel.</td></tr>
+    </table>
+  </div>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 45 FÄHRE -->
+<div class="pg dark">
+  <div class="eyebrow">G · Fähre &amp; Fahrzeuge</div>
+  <h2 class="h2">Das größte Plakat fährt.</h2>
+  <div style="margin-top:8mm;background:linear-gradient(180deg,#134155 0%,#0B2D3C 70%);border-radius:1mm;padding:10mm 8mm;border:.2mm solid var(--linie-hell)">
+    <svg viewBox="0 0 280 70" style="width:100%">
+      <path d="M8 50 L18 22 L250 22 L272 50 Z" fill="#F5F1E9" opacity=".95"/>
+      <rect x="18" y="40" width="244" height="10" fill="#0B2D3C"/>
+      <g transform="translate(96,41.4) scale(0.6)" fill="none" stroke="#F5F1E9" stroke-width="2.6" stroke-linecap="round"><path d="M6 10 H34 C44 10 46 -4 52 -4 S62 10 72 10 H100" transform="translate(0,4)"/></g>
+      <text x="140" y="48.6" font-family="Instrument Serif, Georgia" font-size="7.4" letter-spacing="3" fill="#F5F1E9">ATMEN</text>
+      <path d="M0 58 Q40 52 80 58 T160 58 T240 58 T280 56" fill="none" stroke="rgba(245,241,233,.35)" stroke-width="1.4"/>
+    </svg>
+  </div>
+  <div class="cap">Rumpfband · schematisch — Band = 1/6 der Rumpfhöhe, Linie + Wortmarke mittschiffs</div>
+  <table style="margin-top:6mm">
+    <tr><th>Regel</th><th>Wert</th></tr>
+    <tr><td>Rumpfband</td><td class="m">Tiefsee · Höhe = 1/6 Rumpfhöhe · über die volle Länge</td></tr>
+    <tr><td>Zeichen</td><td class="m">mittschiffs · Wortmarke = 60 % der Bandhöhe</td></tr>
+    <tr><td>Bug/Heck</td><td>Nur Atemlinie solo — lesbar bei Fahrt.</td></tr>
+    <tr><td>Landfahrzeuge (E-Karren)</td><td>Tür: Atemlinie solo 20 cm + „Helgoland — Atmen“ Mono darunter.</td></tr>
+  </table>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- ============ TEIL H ============ -->
+
+<!-- 46 BILDWELT REGELN -->
+<div class="pg">
+  <div class="eyebrow">H · Die Bildwelt</div>
+  <h2 class="h2">Dokumentarisch. Nie Hochglanz.</h2>
+  <div class="grid cols2" style="margin-top:6mm">
+    <div>
+      <div style="aspect-ratio:3/2;border-radius:1mm;background:linear-gradient(180deg,#7C8B91 0%,#134155 55%,#0B2D3C 100%);position:relative;overflow:hidden"><div style="position:absolute;left:5mm;bottom:4mm;color:#F5F1E9;font-family:var(--serif);font-size:9pt">Nordisches Licht, gedeckte Töne.</div></div>
+      <div class="cap" style="color:var(--gruen)">✓ richtig · ruhig, ehrlich, blaugrau</div>
+    </div>
+    <div>
+      <div style="aspect-ratio:3/2;border-radius:1mm;background:linear-gradient(140deg,#ff9a3c 0%,#ff4e88 45%,#37d0ff 100%);position:relative;overflow:hidden"><div style="position:absolute;left:5mm;bottom:4mm;color:#fff;font-family:var(--serif);font-size:9pt;text-shadow:.4mm .4mm 1mm rgba(0,0,0,.5)">HDR-Kitsch, Instagram-Filter.</div></div>
+      <div class="cap" style="color:var(--rot)">✕ falsch · übersättigt, gestellt, laut</div>
+    </div>
+  </div>
+  <table style="margin-top:6mm">
+    <tr><th>Regel</th><th>Konkret</th></tr>
+    <tr><td>Licht</td><td>Nordisch, weich, auch grau — golden hour ja, Neon-Sonnenuntergang nein.</td></tr>
+    <tr><td>Menschen</td><td>Beiläufig, von hinten oder im Tun — nie posierend in die Kamera.</td></tr>
+    <tr><td>Wetter</td><td>Nebel, Wind und Gischt sind Motive, keine Fehler.</td></tr>
+    <tr><td>Bearbeitung</td><td>Sättigung −10 bis −20 %, Tiefen leicht blau — nie HDR, nie Beauty-Retusche.</td></tr>
+    <tr><td>Text auf Bild</td><td>Nur mit Scrim (Tiefsee dunkel, 30–90 %), nur Schaum.</td></tr>
+    <tr><td>KI-Motive</td><td>Immer gekennzeichnet; nur mit kanonischer Atemlinie als Referenz erzeugt.</td></tr>
+  </table>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 47 WERKZEUGKASTEN -->
+<div class="pg dark">
+  <div class="eyebrow">H · Der Werkzeugkasten</div>
+  <h2 class="h2">Alles, was Sie brauchen. Nichts, was Sie nicht brauchen.</h2>
   <table style="margin-top:6mm">
     <tr><th>Ordner / Datei</th><th>Inhalt</th><th>Einsatz</th></tr>
-    <tr><td class="m">logo/ · 12 SVG + 8 PNG</td><td>Lockup gestapelt/horizontal, Atemlinie, Wortmarke (echte Vektorpfade), Favicon, App-Icon, PNG bis 2000 px</td><td>Alles Sichtbare</td></tr>
-    <tr><td class="m">farben/ · CSS + JSON + TXT</td><td>8 Farbwerte: HEX, RGB, CMYK-Richtwert, Verwendung</td><td>Design &amp; Entwicklung</td></tr>
-    <tr><td class="m">schriften/ · 8 WOFF2</td><td>Instrument Serif/Sans, Space Mono + OFL-Lizenzen</td><td>Web &amp; Desktop</td></tr>
-    <tr><td class="m">LIESMICH.md</td><td>Kurzanleitung, Regel Nr. 1</td><td>Start hier</td></tr>
+    <tr><td class="m">logo/ · 12 SVG + 8 PNG</td><td>Lockup gestapelt/horizontal, Atemlinie, Wortmarke (echte Vektorpfade — keine Font-Abhängigkeit), Favicon, App-Icon; PNG bis 2000 px, transparent</td><td>Alles Sichtbare</td></tr>
+    <tr><td class="m">farben/ · CSS + JSON + TXT</td><td>8 Farbwerte: HEX, RGB, CMYK-Richtwert, Verwendungsregel</td><td>Design &amp; Entwicklung</td></tr>
+    <tr><td class="m">schriften/ · 8 WOFF2 + Lizenzen</td><td>Instrument Serif (400/kursiv), Instrument Sans (400/500/600/kursiv), Space Mono (400/700) — SIL OFL, frei auch kommerziell</td><td>Web &amp; Desktop</td></tr>
+    <tr><td class="m">LIESMICH.md</td><td>Kurzanleitung + Regel Nr. 1</td><td>Start hier</td></tr>
   </table>
   <table style="margin-top:5mm">
     <tr><th>Anwendung</th><th>Datei</th></tr>
     <tr><td>Plakat, Cover, Fahne, Textil groß</td><td class="m">atmen-lockup-schaum.svg</td></tr>
     <tr><td>Website-Navigation, Briefkopf</td><td class="m">atmen-horizontal-*.svg</td></tr>
     <tr><td>Stickerei, Prägung, sehr klein, Muster</td><td class="m">atemlinie-*.svg</td></tr>
-    <tr><td>Browser-Tab, App</td><td class="m">favicon.svg · app-icon.svg</td></tr>
+    <tr><td>Browser-Tab, App, Social-Avatar</td><td class="m">favicon.svg · app-icon.svg</td></tr>
     <tr><td>Office / schnelle Platzierung</td><td class="m">logo/png/… @2000</td></tr>
   </table>
-  <div class="pgfoot"><span>ATMEN · CI-Richtlinien</span><span>11</span></div>
+  <p class="body" style="margin-top:4mm">Download: <span class="mono" style="font-size:8pt">brand/atmen-toolkit.zip</span> — es gibt genau eine Atemlinie. Keine eigenen Wellen zeichnen.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
 </div>
 
-<!-- 12 SCHLUSS -->
+<!-- 48 CHECKLISTE -->
+<div class="pg darker">
+  <div class="eyebrow">H · Vor jeder Freigabe</div>
+  <h2 class="h2">Zehn Fragen. Zehn Häkchen. Dann raus.</h2>
+  <ul class="check" style="margin-top:7mm">
+    <li>Kommt das Zeichen aus dem Werkzeugkasten — unverändert, unverzerrt, richtige Farbfassung?</li>
+    <li>Steht der Schutzraum („ein Atem“) rundum frei?</li>
+    <li>Ist die Mindestgröße eingehalten (Lockup 24 mm / 90 px, Linie 8 mm / 32 px)?</li>
+    <li>Nur Systemfarben — Rot unter 10 %, kein reines Weiß oder Schwarz?</li>
+    <li>Fließtext in einer AAA-Kombination, min. 16 px / 9 pt?</li>
+    <li>Nur die drei Schriften, Serif nie fett, Labels in Mono-Versalien?</li>
+    <li>Kein Ausrufezeichen, kein Superlativ, kein Inselvergleich?</li>
+    <li>Spricht der Text in einer der drei Stimmen — und trägt er einen Beweis?</li>
+    <li>Bildwelt: gedeckt, dokumentarisch, Text nur mit Scrim, KI gekennzeichnet?</li>
+    <li>Der Weniger-Test: Kann ein Element weg? Dann muss es weg.</li>
+  </ul>
+  <p class="body" style="margin-top:6mm">Zwei Nein-Antworten = zurück an den Absender. Im Zweifel entscheidet die Markenführung — und im Zweifel entscheidet sie: weniger.</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 49 KONTAKT / VERSION -->
+<div class="pg">
+  <div class="eyebrow">H · Pflege &amp; Kontakt</div>
+  <h2 class="h2">Ein lebendes Dokument.</h2>
+  <table style="margin-top:7mm">
+    <tr><th>Version</th><th>Stand</th><th>Änderungen</th></tr>
+    <tr><td class="m">1.1</td><td class="m">Juli 2026</td><td>XL-Ausgabe: Social-Systeme, Print-Raster, Geschäftsausstattung, Beschilderung, Checkliste.</td></tr>
+    <tr><td class="m">1.0</td><td class="m">Juli 2026</td><td>Erstausgabe: Zeichen, Farbe, Typografie, Web, Werkzeugkasten.</td></tr>
+  </table>
+  <p class="body" style="margin-top:7mm">Dieses Manual wächst mit der Marke — aber langsam. Neue Regeln kommen nur hinein, wenn dieselbe Frage dreimal gestellt wurde. Rückfragen, Freigaben, Sonderfälle: Markenführung Helgoland — Atmen.</p>
+  <p class="body" style="margin-top:4mm">Alle lebenden Dokumente der Marke: Website (Referenz-Anwendung) · Kampagnenbuch (Stimme &amp; Motive) · dieses Manual (Regeln) · Werkzeugkasten (Dateien).</p>
+  <div class="pgfoot"><span>ATMEN · CI-Manual</span><span class="pn"></span></div>
+</div>
+
+<!-- 50 SCHLUSS -->
 <div class="pg dark" style="align-items:center;justify-content:center;text-align:center">
   <h2 class="h1">Im Zweifel: weniger.<br/><em style="font-style:italic">Und nie gegen den Gast.</em></h2>
-  <p class="body" style="margin:8mm auto 0;text-align:center">Was dieses Dokument nicht regelt, regelt die Haltung.<br/>Was die Haltung nicht regelt, gehört wahrscheinlich nicht in die Marke.</p>
-  <img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:52mm;margin-top:14mm"/>
-  <p style="position:absolute;left:18mm;right:18mm;bottom:14mm;font-family:var(--mono);font-size:5.8pt;letter-spacing:.04em;line-height:1.9;color:rgba(245,241,233,.45)">CI-Richtlinien Version 1.0 · Konzeptstudie zur Marke ATMEN — kein offizieller Auftritt von Helgoland. Schriften unter SIL Open Font License. CMYK-Werte unkalibrierte Richtwerte. Ein Denkangebot: Nils Benthaus, Hamburg.</p>
+  <p class="body" style="margin:8mm auto 0;text-align:center">Was dieses Manual nicht regelt, regelt die Haltung.<br/>Was die Haltung nicht regelt, gehört wahrscheinlich nicht in die Marke.</p>
+  <img src="file:///home/user/prompt-eng-interactive-tutorial/helgoland-atmen/brand/toolkit/logo/atmen-lockup-schaum.svg" style="width:50mm;margin-top:13mm"/>
+  <p style="position:absolute;left:18mm;right:18mm;bottom:12mm;font-family:var(--mono);font-size:5.6pt;letter-spacing:.04em;line-height:1.9;color:rgba(245,241,233,.45)">CI-Manual Version 1.1 · Konzeptstudie zur Marke ATMEN — kein offizieller Auftritt von Helgoland. Schriften unter SIL Open Font License. CMYK-Werte unkalibrierte Richtwerte. Website-Abbildungen mit schematischen Bildflächen. Ein Denkangebot: Nils Benthaus, Hamburg.</p>
 </div>
 
+<script>
+document.querySelectorAll('.pg').forEach(function(pg,i){
+  var pn=pg.querySelector('.pn');
+  if(pn) pn.textContent=String(i+1).padStart(2,'0');
+});
+</script>
 </body>
 </html>
