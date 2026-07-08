@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<title>ATMEN — Kampagnenbuch (Print)</title>
+<style>
+@font-face{font-family:'Instrument Serif';src:url('fonts-pkg/node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2') format('woff2');font-weight:400;font-style:normal}
+@font-face{font-family:'Instrument Serif';src:url('fonts-pkg/node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2') format('woff2');font-weight:400;font-style:italic}
+@font-face{font-family:'Instrument Sans';src:url('fonts-pkg/node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-400-normal.woff2') format('woff2');font-weight:400}
+@font-face{font-family:'Instrument Sans';src:url('fonts-pkg/node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-500-normal.woff2') format('woff2');font-weight:500}
+@font-face{font-family:'Instrument Sans';src:url('fonts-pkg/node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-600-normal.woff2') format('woff2');font-weight:600}
+@font-face{font-family:'Space Mono';src:url('fonts-pkg/node_modules/@fontsource/space-mono/files/space-mono-latin-400-normal.woff2') format('woff2');font-weight:400}
+@font-face{font-family:'Space Mono';src:url('fonts-pkg/node_modules/@fontsource/space-mono/files/space-mono-latin-700-normal.woff2') format('woff2');font-weight:700}
+:root{
+  --tiefsee:#0B2D3C;--tiefsee-dunkel:#06171F;--papier:#F5F1E9;--sand:#EBE3D4;
+  --rot:#B23A2E;--gruen:#3F6B4A;--tinte:#16242B;--grau:#7C8B91;--schaum:#F5F1E9;
+  --linie:rgba(22,36,43,.14);--linie-hell:rgba(245,241,233,.16);
+  --serif:'Instrument Serif',Georgia,serif;--sans:'Instrument Sans',Arial,sans-serif;--mono:'Space Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+@page{size:A4 landscape;margin:0}
+body{font-family:var(--sans);color:var(--tinte);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pg{width:297mm;height:209.5mm;position:relative;overflow:hidden;background:var(--papier);padding:16mm 18mm 20mm;page-break-after:always;display:flex;flex-direction:column}
+.pg.dark{background:var(--tiefsee);color:var(--schaum)}
+.pg.darker{background:var(--tiefsee-dunkel);color:var(--schaum)}
+.pg.sand{background:var(--sand)}
+.pgfoot{position:absolute;left:18mm;right:18mm;bottom:8mm;display:flex;justify-content:space-between;font-family:var(--mono);font-size:6.4pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau)}
+.serif{font-family:var(--serif);font-weight:400}
+.eyebrow{font-family:var(--mono);font-size:7.5pt;letter-spacing:.24em;text-transform:uppercase;color:var(--rot);display:flex;align-items:center;gap:4mm;margin-bottom:7mm}
+.eyebrow::after{content:"";flex:1;height:.3mm;background:currentColor;opacity:.3}
+.pg.dark .eyebrow,.pg.darker .eyebrow{color:#CC5142}
+h1,h2,h3{font-family:var(--serif);font-weight:400;line-height:1.04;letter-spacing:-.01em}
+.h1{font-size:34pt}.h2{font-size:25pt}
+.body{font-size:10.5pt;line-height:1.62;color:#3B4A50;max-width:120mm}
+.pg.dark .body,.pg.darker .body{color:rgba(245,241,233,.83)}
+.lede{font-family:var(--serif);font-size:15pt;line-height:1.4}
+.mono{font-family:var(--mono)}
+.wave{display:block}
+.grid{display:grid;gap:6mm;flex:1;min-height:0;align-content:start}
+.cols2{grid-template-columns:1fr 1fr}.cols3{grid-template-columns:1fr 1fr 1fr}.cols4{grid-template-columns:repeat(4,1fr)}.cols5{grid-template-columns:repeat(5,1fr)}
+
+/* Poster / Artefakte */
+.poster{background:var(--tiefsee);color:var(--schaum);border-radius:1mm;padding:10mm 8mm;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 3mm 8mm rgba(11,45,60,.28)}
+.poster .cl{font-family:var(--serif);font-size:17pt;line-height:1.15}
+.poster .cl em{font-style:italic}
+.poster .wm{font-family:var(--mono);font-size:6.4pt;letter-spacing:.28em;text-transform:uppercase;color:rgba(245,241,233,.72);margin-top:6mm}
+.poster .wave{margin-top:4mm}
+.poster.live .badge{font-family:var(--mono);font-size:6pt;letter-spacing:.2em;color:#CC5142;text-transform:uppercase;margin-bottom:3mm}
+.cap{font-family:var(--mono);font-size:6.6pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau);margin-top:3mm}
+.pg.dark .cap,.pg.darker .cap{color:rgba(245,241,233,.55)}
+
+.sign{background:var(--tiefsee);color:var(--schaum);border:1mm solid var(--schaum);outline:1.6mm solid var(--tiefsee);border-radius:1.5mm;padding:7mm 6mm;text-align:center}
+.sign .pl{font-family:var(--sans);font-weight:600;font-size:10.5pt;letter-spacing:.14em;text-transform:uppercase}
+.sign .hr{height:.3mm;background:rgba(245,241,233,.35);margin:3.5mm 0}
+.sign .di{font-family:var(--mono);font-size:7pt;letter-spacing:.08em;color:rgba(245,241,233,.8)}
+
+.hanger{background:var(--tiefsee);color:var(--schaum);border-radius:2mm;padding:10mm 7mm 8mm;text-align:center;position:relative;box-shadow:0 3mm 8mm rgba(11,45,60,.3)}
+.hanger::before{content:"";position:absolute;top:4mm;left:50%;transform:translateX(-50%);width:9mm;height:9mm;border:1.1mm solid rgba(245,241,233,.6);border-radius:50%}
+.hanger .tx{margin-top:12mm;font-family:var(--serif);font-size:13pt;line-height:1.3}
+
+.keycard{background:linear-gradient(135deg,#0e3a4c,var(--tiefsee));color:var(--schaum);border-radius:2.4mm;aspect-ratio:1.586;padding:5mm 6mm;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 3mm 8mm rgba(11,45,60,.3)}
+.keycard .no{font-family:var(--mono);font-size:6.4pt;letter-spacing:.2em;text-transform:uppercase;color:rgba(245,241,233,.65)}
+.keycard .nm{font-family:var(--serif);font-size:11pt}
+
+.towel{background:var(--papier);border:.4mm dashed var(--grau);border-radius:1mm;padding:7mm 6mm;text-align:center}
+.towel .st{font-family:var(--mono);font-size:6.2pt;letter-spacing:.24em;text-transform:uppercase;color:var(--grau);margin-top:3.5mm}
+
+.menu{background:#fff;border:.3mm solid var(--linie);padding:7mm 6mm;text-align:center}
+.menu .h{font-family:var(--mono);font-size:6.4pt;letter-spacing:.22em;text-transform:uppercase;color:var(--grau);margin-bottom:3mm}
+.menu .it{font-family:var(--serif);font-size:11pt;padding:1.6mm 0;border-top:.3mm solid var(--linie)}
+
+.pcard{background:#fff;padding:3mm 3mm 5mm;box-shadow:0 2.5mm 7mm rgba(11,45,60,.22);transform:rotate(-1.2deg)}
+.pcard:nth-child(even){transform:rotate(1deg)}
+.pcard .im{background:var(--tiefsee);color:var(--schaum);aspect-ratio:3/2;display:flex;align-items:center;justify-content:center;padding:5mm;text-align:center}
+.pcard .im .t{font-family:var(--serif);font-style:italic;font-size:12.5pt;line-height:1.25}
+.pcard .u{font-family:var(--mono);font-size:6pt;letter-spacing:.2em;text-transform:uppercase;color:var(--grau);text-align:center;margin-top:2.6mm}
+
+.phone{width:44mm;border-radius:7mm;background:var(--tiefsee);border:1.8mm solid #05141b;padding:7mm 5mm 5mm;color:var(--schaum);box-shadow:0 4mm 9mm rgba(11,45,60,.3)}
+.phone .notch{width:12mm;height:1.3mm;border-radius:1mm;background:rgba(245,241,233,.3);margin:0 auto 6mm}
+.phone .wm{text-align:center;font-family:var(--serif);letter-spacing:.22em;font-size:9pt;padding-left:.22em}
+.phone .pulse{margin-top:6mm;background:rgba(245,241,233,.08);border:.3mm solid rgba(245,241,233,.16);border-radius:2.4mm;padding:4mm}
+.phone .pulse .k{font-family:var(--mono);font-size:5.6pt;letter-spacing:.2em;text-transform:uppercase;color:#CC5142}
+.phone .pulse .li{display:flex;justify-content:space-between;font-family:var(--mono);font-size:6.8pt;margin-top:2.2mm;color:rgba(245,241,233,.85)}
+
+.voice{background:#fff;border-radius:1mm;padding:7mm 6mm;border-top:1.2mm solid var(--rot);box-shadow:0 2mm 6mm rgba(11,45,60,.12)}
+.voice:nth-child(2){border-top-color:var(--gruen)}
+.voice:nth-child(3){border-top-color:var(--tiefsee)}
+.voice .vk{font-family:var(--mono);font-size:6.4pt;letter-spacing:.22em;text-transform:uppercase;color:var(--grau);font-weight:700}
+.voice h3{font-size:14pt;margin:2mm 0 1.6mm}
+.voice .vd{font-size:8.6pt;color:#54636A;line-height:1.5}
+.voice .vl{margin-top:3.5mm;border-top:.3mm solid var(--linie);padding-top:2.5mm}
+.voice .vl p{font-family:var(--serif);font-size:9.5pt;padding:1mm 0;line-height:1.3}
+
+.dd{border-radius:1mm;padding:7mm 7mm}
+.dd.do{background:var(--tiefsee);color:var(--schaum)}
+.dd.dont{background:#fff;border:.3mm solid var(--linie)}
+.dd h3{font-size:14pt;margin-bottom:3mm}
+.dd ul{list-style:none}
+.dd li{position:relative;padding:1.8mm 0 1.8mm 6mm;font-size:8.8pt;line-height:1.45;border-top:.3mm solid var(--linie)}
+.dd.do li{border-top-color:var(--linie-hell);color:rgba(245,241,233,.9)}
+.dd li:first-child{border-top:none}
+.dd li::before{position:absolute;left:0;font-weight:700}
+.dd.do li::before{content:"✓";color:#7FB08A}
+.dd.dont li::before{content:"✕";color:var(--rot)}
+
+.pers{background:var(--tiefsee);color:var(--schaum);border-radius:1mm;padding:5.5mm 4.5mm;display:flex;flex-direction:column;gap:1.8mm;border-top:1mm solid var(--rot)}
+.pers:nth-child(2){border-top-color:var(--gruen)}.pers:nth-child(3){border-top-color:var(--schaum)}
+.pers:nth-child(4){border-top-color:#CC5142}.pers:nth-child(5){border-top-color:#7FB08A}
+.pers .pk{font-family:var(--mono);font-size:5.8pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau)}
+.pers h3{font-size:12pt}
+.pers .pd{font-size:7.6pt;color:rgba(245,241,233,.78);line-height:1.5;flex:1}
+.pers .pq{font-family:var(--serif);font-style:italic;font-size:8.4pt;border-top:.3mm solid var(--linie-hell);padding-top:2mm}
+
+.phase{background:var(--tiefsee);color:var(--schaum);border-radius:1mm;padding:6mm 5mm;border-top:1mm solid var(--rot);display:flex;flex-direction:column}
+.phase:nth-child(2){border-top-color:var(--gruen)}.phase:nth-child(3){border-top-color:var(--schaum)}.phase:nth-child(4){border-top-color:#CC5142}
+.phase .zeit{font-family:var(--mono);font-size:6pt;letter-spacing:.18em;text-transform:uppercase;color:var(--grau)}
+.phase h3{font-size:12.5pt;margin:1.6mm 0 2mm}
+.phase ul{list-style:none;flex:1}
+.phase li{font-size:7.8pt;color:rgba(245,241,233,.82);padding:1.4mm 0;border-top:.3mm solid var(--linie-hell);line-height:1.4}
+.phase li:first-child{border-top:none}
+.phase .ziel{font-family:var(--mono);font-size:6.2pt;letter-spacing:.12em;text-transform:uppercase;color:#CC5142;border-top:.3mm solid var(--linie-hell);padding-top:2.2mm;margin-top:2mm}
+
+.zahl{background:var(--tiefsee);padding:7mm 6mm;border:.2mm solid var(--linie-hell)}
+.zahl b{font-family:var(--mono);font-weight:700;font-size:19pt;color:var(--schaum);display:block}
+.zahl b .u{color:var(--rot);font-size:.55em}
+.zahl .l{margin-top:2.6mm;font-family:var(--mono);font-size:6.2pt;letter-spacing:.12em;text-transform:uppercase;color:var(--grau)}
+.zahl .d{margin-top:1.6mm;font-size:8pt;color:rgba(245,241,233,.75);line-height:1.5}
+
+.idee{padding:4.5mm 0;border-bottom:.3mm solid var(--linie);display:grid;grid-template-columns:38mm 1fr;gap:6mm;align-items:baseline}
+.pg.dark .idee,.pg.darker .idee{border-bottom-color:var(--linie-hell)}
+.idee .ik{font-family:var(--mono);font-size:6.6pt;letter-spacing:.16em;text-transform:uppercase;color:var(--rot)}
+.pg.dark .idee .ik{color:#CC5142}
+.idee h3{font-size:12.5pt;margin-bottom:1mm}
+.idee p{font-size:8.8pt;color:#3B4A50;line-height:1.55;max-width:170mm}
+.pg.dark .idee p,.pg.darker .idee p{color:rgba(245,241,233,.8)}
+</style>
+</head>
+<body>
+
+<!-- 1 · COVER -->
+<div class="pg dark" style="align-items:center;justify-content:center;text-align:center">
+  <div class="mono" style="font-size:7.5pt;letter-spacing:.32em;text-transform:uppercase;color:rgba(245,241,233,.65);margin-bottom:12mm">Helgoland · Markenkampagne 2026 – 2028</div>
+  <div class="serif" style="font-size:64pt;letter-spacing:.14em;padding-left:.14em">ATMEN</div>
+  <svg class="wave" width="180" height="40" viewBox="0 0 130 44" fill="none" style="margin:10mm auto 0"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="2.2" stroke-linecap="round"/></svg>
+  <p class="serif" style="font-style:italic;font-size:14pt;margin-top:10mm;color:rgba(245,241,233,.85)">Das Kampagnenbuch. Vom Hauptbahnhof bis zum Handtuch.</p>
+  <div class="mono" style="font-size:6.6pt;letter-spacing:.24em;text-transform:uppercase;color:rgba(245,241,233,.5);margin-top:14mm">Strategie · Stimmen · Menschen · 40+ Touchpoints</div>
+  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>Konzeptstudie · KI-Moodwelt</span><span>Helgoland — Atmen</span></div>
+</div>
+
+<!-- 2 · INSIGHT -->
+<div class="pg dark">
+  <div class="eyebrow">Kapitel 01 · Der Insight</div>
+  <h2 class="h1" style="max-width:210mm">Deutschland hat keinen Urlaubsmangel.<br/>Deutschland hat einen Atemmangel.</h2>
+  <p class="body" style="margin-top:8mm;max-width:150mm">Volle Kalender, volle Städte, volle Feeds — und jeden Frühling fliegen dazu die Pollen. Die Reisebranche antwortet mit noch mehr Programm. Wir antworten mit dem Gegenteil.</p>
+  <p class="lede" style="margin-top:10mm;max-width:130mm">Wir verkaufen keine Insel.<br/>Wir verkaufen den tiefsten Atemzug Deutschlands.</p>
+  <p class="body" style="margin-top:8mm;max-width:150mm">Und das können wir beweisen: 70 Kilometer Abstand, 0 Autos, 0/8 Pollen, 200 Jahre Heilbad. Kein anderes deutsches Reiseziel hat diese Zahlen. Die Kampagne behauptet nichts — sie zeigt vor.</p>
+  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>ATMEN · Kampagnenbuch</span><span>02</span></div>
+</div>
+
+<!-- 3 · STIMMEN -->
+<div class="pg">
+  <div class="eyebrow">Kapitel 02 · Die Strategie</div>
+  <h2 class="h2">Eine Haltung. Drei Stimmen. Null Lärm.</h2>
+  <p class="body" style="margin-top:4mm">Positionierung: <em>Helgoland ist kein Reiseziel. Helgoland ist ein Zustand.</em> Wir werben gegen den flachen Atem — nie gegen eine andere Insel. Jede Botschaft spricht in einer von drei Stimmen und trägt einen Beweis.</p>
+  <div class="grid cols3" style="margin-top:8mm">
+    <div class="voice"><div class="vk">Haltung</div><h3>Die ehrliche Stimme</h3><p class="vd">Die unbequeme Wahrheit zuerst — über Wetter, Anreise, Kleinheit. Anti-Werbung, die Vertrauen schafft.</p><div class="vl"><p>„Wir versprechen nichts. Und halten es.“</p><p>„Bei uns ist nichts los. Das ist kein Versehen.“</p></div></div>
+    <div class="voice"><div class="vk">Herz</div><h3>Die Atem-Stimme</h3><p class="vd">Eine leise Anweisung. Die Erlaubnis, nichts zu tun. Warm, nie belehrend.</p><div class="vl"><p>„Tun Sie nichts. Wir passen auf.“</p><p>„Sie sind da. Atmen.“</p></div></div>
+    <div class="voice"><div class="vk">Beweis</div><h3>Die Zahl-Stimme</h3><p class="vd">Deadpan-Fakten statt Adjektive. Jede Botschaft trägt eine Zahl, die man nachprüfen kann.</p><div class="vl"><p>„0 Autos. 0 Pollen. 0 Ausreden.“</p><p>„Empfang: 1 Balken. Für ein Foto.“</p></div></div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · Kampagnenbuch</span><span>03</span></div>
+</div>
+
+<!-- 4 · LEITPLANKEN -->
+<div class="pg sand">
+  <div class="eyebrow">Kapitel 02 · Die Leitplanken</div>
+  <h2 class="h2">Was wir tun. Und was auf keinen Fall.</h2>
+  <div class="grid cols2" style="margin-top:8mm">
+    <div class="dd do"><h3>Das machen wir</h3><ul>
+      <li>Gegen den Zustand reden — Alltag, Hektik, Lärm, Pollen</li>
+      <li>Mit Zahlen beweisen statt mit Adjektiven behaupten</li>
+      <li>Uns selbst auf den Arm nehmen — nie den Gast</li>
+      <li>Leise bleiben, wo alle laut sind: kurze Sätze, viel Luft</li>
+      <li>Die Insulaner zuerst gewinnen, dann die Gäste</li>
+    </ul></div>
+    <div class="dd dont"><h3>Das machen wir nie</h3><ul>
+      <li>Eine andere Insel nennen oder vergleichen</li>
+      <li>Superlative und Tourismusfloskeln („traumhaft“, „Perle“)</li>
+      <li>Versprechen, die Wetter und Fähre nicht halten</li>
+      <li>Ausrufezeichen, Marktgeschrei, gestellte Postkarten-Idylle</li>
+      <li>Den Gast belehren oder beschämen</li>
+    </ul></div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · Kampagnenbuch</span><span>04</span></div>
+</div>
+
+<!-- 5 · MENSCHEN -->
+<div class="pg">
+  <div class="eyebrow">Kapitel 03 · Die Menschen</div>
+  <h2 class="h2">Fünf Menschen, ein Bedürfnis.</h2>
+  <p class="body" style="margin-top:3mm">Die wichtigste Zielgruppe wohnt schon da — die rund 1.300 Insulaner sind Absender, nicht Kulisse. Danach vier Gäste, die dasselbe suchen und es unterschiedlich nennen.</p>
+  <div class="grid cols5" style="margin-top:7mm">
+    <div class="pers"><div class="pk">Zuerst · intern</div><h3>De Halunder</h3><p class="pd">Gastgeber, Börtebootführer, Badeärztin, Budenbesitzer. Sie sprechen die Marke, bevor ein Plakat hängt.</p><p class="pq">„Wenn wir es nicht glauben, glaubt es keiner.“</p></div>
+    <div class="pers"><div class="pk">Neu · Hamburg</div><h3>Die Atemlose</h3><p class="pd">38, Agenturleitung. Will nicht abschalten — will durchatmen. Bucht spontan, bleibt drei Nächte.</p><p class="pq">„Ich will keinen Ort sehen. Ich will einen loswerden.“</p></div>
+    <div class="pers"><div class="pk">Neu · bundesweit</div><h3>Der Allergiker</h3><p class="pd">44, Köln, Birkenpollen. 0/8 ist kein Claim, sondern ein Befund — die Durchatmen-Wochen sein Termin.</p><p class="pq">„Einmal im Jahr atme ich ohne nachzudenken.“</p></div>
+    <div class="pers"><div class="pk">Neu · B2B</div><h3>Die Klausur</h3><p class="pd">Teams, die wirklich denken wollen. Kein Auto, keine Ausrede — und die Sturmgarantie als Anekdote.</p><p class="pq">„48 Stunden Hochsee ersetzen 4 Wochen Meetings.“</p></div>
+    <div class="pers"><div class="pk">Bestand · loyal</div><h3>Die Wiederkehrerin</h3><p class="pd">67, kommt seit 1988, trägt die Nebensaison. Die Kampagne gibt ihrer Treue eine Sprache.</p><p class="pq">„Die Insel war nie weg. Nur die Werbung.“</p></div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · Kampagnenbuch</span><span>05</span></div>
+</div>
+
+<!-- 6 · ATEMKURVE -->
+<div class="pg dark">
+  <div class="eyebrow">Kapitel 04 · Die Atemkurve</div>
+  <h2 class="h2">Eine Journey, die atmet.</h2>
+  <p class="body" style="margin-top:3mm;max-width:170mm">Jeder Touchpoint liegt auf einer Kurve — vom ersten Reiz im Hamburger Alltag bis zur Rückkehr im Winter. Einatmen bis zur Ankunft, ausatmen auf der Insel, und ein Andenken, das den nächsten Atemzug verabredet.</p>
+  <svg viewBox="0 0 940 240" fill="none" style="width:100%;margin-top:10mm">
+    <path d="M20 190 C120 190 170 60 300 55 S480 55 560 90 S760 185 920 188" stroke="#F5F1E9" stroke-width="2.5" stroke-linecap="round"/>
+    <g font-family="Space Mono, monospace" font-size="11" letter-spacing="1.5" fill="#7C8B91">
+      <circle cx="20" cy="190" r="5" fill="#B23A2E"/><text x="14" y="218" fill="#F5F1E9">REIZ</text><text x="14" y="232">Hbf · DOOH</text>
+      <circle cx="160" cy="122" r="5" fill="#B23A2E"/><text x="120" y="96" fill="#F5F1E9">ENTSCHEIDUNG</text><text x="130" y="82">Insel-Puls</text>
+      <circle cx="300" cy="55" r="5" fill="#B23A2E"/><text x="272" y="34" fill="#F5F1E9">ABLEGEN</text><text x="256" y="20">Landungsbrücken</text>
+      <circle cx="470" cy="62" r="5" fill="#B23A2E"/><text x="442" y="36" fill="#F5F1E9">ANKOMMEN</text><text x="446" y="22">Börteboot</text>
+      <circle cx="600" cy="105" r="5" fill="#B23A2E"/><text x="580" y="136" fill="#F5F1E9">ATMEN</text><text x="548" y="150">Insel · Hotel · Spa</text>
+      <circle cx="770" cy="172" r="5" fill="#B23A2E"/><text x="726" y="146" fill="#F5F1E9">MITNEHMEN</text><text x="722" y="132">Merch · Postkarte</text>
+      <circle cx="920" cy="188" r="5" fill="#B23A2E"/><text x="812" y="218" fill="#F5F1E9">WIEDERKOMMEN</text><text x="836" y="232">Insel-Post · Robben</text>
+    </g>
+  </svg>
+  <p class="serif" style="font-style:italic;font-size:11pt;margin-top:6mm;color:rgba(245,241,233,.85)">Regel: Kein Touchpoint schreit. Jeder ist ein Ein- oder Ausatmen — nie beides, nie mehr.</p>
+  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>ATMEN · Kampagnenbuch</span><span>06</span></div>
+</div>
+
+<!-- 7 · HAMBURG OOH -->
+<div class="pg sand">
+  <div class="eyebrow">Kapitel 05 · Quellmarkt Hamburg — OOH</div>
+  <h2 class="h2">Wir hängen die Insel dahin,<br/>wo der Atem am flachsten ist.</h2>
+  <div class="grid cols3" style="margin-top:7mm">
+    <div>
+      <div class="poster" style="aspect-ratio:2/3">
+        <div class="cl">Ihre Lunge<br/>hat angerufen.</div>
+        <div><svg class="wave" width="90" height="26" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"/></svg><div class="wm">Helgoland · Atmen</div></div>
+      </div>
+      <div class="cap">City-Light · Hauptbahnhof &amp; Innenstadt</div>
+    </div>
+    <div>
+      <div class="poster" style="aspect-ratio:2/3">
+        <div class="cl">0 Autos.<br/>0 Pollen.<br/>0 Ausreden.</div>
+        <div><svg class="wave" width="90" height="26" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"/></svg><div class="wm">Helgoland · Atmen</div></div>
+      </div>
+      <div class="cap">Digitale Stele · S-Bahn-Gleise</div>
+    </div>
+    <div>
+      <div class="poster live" style="aspect-ratio:2/3">
+        <div><div class="badge">● live · 12. April, 14:20</div>
+        <div class="cl">Birkenpollen<br/>heute: 8/8.<br/><em>Helgoland: 0/8.</em></div></div>
+        <div><svg class="wave" width="90" height="26" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"/></svg><div class="wm">Helgoland · Atmen</div></div>
+      </div>
+      <div class="cap">DOOH · Pollen-Trigger, programmatisch</div>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · Kampagnenbuch</span><span>07</span></div>
+</div>
+
+<!-- 8 · HAMBURG AKTIVIERUNG -->
+<div class="pg">
+  <div class="eyebrow">Kapitel 05 · Quellmarkt Hamburg — Aktivierung</div>
+  <h2 class="h2">Leise Präsenz statt lauter Welle.</h2>
+  <div style="margin-top:5mm">
+    <div class="idee"><div class="ik">Aktivierung 01</div><div><h3>Das Taschentuch-Sampling</h3><p>Zur Pollensaison liegen in Hamburger Apotheken und an U-Bahn-Ausgängen Taschentuchpackungen im Markendesign: „Oder Sie fahren dahin, wo nichts fliegt. Helgoland, 0/8.“ Darin: ein Fahrplan.</p></div></div>
+    <div class="idee"><div class="ik">Aktivierung 02</div><div><h3>Die Atembank</h3><p>Eine einzige Tiefseeblau-Bank am Jungfernstieg, Messingschild: „Einatmen vier. Ausatmen sechs. In echt: 70 km ab hier.“ Kein QR-Zwang, keine Hostessen. Nur die Bank — und jeder fotografiert sie.</p></div></div>
+    <div class="idee"><div class="ik">Bord-Ritual</div><div><h3>Die letzte Durchsage</h3><p>Zehn Minuten vor Ankunft, einmal pro Überfahrt: „In Kürze erreichen wir Helgoland. Wir empfehlen: einatmen, vier Sekunden. Ausatmen, sechs.“ Danach Stille. Menschen erzählen so etwas weiter.</p></div></div>
+    <div class="idee"><div class="ik">Bordkarte</div><div><h3>Ticket = Erlaubnisschein</h3><p>Die Rückseite der Bordkarte trägt eine einzige Zeile: „Gültig für: nichts müssen.“ Sie wird aufgehoben, fotografiert, verschenkt.</p></div></div>
+    <div class="idee"><div class="ik">Media-Logik</div><div><h3>Wenige, große, ruhige Flächen</h3><p>Pendler-Nadelöhre statt Streuplan; DOOH nur mit Live-Daten (Pollen, Abfahrten, Seegang). Frequenz kommt aus dem Alltag der Zielgruppe, nicht aus dem Budget.</p></div></div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · Kampagnenbuch</span><span>08</span></div>
+</div>
+
+<!-- 9 · ÜBERFAHRT -->
+<div class="pg darker">
+  <div class="eyebrow">Kapitel 06 · Die Überfahrt</div>
+  <h2 class="h2">Der Katamaran ist unser größtes Plakat.</h2>
+  <div style="margin-top:9mm;background:var(--tiefsee);border-radius:1mm;padding:9mm 10mm;display:flex;align-items:center;gap:8mm;border:.3mm solid var(--linie-hell)">
+    <svg width="120" height="36" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="2.6" stroke-linecap="round"/></svg>
+    <div class="serif" style="font-size:26pt;letter-spacing:.22em;padding-left:.22em">ATMEN</div>
+    <div class="mono" style="margin-left:auto;font-size:6.6pt;letter-spacing:.2em;text-transform:uppercase;color:rgba(245,241,233,.6)">M/S · Hamburg — Helgoland · 70 km</div>
+  </div>
+  <div class="cap">Rumpf-Wrap · lesbar vom Ufer, von der Brücke, vom Büro</div>
+  <div class="grid cols2" style="margin-top:8mm">
+    <div>
+      <div style="background:var(--papier);color:var(--tinte);border-radius:1.6mm;padding:6mm 7mm;box-shadow:0 3mm 8mm rgba(0,0,0,.3)">
+        <div class="mono" style="font-size:6pt;letter-spacing:.22em;text-transform:uppercase;color:var(--grau)">Bordkarte · Hamburg — Helgoland</div>
+        <div class="serif" style="font-size:15pt;margin-top:3mm">Gültig für: <em style="font-style:italic">nichts müssen.</em></div>
+        <div style="display:flex;justify-content:space-between;margin-top:5mm;font-family:var(--mono);font-size:7pt;color:var(--grau)"><span>Deck 2 · frei</span><span>||| ||| || |||||</span></div>
+      </div>
+      <div class="cap" style="color:rgba(245,241,233,.55)">Bordkarte · Rückseite</div>
+    </div>
+    <div>
+      <div style="border:.3mm solid var(--linie-hell);border-radius:1.6mm;padding:6mm 7mm">
+        <div class="mono" style="font-size:6pt;letter-spacing:.22em;text-transform:uppercase;color:#CC5142">Bord-Durchsage · 10 Min vor Ankunft</div>
+        <p class="serif" style="font-style:italic;font-size:13pt;line-height:1.4;margin-top:3mm;color:var(--schaum)">„In Kürze erreichen wir Helgoland.<br/>Wir empfehlen: einatmen, vier Sekunden.<br/>Ausatmen, sechs.“</p>
+      </div>
+      <div class="cap" style="color:rgba(245,241,233,.55)">Danach: Stille</div>
+    </div>
+  </div>
+  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>ATMEN · Kampagnenbuch</span><span>09</span></div>
+</div>
+
+<!-- 10 · LEITSYSTEM -->
+<div class="pg sand">
+  <div class="eyebrow">Kapitel 07 · Ankunft &amp; Leitsystem</div>
+  <h2 class="h2">Wegweiser, die man zitiert.</h2>
+  <p class="body" style="margin-top:3mm">Emaille statt Aluverbund, Atemzüge statt Meter, Humor statt Piktogramm-Wüste. Ein Leitsystem, das Gäste führt — und Insulaner stolz macht.</p>
+  <div class="grid cols4" style="margin-top:8mm;align-items:start">
+    <div><div class="sign"><svg width="34" height="22" viewBox="0 0 130 44" fill="none" style="margin:0 auto 3mm;display:block"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg><div class="pl">Lange Anna</div><div class="hr"></div><div class="di">↑ 400 Atemzüge · Klippenrandweg</div></div><div class="cap">Wegweiser · Oberland</div></div>
+    <div><div class="sign"><div class="pl" style="letter-spacing:.1em">Atempunkt</div><div class="hr"></div><div class="di">Einatmen vier.<br/>Ausatmen sechs.</div></div><div class="cap">Bank · Klippenrand</div></div>
+    <div><div class="sign"><div class="pl" style="letter-spacing:.08em">Kein Empfang</div><div class="hr"></div><div class="di">Ab hier. Endlich.</div></div><div class="cap">Oberland · Funkloch</div></div>
+    <div><div class="sign"><div class="pl" style="letter-spacing:.08em">Bitte leise</div><div class="hr"></div><div class="di">Hier wird geschlafen.<br/>— die Robben</div></div><div class="cap">Düne · Robbenstrand</div></div>
+  </div>
+  <div style="margin-top:8mm;background:var(--tiefsee);color:var(--schaum);border-radius:50%;width:64mm;height:64mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;margin-inline:auto;box-shadow:0 3mm 8mm rgba(11,45,60,.3)">
+    <div class="serif" style="font-size:14pt">Sie sind da.</div>
+    <div class="serif" style="font-style:italic;font-size:18pt;margin-top:1mm">Atmen.</div>
+    <svg width="60" height="18" viewBox="0 0 130 44" fill="none" style="margin-top:3mm"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg>
+  </div>
+  <div class="cap" style="text-align:center">Bodenmarke · Landungsbrücke Helgoland</div>
+  <div class="pgfoot"><span>ATMEN · Kampagnenbuch</span><span>10</span></div>
+</div>
+
+<!-- 11 · HOTELLERIE -->
+<div class="pg">
+  <div class="eyebrow">Kapitel 08 · Hotellerie — „Häuser, die atmen“</div>
+  <h2 class="h2">Die Marke schläft mit.</h2>
+  <p class="body" style="margin-top:3mm">Ein Partner-Programm statt einer Vorschrift: Türhänger, Kissen, Keycards, eine Zeile fürs Frühstück und der späte Sonntag. Die Hotellerie wird vom Werbeträger zum Mitautor.</p>
+  <div class="grid cols3" style="margin-top:8mm;align-items:start">
+    <div><div class="hanger"><div class="tx">Bitte nicht wecken.<br/><em style="font-style:italic">Der Wind übernimmt.</em></div><svg width="70" height="20" viewBox="0 0 130 44" fill="none" style="margin:5mm auto 0;display:block"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"/></svg></div><div class="cap">Türhänger</div></div>
+    <div><div class="keycard"><div style="display:flex;justify-content:space-between;align-items:flex-start"><svg width="40" height="14" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg><span class="no">Zimmer 12</span></div><div><div class="nm">Wecker — oder Wind?</div><div class="no" style="margin-top:1mm">Häuser, die atmen · Helgoland</div></div></div><div class="cap">Keycard · Check-in-Frage</div>
+      <div style="background:#fff;border:.3mm solid var(--linie);border-radius:1mm;padding:4.5mm 5mm;margin-top:5mm"><div class="mono" style="font-size:6pt;letter-spacing:.2em;text-transform:uppercase;color:var(--grau)">Frühstückskarte · Fußzeile</div><div class="serif" style="font-size:10.5pt;margin-top:2mm">„Die Eier sind vom Festland. Die Luft ist von hier.“</div></div><div class="cap">Die ehrliche Karte</div></div>
+    <div><div style="background:var(--tiefsee);color:var(--schaum);border-radius:1mm;padding:7mm 6mm"><div class="mono" style="font-size:6pt;letter-spacing:.22em;text-transform:uppercase;color:#CC5142">Ritual · Sonntags</div><div class="serif" style="font-size:16pt;margin-top:2.5mm">Ausatmen<br/>bis zwölf.</div><p style="font-size:8.4pt;color:rgba(245,241,233,.8);margin-top:3mm;line-height:1.5">Late-Checkout unter dem Namen der Marke. Kleiner Aufpreis, großer Erinnerungswert — und ein Argument gegen die Tagestour.</p></div><div class="cap">Partner-Angebot</div></div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · Kampagnenbuch</span><span>11</span></div>
+</div>
+
+<!-- 12 · WELLNESS -->
+<div class="pg dark">
+  <div class="eyebrow">Kapitel 09 · Wellness &amp; Gesundheit</div>
+  <h2 class="h2">Hier ist Atmen eine Anwendung.</h2>
+  <p class="body" style="margin-top:3mm;max-width:160mm">Im Mare Frisicum Spa wird die Marke Textil, draußen wird sie Therapie: Atemwandern am Klippenrand, Durchatmen-Wochen zur Pollensaison, Seewasserkur auf Verordnung — 200 Jahre Heilbad, so aktuell wie nie.</p>
+  <div class="grid cols3" style="margin-top:8mm;align-items:start">
+    <div><div class="towel"><svg width="80" height="24" viewBox="0 0 130 44" fill="none" style="margin:0 auto;display:block"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#0B2D3C" stroke-width="3" stroke-linecap="round"/></svg><div class="st">Atmen · Mare Frisicum</div></div><div class="cap" style="color:rgba(245,241,233,.55)">Handtuch-Stickerei · Schaum auf Tiefsee</div></div>
+    <div><div class="sign" style="outline-color:var(--tiefsee-dunkel)"><div class="pl" style="letter-spacing:.06em">Einatmen vier</div><div class="hr"></div><div class="di" style="font-size:9pt">Ausatmen sechs.</div></div><div class="cap" style="color:rgba(245,241,233,.55)">Spa-Tafel · am Meerwasserbecken (27 °C)</div></div>
+    <div><div style="background:var(--papier);color:var(--tinte);border-radius:1.6mm;padding:6mm 7mm;box-shadow:0 3mm 8mm rgba(0,0,0,.3)"><div class="mono" style="font-size:6pt;letter-spacing:.2em;text-transform:uppercase;color:var(--rot)">Rezept · Badearzt</div><div class="serif" style="font-size:13pt;margin-top:2.5mm">Durchatmen.<br/><em style="font-style:italic">Auf Rezept.</em></div><div class="mono" style="font-size:7pt;color:var(--grau);margin-top:3mm">Rp. Hochseeklima, 0/8 Pollen · 3× tägl. Klippenrand</div></div><div class="cap" style="color:rgba(245,241,233,.55)">Kurmittelhaus · Verordnungs-Karte</div></div>
+  </div>
+  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>ATMEN · Kampagnenbuch</span><span>12</span></div>
+</div>
+
+<!-- 13 · GASTRO MERCH POST -->
+<div class="pg sand">
+  <div class="eyebrow">Kapitel 10 · Gastronomie, Merch &amp; Postkarten</div>
+  <h2 class="h2">Zeilen, die man isst, trägt und verschickt.</h2>
+  <div class="grid cols4" style="margin-top:7mm;align-items:start">
+    <div><div class="menu"><svg width="40" height="14" viewBox="0 0 130 44" fill="none" style="margin:0 auto 2mm;display:block"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#0B2D3C" stroke-width="4" stroke-linecap="round"/></svg><div class="h">Hummerbude No. 7</div><div class="it">Knieper</div><div class="it">Schwarzbrot</div><div class="it">Zeit</div></div><div class="cap">Bude · Menükarte</div></div>
+    <div><div class="poster" style="aspect-ratio:1/1;justify-content:center;text-align:center"><div class="cl" style="font-size:14pt">„Ich war kurz weg.<br/><em>Richtig weg.“</em></div></div><div class="cap">Jutebeutel · Siebdruck</div></div>
+    <div class="pcard"><div class="im"><div class="t">„Ihre Aussicht heute:<br/>exklusiv nichts.“</div></div><div class="u">Nebel ist auch ein Erlebnis</div></div>
+    <div class="pcard"><div class="im"><div class="t">„Der Wind.<br/>Inklusive.“</div></div><div class="u">Föhnfrei seit 1826</div></div>
+  </div>
+  <div style="margin-top:7mm" class="idee"><div class="ik">Kollektion</div><div><h3>„Norddeutsch für Anfänger“</h3><p>Becher („Atmen.“), Shirt („0 Autos · 0 Pollen · 1 Fels“), Regenjacke („Schietwetter ist auch nur Wetter.“). Verkauft in den Hummerbuden — Marge bleibt auf der Insel.</p></div></div>
+  <div class="pgfoot"><span>ATMEN · Kampagnenbuch</span><span>13</span></div>
+</div>
+
+<!-- 14 · DIGITAL -->
+<div class="pg">
+  <div class="eyebrow">Kapitel 11 · Digital &amp; Social</div>
+  <h2 class="h2">Digital heißt bei uns: weniger Bildschirm.</h2>
+  <div style="display:flex;gap:10mm;margin-top:8mm;align-items:flex-start">
+    <div class="phone"><div class="notch"></div><svg width="40" height="14" viewBox="0 0 130 44" fill="none" style="margin:0 auto 2mm;display:block"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg><div class="wm">ATMEN</div><div class="pulse"><div class="k">Insel-Puls</div><div class="li"><span>Katamaran</span><span>9:00 ✓</span></div><div class="li"><span>Seegang</span><span>ruhig</span></div><div class="li"><span>Pollen</span><span>0/8</span></div><div class="li"><span>Heute</span><span>Hafenklang</span></div></div></div>
+    <div style="flex:1">
+      <div class="idee"><div class="ik">App</div><div><h3>Insel-Puls</h3><p>„Fährt der Kat?“ — ein Blick statt fünf Anrufe. Abfahrten, Seegang, Pollen, der Abend. Der nützlichste Werbeträger der Marke.</p></div></div>
+      <div class="idee"><div class="ik">Audio</div><div><h3>60 Sekunden Brandung</h3><p>Audio-Spots im Streaming: eine Minute echte Brandung, am Ende eine Zeile. „Das war eine Minute Helgoland. Es gibt auch drei Tage.“</p></div></div>
+      <div class="idee"><div class="ik">Winter</div><div><h3>Der Robben-Kalender</h3><p>Im Dezember täglich ein Livecam-Fenster von der Düne: ein Robbenbaby, ein Name, null Kommentar. Der leiseste Adventskalender Deutschlands.</p></div></div>
+      <div class="idee"><div class="ik">Stimmen</div><div><h3>Inselstimmen statt Influencer</h3><p>Der Hummerfischer, die Badeärztin, der Ranger, der Stammgast seit 40 Jahren. Gesichter, die bleiben, wenn die Kampagne wechselt.</p></div></div>
+    </div>
+  </div>
+  <div class="pgfoot"><span>ATMEN · Kampagnenbuch</span><span>14</span></div>
+</div>
+
+<!-- 15 · JAHRESPLAN -->
+<div class="pg dark">
+  <div class="eyebrow">Kapitel 12 · Der Jahresplan</div>
+  <h2 class="h2">Vier Phasen. Ein Atemrhythmus.</h2>
+  <p class="body" style="margin-top:3mm;max-width:170mm">Die Kampagne beginnt nicht in Hamburg — sie beginnt auf der Insel. Erst wenn die Gastgeber die Marke sprechen, hängt das erste Plakat.</p>
+  <div class="grid cols4" style="margin-top:7mm">
+    <div class="phase"><div class="zeit">Phase 0 · Winter davor</div><h3>Die Insel zuerst</h3><ul><li>Gastgeber-Kit an alle Betriebe</li><li>Inselstimmen-Porträts entstehen</li><li>Leitsystem-Pilot am Klippenweg</li><li>Interner Abend: die Marke gehört der Insel</li></ul><div class="ziel">Ziel: 1.300 Absender</div></div>
+    <div class="phase"><div class="zeit">Phase 1 · Frühjahr</div><h3>Ihre Lunge ruft an</h3><ul><li>OOH Hamburg: Hbf, S-Bahn, City-Lights</li><li>Pollen-Trigger DOOH, live</li><li>Taschentuch-Sampling, Atembank</li><li>Durchatmen-Wochen als Buchungsanlass</li></ul><div class="ziel">Ziel: Bekanntheit + Frühbucher</div></div>
+    <div class="phase"><div class="zeit">Phase 2 · Sommer</div><h3>Der Sommer der Beweise</h3><ul><li>Katamaran-Wrap &amp; Bord-Ritual</li><li>Lange Tafel, Hafenklang, Budenwandern</li><li>Nordseewoche &amp; Börte-Regatta</li><li>PR: „die Insel, die leise wirbt“</li></ul><div class="ziel">Ziel: Aufenthaltsdauer +</div></div>
+    <div class="phase"><div class="zeit">Phase 3 · Herbst/Winter</div><h3>Die stille Saison spricht</h3><ul><li>Knieper-Wochen &amp; Vogelzug</li><li>Robben-Kalender im Advent</li><li>„Ausatmen“-Wochenenden der Hotels</li><li>Insel-Post: Wiederkehr statt Neukauf</li></ul><div class="ziel">Ziel: Nebensaison trägt</div></div>
+  </div>
+  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>ATMEN · Kampagnenbuch</span><span>15</span></div>
+</div>
+
+<!-- 16 · KPI -->
+<div class="pg darker">
+  <div class="eyebrow">Kapitel 13 · Wirkung &amp; Messung</div>
+  <h2 class="h2">Wertschöpfung vor Volumen.</h2>
+  <p class="body" style="margin-top:3mm;max-width:170mm">Erfolg ist nicht die Zahl an der Landungsbrücke. Erfolg ist, dass Menschen länger bleiben, wiederkommen und im Februar buchen — und dass die Insel die Kampagne selbst gut findet.</p>
+  <div class="grid cols3" style="margin-top:7mm">
+    <div class="zahl"><b>+1<span class="u">&nbsp;Nacht</span></b><div class="l">Aufenthaltsdauer</div><div class="d">Vom Tagesgast zum Übernachter: Jede zusätzliche Nacht schlägt jede zusätzliche Ankunft.</div></div>
+    <div class="zahl"><b>×2<span class="u">&nbsp;Nebensaison</span></b><div class="l">Okt – März</div><div class="d">Robbenzeit, Durchatmen-Wochen und „Ausatmen“-Wochenenden füllen die stille Hälfte.</div></div>
+    <div class="zahl"><b>&gt;50<span class="u">&nbsp;%</span></b><div class="l">Wiederkehr &amp; Direkt</div><div class="d">Stammgäste und Direktbuchung als Rückgrat — Loyalität ist billiger als Reichweite.</div></div>
+    <div class="zahl"><b>0<span class="u">&nbsp;Floskeln</span></b><div class="l">Markenkonsistenz</div><div class="d">Jede Veröffentlichung besteht den Stimmen-Test: ehrlich, leise, bewiesen.</div></div>
+    <div class="zahl"><b>1.300<span class="u">&nbsp;Stimmen</span></b><div class="l">Insulaner-NPS</div><div class="d">Die Insel bewertet die Kampagne jährlich selbst. Fällt die Zustimmung, ändern wir uns.</div></div>
+    <div class="zahl"><b>8/8 → 0/8</b><div class="l">Der Beweis bleibt</div><div class="d">Der Pollen-Vergleich ist das Lagerfeuer der Marke: live, nachprüfbar, unkopierbar.</div></div>
+  </div>
+  <div class="pgfoot" style="color:rgba(245,241,233,.4)"><span>ATMEN · Kampagnenbuch</span><span>16</span></div>
+</div>
+
+<!-- 17 · CLOSER -->
+<div class="pg dark" style="align-items:center;justify-content:center;text-align:center">
+  <div class="serif" style="font-size:44pt;letter-spacing:.16em;padding-left:.16em">ATMEN</div>
+  <svg class="wave" width="160" height="36" viewBox="0 0 130 44" fill="none" style="margin:8mm auto 0"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="2.2" stroke-linecap="round"/></svg>
+  <p class="serif" style="font-style:italic;font-size:14pt;margin-top:9mm;color:rgba(245,241,233,.85)">Eine Insel. Eine Stimme. Ein Atemzug.</p>
+  <p class="mono" style="font-size:7pt;letter-spacing:.2em;text-transform:uppercase;color:rgba(245,241,233,.55);margin-top:12mm">Nächste Schritte: Gastgeber-Abend · Leitsystem-Pilot · OOH-Buchung Frühjahr</p>
+  <p style="position:absolute;left:18mm;right:18mm;bottom:14mm;font-family:var(--mono);font-size:5.8pt;letter-spacing:.04em;line-height:1.9;color:rgba(245,241,233,.45)">Kampagnenbuch · Konzeptstudie zur Marke ATMEN — kein offizieller Auftritt von Helgoland. Fotoreale Mockups in der HTML-Fassung KI-generiert (Higgsfield); diese Druckfassung zeigt System-Reinzeichnungen. Medien-, Termin- und Zielwerte beispielhaft — abzustimmen mit Gemeinde, Reedereien, Naturschutz und Partnern. Ein Denkangebot: Nils Benthaus, Hamburg.</p>
+</div>
+
+</body>
+</html>
