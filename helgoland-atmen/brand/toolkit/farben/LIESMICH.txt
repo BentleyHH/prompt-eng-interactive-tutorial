@@ -1,0 +1,18 @@
+ATMEN Farbsystem
+================
+Tiefseeblau  HEX #0B2D3C  RGB 11 45 60  CMYK* 82 25 0 76
+  Grundfarbe. Flächen, Plakate, dunkle Seiten.
+Schaum  HEX #F5F1E9  RGB 245 241 233  CMYK* 0 2 5 4
+  Licht & Schrift auf Tiefsee. Heller Grund.
+Felsenrot  HEX #B23A2E  RGB 178 58 46  CMYK* 0 67 74 30
+  Nur Akzent: Labels, Live-Punkt, max. 10 %.
+Klippengrün  HEX #3F6B4A  RGB 63 107 74  CMYK* 41 0 31 58
+  Selten. Zweiter Akzent, Natur-Kontexte.
+Tinte  HEX #16242B  RGB 22 36 43  CMYK* 49 17 0 83
+  Lauftext auf hellem Grund.
+Sand  HEX #EBE3D4  RGB 235 227 212  CMYK* 0 3 10 8
+  Helle Wechselflächen, Kapitel-Rhythmus.
+Tiefsee dunkel  HEX #06171F  RGB 6 23 31  CMYK* 80 40 0 92
+  Abdunkelung, Footer, Schutz hinter Bild.
+
+* CMYK-Werte sind unkalibrierte Richtwerte - vor Produktion Proof erstellen.

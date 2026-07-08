@@ -1,0 +1,12 @@
+ATMEN Schriften
+===============
+Instrument Serif (die Seele)  - Headlines, Zitate, Wortmarke
+Instrument Sans  (die Klarheit) - Lauftext, UI
+Space Mono       (die Zahl)   - Labels, Zahlen, Koordinaten
+
+Alle drei sind frei lizenziert (SIL Open Font License) und liegen
+als WOFF2 bei. Desktop-Installation & weitere Schnitte:
+  https://fonts.google.com/specimen/Instrument+Serif
+  https://fonts.google.com/specimen/Instrument+Sans
+  https://fonts.google.com/specimen/Space+Mono
+Web-Einbindung: Google Fonts oder @fontsource (npm).

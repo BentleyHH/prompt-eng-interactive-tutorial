@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ATMEN — CI-Richtlinien · Helgoland</title>
+<meta name="description" content="Die verbindlichen Gestaltungsrichtlinien der Marke Helgoland — ATMEN: Zeichen, Schutzraum, Mindestgrößen, Farben, Typografie, Web-Spezifikationen und der komplette Werkzeugkasten." />
+<link rel="icon" href="brand/toolkit/logo/favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   ATMEN — CI-RICHTLINIEN v1.0
+   ============================================================ */
+:root{
+  --tiefsee:#0B2D3C; --tiefsee-dunkel:#06171F; --tiefsee-hell:#134155;
+  --papier:#F5F1E9; --sand:#EBE3D4;
+  --rot:#B23A2E; --rot-hell:#CC5142; --gruen:#3F6B4A;
+  --tinte:#16242B; --grau:#7C8B91; --schaum:#F5F1E9;
+  --linie:rgba(22,36,43,0.14); --linie-hell:rgba(245,241,233,0.16);
+  --f-serif:"Instrument Serif", Georgia, serif;
+  --f-sans:"Instrument Sans", system-ui, sans-serif;
+  --f-mono:"Space Mono", ui-monospace, monospace;
+  --wrap:1180px; --gutter:clamp(20px,5vw,60px);
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--f-sans);background:var(--papier);color:var(--tinte);line-height:1.65;overflow-x:hidden}
+img,svg{max-width:100%}
+a{color:inherit}
+::selection{background:var(--tiefsee);color:var(--schaum)}
+:focus-visible{outline:2px solid var(--rot);outline-offset:3px}
+@keyframes breathe{0%{letter-spacing:var(--br-min,.1em);opacity:.78}40%{letter-spacing:var(--br-max,.42em);opacity:1}100%{letter-spacing:var(--br-min,.1em);opacity:.78}}
+.breath{display:inline-block;white-space:nowrap;animation:breathe 10s ease-in-out infinite;font-style:italic}
+@media(max-width:560px){.breath{--br-max:.22em}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}.fade{opacity:1!important;transform:none!important}}
+
+.wrap{max-width:var(--wrap);margin:0 auto;padding-inline:var(--gutter)}
+h1,h2,h3,h4{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-height:1.04;text-wrap:balance}
+.eyebrow{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--grau)}
+.h-lg{font-size:clamp(2.1rem,5.5vw,4rem)}
+.h-md{font-size:clamp(1.6rem,3.4vw,2.5rem)}
+.body{font-size:clamp(1rem,1.35vw,1.14rem);color:#3B4A50;line-height:1.7;max-width:52ch}
+.dark .body{color:rgba(245,241,233,0.82)}
+.mono{font-family:var(--f-mono)}
+.fade{opacity:0;transform:translateY(24px);transition:opacity 1s var(--ease),transform 1s var(--ease)}
+.fade.vis{opacity:1;transform:none}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}
+
+.top{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:12px var(--gutter);background:rgba(6,23,31,0.88);backdrop-filter:blur(12px);color:var(--schaum)}
+.top .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.top .glyph{width:34px;height:22px}
+.top .wm{font-family:var(--f-serif);font-size:.95rem;letter-spacing:.22em;text-transform:uppercase}
+.top .wm b{color:var(--rot);font-weight:400}
+.top .chap{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,233,0.7)}
+.progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--rot);z-index:60}
+
+.section{padding:clamp(80px,12vh,150px) 0}
+.dark{background:var(--tiefsee);color:var(--schaum)}
+.dark .eyebrow{color:rgba(245,241,233,0.55)}
+.sand{background:var(--sand)}
+.kapnum{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--rot);display:flex;align-items:center;gap:1em;margin-bottom:1.6rem}
+.kapnum::after{content:"";flex:1;height:1px;background:currentColor;opacity:.25}
+.head{max-width:66ch}
+.head .body{margin-top:1.4rem}
+
+/* Cover */
+.cover{min-height:92svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:var(--tiefsee);color:var(--schaum);padding:2rem}
+.cover .over{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(245,241,233,.65);margin-bottom:2.6rem}
+.cover .lockup{width:min(360px,70vw)}
+.cover .say{margin-top:2.4rem;font-family:var(--f-serif);font-style:italic;font-size:clamp(1.05rem,2.2vw,1.4rem);color:rgba(245,241,233,.85)}
+.cover .meta{margin-top:3rem;font-family:var(--f-mono);font-size:.64rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(245,241,233,.5)}
+
+/* Spez-Tabellen */
+.spec{width:100%;border-collapse:collapse;margin-top:clamp(24px,4vh,40px);font-size:.95rem}
+.spec th{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--grau);text-align:left;font-weight:400;padding:.7rem .9rem;border-bottom:1px solid var(--tinte)}
+.spec td{padding:.85rem .9rem;border-bottom:1px solid var(--linie);vertical-align:top}
+.dark .spec td{border-bottom-color:var(--linie-hell)}
+.dark .spec th{border-bottom-color:var(--schaum)}
+.spec td.m{font-family:var(--f-mono);font-size:.85rem;white-space:nowrap}
+.spec td small{color:var(--grau);display:block;font-size:.8rem}
+.tablewrap{overflow-x:auto}
+
+/* Demo-Flächen */
+.demo{border-radius:2px;margin-top:clamp(24px,4vh,40px);overflow:hidden}
+.demo .cap{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grau);margin-top:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:900px){.grid3,.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+/* Don't-Kacheln */
+.dont{background:var(--tiefsee);border-radius:2px;aspect-ratio:4/3;display:grid;place-items:center;position:relative;overflow:hidden}
+.dont img,.dont svg{width:62%}
+.dont::after{content:"✕";position:absolute;top:10px;right:14px;color:var(--rot-hell);font-family:var(--f-mono);font-weight:700;font-size:1.1rem}
+.dont .lbl{position:absolute;left:12px;bottom:10px;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,241,233,.7)}
+
+/* Farben */
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:clamp(24px,4vh,40px)}
+@media(max-width:900px){.swatches{grid-template-columns:1fr 1fr}}
+.sw{border-radius:2px;overflow:hidden;border:1px solid var(--linie);background:#fff}
+.sw .c{height:110px}
+.sw .i{padding:14px 16px}
+.sw .n{font-family:var(--f-serif);font-size:1.15rem}
+.sw .v{font-family:var(--f-mono);font-size:.72rem;color:var(--grau);margin-top:.4rem;line-height:1.8}
+.sw .u{font-size:.82rem;color:#54636A;margin-top:.4rem}
+.anteile{display:flex;height:44px;border-radius:2px;overflow:hidden;margin-top:clamp(24px,4vh,40px)}
+.anteile div{display:grid;place-items:center;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.1em}
+
+/* Typo-Beispiele */
+.type-ex{border:1px solid var(--linie);border-radius:2px;background:#fff;padding:clamp(20px,3vw,36px);margin-top:clamp(24px,4vh,40px)}
+.type-ex .row{display:grid;grid-template-columns:150px 1fr;gap:1.5rem;align-items:baseline;padding:1rem 0;border-bottom:1px solid var(--linie)}
+.type-ex .row:last-child{border-bottom:none}
+.type-ex .k{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)}
+@media(max-width:700px){.type-ex .row{grid-template-columns:1fr;gap:.3rem}}
+
+/* Downloads */
+.files{margin-top:clamp(24px,4vh,40px);border-top:1px solid var(--linie-hell)}
+.file{display:grid;grid-template-columns:1fr auto;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--linie-hell);align-items:baseline}
+.file .fn{font-family:var(--f-mono);font-size:.85rem}
+.file .fd{font-size:.85rem;color:rgba(245,241,233,.7)}
+.btn{display:inline-flex;align-items:center;gap:.7em;background:var(--rot);color:var(--schaum);font-family:var(--f-mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;padding:1.05em 1.5em;border-radius:2px;text-decoration:none;transition:transform .4s var(--ease)}
+.btn:hover{transform:translateY(-2px)}
+
+.foot{background:var(--tiefsee-dunkel);color:rgba(245,241,233,.65);text-align:center;padding:10vh var(--gutter) 6vh}
+.foot .fine{margin-top:2rem;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.06em;line-height:2;opacity:.6;max-width:60em;margin-inline:auto}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<nav class="top">
+  <a class="brand" href="index.html">
+    <svg class="glyph" viewBox="0 0 64 40" aria-hidden="true"><path d="M4 32 H20 C25 32 27 10 32 10 S39 32 44 32 H60" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span class="wm">Helgo<b>land</b></span>
+  </a>
+  <div class="chap" id="chap">ATMEN · CI-Richtlinien v1.0</div>
+</nav>
+
+<!-- COVER -->
+<header class="cover">
+  <div class="over">Helgoland · Corporate Identity · Version 1.0</div>
+  <img class="lockup" src="brand/toolkit/logo/atmen-lockup-schaum.svg" alt="ATMEN Logo: Atemlinie über der Wortmarke" />
+  <p class="say">Die Richtlinien. Kurz genug, um sie zu lesen.<br/>Klar genug, um sie zu halten.</p>
+  <div class="meta">Zeichen · Farbe · Schrift · Web · Werkzeugkasten</div>
+</header>
+
+<!-- 01 PRINZIP -->
+<section class="section" data-chap="01 · Das Prinzip">
+  <div class="wrap">
+    <div class="kapnum">01 · Das Prinzip</div>
+    <div class="head fade">
+      <h2 class="h-lg">Eine Regel steht über allen:<br/><em style="font-style:italic">weniger.</em></h2>
+      <p class="body">ATMEN ist eine leise Marke in einer lauten Kategorie. Jede Gestaltungsentscheidung folgt daraus: viel Fläche, wenig Elemente, kurze Sätze, eine Welle. Wenn etwas weggelassen werden kann, wird es weggelassen. Dieses Dokument regelt das Wenige, das bleibt — verbindlich.</p>
+      <p class="body" style="margin-top:1rem">Drei Bausteine tragen alles: das <strong>Zeichen</strong> (die Atemlinie), die <strong>Farbe</strong> (Tiefsee mit Schaum) und die <strong>Schrift</strong> (drei Stimmen, drei Schnitte). Wer diese drei richtig einsetzt, kann nichts falsch machen.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 02 ZEICHEN -->
+<section class="section dark" data-chap="02 · Das Zeichen">
+  <div class="wrap">
+    <div class="kapnum">02 · Das Zeichen — die Atemlinie</div>
+    <div class="head fade">
+      <h2 class="h-lg" style="color:var(--schaum)">Es gibt genau eine Welle.</h2>
+      <p class="body">Ein Atemzug als Linie: ruhig, symmetrisch, ein einziger Bogen. Die Atemlinie wird nie nachgezeichnet, nie „ähnlich“ gebaut — sie kommt immer als Datei aus dem Werkzeugkasten. Strichstärke, Rundung und Proportion sind Teil des Zeichens.</p>
+    </div>
+
+    <div class="grid3 fade d1" style="margin-top:clamp(24px,4vh,40px)">
+      <div><div class="demo" style="background:var(--tiefsee-dunkel);border:1px solid var(--linie-hell);padding:9% 12%"><img src="brand/toolkit/logo/atmen-lockup-schaum.svg" alt="Gestapeltes Lockup"/></div><div class="cap" style="color:rgba(245,241,233,.55)">Primär · gestapelt — Cover, Plakat, Textil</div></div>
+      <div><div class="demo" style="background:var(--tiefsee-dunkel);border:1px solid var(--linie-hell);padding:16% 8%"><img src="brand/toolkit/logo/atmen-horizontal-schaum.svg" alt="Horizontales Lockup"/></div><div class="cap" style="color:rgba(245,241,233,.55)">Sekundär · horizontal — Navigation, schmale Formate</div></div>
+      <div><div class="demo" style="background:var(--tiefsee-dunkel);border:1px solid var(--linie-hell);padding:16% 12%"><img src="brand/toolkit/logo/atemlinie-schaum.svg" alt="Atemlinie solo"/></div><div class="cap" style="color:rgba(245,241,233,.55)">Solo · nur die Linie — kleine Größen, Muster, Stickerei</div></div>
+    </div>
+
+    <h3 class="h-md fade" style="color:var(--schaum);margin-top:clamp(48px,7vh,72px)">Schutzraum: ein Atem.</h3>
+    <p class="body fade">Der Freiraum um das Zeichen entspricht rundum der Höhe des Wellenbogens (im Lockup: der Abstand zwischen Linie und Wortmarke). In diesem Raum steht nichts — kein Text, kein Bildmotiv, keine Kante.</p>
+    <div class="fade d1" style="margin-top:clamp(24px,4vh,40px);display:flex;justify-content:center;background:var(--tiefsee-dunkel);border:1px solid var(--linie-hell);border-radius:2px;padding:clamp(24px,5vw,56px)">
+      <svg viewBox="0 0 560 340" style="max-width:520px" aria-label="Schutzraum-Diagramm">
+        <rect x="80" y="55" width="400" height="230" fill="none" stroke="#CC5142" stroke-width="1" stroke-dasharray="5 5"/>
+        <g transform="translate(150,88) scale(2)" fill="none" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124"/></g>
+        <g transform="translate(133.6,196) scale(0.85)" fill="#F5F1E9"><text x="0" y="60" font-family="Instrument Serif, Georgia, serif" font-size="72" letter-spacing="16">ATMEN</text></g>
+        <g font-family="Space Mono, monospace" font-size="12" fill="#7C8B91" letter-spacing="2">
+          <text x="255" y="42">1 ATEM</text>
+          <text x="255" y="316">1 ATEM</text>
+          <text x="14" y="176">1 ATEM</text>
+          <text x="490" y="176">1 ATEM</text>
+        </g>
+      </svg>
+    </div>
+
+    <h3 class="h-md fade" style="color:var(--schaum);margin-top:clamp(48px,7vh,72px)">Mindestgrößen &amp; Einsatz.</h3>
+    <div class="tablewrap fade d1"><table class="spec">
+      <tr><th>Variante</th><th>Digital min.</th><th>Print min.</th><th>Wann</th></tr>
+      <tr><td>Lockup gestapelt</td><td class="m">90 px Breite</td><td class="m">24 mm</td><td>Cover, Plakat, Fahne, Textil — der Standard.</td></tr>
+      <tr><td>Lockup horizontal</td><td class="m">140 px Breite</td><td class="m">35 mm</td><td>Navigation, Briefkopf, schmale Banner.</td></tr>
+      <tr><td>Atemlinie solo</td><td class="m">32 px Breite</td><td class="m">8 mm</td><td>Unter 90 px, Stickerei, Prägung, Muster.</td></tr>
+      <tr><td>Wortmarke solo</td><td class="m">—</td><td class="m">—</td><td>Nie ohne Linie. Ausnahme: Fließtext („ATMEN“).</td></tr>
+      <tr><td>Favicon / App-Icon</td><td class="m">16 px / 1024 px</td><td class="m">—</td><td>Immer nur die Linie auf Tiefsee-Kachel.</td></tr>
+    </table></div>
+    <p class="body fade" style="margin-top:1.4rem">Position: Auf Plakaten und Motiven steht das Zeichen <strong>unten links</strong> oder <strong>unten zentriert</strong>. Im Web <strong>oben links</strong>. Es schwebt nie mitten im Motiv, und es konkurriert nie mit einer Headline in gleicher Größe.</p>
+
+    <h3 class="h-md fade" style="color:var(--schaum);margin-top:clamp(48px,7vh,72px)">Was nie passiert.</h3>
+    <div class="grid4 fade d1" style="margin-top:clamp(20px,3vh,32px)">
+      <div class="dont"><img src="brand/toolkit/logo/atmen-lockup-schaum.svg" style="transform:scaleX(1.6)" alt=""/><span class="lbl">verzerren</span></div>
+      <div class="dont"><img src="brand/toolkit/logo/atmen-lockup-schaum.svg" style="transform:rotate(-14deg)" alt=""/><span class="lbl">drehen / neigen</span></div>
+      <div class="dont"><img src="brand/toolkit/logo/atmen-lockup-schaum.svg" style="filter:drop-shadow(6px 8px 4px rgba(0,0,0,.8))" alt=""/><span class="lbl">Schatten &amp; Effekte</span></div>
+      <div class="dont"><svg viewBox="0 0 130 44"><path d="M6 30 H30 C38 30 40 12 48 12 S58 30 66 30 S76 12 84 12 S94 30 102 30 H124" fill="none" stroke="#F5F1E9" stroke-width="3" stroke-linecap="round"/></svg><span class="lbl">andere Welle bauen</span></div>
+      <div class="dont"><img src="brand/toolkit/logo/atmen-lockup-schaum.svg" style="filter:sepia(1) saturate(8) hue-rotate(320deg)" alt=""/><span class="lbl">umfärben (auch nicht Rot)</span></div>
+      <div class="dont" style="background:linear-gradient(45deg,#c33,#39c,#3c6)"><img src="brand/toolkit/logo/atmen-lockup-schaum.svg" alt=""/><span class="lbl">unruhiger Grund ohne Scrim</span></div>
+      <div class="dont"><svg viewBox="0 0 400 230"><g transform="translate(70,10) scale(2)" fill="none" stroke="#F5F1E9" stroke-width="8" stroke-linecap="round"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124"/></g><text x="200" y="190" text-anchor="middle" font-family="Instrument Serif" font-size="64" letter-spacing="14" fill="#F5F1E9">ATMEN</text></svg><span class="lbl">Strichstärke ändern</span></div>
+      <div class="dont"><svg viewBox="0 0 400 230"><text x="200" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="64" letter-spacing="6" fill="#F5F1E9">ATMEN</text></svg><span class="lbl">fremde Schrift</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 FARBE -->
+<section class="section" data-chap="03 · Die Farbe">
+  <div class="wrap">
+    <div class="kapnum">03 · Die Farbe</div>
+    <div class="head fade">
+      <h2 class="h-lg">Tiefsee trägt.<br/>Rot ist ein Satzzeichen.</h2>
+      <p class="body">Die Palette ist klein und bleibt es. Tiefseeblau und Schaum machen die Marke; Sand rhythmisiert helle Strecken; Rot markiert — nie mehr als ein Akzent. CMYK-Werte sind unkalibrierte Richtwerte: vor Produktion immer Proof.</p>
+    </div>
+    <div class="swatches fade d1">
+      <div class="sw"><div class="c" style="background:#0B2D3C"></div><div class="i"><div class="n">Tiefseeblau</div><div class="v">HEX 0B2D3C · RGB 11 45 60<br/>CMYK* 82 25 0 76</div><div class="u">Grundfarbe: Flächen, Plakate, dunkle Kapitel.</div></div></div>
+      <div class="sw"><div class="c" style="background:#F5F1E9;border-bottom:1px solid var(--linie)"></div><div class="i"><div class="n">Schaum</div><div class="v">HEX F5F1E9 · RGB 245 241 233<br/>CMYK* 0 2 5 4</div><div class="u">Licht &amp; Schrift auf Tiefsee; heller Grund.</div></div></div>
+      <div class="sw"><div class="c" style="background:#B23A2E"></div><div class="i"><div class="n">Felsenrot</div><div class="v">HEX B23A2E · RGB 178 58 46<br/>CMYK* 0 67 74 30</div><div class="u">Nur Akzent: Labels, Live-Punkt, CTA. Max. 10 %.</div></div></div>
+      <div class="sw"><div class="c" style="background:#EBE3D4"></div><div class="i"><div class="n">Sand</div><div class="v">HEX EBE3D4 · RGB 235 227 212<br/>CMYK* 0 3 10 8</div><div class="u">Helle Wechselflächen, Kapitel-Rhythmus.</div></div></div>
+      <div class="sw"><div class="c" style="background:#16242B"></div><div class="i"><div class="n">Tinte</div><div class="v">HEX 16242B · RGB 22 36 43<br/>CMYK* 49 17 0 83</div><div class="u">Lauftext auf hellem Grund.</div></div></div>
+      <div class="sw"><div class="c" style="background:#3F6B4A"></div><div class="i"><div class="n">Klippengrün</div><div class="v">HEX 3F6B4A · RGB 63 107 74<br/>CMYK* 41 0 31 58</div><div class="u">Selten: zweiter Akzent, Natur-Kontexte.</div></div></div>
+      <div class="sw"><div class="c" style="background:#06171F"></div><div class="i"><div class="n">Tiefsee dunkel</div><div class="v">HEX 06171F · RGB 6 23 31<br/>CMYK* 80 40 0 92</div><div class="u">Footer, Scrim hinter Bildern, Abdunkelung.</div></div></div>
+      <div class="sw"><div class="c" style="background:#CC5142"></div><div class="i"><div class="n">Felsenrot hell</div><div class="v">HEX CC5142 · RGB 204 81 66<br/>CMYK* 0 60 68 20</div><div class="u">Nur auf Tiefsee: Labels, wo Felsenrot zu dunkel ist.</div></div></div>
+    </div>
+
+    <h3 class="h-md fade" style="margin-top:clamp(48px,7vh,72px)">Verwendungsanteile.</h3>
+    <div class="anteile fade d1">
+      <div style="flex:50;background:#0B2D3C;color:#F5F1E9">50</div>
+      <div style="flex:30;background:#F5F1E9;color:#16242B;border-block:1px solid var(--linie)">30</div>
+      <div style="flex:10;background:#EBE3D4;color:#16242B">10</div>
+      <div style="flex:5;background:#16242B;color:#F5F1E9">5</div>
+      <div style="flex:4;background:#B23A2E;color:#F5F1E9">4</div>
+      <div style="flex:1;background:#3F6B4A"></div>
+    </div>
+    <div class="cap mono" style="font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grau);margin-top:10px">Tiefsee · Schaum · Sand · Tinte · Rot · Grün — Richtwerte je Anwendung</div>
+
+    <h3 class="h-md fade" style="margin-top:clamp(48px,7vh,72px)">Kontrast &amp; Barrierefreiheit.</h3>
+    <div class="tablewrap fade d1"><table class="spec">
+      <tr><th>Kombination</th><th>Kontrast</th><th>WCAG</th><th>Einsatz</th></tr>
+      <tr><td style="font-family:var(--f-serif)"><span style="background:#0B2D3C;color:#F5F1E9;padding:.15em .6em">Schaum auf Tiefsee</span></td><td class="m">≈ 12,5 : 1</td><td class="m">AAA ✓</td><td>Standard für dunkle Flächen.</td></tr>
+      <tr><td style="font-family:var(--f-serif)"><span style="background:#F5F1E9;color:#16242B;padding:.15em .6em;border:1px solid var(--linie)">Tinte auf Schaum</span></td><td class="m">≈ 13,8 : 1</td><td class="m">AAA ✓</td><td>Standard für helle Flächen.</td></tr>
+      <tr><td style="font-family:var(--f-serif)"><span style="background:#F5F1E9;color:#B23A2E;padding:.15em .6em;border:1px solid var(--linie)">Felsenrot auf Schaum</span></td><td class="m">≈ 5,1 : 1</td><td class="m">AA ✓</td><td>Labels &amp; Akzente auf hell.</td></tr>
+      <tr><td style="font-family:var(--f-serif)"><span style="background:#0B2D3C;color:#CC5142;padding:.15em .6em">Felsenrot hell auf Tiefsee</span></td><td class="m">≈ 3,3 : 1</td><td class="m">AA groß ✓</td><td>Nur große Labels/Versalien auf dunkel.</td></tr>
+      <tr><td style="font-family:var(--f-serif)"><span style="background:#0B2D3C;color:#B23A2E;padding:.15em .6em">Felsenrot auf Tiefsee</span></td><td class="m">≈ 2,4 : 1</td><td class="m">✗</td><td>Nur dekorativ — nie für Text.</td></tr>
+    </table></div>
+    <p class="body fade" style="margin-top:1.4rem">Verläufe gibt es nicht — mit einer Ausnahme: der <strong>Scrim</strong> hinter Bildern (Tiefsee dunkel, 30–90 % Deckung), damit Schrift auf Fotografie lesbar bleibt.</p>
+  </div>
+</section>
+
+<!-- 04 TYPOGRAFIE -->
+<section class="section sand" data-chap="04 · Die Typografie">
+  <div class="wrap">
+    <div class="kapnum">04 · Die Typografie</div>
+    <div class="head fade">
+      <h2 class="h-lg">Drei Stimmen.<br/>Drei Schriften. Fertig.</h2>
+      <p class="body"><strong>Instrument Serif</strong> ist die Seele — große Sätze, Zitate, die Wortmarke. <strong>Instrument Sans</strong> ist die Klarheit — Lauftext und Interface. <strong>Space Mono</strong> ist die Zahl — Labels, Fakten, Koordinaten, immer in Versalien mit Laufweite. Es gibt keine vierte Schrift, kein Bold-Serif, kein Kursiv-Mono.</p>
+    </div>
+
+    <div class="type-ex fade d1">
+      <div class="row"><div class="k">Display · Serif 400<br/>56–96 px · LH 1.04</div><div style="font-family:var(--f-serif);font-size:clamp(2.4rem,5vw,4rem);line-height:1.04">Deutschlands tiefster Atemzug.</div></div>
+      <div class="row"><div class="k">H2 · Serif 400<br/>34 px · LH 1.1</div><div style="font-family:var(--f-serif);font-size:2.125rem;line-height:1.1">Wegweiser, die man zitiert.</div></div>
+      <div class="row"><div class="k">Lede · Serif kursiv<br/>22 px · LH 1.4</div><div style="font-family:var(--f-serif);font-style:italic;font-size:1.375rem;line-height:1.4">„Bei uns ist nichts los. Das ist kein Versehen.“</div></div>
+      <div class="row"><div class="k">Fließtext · Sans 400<br/>18 px · LH 1.65 · min. 16 px</div><div style="font-size:1.125rem;line-height:1.65;max-width:52ch;color:#3B4A50">Siebzig Kilometer draußen beginnt etwas, das drinnen fehlt. Zeilenlänge 45–65 Zeichen, niemals Blocksatz, niemals Trennungs-Orgien.</div></div>
+      <div class="row"><div class="k">Label · Mono 400<br/>12 px · LS 0.18em · min. 11 px</div><div class="mono" style="font-size:.75rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grau)">Anreise · Die Reise ist der erste Programmpunkt</div></div>
+      <div class="row"><div class="k">Zahl · Mono 700<br/>tabellarisch</div><div class="mono" style="font-size:1.6rem;font-weight:700">0 Autos · 0/8 Pollen · 70 km</div></div>
+    </div>
+
+    <div class="tablewrap fade"><table class="spec">
+      <tr><th>Rolle</th><th>Schnitt</th><th>Web</th><th>Print</th><th>Regeln</th></tr>
+      <tr><td>Display / H1</td><td class="m">Serif 400</td><td class="m">56–96 px</td><td class="m">34 pt</td><td>LH 1.04 · LS −0.015em · nie fett</td></tr>
+      <tr><td>H2 / H3</td><td class="m">Serif 400</td><td class="m">34 / 24 px</td><td class="m">25 / 14 pt</td><td>text-wrap balance</td></tr>
+      <tr><td>Lede / Zitat</td><td class="m">Serif 400 kursiv</td><td class="m">22 px</td><td class="m">15 pt</td><td>max. 22–34ch</td></tr>
+      <tr><td>Fließtext</td><td class="m">Sans 400</td><td class="m">18 px <small>min. 16 px</small></td><td class="m">10,5 pt <small>min. 9 pt</small></td><td>LH 1.65 · 45–65 Zeichen/Zeile</td></tr>
+      <tr><td>UI / Betonung</td><td class="m">Sans 500–600</td><td class="m">14–18 px</td><td class="m">—</td><td>600 nur für Zwischentitel</td></tr>
+      <tr><td>Label / Eyebrow</td><td class="m">Mono 400</td><td class="m">12 px <small>min. 11 px</small></td><td class="m">6,4–7,5 pt</td><td>VERSALIEN · LS 0.12–0.22em</td></tr>
+      <tr><td>Zahlen / KPI</td><td class="m">Mono 700</td><td class="m">frei</td><td class="m">frei</td><td>tabular-nums · Einheit in Rot</td></tr>
+    </table></div>
+    <p class="body fade" style="margin-top:1.4rem">Download: Alle drei Schriften liegen als WOFF2 im Werkzeugkasten (SIL Open Font License — frei auch kommerziell) und auf Google Fonts: <span class="mono" style="font-size:.85rem">Instrument Serif · Instrument Sans · Space Mono</span>. Keine Ausrufezeichen, keine Superlative — die Stimme regelt das Kampagnenbuch.</p>
+  </div>
+</section>
+
+<!-- 05 WEB -->
+<section class="section dark" data-chap="05 · Web & App">
+  <div class="wrap">
+    <div class="kapnum">05 · Web &amp; App</div>
+    <div class="head fade">
+      <h2 class="h-lg" style="color:var(--schaum)">Präzise Pixel.</h2>
+      <p class="body">Die verbindlichen Maße für alles Digitale — vom Logo in der Navigation bis zur Atem-Animation. Grundlage ist ein 8-px-Raster; Eckenradius ist grundsätzlich 2 px (Ausnahme: runde Elemente).</p>
+    </div>
+    <div class="tablewrap fade d1"><table class="spec">
+      <tr><th>Element</th><th>Maß</th><th>Spezifikation</th></tr>
+      <tr><td>Logo · Navigation</td><td class="m">Linie 34 × 22 px</td><td>Horizontal-Lockup; Wortzug 18–19 px, LS 0.22em, Versalien.</td></tr>
+      <tr><td>Wortmarke · Hero</td><td class="m">min. 40 px</td><td>Nur mit Atem-Animation oder statisch mit LS 0.14em.</td></tr>
+      <tr><td>Favicon</td><td class="m">16 / 32 / 512 px</td><td>Nur Atemlinie auf Tiefsee-Kachel (favicon.svg).</td></tr>
+      <tr><td>App- / Touch-Icon</td><td class="m">1024 px · rx 232</td><td>Linie zentriert, Strich ≈ 3,2 % der Kantenlänge.</td></tr>
+      <tr><td>UI-Icons</td><td class="m">24-px-Raster</td><td>Strich 2 px, runde Kappen — wie die Atemlinie.</td></tr>
+      <tr><td>Button</td><td class="m">Mono 12,5 px</td><td>LS 0.12em, Versalien, Padding 1.05em/1.5em, Radius 2 px.</td></tr>
+      <tr><td>Fokus-Ring</td><td class="m">2 px Felsenrot</td><td>outline-offset 3 px — Pflicht auf allen Interaktionen.</td></tr>
+      <tr><td>Progress / Linien</td><td class="m">1–2 px</td><td>Haarlinien in Linie-Token (14–16 % Deckung).</td></tr>
+      <tr><td>Raster &amp; Container</td><td class="m">8 px · max. 1180 px</td><td>Seitenränder clamp(20–60 px).</td></tr>
+    </table></div>
+
+    <h3 class="h-md fade" style="color:var(--schaum);margin-top:clamp(48px,7vh,72px)">Die Atem-Animation.</h3>
+    <p class="body fade">Das eine bewegte Element der Marke — Wortmarke oder Atem-Wörter „atmen“ über die Laufweite. Alles andere bewegt sich höchstens beim Eintritt (Fade, 1 s) oder gar nicht.</p>
+    <div class="fade d1" style="margin-top:clamp(20px,3vh,32px);background:var(--tiefsee-dunkel);border:1px solid var(--linie-hell);border-radius:2px;padding:clamp(28px,5vw,56px);text-align:center">
+      <div class="breath" style="font-family:var(--f-serif);font-size:clamp(2.4rem,7vw,4.5rem);color:var(--schaum)">ATMEN</div>
+    </div>
+    <div class="tablewrap fade"><table class="spec">
+      <tr><th>Parameter</th><th>Wert</th><th>Anmerkung</th></tr>
+      <tr><td>Zyklus</td><td class="m">10 s</td><td>4 s einatmen (0→40 %), 6 s ausatmen (40→100 %).</td></tr>
+      <tr><td>Laufweite</td><td class="m">0.10em → 0.42em</td><td>Mobil (&lt; 560 px): max. 0.22em.</td></tr>
+      <tr><td>Deckkraft</td><td class="m">0.78 → 1.0</td><td>Synchron zur Laufweite.</td></tr>
+      <tr><td>Layout-Schutz</td><td class="m">width-lock</td><td>Breite im Maximalzustand reservieren — die Zeile darf nie umbrechen.</td></tr>
+      <tr><td>Reduced Motion</td><td class="m">Pflicht</td><td>prefers-reduced-motion: Animation aus, statisch LS 0.14em.</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<!-- 06 BILD -->
+<section class="section" data-chap="06 · Die Bildwelt">
+  <div class="wrap">
+    <div class="kapnum">06 · Die Bildwelt</div>
+    <div class="head fade">
+      <h2 class="h-lg">Dokumentarisch.<br/>Nie Hochglanz.</h2>
+      <p class="body">Nordisches Licht, gedeckte Farben, echte Momente — Wind, Nässe und Nebel sind Motive, keine Fehler. Keine HDR-Sättigung, keine gestellte Postkarten-Idylle, keine Drohnen-Akrobatik. Menschen erscheinen beiläufig, nie posierend.</p>
+      <p class="body" style="margin-top:1rem">Schrift auf Bild nur mit Scrim (Tiefsee dunkel, 30–90 %). KI-generierte Motive werden immer als solche gekennzeichnet. Das Zeichen auf Fotografie: nur in Schaum, nur mit Schutzraum.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 07 WERKZEUGKASTEN -->
+<section class="section dark" data-chap="07 · Der Werkzeugkasten">
+  <div class="wrap">
+    <div class="kapnum">07 · Der Werkzeugkasten</div>
+    <div class="head fade">
+      <h2 class="h-lg" style="color:var(--schaum)">Alles, was Sie brauchen.<br/>Nichts, was Sie nicht brauchen.</h2>
+      <p class="body">Ein ZIP, drei Ordner. Die SVGs sind echte Vektorpfade (Wortmarke in Kurven — keine Font-Abhängigkeit), die PNGs sind produktionsfertige Exporte, die Schriften frei lizenziert (OFL). Wer gestaltet, nimmt Dateien von hier — und zeichnet nichts nach.</p>
+      <a class="btn" href="brand/atmen-toolkit.zip" download style="margin-top:1.8rem">Werkzeugkasten laden (ZIP)</a>
+    </div>
+    <div class="files fade d1">
+      <div class="file"><div><div class="fn">logo/ · 12 SVG + 8 PNG</div><div class="fd">Lockup gestapelt/horizontal, Atemlinie solo, Wortmarke — je Schaum/Tiefsee; Favicon, App-Icon; PNGs bis 2000 px (transparent) und 1024er App-Icon.</div></div><div class="mono" style="font-size:.7rem;color:var(--grau)">Vektor + Pixel</div></div>
+      <div class="file"><div><div class="fn">farben/ · CSS + JSON + TXT</div><div class="fd">Alle acht Farbwerte als Custom Properties, maschinenlesbar und als Klartext mit HEX/RGB/CMYK-Richtwerten.</div></div><div class="mono" style="font-size:.7rem;color:var(--grau)">Tokens</div></div>
+      <div class="file"><div><div class="fn">schriften/ · 8 WOFF2 + Lizenzen</div><div class="fd">Instrument Serif (400, kursiv), Instrument Sans (400/500/600, kursiv), Space Mono (400/700) — inkl. OFL-Lizenztexten und Bezugsquellen.</div></div><div class="mono" style="font-size:.7rem;color:var(--grau)">OFL · frei</div></div>
+      <div class="file"><div><div class="fn">LIESMICH.md</div><div class="fd">Kurzanleitung und die eine Regel: Es gibt genau eine Atemlinie.</div></div><div class="mono" style="font-size:.7rem;color:var(--grau)">Start hier</div></div>
+    </div>
+    <div class="tablewrap fade"><table class="spec">
+      <tr><th>Anwendung</th><th>Datei</th></tr>
+      <tr><td>Plakat, Cover, Fahne, Textil groß</td><td class="m">atmen-lockup-schaum.svg</td></tr>
+      <tr><td>Website-Navigation, Briefkopf</td><td class="m">atmen-horizontal-*.svg</td></tr>
+      <tr><td>Stickerei, Prägung, sehr klein, Muster</td><td class="m">atemlinie-*.svg</td></tr>
+      <tr><td>Browser-Tab, App</td><td class="m">favicon.svg · app-icon.svg</td></tr>
+      <tr><td>Office / schnelle Platzierung</td><td class="m">logo/png/… @2000</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<!-- SCHLUSS -->
+<section class="section" data-chap="Schluss">
+  <div class="wrap" style="text-align:center;max-width:640px">
+    <h2 class="h-lg fade">Im Zweifel: weniger.<br/><em style="font-style:italic">Und nie gegen den Gast.</em></h2>
+    <p class="body fade d1" style="margin:1.4rem auto 0">Was dieses Dokument nicht regelt, regelt die Haltung. Was die Haltung nicht regelt, gehört wahrscheinlich nicht in die Marke.</p>
+  </div>
+</section>
+
+<footer class="foot">
+  <img src="brand/toolkit/logo/atmen-lockup-schaum.svg" alt="ATMEN" style="width:180px;margin:0 auto"/>
+  <p class="fine">CI-Richtlinien Version 1.0 · Konzeptstudie zur Marke ATMEN — kein offizieller Auftritt von Helgoland. Schriften unter SIL Open Font License. CMYK-Werte sind unkalibrierte Richtwerte. Rückfragen &amp; Freigaben: Markenführung — im Zweifel gilt: weniger. Ein Denkangebot: Nils Benthaus, Hamburg.</p>
+</footer>
+
+<script>
+(function(){
+  var prog=document.getElementById('progress'),chap=document.getElementById('chap');
+  var chaps=[].slice.call(document.querySelectorAll('[data-chap]'));
+  function onScroll(){
+    var y=scrollY,h=document.documentElement.scrollHeight-innerHeight;
+    prog.style.width=(h>0?y/h*100:0)+'%';
+    var cur='ATMEN · CI-Richtlinien v1.0';
+    chaps.forEach(function(s){if(y>=s.offsetTop-120)cur=s.getAttribute('data-chap');});
+    chap.textContent=cur;
+  }
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target);}});},{threshold:.12,rootMargin:'0px 0px -6% 0px'});
+  document.querySelectorAll('.fade').forEach(function(el){io.observe(el);});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+{
+  "tiefsee": {
+    "name": "Tiefseeblau",
+    "hex": "#0B2D3C",
+    "rgb": "11 45 60",
+    "cmyk_richtwert": "82 25 0 76",
+    "verwendung": "Grundfarbe. Flächen, Plakate, dunkle Seiten."
+  },
+  "schaum": {
+    "name": "Schaum",
+    "hex": "#F5F1E9",
+    "rgb": "245 241 233",
+    "cmyk_richtwert": "0 2 5 4",
+    "verwendung": "Licht & Schrift auf Tiefsee. Heller Grund."
+  },
+  "rot": {
+    "name": "Felsenrot",
+    "hex": "#B23A2E",
+    "rgb": "178 58 46",
+    "cmyk_richtwert": "0 67 74 30",
+    "verwendung": "Nur Akzent: Labels, Live-Punkt, max. 10 %."
+  },
+  "gruen": {
+    "name": "Klippengrün",
+    "hex": "#3F6B4A",
+    "rgb": "63 107 74",
+    "cmyk_richtwert": "41 0 31 58",
+    "verwendung": "Selten. Zweiter Akzent, Natur-Kontexte."
+  },
+  "tinte": {
+    "name": "Tinte",
+    "hex": "#16242B",
+    "rgb": "22 36 43",
+    "cmyk_richtwert": "49 17 0 83",
+    "verwendung": "Lauftext auf hellem Grund."
+  },
+  "sand": {
+    "name": "Sand",
+    "hex": "#EBE3D4",
+    "rgb": "235 227 212",
+    "cmyk_richtwert": "0 3 10 8",
+    "verwendung": "Helle Wechselflächen, Kapitel-Rhythmus."
+  },
+  "tiefsee-dunkel": {
+    "name": "Tiefsee dunkel",
+    "hex": "#06171F",
+    "rgb": "6 23 31",
+    "cmyk_richtwert": "80 40 0 92",
+    "verwendung": "Abdunkelung, Footer, Schutz hinter Bild."
+  },
+  "rot-hell": {
+    "name": "Felsenrot hell",
+    "hex": "#CC5142",
+    "rgb": "204 81 66",
+    "cmyk_richtwert": "0 60 68 20",
+    "verwendung": "Nur auf Tiefsee: Labels und Akzente, wo Felsenrot zu dunkel ist."
+  }
+}

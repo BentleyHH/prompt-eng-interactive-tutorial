@@ -1,0 +1,11 @@
+/* ATMEN — Farbsystem (kanonisch) */
+:root{
+  --tiefsee: #0B2D3C;
+  --schaum: #F5F1E9;
+  --rot: #B23A2E;
+  --gruen: #3F6B4A;
+  --tinte: #16242B;
+  --sand: #EBE3D4;
+  --tiefsee-dunkel: #06171F;
+  --rot-hell: #CC5142; /* nur als Akzent auf Tiefsee */
+}
