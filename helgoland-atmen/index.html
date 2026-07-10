@@ -336,6 +336,21 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
 .signup input::placeholder{color:rgba(245,241,233,0.55)}
 .signup .note{flex-basis:100%;font-family:var(--f-mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,233,0.5);margin-top:8px}
 
+/* #HelgolandAtmen Feed */
+.feed{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:clamp(32px,5vh,52px)}
+.feed>*{aspect-ratio:1;overflow:hidden;border-radius:2px;position:relative;background:var(--tiefsee)}
+.feed img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02);transition:transform .9s var(--ease)}
+.feed>*:hover img{transform:scale(1.08)}
+.feed .tag{position:absolute;left:12px;bottom:10px;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--schaum);background:rgba(6,23,31,.55);backdrop-filter:blur(6px);padding:.35em .7em;border-radius:2px;opacity:0;transition:opacity .4s}
+.feed>*:hover .tag{opacity:1}
+.feed .zahl-k{display:flex;flex-direction:column;justify-content:space-between;padding:18px;color:var(--schaum)}
+.feed .zahl-k .k{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--rot-hell)}
+.feed .zahl-k b{font-family:var(--f-mono);font-weight:700;font-size:clamp(1.6rem,3vw,2.4rem)}
+.feed .zahl-k .s{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--grau)}
+.feed__foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:26px}
+.feed__hint{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--grau)}
+@media(max-width:820px){.feed{grid-template-columns:repeat(2,1fr)}}
+
 /* footer */
 .footer{background:var(--tiefsee-dunkel);color:rgba(245,241,233,0.7);padding:clamp(70px,10vh,120px) 0 40px}
 .footer__grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px;padding-bottom:52px;border-bottom:1px solid var(--linie-hell)}
@@ -687,6 +702,35 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
       <a href="#top" class="btn btn--ghost" data-cursor style="color:var(--schaum)"><span>Prospekt bestellen</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ #HELGOLANDATMEN FEED ============ -->
+<section class="section" id="feed">
+  <div class="wrap">
+    <span class="eyebrow fade" style="display:block;margin-bottom:1.4rem">#HelgolandAtmen · Aus dem Feed</span>
+    <h2 class="h-md fade d1">Die Gäste posten.<br/>Wir atmen mit.</h2>
+    <p class="body fade d2" style="margin-top:1.2rem;max-width:52ch">Unser Kanal erfindet nichts — er sammelt ein. Wer seinen Atemzug mit <b>#HelgolandAtmen</b> markiert, landet vielleicht hier und auf <b>@helgoland.atmen</b>. Kuratiert, gefragt, nie gekauft.</p>
+    <div class="feed fade d2">
+      <figure data-cursor><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124730_148836a0-c5f4-4262-8115-f2df338db95a.png" alt="Zwei Freundinnen mit ATMEN-Bechern an der Kaimauer" loading="lazy"/><figcaption class="tag">@jule.unterwegs · Kaimauer</figcaption></figure>
+      <figure data-cursor><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124819_40684eb2-e204-4d3e-a73e-b8360b92431d.png" alt="Kind springt vor einer Welle auf der Düne" loading="lazy"/><figcaption class="tag">@familie.nord · Düne</figcaption></figure>
+      <figure data-cursor><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124736_e0418baf-c881-4cf8-aa36-8464d3669f7c.png" alt="Paar unter einer ATMEN-Wolldecke am Klippenrand" loading="lazy"/><figcaption class="tag">@zwei.im.wind · Oberland</figcaption></figure>
+      <div class="zahl-k" data-cursor>
+        <span class="k">● Live</span>
+        <b>0/8</b>
+        <span class="s">Pollen heute<br/>#HelgolandAtmen</span>
+      </div>
+      <figure data-cursor><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124846_b0e9c3fa-5a41-455c-8003-0a961038e0e4.png" alt="Lachende Menschen im Sturm an der Mole" loading="lazy"/><figcaption class="tag">@moin.meer · Windstärke 8</figcaption></figure>
+      <figure data-cursor><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124748_d6cd48c5-9a9e-4f3f-952d-f3777086df76.png" alt="Fischbrötchen mit Hafenblick" loading="lazy"/><figcaption class="tag">@essen.mit.aussicht · Hafen</figcaption></figure>
+      <figure data-cursor><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124733_a866e265-64c0-4940-b880-8dc0753399c0.png" alt="Rangerin zeigt einem Kind eine Kegelrobbe aus sicherer Entfernung" loading="lazy"/><figcaption class="tag">@ranger.tour · 30 m Abstand</figcaption></figure>
+      <figure data-cursor><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124859_6eb15b4c-918e-4e63-afc2-066b3b019cc9.png" alt="Silhouette atmet den Sonnenuntergang über der Nordsee ein" loading="lazy"/><figcaption class="tag">@einfach.mal.raus · 21:42 Uhr</figcaption></figure>
+    </div>
+    <div class="feed__foot fade d2">
+      <a href="#" class="btn btn--rot" data-cursor><span>@helgoland.atmen folgen</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <span class="feed__hint">Konzept · Fotos KI-generiert (Higgsfield) · Accounts fiktiv</span>
     </div>
   </div>
 </section>
