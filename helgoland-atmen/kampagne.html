@@ -205,6 +205,24 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
 .zahl .d{margin-top:.45rem;font-size:.9rem;color:rgba(245,241,233,0.72);line-height:1.5}
 @media(max-width:760px){.zahlen{grid-template-columns:1fr}}
 
+
+/* Instagram-Feed */
+.igwrap{max-width:860px;margin:clamp(28px,4vh,48px) auto 0;background:#05141b;border:1px solid var(--linie-hell);border-radius:8px;overflow:hidden}
+.ighead{display:flex;align-items:center;gap:18px;padding:20px 22px;border-bottom:1px solid var(--linie-hell)}
+.ighead .av{width:64px;height:64px;border-radius:50%;border:1px solid var(--linie-hell);flex:none}
+.ighead .hnd{font-weight:600;color:var(--schaum);font-size:1.05rem}
+.ighead .stats{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.08em;color:var(--grau);margin-top:4px}
+.ighead .bio{font-size:.8rem;color:rgba(245,241,233,.8);margin-top:6px;line-height:1.5;max-width:46ch}
+.igbtn{margin-left:auto;background:var(--rot);color:var(--schaum);font-family:var(--f-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.7em 1.2em;border-radius:2px;white-space:nowrap}
+.iggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px}
+.iggrid>*{aspect-ratio:1;overflow:hidden;position:relative}
+.iggrid img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .8s var(--ease)}
+.iggrid>*:hover img{transform:scale(1.06)}
+.igtile{display:flex;flex-direction:column;justify-content:space-between;padding:clamp(10px,2vw,18px);color:var(--schaum)}
+.igtile .k{font-family:var(--f-mono);font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(245,241,233,.6)}
+.igtile .t{font-family:var(--f-serif);font-size:clamp(.9rem,1.8vw,1.35rem);line-height:1.22}
+@media(max-width:560px){.ighead{flex-wrap:wrap}.igbtn{margin-left:0}}
+
 /* Footer */
 .foot{background:var(--tiefsee-dunkel);color:rgba(245,241,233,0.65);text-align:center;padding:12vh var(--gutter) 6vh}
 .foot .wordmark{font-family:var(--f-serif);font-size:clamp(2.2rem,7vw,4.2rem);color:var(--schaum)}
@@ -490,10 +508,63 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
   </div>
 </section>
 
-<!-- ============ 12 DIGITAL ============ -->
-<section class="section sand kap" data-chap="12 · Digital & Social">
+<!-- ============ 12 INSTAGRAM FEED ============ -->
+<section class="section darker kap" data-chap="12 · #HelgolandAtmen">
   <div class="wrap">
-    <div class="kapnum">Kapitel 12 · Digital &amp; Social</div>
+    <div class="kapnum">Kapitel 12 · Der Feed — #HelgolandAtmen</div>
+    <div class="head fade">
+      <h2 class="h-lg" style="color:var(--schaum)">Die Gäste posten.<br/>Die Marke bleibt leise.</h2>
+      <p class="body">Ein Hashtag statt einer Content-Fabrik: <strong>#HelgolandAtmen</strong> sammelt, was Gäste ohnehin fotografieren — Merch im Einsatz, Wind im Gesicht, Robben mit Abstand. Der Kanal regramt die besten Momente im Dreier-Rhythmus (Motiv · Zahl · Zitat) und hält so den Feed in der Bildwelt, ohne selbst laut zu werden.</p>
+    </div>
+    <div class="igwrap fade d1">
+      <div class="ighead">
+        <img class="av" src="brand/toolkit/logo/favicon.svg" alt="Profilbild: Atemlinie auf Tiefsee"/>
+        <div>
+          <div class="hnd">helgoland.atmen</div>
+          <div class="stats">87 Beiträge&nbsp;&nbsp;·&nbsp;&nbsp;24,1k Follower&nbsp;&nbsp;·&nbsp;&nbsp;89 Gefolgt</div>
+          <div class="bio">Deutschlands einzige Hochseeinsel. 70 km draußen. 0/8 Pollen. Wir schreiben selten. <strong>#HelgolandAtmen</strong></div>
+        </div>
+        <span class="igbtn">Folgen</span>
+      </div>
+      <div class="iggrid">
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124728_2fc0f3d8-d676-4d56-bc92-7012cbae7605.png" alt="Regenjacke am Klippenrand" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124730_148836a0-c5f4-4262-8115-f2df338db95a.png" alt="Freunde mit ATMEN-Bechern an der Hafenmauer" loading="lazy"/></div>
+      <div class="igtile" style="background:var(--tiefsee)"><span class="k">● live</span><div><div class="mono" style="font-weight:700;font-size:clamp(1.3rem,3vw,2.2rem);color:var(--schaum)">0/8</div><span class="k">Pollen heute</span></div><span class="k">#HelgolandAtmen</span></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124733_a866e265-64c0-4940-b880-8dc0753399c0.png" alt="Robben-Ranger-Kind beobachtet Robbe" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124736_e0418baf-c881-4cf8-aa36-8464d3669f7c.png" alt="Paar in der ATMEN-Decke auf der Düne" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124748_d6cd48c5-9a9e-4f3f-952d-f3777086df76.png" alt="Fischbrötchen im Wellen-Papier" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124751_f694ad99-c377-4c5d-bc00-f132cab5c9c8.png" alt="Lachen im Wind vor der Langen Anna" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124754_c662a035-92e1-4a73-ac76-d57ab86ca661.png" alt="Jutebeutel an der Fähr-Reling" loading="lazy"/></div>
+      <div class="igtile" style="background:var(--tiefsee-dunkel)"><span class="k">Zitat</span><div class="t" style="font-style:italic">„Bei uns ist nichts los. Das ist kein Versehen.“</div><svg width="34" height="12" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124756_c3540809-a269-426c-bab5-63bb4dfe7dbc.png" alt="ATMEN-Shirt auf dem Oberland-Weg" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124811_3841ccc4-01ae-4798-b72d-467f2f4fe000.png" alt="Handtuch am Meerwasserbecken" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124814_94cda511-6226-4096-9087-c15e0debdde0.png" alt="Postkarte schreiben in der Bude" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124816_3a7869b2-cfcb-443e-ba18-6b5f8c792c27.png" alt="Die Lange Tafel am Abend" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124819_40684eb2-e204-4d3e-a73e-b8360b92431d.png" alt="Kind springt über die Welle" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124838_37cd370f-84fc-4145-ab54-0660aef4ff87.png" alt="Strandflagge auf der Düne" loading="lazy"/></div>
+      <div class="igtile" style="background:var(--tiefsee)"><span class="k">Robbenzähler</span><div><div class="mono" style="font-weight:700;font-size:clamp(1.2rem,2.6vw,1.9rem);color:var(--schaum)">1.049</div><span class="k">Geburten · Rekord</span></div><span class="k">#HelgolandAtmen</span></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124841_6148b9d1-a475-42de-a808-690fb630b9dc.png" alt="Dampfender Becher auf der Klippenbank" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124843_215a0653-b7c5-4ffd-804f-fb5b9eaa6efa.png" alt="Ranger-Rucksack auf der Treppe" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124846_b0e9c3fa-5a41-455c-8003-0a961038e0e4.png" alt="Lachend im Sturm auf der Mole" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124859_6eb15b4c-918e-4e63-afc2-066b3b019cc9.png" alt="Tief durchatmen im Sonnenuntergang" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124901_502ed51a-8532-41fe-8557-2c7cfdfed566.png" alt="Ankommen: Sie sind da. Atmen." loading="lazy"/></div>
+      <div class="igtile" style="background:var(--tiefsee-dunkel)"><span class="k">Heute</span><div class="t" style="font-style:italic">„Ihre Aussicht: exklusiv nichts.“</div><svg width="34" height="12" viewBox="0 0 130 44" fill="none"><path d="M6 30 H44 C56 30 58 8 65 8 S74 30 86 30 H124" stroke="#F5F1E9" stroke-width="4" stroke-linecap="round"/></svg></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124903_244d8106-986b-4d9a-a346-f1c2b2e5e762.png" alt="Robbenzeit mit Thermoskanne" loading="lazy"/></div>
+      <div><img src="https://d8j0ntlcm91z4.cloudfront.net/user_3B4FXw36K2KIMQ6fgXs9vDxxWQ9/hf_20260710_124917_66159336-ec96-40ff-b1e6-dbeb5eb8d37b.png" alt="Mütze, Fähre, Winterluft" loading="lazy"/></div>
+      </div>
+    </div>
+    <div class="ideen fade">
+      <div class="idee"><div class="ik">Mechanik</div><div><h3>Regram statt Redaktion</h3><p>Wer mit #HelgolandAtmen postet, kann in den Kanal regramt werden — mit Namensnennung und kurzem Dank in der Atem-Stimme. Die besten Motive des Jahres hängen gerahmt im InfoCenter: „Die Wand der Atemzüge“.</p></div></div>
+      <div class="idee"><div class="ik">Anreiz</div><div><h3>Der stille Wettbewerb</h3><p>Kein Gewinnspiel-Geschrei: Einmal im Monat bekommt ein Beitrag unkommentiert zwei Fährtickets per DM. Es spricht sich rum — leise, wie alles hier.</p></div></div>
+      <div class="idee"><div class="ik">Regeln</div><div><h3>Kuratiert, nicht kontrolliert</h3><p>Regramt wird nur, was der Bildwelt entspricht: gedeckt, ehrlich, Robben mit 30 m Abstand. KI-Motive der Marke bleiben als solche gekennzeichnet — Gästefotos sind echt.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13 DIGITAL ============ -->
+<section class="section sand kap" data-chap="13 · Digital & Social">
+  <div class="wrap">
+    <div class="kapnum">Kapitel 13 · Digital &amp; Social</div>
     <div class="head fade">
       <h2 class="h-lg">Digital heißt bei uns:<br/>weniger Bildschirm.</h2>
       <p class="body">Der Insel-Puls beantwortet die eine echte Frage („Fährt der Kat?“) in einem Blick. Social spielt nicht Lautstärke, sondern Zustand — Formate, die man hört und fühlt statt scrollt.</p>
@@ -511,10 +582,10 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
   </div>
 </section>
 
-<!-- ============ 13 JAHRESPLAN ============ -->
-<section class="section dark kap" data-chap="13 · Der Jahresplan">
+<!-- ============ 14 JAHRESPLAN ============ -->
+<section class="section dark kap" data-chap="14 · Der Jahresplan">
   <div class="wrap">
-    <div class="kapnum">Kapitel 13 · Der Jahresplan</div>
+    <div class="kapnum">Kapitel 14 · Der Jahresplan</div>
     <div class="head fade">
       <h2 class="h-lg" style="color:var(--schaum)">Vier Phasen.<br/>Ein Atemrhythmus.</h2>
       <p class="body">Die Kampagne beginnt nicht in Hamburg — sie beginnt auf der Insel. Erst wenn die Gastgeber die Marke sprechen, hängen wir das erste Plakat. Danach folgt das Jahr dem Kalender der Insel, nicht dem der Media-Agentur.</p>
@@ -528,10 +599,10 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:400;letter-spacing:-.015em;line-
   </div>
 </section>
 
-<!-- ============ 14 WIRKUNG ============ -->
-<section class="section darker kap" data-chap="14 · Wirkung &amp; Messung">
+<!-- ============ 15 WIRKUNG ============ -->
+<section class="section darker kap" data-chap="15 · Wirkung &amp; Messung">
   <div class="wrap">
-    <div class="kapnum">Kapitel 14 · Wirkung &amp; Messung</div>
+    <div class="kapnum">Kapitel 15 · Wirkung &amp; Messung</div>
     <div class="head fade">
       <h2 class="h-lg" style="color:var(--schaum)">Wertschöpfung<br/>vor Volumen.</h2>
       <p class="body">Erfolg ist nicht die Zahl an der Landungsbrücke. Erfolg ist, dass Menschen länger bleiben, wiederkommen und im Februar buchen. Daran lassen wir jede Maßnahme messen — und die Zustimmung der Insel ist eine eigene Kennzahl.</p>
