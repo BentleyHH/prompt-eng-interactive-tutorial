@@ -1,0 +1,19 @@
+{
+  "name": "panotour-studio",
+  "version": "1.0.0",
+  "description": "Dashboard zum Bauen von 360°-Panorama-Rundgängen mit Hotspots, Logo-Nadir-Patch und dynamischer Kamerafahrt.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "express": "^4.21.2",
+    "multer": "^2.2.0"
+  }
+}

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PanoTour Studio — 360° Rundgang-Builder</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%234f8cff'/%3E%3Cpath d='M50 6a44 44 0 000 88M6 50h88M50 6c-16 12-16 76 0 88M50 6c16 12 16 76 0 88' fill='none' stroke='%23fff' stroke-width='4'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="vendor/psv-core.css" />
+  <link rel="stylesheet" href="vendor/psv-markers.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/vendor/three.module.js",
+      "@photo-sphere-viewer/core": "/vendor/psv-core.module.js",
+      "@photo-sphere-viewer/markers-plugin": "/vendor/psv-markers.module.js",
+      "@photo-sphere-viewer/autorotate-plugin": "/vendor/psv-autorotate.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo-dot"></span>
+      <h1>PanoTour&nbsp;Studio</h1>
+      <span class="tag">360° Rundgang-Builder</span>
+    </div>
+    <div class="topbar-actions">
+      <span id="save-hint" class="save-hint"></span>
+      <button id="btn-present" class="btn btn-ghost" title="Vollbild-Vorschau">▶ Präsentieren</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Linke Spalte: Rundgänge + Szenen ------------------------------------->
+    <aside class="col col-left">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Rundgänge</h2>
+          <button id="btn-new-tour" class="btn btn-sm">+ Neu</button>
+        </div>
+        <ul id="tour-list" class="list"></ul>
+      </section>
+
+      <section class="panel" id="scenes-panel" hidden>
+        <div class="panel-head">
+          <h2>Szenen</h2>
+          <label class="btn btn-sm" for="scene-upload">+ Bild(er)</label>
+          <input id="scene-upload" type="file" accept="image/*" multiple hidden />
+        </div>
+        <p class="hint">360°-Bilder (equirectangular). JPG · PNG · WebP · AVIF … Reihenfolge per Drag &amp; Drop.</p>
+        <ul id="scene-list" class="list scene-list"></ul>
+      </section>
+    </aside>
+
+    <!-- Mitte: Viewer -------------------------------------------------------->
+    <section class="col col-center">
+      <div id="viewer" class="viewer"></div>
+      <div id="viewer-empty" class="viewer-empty">
+        <div>
+          <div class="big">🌐</div>
+          <p>Leg links einen Rundgang an und lade ein 360°-Bild hoch.</p>
+        </div>
+      </div>
+      <div class="viewer-toolbar" id="viewer-toolbar" hidden>
+        <button class="mode-btn active" data-mode="explore">🖐 Ansehen</button>
+        <button class="mode-btn" data-mode="hotspot">📍 Hotspot setzen</button>
+        <button class="mode-btn" data-mode="logo">🏷 Logo/Stativ-Patch</button>
+        <button class="mode-btn" data-mode="path">🎬 Kamerafahrt</button>
+        <span class="sep"></span>
+        <button id="btn-set-start" class="btn btn-sm btn-ghost" title="Aktuellen Blick als Startansicht speichern">⌖ Startblick</button>
+      </div>
+    </section>
+
+    <!-- Rechte Spalte: Inspektor --------------------------------------------->
+    <aside class="col col-right">
+      <div id="inspector" class="panel inspector">
+        <p class="hint pad">Wähle einen Modus in der Werkzeugleiste unter dem Bild.</p>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Modal: neuer Rundgang -->
+  <dialog id="tour-dialog" class="dialog">
+    <form method="dialog">
+      <h3>Neuer Rundgang</h3>
+      <label>Name<input name="name" required placeholder="z. B. Ferienwohnung Alpenblick" /></label>
+      <label>Beschreibung<textarea name="description" rows="2"></textarea></label>
+      <menu>
+        <button value="cancel" class="btn btn-ghost">Abbrechen</button>
+        <button value="ok" class="btn">Anlegen</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/viewer.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
