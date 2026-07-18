@@ -1,0 +1,10 @@
+{
+  "mailbox": "rechnungen-firma-a@example.com",
+  "message_id": "msg-hetzner-2026-07",
+  "received_at": "2026-07-01T02:30:00",
+  "from": "Hetzner Online GmbH <billing@hetzner.com>",
+  "subject": "Ihre Rechnung 2026-07 / Hetzner Online",
+  "filename": "Hetzner_2026_07.pdf",
+  "content_type": "application/pdf",
+  "text": "Lieferant: Hetzner Online GmbH\nAn: Firma A GmbH\nRechnungsnr: HZ-2026-0700123\nRechnungsdatum: 01.07.2026\nNettobetrag: 32,77 EUR\nUSt 19 %: 6,23 EUR\nRechnungsbetrag (brutto): 39,00 EUR\nIBAN: DE89370400440532013000\nVAT: DE812871812"
+}

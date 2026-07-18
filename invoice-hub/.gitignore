@@ -1,0 +1,14 @@
+# Zugangsdaten & Tokens niemals einchecken
+.env
+secrets/
+*.token.json
+
+# Erzeugte Ausgaben
+out/
+dashboard/sample_data.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

@@ -1,0 +1,66 @@
+# Rechnungs-Hub Konfiguration
+# ---------------------------------------------------------------------------
+# "Getrennte Postfächer pro Einheit": jede Firma und Privat hat ihr eigenes
+# Rechnungs-Postfach. Die Zuordnung zur Buchungseinheit ergibt sich damit
+# eindeutig aus dem Postfach — keine unsichere Rate-Klassifikation nötig.
+#
+# Praxis-Tipp: Bei jedem Anbieter (Telekom, Strom, Hosting, ...) als
+# Rechnungs-/Billing-E-Mail das jeweilige Postfach hinterlegen. Alternativ
+# eine Weiterleitungsregel im privaten Postfach anlegen.
+
+entities:
+  - name: "Firma A GmbH"
+    mailbox: "rechnungen-firma-a@example.com"
+    vat_id: "DE111111111"        # eigene USt-IdNr. -> Erkennung Eingang/Ausgang
+    onedrive_root: "/Buchhaltung/Firma A"
+    skr: "SKR04"
+
+  - name: "Firma B UG"
+    mailbox: "rechnungen-firma-b@example.com"
+    vat_id: "DE222222222"
+    onedrive_root: "/Buchhaltung/Firma B"
+    skr: "SKR04"
+
+  - name: "Privat"
+    mailbox: "rechnungen-privat@example.com"
+    vat_id: ""
+    onedrive_root: "/Buchhaltung/Privat"
+    skr: ""
+
+# Ordnerstruktur auf OneDrive relativ zu onedrive_root der Einheit.
+# Platzhalter: {direction} {year} {quarter} {month}
+storage:
+  path_template: "{direction}/{year}/Q{quarter}/{month}"
+  # Beispiel-Ergebnis: /Buchhaltung/Firma A/Eingang/2026/Q3/07-Juli/
+
+# Fehlende-Rechnung-Radar: erwartete wiederkehrende Rechnungen.
+# Das System meldet, wenn eine erwartete Rechnung im Zeitraum ausbleibt.
+recurring:
+  - entity: "Firma A GmbH"
+    vendor: "Telekom Deutschland"
+    cadence: "monatlich"
+    expected_day: 5            # ~um den 5. des Monats erwartet
+    typical_gross: 89.90
+  - entity: "Firma A GmbH"
+    vendor: "Hetzner Online"
+    cadence: "monatlich"
+    expected_day: 1
+    typical_gross: 39.00
+  - entity: "Firma B UG"
+    vendor: "Vodafone"
+    cadence: "monatlich"
+    expected_day: 10
+    typical_gross: 49.99
+  - entity: "Privat"
+    vendor: "Stadtwerke"
+    cadence: "monatlich"
+    expected_day: 15
+    typical_gross: 120.00
+
+# Klassifikations-Hilfen: Lieferant -> Kategorie/SKR-Konto (Vorschläge).
+# Die KI nutzt diese als Priors; unbekannte Lieferanten klassifiziert sie frei.
+categories:
+  "Telekom Deutschland": { category: "Telekommunikation", skr: "6805" }
+  "Vodafone":            { category: "Telekommunikation", skr: "6805" }
+  "Hetzner Online":      { category: "IT/Hosting",        skr: "6837" }
+  "Stadtwerke":          { category: "Energie",           skr: "4240" }

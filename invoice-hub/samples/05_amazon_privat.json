@@ -1,0 +1,10 @@
+{
+  "mailbox": "rechnungen-privat@example.com",
+  "message_id": "msg-amazon-2026-07",
+  "received_at": "2026-07-14T18:44:00",
+  "from": "Amazon.de <rechnung@amazon.de>",
+  "subject": "Ihre Amazon.de Bestellung - Rechnung",
+  "filename": "Amazon_303-1234567.pdf",
+  "content_type": "application/pdf",
+  "text": "Lieferant: Amazon EU S.a.r.l.\nAn: Privatkunde\nRechnungsnummer: DE-303-1234567\nRechnungsdatum: 14.07.2026\nNettobetrag: 41,17 EUR\nUSt 19 %: 7,82 EUR\nRechnungsbetrag (brutto): 48,99 EUR"
+}

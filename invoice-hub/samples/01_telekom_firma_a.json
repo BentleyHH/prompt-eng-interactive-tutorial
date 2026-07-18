@@ -1,0 +1,10 @@
+{
+  "mailbox": "rechnungen-firma-a@example.com",
+  "message_id": "msg-telekom-2026-07",
+  "received_at": "2026-07-05T06:12:00",
+  "from": "Telekom Deutschland GmbH <rechnung@telekom.de>",
+  "subject": "Ihre Telekom Rechnung Juli 2026",
+  "filename": "Telekom_Rechnung_Juli2026.pdf",
+  "content_type": "application/pdf",
+  "text": "Lieferant: Telekom Deutschland GmbH\nAn: Firma A GmbH, Musterstr. 1, 10115 Berlin\nRechnungsnummer: TK-2026-07-4455\nRechnungsdatum: 05.07.2026\nLeistungszeitraum: 01.07.2026 - 31.07.2026\nNettobetrag: 75,55 EUR\nUSt 19 %: 14,35 EUR\nRechnungsbetrag (brutto): 89,90 EUR\nZahlbar bis: 19.07.2026\nIBAN: DE12500105170648489890\nVAT: DE123475223"
+}

@@ -1,0 +1,15 @@
+# Kern der Pipeline
+PyYAML>=6.0
+
+# --- Optional, nur für den Produktivbetrieb (echte Zugänge) ---
+# Claude-Extraktion:
+#   anthropic>=0.40
+# Gmail-Ingestion:
+#   google-api-python-client>=2.100
+#   google-auth-oauthlib>=1.2
+# Microsoft OneDrive (Graph):
+#   msal>=1.28
+#   requests>=2.31
+#
+# Diese sind bewusst auskommentiert, damit der Dry-Run ohne schwere
+# Abhängigkeiten läuft. Zum Aktivieren die Zeilen einkommentieren.
