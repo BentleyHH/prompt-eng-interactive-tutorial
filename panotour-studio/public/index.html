@@ -34,6 +34,8 @@
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5l12.5 7.5L7 19.5z"/></symbol>
     <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5"/></symbol>
     <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v13M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 3v10M8 9l4 4 4-4M5 19h14"/></symbol>
+    <symbol id="i-open" viewBox="0 0 24 24"><path d="M12 13V3M8 7l4-4 4 4M5 19h14"/></symbol>
     <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M3 16v3a2 2 0 002 2h3"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
@@ -48,6 +50,10 @@
     </div>
     <div class="topbar-actions">
       <span id="save-hint" class="save-hint"></span>
+      <input id="project-import" type="file" accept=".zip,.panotour" hidden />
+      <button id="btn-save-project" class="btn btn-ghost btn-sm" title="Projekt als Datei sichern (zum Weiterarbeiten)" disabled>
+        <svg class="ico"><use href="#i-save"/></svg> Sichern
+      </button>
       <button id="btn-export" class="btn btn-ghost btn-sm" title="Rundgang als eigenständige HTML-Datei exportieren" disabled>
         <svg class="ico"><use href="#i-share"/></svg> HTML-Export
       </button>
@@ -62,7 +68,10 @@
       <section class="panel">
         <div class="panel-head">
           <h2>Rundgänge</h2>
-          <button id="btn-new-tour" class="btn btn-sm"><svg class="ico sm"><use href="#i-plus"/></svg> Neu</button>
+          <div style="display:flex;gap:6px">
+            <button id="btn-load-project" class="btn btn-sm btn-ghost" title="Projektdatei laden"><svg class="ico sm"><use href="#i-open"/></svg> Laden</button>
+            <button id="btn-new-tour" class="btn btn-sm"><svg class="ico sm"><use href="#i-plus"/></svg> Neu</button>
+          </div>
         </div>
         <ul id="tour-list" class="list"></ul>
       </section>

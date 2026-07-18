@@ -47,6 +47,7 @@ hochladen → loslegen.
 | **▶ Präsentieren** | Vollbild-Ansicht ohne Bedien-Panels, optional mit Auto-Rotation. |
 | **Startblick** | Aktuelle Blickrichtung + Zoom als Startansicht der Szene speichern. |
 | **⤴ HTML-Export** | Ganzen Rundgang als **eine** eigenständige `.html`-Datei exportieren (Bilder, Viewer, Logik eingebettet). Doppelklick zum Öffnen, überall teilen — kein Server, kein Internet. |
+| **💾 Projekt speichern/laden** | Rundgang als portable `.panotour.zip` (Manifest + alle Bilder) sichern und später — auch auf einem anderen Rechner — wieder **in den Editor laden und weiterbearbeiten**. |
 
 Alles wird automatisch in der Datenbank gespeichert (kleiner Hinweis „Gespeichert ✓" oben rechts).
 
@@ -60,6 +61,7 @@ panotour-studio/
 ├── db.js                SQLite-Schema (better-sqlite3)
 ├── export-template.js   baut die eigenständige Export-HTML
 ├── export-runtime.js    Viewer-Laufzeit, die in den Export eingebettet wird
+├── project-io.js        Projekt speichern/laden (.panotour.zip)
 ├── build-export-bundle.mjs  bündelt three.js + PSV für den Export (esbuild)
 ├── generate-sample.js   erzeugt die Test-Panoramen in samples/
 ├── data/
@@ -98,6 +100,9 @@ Patch-Einstellungen (Größe, Position, an/aus) pro Szene.
 | `PUT` | `/api/scenes/:id` | Szene aktualisieren (Name, Startblick, Logo-Patch) |
 | `POST` | `/api/scenes/:id/hotspots` | Hotspot setzen |
 | `PUT` | `/api/scenes/:id/keyframes` | Kamerafahrt speichern |
+| `GET` | `/api/tours/:id/export` | Rundgang als eigenständige HTML-Datei |
+| `GET` | `/api/tours/:id/project` | Projekt als `.panotour.zip` sichern |
+| `POST` | `/api/projects/import` | Projektdatei laden (neuer Rundgang) |
 
 ---
 
@@ -121,6 +126,24 @@ die Kamerafahrten abspielt, sowie Auto-Rotation und Vollbild.
 Das gebündelte Viewer-Paket liegt fertig unter
 `public/vendor/psv-export-bundle.js`. Nur wenn du die Viewer-Bibliotheken
 austauschst, musst du es neu bauen: `npm install && npm run build:export`.
+
+## Projekt speichern & später weiterarbeiten
+
+Wichtig ist der Unterschied zwischen den beiden Export-Arten:
+
+| | HTML-Export | Projekt (.panotour.zip) |
+|---|---|---|
+| Zweck | fertiges Ergebnis **teilen** | **weiterarbeiten** / sichern |
+| Format | eine `.html`-Datei | `.panotour.zip` (Manifest + Bilder) |
+| Wieder im Editor bearbeitbar? | nein | **ja** |
+
+Wer am selben Rechner bleibt, muss nichts extra tun: Alles wird laufend in
+`data/panotour.db` gespeichert, `npm start` und der Rundgang ist wieder da.
+Für Backup, Umzug auf einen anderen Rechner oder Übergabe klickst du oben
+**„Sichern"** → es lädt eine `.panotour.zip` herunter. Mit **„Laden"** (links
+über der Rundgang-Liste) ziehst du so eine Datei wieder rein — sie wird als
+**neuer, voll bearbeitbarer** Rundgang importiert (Hotspot-Verknüpfungen,
+Kamerafahrten und Logo inklusive).
 
 ## Konfiguration & Offline
 

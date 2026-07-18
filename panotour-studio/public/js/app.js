@@ -45,7 +45,7 @@ async function loadTours() {
       e.stopPropagation();
       if (!confirm(`Rundgang „${t.name}" löschen?`)) return;
       await api.del(`/api/tours/${t.id}`);
-      if (state.tour?.id === t.id) { state.tour = null; state.scene = null; showEmpty(); $('#btn-export').disabled = true; $('#scenes-panel').hidden = true; }
+      if (state.tour?.id === t.id) { state.tour = null; state.scene = null; showEmpty(); $('#btn-export').disabled = true; $('#btn-save-project').disabled = true; $('#scenes-panel').hidden = true; }
       loadTours();
     };
     ul.appendChild(li);
@@ -59,6 +59,7 @@ async function openTour(id) {
   renderScenes();
   $('#scenes-panel').hidden = false;
   $('#btn-export').disabled = false;
+  $('#btn-save-project').disabled = false;
   if (state.tour.scenes.length) selectScene(state.tour.scenes[0].id);
   else { state.scene = null; showEmpty(); renderInspector(); }
 }
@@ -377,6 +378,37 @@ function bind() {
     } catch (e) { toast('Export fehlgeschlagen: ' + e.message, true); }
     finally { btn.disabled = false; btn.innerHTML = old; }
   };
+
+  $('#btn-save-project').onclick = async () => {
+    if (!state.tour) return;
+    const btn = $('#btn-save-project'), old = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = `${icon('save')} Sichere…`;
+    try {
+      const res = await fetch(`/api/tours/${state.tour.id}/project`);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (state.tour.name || 'rundgang').replace(/[^\w\-]+/g, '_').toLowerCase() + '.panotour.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast('Projekt gesichert');
+    } catch (e) { toast('Sichern fehlgeschlagen: ' + e.message, true); }
+    finally { btn.disabled = false; btn.innerHTML = old; }
+  };
+
+  $('#btn-load-project').onclick = () => $('#project-import').click();
+  $('#project-import').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    toast('Projekt wird geladen…');
+    try {
+      const fd = new FormData(); fd.append('project', f);
+      const tour = await api.form('/api/projects/import', fd);
+      await loadTours(); await openTour(tour.id);
+      toast('Projekt geladen');
+    } catch (err) { toast('Laden fehlgeschlagen: ' + err.message, true); }
+  });
 
   $('#btn-present').onclick = () => {
     document.body.classList.toggle('present');

@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import db from './db.js';
 import { buildTourHtml } from './export-template.js';
+import { buildProjectZip, importProjectZip } from './project-io.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOAD_DIR = join(__dirname, 'data', 'uploads');
@@ -186,6 +187,26 @@ app.get('/api/tours/:id/export', wrap((req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
   res.send(html);
+}));
+
+// ------------------------------------------------ Projekt speichern/laden ----
+// Speichern: kompletter Rundgang als portable .panotour.zip (Manifest + Bilder).
+app.get('/api/tours/:id/project', wrap((req, res) => {
+  const tour = tourWithGraph(Number(req.params.id));
+  if (!tour) return res.status(404).json({ error: 'Rundgang nicht gefunden' });
+  const buf = buildProjectZip(tour);
+  const fname = (tour.name || 'rundgang').replace(/[^\w\-]+/g, '_').toLowerCase() + '.panotour.zip';
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+  res.send(buf);
+}));
+
+// Laden: Projektdatei importieren -> neuer, bearbeitbarer Rundgang.
+const uploadZip = multer({ storage: multer.memoryStorage(), limits: { fileSize: 500 * 1024 * 1024 } });
+app.post('/api/projects/import', uploadZip.single('project'), wrap((req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Keine Datei hochgeladen' });
+  const tourId = importProjectZip(req.file.buffer);
+  res.status(201).json(tourWithGraph(tourId));
 }));
 
 // ------------------------------------------------------------------ Start ----
