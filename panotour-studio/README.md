@@ -16,15 +16,26 @@ Viewer-Bibliotheken sind mitgeliefert — **kein Internet nötig**.
 
 ## Schnellstart
 
-Voraussetzung: **Node.js ≥ 18** (getestet mit Node 22).
+Voraussetzung: **Node.js ≥ 18** (von [nodejs.org](https://nodejs.org), LTS).
+
+### Am einfachsten: Doppelklick
+
+- **Mac:** `Start-PanoTour.command` doppelklicken.
+  (Beim allerersten Mal blockt macOS Dateien aus dem Internet — dann einmal
+  **Rechtsklick → Öffnen → Öffnen**.)
+- **Windows:** `Start-PanoTour-Windows.bat` doppelklicken.
+
+Beim ersten Start werden die Bausteine einmalig installiert (~1 Min), danach
+öffnet sich der Browser automatisch auf **http://localhost:3000**. Fenster
+offen lassen; zum Beenden das Fenster schließen.
+
+### Oder klassisch per Terminal
 
 ```bash
 cd panotour-studio
-npm install          # installiert express, multer, better-sqlite3
-npm start            # startet den Server
+npm install          # einmalig
+npm start            # startet den Server -> http://localhost:3000
 ```
-
-Dann im Browser öffnen: **http://localhost:3000**
 
 > Beim ersten `npm install` wird für `better-sqlite3` eine vorkompilierte
 > Binärdatei geladen. Falls kein Netz vorhanden ist, siehe „Offline" unten.

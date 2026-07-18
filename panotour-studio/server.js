@@ -224,6 +224,21 @@ app.post('/api/projects/import', uploadZip.single('project'), wrap((req, res) =>
   res.status(201).json(tourWithGraph(tourId));
 }));
 
+// ----------------------------------------------------- Fehlerbehandlung ------
+// Fängt Upload-/Multer-Fehler ab (z. B. abgebrochene Uploads: „Unexpected end
+// of form") und antwortet sauber, statt den Server abstürzen zu lassen.
+app.use((err, _req, res, _next) => {
+  console.error('Anfrage-Fehler:', err.message);
+  if (res.headersSent) return;
+  const code = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+  res.status(code).json({ error: err.message || 'Fehler bei der Verarbeitung' });
+});
+
+// Letztes Sicherheitsnetz: ein einzelner fehlerhafter Request soll den lokalen
+// Server nie beenden.
+process.on('uncaughtException', (err) => console.error('Abgefangen (uncaughtException):', err.message));
+process.on('unhandledRejection', (err) => console.error('Abgefangen (unhandledRejection):', err?.message || err));
+
 // ------------------------------------------------------------------ Start ----
 app.listen(PORT, () => {
   console.log(`\n  PanoTour Studio läuft:  http://localhost:${PORT}\n`);
