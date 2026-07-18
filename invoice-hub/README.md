@@ -79,6 +79,23 @@ Text). Fotos/Scans liest **Claude Vision** aus; PDFs mit eingebettetem ZUGFeRD
 werden strukturiert gelesen. Belege mit niedriger Konfidenz landen automatisch
 im Status **Prüfen**.
 
+### Auto-Import (Handy-Workflow) 📱
+
+Damit du nichts mehr manuell anstoßen musst, überwacht ein Watcher den
+`inbox/`-Ordner und verarbeitet neue Belege automatisch:
+
+```bash
+python -m src.cli watch --interval 30      # Dauerbetrieb
+python -m src.cli watch --once             # ein Durchlauf (für Cron)
+python -m src.cli watch --once --dry-run   # Demo mit den Beispiel-Uploads
+```
+
+Ist `inbox/` ein **OneDrive-synchronisierter Ordner**, reicht ein Foto vom
+Handy in `Rechnungen-Inbox/Privat/` — der Rest läuft von allein (auslesen,
+sortiert ablegen, Ledger + Dashboard fortschreiben, Original wegräumen).
+
+**Vollständige Schritt-für-Schritt-Einrichtung: → [`SETUP_HANDY.md`](SETUP_HANDY.md)**
+
 ---
 
 ## Architektur
@@ -112,6 +129,8 @@ Ablagestruktur auf OneDrive (aus `config.storage.path_template`):
 |---|---|
 | `src/ingest/gmail_source.py` | Rohdokumente aus Postfächern (Gmail API + Dry-Run-Quelle) |
 | `src/ingest/upload_source.py` | Manueller Import: PDF/Bild/Scan aus `inbox/<Einheit>/` |
+| `src/watch/service.py` | Auto-Import: `inbox/` überwachen, Ledger, Dashboard fortschreiben |
+| `src/watch/onedrive_poller.py` | OneDrive-Ordner per Graph pollen (Handy-Workflow) |
 | `src/extract/zugferd.py` | ZUGFeRD/XRechnung-XML nativ parsen |
 | `src/extract/claude_extractor.py` | PDF-Rechnungen mit Claude strukturiert auslesen |
 | `src/classify/classifier.py` | Richtung, Kategorie, SKR-Konto, Prüf-Gate |

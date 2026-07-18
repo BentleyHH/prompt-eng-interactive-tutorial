@@ -33,6 +33,15 @@ storage:
   path_template: "{direction}/{year}/Q{quarter}/{month}"
   # Beispiel-Ergebnis: /Buchhaltung/Firma A/Eingang/2026/Q3/07-Juli/
 
+# Auto-Import (Handy-Workflow). Der Watcher überwacht den lokalen inbox/-Ordner.
+# Ist onedrive_folder gesetzt UND sind Graph-Zugänge vorhanden, zieht der
+# Poller neue Dateien zuerst aus diesem OneDrive-Ordner in die lokale inbox/.
+# Unterordner pro Einheit: <onedrive_folder>/Privat/, <onedrive_folder>/Firma A GmbH/ ...
+inbox:
+  onedrive_folder: "/Rechnungen-Inbox"   # von der OneDrive-Handy-App befüllt (leer = nur lokal)
+  poll_interval: 30                        # Sekunden zwischen zwei Scans
+  move_processed: true                     # Original nach Import nach inbox/_verarbeitet/ räumen
+
 # Fehlende-Rechnung-Radar: erwartete wiederkehrende Rechnungen.
 # Das System meldet, wenn eine erwartete Rechnung im Zeitraum ausbleibt.
 recurring:

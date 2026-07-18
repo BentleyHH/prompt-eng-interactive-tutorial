@@ -122,6 +122,31 @@ class Invoice:
         d["received_at"] = self.received_at.isoformat() if self.received_at else None
         return d
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "Invoice":
+        """Rekonstruiert eine Invoice aus einem gespeicherten Ledger-Eintrag."""
+        def _d(v):
+            return datetime.strptime(v[:10], "%Y-%m-%d").date() if v else None
+        def _dt(v):
+            return datetime.fromisoformat(v) if v else None
+        inv = cls(
+            entity=d.get("entity", ""), mailbox=d.get("mailbox", ""),
+            message_id=d.get("message_id", ""), received_at=_dt(d.get("received_at")),
+            source_filename=d.get("source_filename", ""),
+        )
+        for f in ("vendor", "counterparty", "invoice_number", "currency", "iban",
+                  "vat_id", "category", "skr_account", "storage_path", "notes"):
+            setattr(inv, f, d.get(f, "") or "")
+        for f in ("net", "vat", "gross", "confidence"):
+            setattr(inv, f, d.get(f))
+        inv.invoice_date = _d(d.get("invoice_date"))
+        inv.due_date = _d(d.get("due_date"))
+        inv.is_einvoice = bool(d.get("is_einvoice", False))
+        inv.direction = Direction(d.get("direction", "unbekannt"))
+        inv.status = Status(d.get("status", "empfangen"))
+        inv.id = d.get("id") or inv.fingerprint()
+        return inv
+
 
 def _slug(text: str) -> str:
     """Dateisystem-sicherer Bezeichner."""

@@ -35,11 +35,20 @@ class RecurringExpectation:
 
 
 @dataclass
+class InboxConfig:
+    """Auto-Import-Einstellungen für den Ordner-/OneDrive-Watcher."""
+    onedrive_folder: str = ""     # Ordner in OneDrive, den die Handy-App befüllt
+    poll_interval: int = 30       # Sekunden zwischen zwei Scans
+    move_processed: bool = True   # Original nach Verarbeitung wegräumen
+
+
+@dataclass
 class Config:
     entities: list[Entity] = field(default_factory=list)
     path_template: str = "{direction}/{year}/Q{quarter}/{month}"
     recurring: list[RecurringExpectation] = field(default_factory=list)
     categories: dict = field(default_factory=dict)
+    inbox: InboxConfig = field(default_factory=InboxConfig)
 
     def entity_for_mailbox(self, mailbox: str) -> Optional[Entity]:
         for e in self.entities:
@@ -65,11 +74,17 @@ def load_config(path: Path = CONFIG_PATH) -> Config:
     entities = [Entity(**e) for e in raw.get("entities", [])]
     recurring = [RecurringExpectation(**r) for r in raw.get("recurring", [])]
     storage = raw.get("storage", {})
+    inbox_raw = raw.get("inbox", {}) or {}
     return Config(
         entities=entities,
         path_template=storage.get("path_template", "{direction}/{year}/Q{quarter}/{month}"),
         recurring=recurring,
         categories=raw.get("categories", {}),
+        inbox=InboxConfig(
+            onedrive_folder=inbox_raw.get("onedrive_folder", ""),
+            poll_interval=int(inbox_raw.get("poll_interval", 30)),
+            move_processed=bool(inbox_raw.get("move_processed", True)),
+        ),
     )
 
 

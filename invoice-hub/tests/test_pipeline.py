@@ -91,6 +91,70 @@ def test_storage_paths_are_structured(tmp_path):
     assert any("Q3" in str(p) for p in pdfs)
 
 
+def _make_inbox(tmp_path, name="Quittung_Rewe.txt"):
+    inbox = tmp_path / "inbox"
+    (inbox / "Privat").mkdir(parents=True)
+    (inbox / "Privat" / name).write_text(
+        "Lieferant: REWE Markt GmbH\nRechnungsnummer: RW-2026-07-77\n"
+        "Rechnungsdatum: 16.07.2026\nRechnungsbetrag (brutto): 14,90 EUR\n",
+        encoding="utf-8")
+    return inbox
+
+
+def _watcher(tmp_path, inbox):
+    from src.watch.service import WatchService
+    return WatchService(load_config(), Secrets(), dry_run=True,
+                        inbox=inbox, out_dir=tmp_path / "out")
+
+
+def test_watcher_processes_new_file(tmp_path):
+    inbox = _make_inbox(tmp_path)
+    svc = _watcher(tmp_path, inbox)
+    assert svc.scan_once() == 1
+    ledger = (tmp_path / "out" / "ledger.json").read_text()
+    assert "REWE Markt GmbH" in ledger
+
+
+def test_watcher_skips_already_seen_and_moves(tmp_path):
+    inbox = _make_inbox(tmp_path)
+    svc = _watcher(tmp_path, inbox)
+    svc.scan_once()
+    assert svc.scan_once() == 0                                   # nichts Neues
+    assert not (inbox / "Privat" / "Quittung_Rewe.txt").exists()  # verschoben
+    assert (inbox / "_verarbeitet" / "Privat" / "Quittung_Rewe.txt").exists()
+
+
+def test_watcher_persists_across_restart(tmp_path):
+    inbox = _make_inbox(tmp_path)
+    _watcher(tmp_path, inbox).scan_once()
+    svc2 = _watcher(tmp_path, inbox)          # frische Instanz, lädt Ledger/State
+    assert len(svc2._ledger) == 1
+    assert svc2.scan_once() == 0              # kein erneutes Verarbeiten
+
+
+def test_watcher_updates_dashboard_data(tmp_path):
+    from src.watch import service as svc_mod
+    inbox = _make_inbox(tmp_path)
+    svc = _watcher(tmp_path, inbox)
+    # Dashboard-Datei in tmp umleiten
+    svc_mod.DASHBOARD_DATA = tmp_path / "dash.json"
+    svc.scan_once()
+    import json
+    data = json.loads((tmp_path / "dash.json").read_text())
+    assert data["summary"]["total_invoices"] == 1
+
+
+def test_invoice_roundtrip_from_dict():
+    from src.models import Invoice, Direction
+    config = load_config()
+    inv = Invoice(entity="Privat", mailbox="m", message_id="x",
+                  received_at=None, source_filename="a.pdf")
+    inv.vendor = "ACME"; inv.gross = 9.99; inv.direction = Direction.EINGANG
+    back = Invoice.from_dict(inv.to_dict())
+    assert back.vendor == "ACME" and back.gross == 9.99
+    assert back.direction == Direction.EINGANG
+
+
 def test_zugferd_parser_unit():
     xml = (
         '<Invoice><ExchangedDocument><ID>X-1</ID></ExchangedDocument>'

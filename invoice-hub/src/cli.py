@@ -75,6 +75,30 @@ def cmd_import(args) -> None:
         print("  ⚠️  Bitte manuell prüfen (niedrige Konfidenz oder fehlender Betrag).")
 
 
+def cmd_watch(args) -> None:
+    """Auto-Import: inbox/-Ordner überwachen (Handy-Workflow via OneDrive)."""
+    from .watch.service import WatchService
+
+    config = load_config()
+    secrets = load_secrets()
+    dry = args.dry_run or not secrets.anthropic_api_key
+    svc = WatchService(config, secrets, dry_run=dry,
+                       move_processed=(False if args.keep else None))
+
+    if args.once:
+        print(f"🔍 Scanne {svc.inbox} …")
+        n = svc.scan_once()
+        print(f"✓ {n} neue(r) Beleg(e) verarbeitet." if n else "· Keine neuen Belege.")
+        return
+
+    src = config.inbox.onedrive_folder
+    print(f"👀 Auto-Import aktiv — überwache {svc.inbox} alle "
+          f"{config.inbox.poll_interval}s." + (f"\n   OneDrive-Quelle: {src}" if src and not dry else "")
+          + ("\n   (Dry-Run: Beispieldaten, keine echten Zugänge)" if dry else "")
+          + "\n   Strg+C zum Beenden.")
+    svc.run(interval=args.interval)
+
+
 def cmd_dashboard(args) -> None:
     result = _run(args)
     DASHBOARD_DIR.mkdir(exist_ok=True)
@@ -105,8 +129,15 @@ def main(argv=None) -> int:
                        help="Buchungseinheit, z. B. \"Privat\" oder \"Firma A GmbH\"")
     p_imp.set_defaults(func=cmd_import)
 
+    p_watch = sub.add_parser("watch", help="Auto-Import: inbox/-Ordner überwachen (Handy-Workflow)")
+    p_watch.add_argument("--once", action="store_true", help="Nur ein Durchlauf (für Cron)")
+    p_watch.add_argument("--interval", type=int, default=30, help="Sekunden zwischen Scans")
+    p_watch.add_argument("--keep", action="store_true",
+                         help="Verarbeitete Dateien NICHT verschieben")
+    p_watch.set_defaults(func=cmd_watch)
+
     # --dry-run auch nach dem Subcommand erlauben
-    for p in (p_run, p_dash, p_imp):
+    for p in (p_run, p_dash, p_imp, p_watch):
         p.add_argument("--dry-run", action="store_true", help=argparse.SUPPRESS)
 
     args = parser.parse_args(argv)
