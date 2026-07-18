@@ -91,16 +91,19 @@
     <section class="col col-center">
       <div id="viewer" class="viewer"></div>
       <div id="viewer-empty" class="viewer-empty">
-        <div>
+        <div class="dropzone-inner">
           <svg class="ico"><use href="#i-globe"/></svg>
-          <p>Leg links einen Rundgang an und lade ein 360°-Bild hoch.</p>
+          <p><b>360°-Bilder hierher ziehen</b><br>oder auswählen — daraus wird automatisch ein Rundgang.</p>
+          <label class="btn" for="empty-upload"><svg class="ico"><use href="#i-plus"/></svg> Bilder wählen</label>
+          <input id="empty-upload" type="file" accept="image/*" multiple hidden />
         </div>
       </div>
+      <div id="drop-hint" class="drop-hint" hidden></div>
       <div class="viewer-toolbar" id="viewer-toolbar" hidden>
-        <button class="mode-btn active" data-mode="explore"><svg class="ico"><use href="#i-eye"/></svg> Ansehen</button>
-        <button class="mode-btn" data-mode="hotspot"><svg class="ico"><use href="#i-pin"/></svg> Hotspot</button>
-        <button class="mode-btn" data-mode="logo"><svg class="ico"><use href="#i-tag"/></svg> Logo-Patch</button>
-        <button class="mode-btn" data-mode="path"><svg class="ico"><use href="#i-film"/></svg> Kamerafahrt</button>
+        <button class="mode-btn active" data-mode="explore" title="Ansehen (E)"><svg class="ico"><use href="#i-eye"/></svg> Ansehen</button>
+        <button class="mode-btn" data-mode="hotspot" title="Hotspot / Info (H)"><svg class="ico"><use href="#i-pin"/></svg> Hotspot</button>
+        <button class="mode-btn" data-mode="logo" title="Logo-Patch (L)"><svg class="ico"><use href="#i-tag"/></svg> Logo-Patch</button>
+        <button class="mode-btn" data-mode="path" title="Kamerafahrt (K)"><svg class="ico"><use href="#i-film"/></svg> Kamerafahrt</button>
         <span class="sep"></span>
         <button id="btn-set-start" class="icon-btn" title="Aktuellen Blick als Startansicht speichern"><svg class="ico"><use href="#i-target"/></svg></button>
       </div>

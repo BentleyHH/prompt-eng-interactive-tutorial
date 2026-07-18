@@ -16,6 +16,7 @@ const api = {
 // ------------------------------------------------------------------ State ---
 const state = { tours: [], tour: null, scene: null, mode: 'explore' };
 let viewer = null;
+let draggingSceneId = null;
 const $ = (s) => document.querySelector(s);
 const icon = (id, cls = 'ico') => `<svg class="${cls}"><use href="#i-${id}"/></svg>`;
 const infoIcon = (k) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ` +
@@ -100,6 +101,32 @@ function renameTour(t, li) {
   input.onblur = () => finish(true);
 }
 
+// Szene direkt in der Liste umbenennen
+function renameScene(sc, li) {
+  const titleEl = li.querySelector('.title');
+  const input = document.createElement('input');
+  input.type = 'text'; input.className = 'inline-edit'; input.value = sc.name;
+  titleEl.replaceWith(input);
+  input.focus(); input.select();
+  let done = false;
+  const finish = async (save) => {
+    if (done) return; done = true;
+    const name = input.value.trim();
+    if (save && name && name !== sc.name) {
+      sc.name = name;
+      await api.send(`/api/scenes/${sc.id}`, 'PUT', { name });
+      saveHint('Umbenannt');
+    }
+    renderScenes(); if (state.scene?.id === sc.id) renderInspector();
+  };
+  input.onclick = (ev) => ev.stopPropagation();
+  input.onkeydown = (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); finish(true); }
+    else if (ev.key === 'Escape') { ev.preventDefault(); finish(false); }
+  };
+  input.onblur = () => finish(true);
+}
+
 // ------------------------------------------------------------ Szenen-Liste --
 function renderScenes() {
   const ul = $('#scene-list'); ul.innerHTML = '';
@@ -107,21 +134,26 @@ function renderScenes() {
     const li = document.createElement('li');
     li.className = state.scene?.id === sc.id ? 'active' : '';
     li.draggable = true; li.dataset.id = sc.id;
+    li.title = `${sc.name} — auf das Bild ziehen, um von der aktuellen Szene hierher zu verknüpfen`;
     li.innerHTML = `<img class="scene-thumb" src="${sc.image_path}" alt="">
       <span class="title">${escapeHtml(sc.name)}</span>
       <span class="meta"><span class="m">${icon('pin', 'ico sm')}${sc.hotspots?.length || 0}</span>
         <span class="m">${icon('film', 'ico sm')}${sc.keyframes?.length || 0}</span></span>
+      <button class="row-edit" title="Umbenennen">${icon('edit', 'ico sm')}</button>
       <button class="row-del" title="Löschen">${icon('trash', 'ico sm')}</button>`;
     li.onclick = () => selectScene(sc.id);
+    const startRename = (e) => { e.stopPropagation(); renameScene(sc, li); };
+    li.querySelector('.row-edit').onclick = startRename;
+    li.querySelector('.title').ondblclick = startRename;
     li.querySelector('.row-del').onclick = async (e) => {
       e.stopPropagation();
       if (!confirm(`Szene „${sc.name}" löschen?`)) return;
       await api.del(`/api/scenes/${sc.id}`);
       reloadTour(sc.id === state.scene?.id);
     };
-    // Drag & Drop Reihenfolge
-    li.ondragstart = (e) => { e.dataTransfer.setData('id', sc.id); li.classList.add('drag-over'); };
-    li.ondragend = () => li.classList.remove('drag-over');
+    // Drag & Drop: Reihenfolge (auf Liste) ODER Verknüpfen (aufs Bild)
+    li.ondragstart = (e) => { draggingSceneId = sc.id; e.dataTransfer.setData('id', sc.id); e.dataTransfer.effectAllowed = 'copyMove'; li.classList.add('drag-over'); };
+    li.ondragend = () => { draggingSceneId = null; li.classList.remove('drag-over'); };
     li.ondragover = (e) => { e.preventDefault(); };
     li.ondrop = async (e) => {
       e.preventDefault();
@@ -162,6 +194,10 @@ function ensureViewer() {
   window.panoViewer = viewer; // Debug-/Automations-Hook
   viewer.onClick((pos) => handleViewerClick(pos));
   viewer.onHotspot((data) => { if (state.mode === 'explore' && data.target_scene_id) navigateTravel(data); });
+  viewer.onMarkerSelect((data) => {
+    if (state.mode === 'hotspot') { openHotspotEdit(data); return true; }
+    return false;
+  });
 }
 
 // Navigation mit Bewegungs-Übergang (Kamera „fährt" zum nächsten Punkt)
@@ -192,7 +228,7 @@ async function selectScene(id, reload = true) {
 function handleViewerClick(pos) {
   if (state.mode === 'hotspot') {
     pendingHotspot = pos;
-    hsDraft = { kind: 'nav', target_scene_id: '', label: '', title: '', text: '', icon: 'info', display: 'panel' };
+    if (!hsDraft) hsDraft = { id: null, kind: 'nav', target_scene_id: '', label: '', title: '', text: '', icon: 'info', display: 'panel' };
     renderInspector();
   }
   else if (state.mode === 'logo' && state.scene) {
@@ -242,9 +278,9 @@ const inspExplore = (sc) => `
 
 function inspHotspot(sc) {
   const others = state.tour.scenes.filter((s) => s.id !== sc.id);
-  let form = '<p class="hint">Klicke ins Panorama, um einen Punkt zu setzen.</p>';
+  let form = `<p class="hint">💡 Zieh eine Szene aus der Liste <b>aufs Bild</b>, um sie zu verknüpfen — oder klicke ins Panorama, um einen Punkt zu setzen. Bestehende Punkte anklicken zum Bearbeiten.</p>`;
   if (pendingHotspot && hsDraft) {
-    const d = hsDraft;
+    const d = hsDraft, editing = !!d.id;
     const navFields = `
       <div class="field"><label>Ziel-Szene</label>
         <select id="hs-target"><option value="">— nur Markierung —</option>
@@ -268,15 +304,18 @@ function inspHotspot(sc) {
           <button type="button" data-kind="info" class="${d.kind === 'info' ? 'on' : ''}">Info-Punkt</button>
         </div></div>
       ${d.kind === 'info' ? infoFields : navFields}
-      <button class="btn btn-block" id="hs-save">${icon('check')} Punkt speichern</button>
-      <p class="hint">Position: Yaw ${deg(pendingHotspot.yaw)}° · Pitch ${deg(pendingHotspot.pitch)}°</p>`;
+      <div class="btn-row">
+        <button class="btn btn-block" id="hs-save">${icon('check')} ${editing ? 'Speichern' : 'Punkt hinzufügen'}</button>
+        ${editing ? `<button class="icon-btn btn-ghost" id="hs-delete" title="Punkt löschen" style="border-radius:980px;width:40px"><svg class="ico"><use href="#i-trash"/></svg></button>` : ''}
+      </div>
+      <p class="hint">${editing ? 'Ins Bild klicken verschiebt den Punkt. ' : ''}Yaw ${deg(pendingHotspot.yaw)}° · Pitch ${deg(pendingHotspot.pitch)}°</p>`;
   }
   const rowLabel = (h) => h.kind === 'info'
     ? escapeHtml(h.title || 'Info')
     : escapeHtml(h.label || 'ohne Ziel') + (h.target_scene_id ? ' → ' + escapeHtml(sceneName(h.target_scene_id)) : '');
   return `<h3>Hotspots &amp; Info</h3><p class="sub">Szenen verbinden oder Text einblenden</p>${form}
     <ul class="kf-list">${(sc.hotspots || []).map((h) => `
-      <li><span class="idx">${h.kind === 'info' ? infoIcon(h.icon) : icon('arrow', 'ico sm')}</span>
+      <li data-edit-hs="${h.id}" style="cursor:pointer"><span class="idx">${h.kind === 'info' ? infoIcon(h.icon) : icon('arrow', 'ico sm')}</span>
         <span class="kf-meta">${rowLabel(h)}</span>
         <button class="row-del" data-del-hs="${h.id}">${icon('trash', 'ico sm')}</button></li>`).join('')}</ul>`;
 }
@@ -344,11 +383,25 @@ function wireInspector() {
     } else {
       Object.assign(payload, { target_scene_id: Number(d.target_scene_id) || null, label: d.label });
     }
-    await api.send(`/api/scenes/${sc.id}/hotspots`, 'POST', payload);
-    pendingHotspot = null; hsDraft = null; await refreshScene(); saveHint('Punkt gespeichert');
+    if (d.id) await api.send(`/api/hotspots/${d.id}`, 'PUT', payload);
+    else await api.send(`/api/scenes/${sc.id}/hotspots`, 'POST', payload);
+    pendingHotspot = null; hsDraft = null; await refreshScene(); saveHint('Gespeichert ✓');
   });
-  box().querySelectorAll('[data-del-hs]').forEach((b) => b.onclick = async () => {
-    await api.del(`/api/hotspots/${b.dataset.delHs}`); await refreshScene(); saveHint('Gelöscht');
+  $('#hs-delete')?.addEventListener('click', async () => {
+    if (!hsDraft?.id) return;
+    await api.del(`/api/hotspots/${hsDraft.id}`);
+    pendingHotspot = null; hsDraft = null; await refreshScene(); saveHint('Gelöscht');
+  });
+  box().querySelectorAll('[data-edit-hs]').forEach((li) => li.addEventListener('click', (e) => {
+    if (e.target.closest('[data-del-hs]')) return;
+    const h = (sc.hotspots || []).find((x) => String(x.id) === li.dataset.editHs);
+    if (h) openHotspotEdit(h);
+  }));
+  box().querySelectorAll('[data-del-hs]').forEach((b) => b.onclick = async (e) => {
+    e.stopPropagation();
+    await api.del(`/api/hotspots/${b.dataset.delHs}`);
+    if (hsDraft?.id && String(hsDraft.id) === b.dataset.delHs) { pendingHotspot = null; hsDraft = null; }
+    await refreshScene(); saveHint('Gelöscht');
   });
   // Logo
   $('#logo-upload')?.addEventListener('change', async (e) => {
@@ -410,6 +463,95 @@ const sceneName = (id) => state.tour.scenes.find((s) => s.id === id)?.name || '?
 function escapeHtml(s = '') { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function escapeAttr(s = '') { return escapeHtml(s).replace(/'/g, '&#39;'); }
 
+// ------------------------------------------------------- Upload & Dropzone --
+const IMG_RE = /\.(jpe?g|png|webp|avif|gif|bmp|tiff?|heic|heif|svg)$/i;
+async function uploadFiles(files) {
+  const imgs = files.filter((f) => (f.type && f.type.startsWith('image/')) || IMG_RE.test(f.name));
+  if (!imgs.length) return toast('Keine Bilddateien gefunden', true);
+  // Kein Rundgang offen? Automatisch einen anlegen.
+  if (!state.tour) {
+    const t = await api.send('/api/tours', 'POST', { name: 'Neuer Rundgang' });
+    await loadTours(); await openTour(t.id);
+  }
+  toast(`${imgs.length} Bild(er) werden hochgeladen…`);
+  const wasEmpty = !state.tour.scenes.length;
+  for (const f of imgs) {
+    const fd = new FormData(); fd.append('image', f); fd.append('name', f.name);
+    try { await api.form(`/api/tours/${state.tour.id}/scenes`, fd); }
+    catch (err) { toast('Upload fehlgeschlagen: ' + err.message, true); }
+  }
+  await reloadTour(wasEmpty);
+  toast(`${imgs.length} Bild(er) hinzugefügt`);
+}
+
+async function linkSceneAt(targetId, clientX, clientY) {
+  if (!state.scene || !viewer) return;
+  if (targetId === state.scene.id) return toast('Eine Szene kann nicht mit sich selbst verknüpft werden', true);
+  const pos = viewer.coordsToPosition(clientX, clientY);
+  if (!pos) return toast('Bitte innerhalb des Panoramas ablegen', true);
+  const target = state.tour.scenes.find((s) => s.id === targetId);
+  await api.send(`/api/scenes/${state.scene.id}/hotspots`, 'POST', {
+    kind: 'nav', target_scene_id: targetId, label: target?.name || 'Weiter', yaw: pos.yaw, pitch: pos.pitch,
+  });
+  await refreshScene();
+  toast(`Verknüpft mit „${target?.name || 'Szene'}"`);
+}
+
+function setupCanvasDropzone() {
+  const zone = document.querySelector('.col-center');
+  const hint = $('#drop-hint');
+  const show = (txt) => { hint.textContent = txt; hint.hidden = false; zone.classList.add('dragging'); };
+  const hide = () => { hint.hidden = true; zone.classList.remove('dragging'); };
+  zone.addEventListener('dragenter', (e) => e.preventDefault());
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const types = Array.from(e.dataTransfer.types || []);
+    if (types.includes('Files')) { show('360°-Bilder hier ablegen zum Hochladen'); e.dataTransfer.dropEffect = 'copy'; }
+    else if (draggingSceneId != null && state.scene) { show('Ablegen, um von hier aus zu verknüpfen'); e.dataTransfer.dropEffect = 'copy'; }
+  });
+  zone.addEventListener('dragleave', (e) => { if (!zone.contains(e.relatedTarget)) hide(); });
+  zone.addEventListener('drop', async (e) => {
+    e.preventDefault(); hide();
+    if (e.dataTransfer.files && e.dataTransfer.files.length) return uploadFiles([...e.dataTransfer.files]);
+    const sid = Number(e.dataTransfer.getData('id')) || draggingSceneId;
+    draggingSceneId = null;
+    if (sid) await linkSceneAt(sid, e.clientX, e.clientY);
+  });
+}
+
+// ------------------------------------------------------------- Shortcuts ----
+function stepScene(dir) {
+  if (!state.tour?.scenes.length) return;
+  const i = state.tour.scenes.findIndex((s) => s.id === state.scene?.id);
+  const n = state.tour.scenes[(i + dir + state.tour.scenes.length) % state.tour.scenes.length];
+  if (n) selectScene(n.id);
+}
+function setupShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+    if (!state.tour) return;
+    const map = { e: 'explore', h: 'hotspot', l: 'logo', k: 'path' };
+    const k = e.key.toLowerCase();
+    if (map[k] && state.scene) { setMode(map[k]); }
+    else if (e.key === ']' || e.key === 'PageDown') { e.preventDefault(); stepScene(1); }
+    else if (e.key === '[' || e.key === 'PageUp') { e.preventDefault(); stepScene(-1); }
+    else if (e.key === 'Escape') { pendingHotspot = null; hsDraft = null; viewer?.hideInfoPanel?.(); renderInspector(); }
+  });
+}
+
+// --------------------------------------------------------- Hotspot-Editor ---
+function openHotspotEdit(data) {
+  pendingHotspot = { yaw: data.yaw, pitch: data.pitch };
+  hsDraft = {
+    id: data.id, kind: data.kind || 'nav', target_scene_id: data.target_scene_id || '',
+    label: data.label || '', title: data.title || '', text: data.text || '',
+    icon: data.icon || 'info', display: data.display || 'panel',
+  };
+  renderInspector();
+}
+
 // ------------------------------------------------------------- Startsetup ---
 function bind() {
   $('#btn-new-tour').onclick = () => $('#tour-dialog').showModal();
@@ -421,17 +563,11 @@ function bind() {
     this.querySelector('form').reset(); await loadTours(); openTour(t.id); toast('Rundgang angelegt');
   });
 
-  $('#scene-upload').addEventListener('change', async (e) => {
-    if (!state.tour) return toast('Erst einen Rundgang wählen', true);
-    const files = [...e.target.files]; e.target.value = '';
-    for (const f of files) {
-      const fd = new FormData(); fd.append('image', f); fd.append('name', f.name);
-      try { await api.form(`/api/tours/${state.tour.id}/scenes`, fd); }
-      catch (err) { toast('Upload fehlgeschlagen: ' + err.message, true); }
-    }
-    const first = !state.tour.scenes.length;
-    await reloadTour(first); toast(`${files.length} Bild(er) hinzugefügt`);
-  });
+  $('#scene-upload').addEventListener('change', (e) => { uploadFiles([...e.target.files]); e.target.value = ''; });
+  $('#empty-upload')?.addEventListener('change', (e) => { uploadFiles([...e.target.files]); e.target.value = ''; });
+
+  setupCanvasDropzone();
+  setupShortcuts();
 
   document.querySelectorAll('.mode-btn').forEach((b) => b.onclick = () => setMode(b.dataset.mode));
 

@@ -42,7 +42,7 @@ hochladen → loslegen.
 | **Projekte (Rundgänge)** | Beliebig viele Projekte **parallel** in der Liste. „+ Neu" legt eins mit Namen an, per Klick wechseln, Umbenennen über das Stift-Symbol (oder Doppelklick auf den Namen). |
 | **Szenen** | Pro Szene ein 360°-Bild, Reihenfolge per Drag & Drop. |
 | **Upload** | Gängige Formate: JPG, PNG, WebP, AVIF, GIF, BMP, TIFF, SVG (bis 60 MB). *Hinweis: HEIC/HEIF & manche TIFF zeigt der Browser nicht direkt an — vorher zu JPG/WebP konvertieren.* |
-| **📍 Hotspots** | Ins Bild klicken → Punkt setzen → mit einer anderen Szene verknüpfen. Im Rundgang klickt man sich so von Raum zu Raum — mit **Bewegungs-Übergang** (die Kamera „schiebt" in Richtung des nächsten Punktes und blendet über). |
+| **📍 Hotspots** | **Szene aus der Liste aufs Bild ziehen** → fertig verknüpft (Kuula-Stil), oder klassisch per Klick setzen. Bestehende Punkte **anklicken zum Bearbeiten**, ins Bild klicken **verschiebt** sie. Im Rundgang klickt man sich so von Raum zu Raum — mit **Bewegungs-Übergang** (die Kamera „schiebt" in Richtung des nächsten Punktes und blendet über). |
 | **ℹ️ Info-Punkte** | Icon setzen (i · Stern · Tür · Haus · Bild · Warnung …) und eigenen **Text** eintippen. Pro Punkt wählbar: **Tooltip** beim Drüberfahren oder anklickbares **Text-Panel**. |
 | **🏷 Logo / Stativ-Patch** | Logo hochladen (transparentes PNG ideal). Es liegt flach am Boden und überdeckt Stativ/Fotograf. Größe per Regler, Position per Klick (nach unten schauen). |
 | **🎬 Kamerafahrt** | Blick ausrichten → „Punkt setzen". Beliebig viele Punkte, je mit eigener Dauer. „Abspielen" fährt die Kamera weich (ease-in-out) durch alle Punkte. |
@@ -52,6 +52,25 @@ hochladen → loslegen.
 | **💾 Projekt speichern/laden** | Rundgang als portable `.panotour.zip` (Manifest + alle Bilder) sichern und später — auch auf einem anderen Rechner — wieder **in den Editor laden und weiterbearbeiten**. |
 
 Alles wird automatisch in der Datenbank gespeichert (kleiner Hinweis „Gespeichert ✓" oben rechts).
+
+---
+
+## Schnell eine Tour bauen
+
+1. **360°-Bilder** einfach auf die Fläche **ziehen** (oder „+ Bild"). Ohne offenes
+   Projekt wird automatisch eins angelegt.
+2. Szenen umbenennen: über den Namen fahren → **Stift** (oder Doppelklick).
+3. **Verbinden:** eine Szene aus der Liste **auf die Stelle im Panorama ziehen**,
+   wo z. B. die Tür ist — der Hotspot entsteht automatisch, benannt nach der
+   Zielszene.
+4. Feinschliff im Werkzeug **„Hotspot"**: Punkte anklicken zum Bearbeiten,
+   Info-Punkte mit Text setzen, verschieben, löschen.
+5. **Startblick** pro Szene setzen (⌖), optional **Kamerafahrt** und
+   **Logo-Patch**.
+6. **HTML-Export** (klassisch oder scroll-gesteuert) oder **Sichern** als Projekt.
+
+**Tastenkürzel:** `E` Ansehen · `H` Hotspot · `L` Logo · `K` Kamerafahrt ·
+`[` / `]` vorige/nächste Szene · `Esc` abbrechen.
 
 ---
 

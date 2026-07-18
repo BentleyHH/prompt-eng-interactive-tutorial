@@ -57,20 +57,36 @@ export class PanoViewer {
     this.autorotate = this.viewer.getPlugin(AutorotatePlugin);
     this._clickCb = null;
     this._hotspotCb = null;
+    this._markerSelectCb = null;
+    this._lastMarkerSelect = 0;
     this._playing = false;
 
     this.viewer.addEventListener('click', ({ data }) => {
-      if (this._clickCb && !data.rightclick) this._clickCb({ yaw: data.yaw, pitch: data.pitch });
+      if (data.rightclick) return;
+      if (performance.now() - this._lastMarkerSelect < 150) return; // Klick galt einem Marker
+      this._clickCb?.({ yaw: data.yaw, pitch: data.pitch });
     });
     this.markers.addEventListener('select-marker', ({ marker }) => {
+      this._lastMarkerSelect = performance.now();
       const d = marker?.data;
-      if (d?.type === 'hotspot' && this._hotspotCb) this._hotspotCb(d);
-      else if (d?.type === 'info' && d.display === 'panel') this.showInfoPanel(d);
+      if (!d) return;
+      if (this._markerSelectCb && this._markerSelectCb(d)) return; // von der App verarbeitet (z. B. Bearbeiten)
+      if (d.type === 'hotspot' && this._hotspotCb) this._hotspotCb(d);
+      else if (d.type === 'info' && d.display === 'panel') this.showInfoPanel(d);
     });
   }
 
   onClick(cb) { this._clickCb = cb; }
   onHotspot(cb) { this._hotspotCb = cb; }
+  onMarkerSelect(cb) { this._markerSelectCb = cb; }
+
+  // Bildschirm-Pixel (z. B. Drop-Punkt) -> Kugelkoordinaten {yaw, pitch}
+  coordsToPosition(clientX, clientY) {
+    try {
+      const r = this.container.getBoundingClientRect();
+      return this.viewer.dataHelper.viewerCoordsToSphericalCoords({ x: clientX - r.left, y: clientY - r.top });
+    } catch { return null; }
+  }
 
   getView() {
     const p = this.viewer.getPosition();
