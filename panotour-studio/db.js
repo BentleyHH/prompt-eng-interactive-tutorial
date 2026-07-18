@@ -44,7 +44,12 @@ db.exec(`
     target_scene_id INTEGER REFERENCES scenes(id) ON DELETE CASCADE,
     label           TEXT DEFAULT '',
     yaw             REAL NOT NULL,
-    pitch           REAL NOT NULL
+    pitch           REAL NOT NULL,
+    kind            TEXT DEFAULT 'nav',   -- 'nav' (Sprung) oder 'info' (Textpunkt)
+    title           TEXT DEFAULT '',
+    text            TEXT DEFAULT '',
+    icon            TEXT DEFAULT 'info',  -- Icon-Schlüssel für Info-Punkte
+    display         TEXT DEFAULT 'panel'  -- 'panel' (Klick) oder 'hover' (Tooltip)
   );
 
   CREATE TABLE IF NOT EXISTS keyframes (
@@ -57,5 +62,16 @@ db.exec(`
     duration  INTEGER DEFAULT 2500          -- ms bis zu diesem Punkt
   );
 `);
+
+// Migration für bestehende Datenbanken: fehlende Spalten nachrüsten.
+function ensureColumn(table, name, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.some((c) => c.name === name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
+}
+ensureColumn('hotspots', 'kind', "kind TEXT DEFAULT 'nav'");
+ensureColumn('hotspots', 'title', "title TEXT DEFAULT ''");
+ensureColumn('hotspots', 'text', "text TEXT DEFAULT ''");
+ensureColumn('hotspots', 'icon', "icon TEXT DEFAULT 'info'");
+ensureColumn('hotspots', 'display', "display TEXT DEFAULT 'panel'");
 
 export default db;

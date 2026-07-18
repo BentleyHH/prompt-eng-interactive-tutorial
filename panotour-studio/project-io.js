@@ -47,6 +47,8 @@ export function buildProjectZip(tour) {
       hotspots: (s.hotspots || []).map((h) => ({
         label: h.label || '', yaw: h.yaw, pitch: h.pitch,
         target: sceneIndexById(tour, h.target_scene_id),
+        kind: h.kind || 'nav', title: h.title || '', text: h.text || '',
+        icon: h.icon || 'info', display: h.display || 'panel',
       })),
       keyframes: (s.keyframes || []).map((k) => ({ yaw: k.yaw, pitch: k.pitch, zoom: k.zoom, duration: k.duration })),
     })),
@@ -91,7 +93,9 @@ export function importProjectZip(buffer) {
      logo_enabled, logo_yaw, logo_pitch, logo_scale)
     VALUES (@tour_id, @name, @image_path, @position, @default_yaw, @default_pitch, @default_zoom,
      @logo_enabled, @logo_yaw, @logo_pitch, @logo_scale)`);
-  const insertHotspot = db.prepare('INSERT INTO hotspots (scene_id, target_scene_id, label, yaw, pitch) VALUES (?, ?, ?, ?, ?)');
+  const insertHotspot = db.prepare(`INSERT INTO hotspots
+    (scene_id, target_scene_id, label, yaw, pitch, kind, title, text, icon, display)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const insertKeyframe = db.prepare('INSERT INTO keyframes (scene_id, position, yaw, pitch, zoom, duration) VALUES (?, ?, ?, ?, ?, ?)');
 
   const t = manifest.tour || {};
@@ -115,8 +119,10 @@ export function importProjectZip(buffer) {
 
     manifest.scenes.forEach((s, i) => {
       for (const h of s.hotspots || []) {
-        const target = (h.target != null && sceneIds[h.target] != null) ? sceneIds[h.target] : null;
-        insertHotspot.run(sceneIds[i], target, (h.label || '') + '', num(h.yaw), num(h.pitch));
+        const kind = h.kind === 'info' ? 'info' : 'nav';
+        const target = (kind === 'nav' && h.target != null && sceneIds[h.target] != null) ? sceneIds[h.target] : null;
+        insertHotspot.run(sceneIds[i], target, (h.label || '') + '', num(h.yaw), num(h.pitch),
+          kind, (h.title || '') + '', (h.text || '') + '', (h.icon || 'info') + '', h.display === 'hover' ? 'hover' : 'panel');
       }
       (s.keyframes || []).forEach((k, ki) =>
         insertKeyframe.run(sceneIds[i], ki, num(k.yaw), num(k.pitch), num(k.zoom, 50), num(k.duration, 2500)));

@@ -126,6 +126,25 @@
     </form>
   </dialog>
 
+  <dialog id="export-dialog" class="dialog">
+    <form method="dialog">
+      <h3>HTML-Export</h3>
+      <p class="dsub">Wie soll der Rundgang auf der Webseite laufen?</p>
+      <label class="export-mode">
+        <input type="radio" name="exmode" value="classic" checked />
+        <span><b>Klassisch</b>Klick- &amp; Play-Rundgang. Besucher steuern selbst; der „Rundgang"-Button spielt alles automatisch ab.</span>
+      </label>
+      <label class="export-mode">
+        <input type="radio" name="exmode" value="scroll" />
+        <span><b>Scroll-gesteuert</b>Beim Scrollen fährt die Kamera automatisch durch die Szenen — ideal eingebettet auf einer Website.</span>
+      </label>
+      <menu>
+        <button value="cancel" class="btn btn-ghost">Abbrechen</button>
+        <button value="ok" class="btn"><svg class="ico"><use href="#i-share"/></svg> Herunterladen</button>
+      </menu>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast" hidden></div>
 
   <script type="module" src="js/viewer.js"></script>

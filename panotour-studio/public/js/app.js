@@ -1,4 +1,4 @@
-import { PanoViewer } from './viewer.js';
+import { PanoViewer, INFO_ICONS } from './viewer.js';
 
 // --------------------------------------------------------------- API-Layer ---
 const api = {
@@ -18,6 +18,8 @@ const state = { tours: [], tour: null, scene: null, mode: 'explore' };
 let viewer = null;
 const $ = (s) => document.querySelector(s);
 const icon = (id, cls = 'ico') => `<svg class="${cls}"><use href="#i-${id}"/></svg>`;
+const infoIcon = (k) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ` +
+  `stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${INFO_ICONS[k] || INFO_ICONS.info}</svg>`;
 
 const toast = (msg, err = false) => {
   const t = $('#toast'); t.className = 'toast' + (err ? ' err' : '');
@@ -159,7 +161,17 @@ function ensureViewer() {
   viewer = new PanoViewer($('#viewer'));
   window.panoViewer = viewer; // Debug-/Automations-Hook
   viewer.onClick((pos) => handleViewerClick(pos));
-  viewer.onHotspot((data) => { if (state.mode === 'explore' && data.target_scene_id) selectScene(data.target_scene_id); });
+  viewer.onHotspot((data) => { if (state.mode === 'explore' && data.target_scene_id) navigateTravel(data); });
+}
+
+// Navigation mit Bewegungs-Übergang (Kamera „fährt" zum nächsten Punkt)
+async function navigateTravel(hotspotData) {
+  const target = state.tour.scenes.find((s) => s.id === hotspotData.target_scene_id);
+  if (!target) return;
+  state.scene = target;
+  renderScenes();
+  await viewer.travelTo(target, { towardYaw: hotspotData.yaw });
+  renderInspector();
 }
 function showEmpty() {
   $('#viewer-toolbar').hidden = true;
@@ -178,7 +190,11 @@ async function selectScene(id, reload = true) {
 }
 
 function handleViewerClick(pos) {
-  if (state.mode === 'hotspot') { pendingHotspot = pos; renderInspector(); }
+  if (state.mode === 'hotspot') {
+    pendingHotspot = pos;
+    hsDraft = { kind: 'nav', target_scene_id: '', label: '', title: '', text: '', icon: 'info', display: 'panel' };
+    renderInspector();
+  }
   else if (state.mode === 'logo' && state.scene) {
     state.scene.logo_yaw = pos.yaw; state.scene.logo_pitch = pos.pitch;
     viewer.renderLogo(state.scene); saveScene(); renderInspector();
@@ -187,9 +203,11 @@ function handleViewerClick(pos) {
 
 // -------------------------------------------------------------- Inspektor ---
 let pendingHotspot = null;
+let hsDraft = null;
 
 function setMode(mode) {
-  state.mode = mode; pendingHotspot = null;
+  state.mode = mode; pendingHotspot = null; hsDraft = null;
+  viewer?.hideInfoPanel?.();
   document.querySelectorAll('.mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
   if (viewer) { if (mode === 'path' && state.scene) viewer.showPathPreview(state.scene.keyframes || []); else viewer.clearPathPreview(); }
   renderInspector();
@@ -224,23 +242,42 @@ const inspExplore = (sc) => `
 
 function inspHotspot(sc) {
   const others = state.tour.scenes.filter((s) => s.id !== sc.id);
-  let form = '<p class="hint">Klicke ins Panorama, um einen Hotspot zu setzen.</p>';
-  if (pendingHotspot) {
-    form = `<div class="field">
-        <label>Ziel-Szene</label>
-        <select id="hs-target">
-          <option value="">— nur Markierung —</option>
-          ${others.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="field"><label>Beschriftung</label><input type="text" id="hs-label" placeholder="z. B. Zum Wohnzimmer"/></div>
-      <button class="btn btn-block" id="hs-save">${icon('check')} Hotspot speichern</button>
+  let form = '<p class="hint">Klicke ins Panorama, um einen Punkt zu setzen.</p>';
+  if (pendingHotspot && hsDraft) {
+    const d = hsDraft;
+    const navFields = `
+      <div class="field"><label>Ziel-Szene</label>
+        <select id="hs-target"><option value="">— nur Markierung —</option>
+          ${others.map((s) => `<option value="${s.id}" ${String(d.target_scene_id) === String(s.id) ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}
+        </select></div>
+      <div class="field"><label>Beschriftung</label><input type="text" id="hs-label" value="${escapeAttr(d.label)}" placeholder="z. B. Zum Wohnzimmer"/></div>`;
+    const infoFields = `
+      <div class="field"><label>Icon</label>
+        <div class="icon-picker" id="hs-icons">${Object.keys(INFO_ICONS).map((k) => `<button type="button" data-icon="${k}" class="${d.icon === k ? 'on' : ''}">${infoIcon(k)}</button>`).join('')}</div></div>
+      <div class="field"><label>Titel</label><input type="text" id="hs-title" value="${escapeAttr(d.title)}" placeholder="z. B. Kamin"/></div>
+      <div class="field"><label>Text</label><textarea id="hs-text" rows="3" placeholder="Beschreibung…">${escapeHtml(d.text)}</textarea></div>
+      <div class="field"><label>Anzeige</label>
+        <div class="seg" id="hs-display">
+          <button type="button" data-display="panel" class="${d.display === 'panel' ? 'on' : ''}">Panel (Klick)</button>
+          <button type="button" data-display="hover" class="${d.display === 'hover' ? 'on' : ''}">Tooltip (Hover)</button>
+        </div></div>`;
+    form = `
+      <div class="field"><label>Typ</label>
+        <div class="seg" id="hs-kind">
+          <button type="button" data-kind="nav" class="${d.kind === 'nav' ? 'on' : ''}">Sprung</button>
+          <button type="button" data-kind="info" class="${d.kind === 'info' ? 'on' : ''}">Info-Punkt</button>
+        </div></div>
+      ${d.kind === 'info' ? infoFields : navFields}
+      <button class="btn btn-block" id="hs-save">${icon('check')} Punkt speichern</button>
       <p class="hint">Position: Yaw ${deg(pendingHotspot.yaw)}° · Pitch ${deg(pendingHotspot.pitch)}°</p>`;
   }
-  return `<h3>Hotspots</h3><p class="sub">Szenen verbinden</p>${form}
+  const rowLabel = (h) => h.kind === 'info'
+    ? escapeHtml(h.title || 'Info')
+    : escapeHtml(h.label || 'ohne Ziel') + (h.target_scene_id ? ' → ' + escapeHtml(sceneName(h.target_scene_id)) : '');
+  return `<h3>Hotspots &amp; Info</h3><p class="sub">Szenen verbinden oder Text einblenden</p>${form}
     <ul class="kf-list">${(sc.hotspots || []).map((h) => `
-      <li><span class="idx">${icon('arrow', 'ico sm')}</span>
-        <span class="kf-meta">${escapeHtml(h.label || 'ohne Ziel')} ${h.target_scene_id ? '→ ' + escapeHtml(sceneName(h.target_scene_id)) : ''}</span>
+      <li><span class="idx">${h.kind === 'info' ? infoIcon(h.icon) : icon('arrow', 'ico sm')}</span>
+        <span class="kf-meta">${rowLabel(h)}</span>
         <button class="row-del" data-del-hs="${h.id}">${icon('trash', 'ico sm')}</button></li>`).join('')}</ul>`;
 }
 
@@ -287,13 +324,28 @@ function wireInspector() {
     await api.send(`/api/tours/${state.tour.id}`, 'PUT', { autorotate: e.target.checked });
     state.tour.autorotate = e.target.checked ? 1 : 0;
   });
-  // Hotspot
+  // Hotspot / Info-Punkt
+  const syncHsDraft = () => {
+    if (!hsDraft) return;
+    if ($('#hs-target')) hsDraft.target_scene_id = $('#hs-target').value;
+    if ($('#hs-label')) hsDraft.label = $('#hs-label').value;
+    if ($('#hs-title')) hsDraft.title = $('#hs-title').value;
+    if ($('#hs-text')) hsDraft.text = $('#hs-text').value;
+  };
+  box().querySelectorAll('#hs-kind button').forEach((b) => b.onclick = () => { syncHsDraft(); hsDraft.kind = b.dataset.kind; renderInspector(); });
+  box().querySelectorAll('#hs-icons button').forEach((b) => b.onclick = () => { syncHsDraft(); hsDraft.icon = b.dataset.icon; renderInspector(); });
+  box().querySelectorAll('#hs-display button').forEach((b) => b.onclick = () => { syncHsDraft(); hsDraft.display = b.dataset.display; renderInspector(); });
   $('#hs-save')?.addEventListener('click', async () => {
-    await api.send(`/api/scenes/${sc.id}/hotspots`, 'POST', {
-      target_scene_id: Number($('#hs-target').value) || null,
-      label: $('#hs-label').value, yaw: pendingHotspot.yaw, pitch: pendingHotspot.pitch,
-    });
-    pendingHotspot = null; await refreshScene(); saveHint('Hotspot gespeichert');
+    syncHsDraft();
+    const d = hsDraft, payload = { yaw: pendingHotspot.yaw, pitch: pendingHotspot.pitch, kind: d.kind };
+    if (d.kind === 'info') {
+      if (!d.title.trim() && !d.text.trim()) return toast('Bitte Titel oder Text eingeben', true);
+      Object.assign(payload, { title: d.title, text: d.text, icon: d.icon, display: d.display });
+    } else {
+      Object.assign(payload, { target_scene_id: Number(d.target_scene_id) || null, label: d.label });
+    }
+    await api.send(`/api/scenes/${sc.id}/hotspots`, 'POST', payload);
+    pendingHotspot = null; hsDraft = null; await refreshScene(); saveHint('Punkt gespeichert');
   });
   box().querySelectorAll('[data-del-hs]').forEach((b) => b.onclick = async () => {
     await api.del(`/api/hotspots/${b.dataset.delHs}`); await refreshScene(); saveHint('Gelöscht');
@@ -390,24 +442,29 @@ function bind() {
     saveScene(); toast('Startblick gespeichert');
   };
 
-  $('#btn-export').onclick = async () => {
+  $('#btn-export').onclick = () => {
     if (!state.tour) return;
     if (!state.tour.scenes.length) return toast('Erst mindestens eine Szene hinzufügen', true);
+    $('#export-dialog').showModal();
+  };
+  $('#export-dialog').addEventListener('close', async function () {
+    if (this.returnValue !== 'ok' || !state.tour) return;
+    const mode = this.querySelector('input[name=exmode]:checked')?.value || 'classic';
     const btn = $('#btn-export'), old = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = `${icon('share')} Exportiere…`;
     try {
-      const res = await fetch(`/api/tours/${state.tour.id}/export`);
+      const res = await fetch(`/api/tours/${state.tour.id}/export?mode=${mode}`);
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
       const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = (state.tour.name || 'rundgang').replace(/[^\w\-]+/g, '_').toLowerCase() + '.html';
+      a.download = (state.tour.name || 'rundgang').replace(/[^\w\-]+/g, '_').toLowerCase() + (mode === 'scroll' ? '-scroll' : '') + '.html';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      toast('HTML-Datei exportiert');
+      toast(mode === 'scroll' ? 'Scroll-Rundgang exportiert' : 'HTML-Datei exportiert');
     } catch (e) { toast('Export fehlgeschlagen: ' + e.message, true); }
     finally { btn.disabled = false; btn.innerHTML = old; }
-  };
+  });
 
   $('#btn-save-project').onclick = async () => {
     if (!state.tour) return;

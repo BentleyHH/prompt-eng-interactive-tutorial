@@ -146,12 +146,25 @@ app.delete('/api/scenes/:id', wrap((req, res) => {
 // --------------------------------------------------------------- Hotspots ----
 app.post('/api/scenes/:id/hotspots', wrap((req, res) => {
   const sceneId = Number(req.params.id);
-  const { target_scene_id = null, label = '', yaw, pitch } = req.body;
+  const { target_scene_id = null, label = '', yaw, pitch,
+    kind = 'nav', title = '', text = '', icon = 'info', display = 'panel' } = req.body;
   if (yaw == null || pitch == null) return res.status(400).json({ error: 'yaw/pitch fehlen' });
   const { lastInsertRowid } = db.prepare(
-    'INSERT INTO hotspots (scene_id, target_scene_id, label, yaw, pitch) VALUES (?, ?, ?, ?, ?)'
-  ).run(sceneId, target_scene_id, label, yaw, pitch);
+    `INSERT INTO hotspots (scene_id, target_scene_id, label, yaw, pitch, kind, title, text, icon, display)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(sceneId, kind === 'info' ? null : target_scene_id, label, yaw, pitch, kind, title, text, icon, display);
   res.status(201).json(db.prepare('SELECT * FROM hotspots WHERE id = ?').get(lastInsertRowid));
+}));
+
+const HS_FIELDS = ['target_scene_id', 'label', 'yaw', 'pitch', 'kind', 'title', 'text', 'icon', 'display'];
+app.put('/api/hotspots/:id', wrap((req, res) => {
+  const id = Number(req.params.id);
+  const cur = db.prepare('SELECT * FROM hotspots WHERE id = ?').get(id);
+  if (!cur) return res.status(404).json({ error: 'Hotspot nicht gefunden' });
+  const next = { ...cur, ...req.body, id };
+  if (next.kind === 'info') next.target_scene_id = null;
+  db.prepare(`UPDATE hotspots SET ${HS_FIELDS.map((f) => `${f} = @${f}`).join(', ')} WHERE id = @id`).run(next);
+  res.json(db.prepare('SELECT * FROM hotspots WHERE id = ?').get(id));
 }));
 
 app.delete('/api/hotspots/:id', wrap((req, res) => {
@@ -182,8 +195,10 @@ app.get('/api/tours/:id/export', wrap((req, res) => {
   const tour = tourWithGraph(Number(req.params.id));
   if (!tour) return res.status(404).json({ error: 'Rundgang nicht gefunden' });
   if (!tour.scenes.length) return res.status(400).json({ error: 'Rundgang hat keine Szenen' });
-  const html = buildTourHtml(tour);
-  const fname = (tour.name || 'rundgang').replace(/[^\w\-]+/g, '_').toLowerCase() + '.html';
+  const mode = req.query.mode === 'scroll' ? 'scroll' : 'classic';
+  const html = buildTourHtml(tour, { mode });
+  const base = (tour.name || 'rundgang').replace(/[^\w\-]+/g, '_').toLowerCase();
+  const fname = `${base}${mode === 'scroll' ? '-scroll' : ''}.html`;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
   res.send(html);

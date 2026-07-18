@@ -42,12 +42,13 @@ hochladen → loslegen.
 | **Projekte (Rundgänge)** | Beliebig viele Projekte **parallel** in der Liste. „+ Neu" legt eins mit Namen an, per Klick wechseln, Umbenennen über das Stift-Symbol (oder Doppelklick auf den Namen). |
 | **Szenen** | Pro Szene ein 360°-Bild, Reihenfolge per Drag & Drop. |
 | **Upload** | Gängige Formate: JPG, PNG, WebP, AVIF, GIF, BMP, TIFF, SVG (bis 60 MB). *Hinweis: HEIC/HEIF & manche TIFF zeigt der Browser nicht direkt an — vorher zu JPG/WebP konvertieren.* |
-| **📍 Hotspots** | Ins Bild klicken → Punkt setzen → mit einer anderen Szene verknüpfen. Im Rundgang klickt man sich so von Raum zu Raum. |
+| **📍 Hotspots** | Ins Bild klicken → Punkt setzen → mit einer anderen Szene verknüpfen. Im Rundgang klickt man sich so von Raum zu Raum — mit **Bewegungs-Übergang** (die Kamera „schiebt" in Richtung des nächsten Punktes und blendet über). |
+| **ℹ️ Info-Punkte** | Icon setzen (i · Stern · Tür · Haus · Bild · Warnung …) und eigenen **Text** eintippen. Pro Punkt wählbar: **Tooltip** beim Drüberfahren oder anklickbares **Text-Panel**. |
 | **🏷 Logo / Stativ-Patch** | Logo hochladen (transparentes PNG ideal). Es liegt flach am Boden und überdeckt Stativ/Fotograf. Größe per Regler, Position per Klick (nach unten schauen). |
 | **🎬 Kamerafahrt** | Blick ausrichten → „Punkt setzen". Beliebig viele Punkte, je mit eigener Dauer. „Abspielen" fährt die Kamera weich (ease-in-out) durch alle Punkte. |
 | **▶ Präsentieren** | Vollbild-Ansicht ohne Bedien-Panels, optional mit Auto-Rotation. |
 | **Startblick** | Aktuelle Blickrichtung + Zoom als Startansicht der Szene speichern. |
-| **⤴ HTML-Export** | Ganzen Rundgang als **eine** eigenständige `.html`-Datei exportieren (Bilder, Viewer, Logik eingebettet). Doppelklick zum Öffnen, überall teilen — kein Server, kein Internet. |
+| **⤴ HTML-Export** | Ganzen Rundgang als **eine** eigenständige `.html`-Datei exportieren (Bilder, Viewer, Logik eingebettet). **Zwei Modi:** Klassisch (Klick/Play) oder **Scroll-gesteuert** (Scrollen fährt die Kamera). Doppelklick zum Öffnen oder per iFrame einbetten — kein Server, kein Internet. |
 | **💾 Projekt speichern/laden** | Rundgang als portable `.panotour.zip` (Manifest + alle Bilder) sichern und später — auch auf einem anderen Rechner — wieder **in den Editor laden und weiterbearbeiten**. |
 
 Alles wird automatisch in der Datenbank gespeichert (kleiner Hinweis „Gespeichert ✓" oben rechts).
@@ -110,15 +111,40 @@ Patch-Einstellungen (Größe, Position, an/aus) pro Szene.
 ## HTML-Export
 
 Oben rechts **„HTML-Export"** erzeugt aus dem aktiven Rundgang eine einzelne
-`.html`-Datei. Darin sind **alles** enthalten: die 360°-Bilder (als Data-URIs),
+`.html`-Datei. Darin ist **alles** enthalten: die 360°-Bilder (als Data-URIs),
 der Viewer (three.js + Photo Sphere Viewer, gebündelt) und die Logik für
-Hotspot-Navigation, Logo-Patch und Kamerafahrt. Die Datei kann man per Mail
-verschicken, auf einen beliebigen Webspace legen oder lokal per Doppelklick
-öffnen — **ohne Server und ohne Internet**.
+Hotspot-Navigation, Info-Punkte, Logo-Patch und Kamerafahrt. Die Datei kann man
+per Mail verschicken, auf einen beliebigen Webspace legen oder lokal per
+Doppelklick öffnen — **ohne Server und ohne Internet**.
 
-Die Besucher-Ansicht bietet: Szenen-Navigation (Pfeile + anklickbare Hotspots),
-einen **„Rundgang"-Button**, der automatisch durch alle Szenen führt und dabei
-die Kamerafahrten abspielt, sowie Auto-Rotation und Vollbild.
+Beim Export wählst du den **Modus**:
+
+- **Klassisch** — Besucher steuern selbst: Szenen-Navigation (Pfeile +
+  anklickbare Hotspots mit Bewegungs-Übergang), ein **„Rundgang"-Button**, der
+  automatisch durch alle Szenen führt und die Kamerafahrten abspielt, plus
+  Auto-Rotation und Vollbild.
+- **Scroll-gesteuert** — beim **Scrollen** der Seite fährt die Kamera
+  automatisch durch die Szenen: erst die Blick-Schwenks innerhalb einer Szene,
+  dann der Bewegungs-Übergang zur nächsten. Oben läuft eine Fortschrittsleiste.
+  Ideal, um den Rundgang als „Scrollytelling" **in eine Website einzubetten**.
+
+**Info-Punkte** erscheinen in beiden Modi: das gewählte Icon sitzt im Bild,
+je nach Einstellung zeigt es den Text als Tooltip (Hover) oder öffnet beim
+Klick ein Panel.
+
+### Auf einer Website einbetten
+
+Die exportierte Datei auf den eigenen Webspace hochladen und per iFrame
+einbinden:
+
+```html
+<iframe src="rundgang-scroll.html" style="width:100%;height:640px;border:0"
+        loading="lazy" allowfullscreen></iframe>
+```
+
+Im **Scroll-Modus** scrollt der iFrame intern — die Kamerafahrt läuft also
+innerhalb des eingebetteten Fensters. Für eine feste Bühne eine Höhe wählen
+(z. B. `height:640px`).
 
 > Hinweis: Da alle Bilder eingebettet werden, kann die Datei groß werden
 > (grob: Summe der Bildgrößen + ~35 %). Für schlanke Exporte die Panoramen

@@ -10,8 +10,29 @@ const PIN = `data:image/svg+xml;base64,${btoa(`
   <circle cx="15" cy="13" r="4.4" fill="#fff"/>
 </svg>`)}`;
 
+// Auswählbare Icons für Info-Punkte (dünne Linien, currentColor)
+export const INFO_ICONS = {
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11.5v5"/><circle cx="12" cy="7.6" r=".7" fill="currentColor" stroke="none"/>',
+  star: '<path d="M12 3l2.6 5.6 6.1.9-4.4 4.3 1 6.1L12 17.1 6.7 20l1-6.1L3.3 9.5l6.1-.9z"/>',
+  door: '<path d="M6 21V4a1 1 0 011-1h8a1 1 0 011 1v17M5 21h14M14 12h.6"/>',
+  home: '<path d="M4 11l8-7 8 7M6 10v9h12v-9"/>',
+  image: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.4"/><path d="M4 17l5-5 4 4 3-2 4 4"/>',
+  cart: '<circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M2.5 3H5l2.4 11.5h10L20 7H6"/>',
+  pin: '<path d="M12 21s-6.5-5.7-6.5-10.5a6.5 6.5 0 1113 0C18.5 15.3 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/>',
+  warn: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 16.8h.01"/>',
+};
+export function infoBadge(iconKey, size = 30) {
+  const p = INFO_ICONS[iconKey] || INFO_ICONS.info;
+  const s = Math.round(size * 0.55);
+  return `<div class="pano-info-badge" style="width:${size}px;height:${size}px;border-radius:50%;background:#fff;` +
+    `border:2px solid #0071e3;color:#0071e3;display:grid;place-items:center;box-shadow:0 1px 5px rgba(0,0,0,.28);cursor:pointer">` +
+    `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ` +
+    `stroke-linecap="round" stroke-linejoin="round">${p}</svg></div>`;
+}
+
 const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 const wrapPi = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+const escapeHtml = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /**
  * Duenne Huelle um Photo Sphere Viewer mit allem, was das Studio braucht:
@@ -20,6 +41,7 @@ const wrapPi = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.P
  */
 export class PanoViewer {
   constructor(container) {
+    this.container = container;
     this.viewer = new Viewer({
       container,
       navbar: ['zoom', 'move', 'fullscreen'],
@@ -41,7 +63,9 @@ export class PanoViewer {
       if (this._clickCb && !data.rightclick) this._clickCb({ yaw: data.yaw, pitch: data.pitch });
     });
     this.markers.addEventListener('select-marker', ({ marker }) => {
-      if (marker?.data?.type === 'hotspot' && this._hotspotCb) this._hotspotCb(marker.data);
+      const d = marker?.data;
+      if (d?.type === 'hotspot' && this._hotspotCb) this._hotspotCb(d);
+      else if (d?.type === 'info' && d.display === 'panel') this.showInfoPanel(d);
     });
   }
 
@@ -54,6 +78,7 @@ export class PanoViewer {
   }
 
   async loadScene(scene, { navigable = true } = {}) {
+    this.hideInfoPanel();
     await this.viewer.setPanorama(scene.image_path, {
       position: { yaw: scene.default_yaw || 0, pitch: scene.default_pitch || 0 },
       zoom: scene.default_zoom ?? 50,
@@ -65,23 +90,62 @@ export class PanoViewer {
 
   renderMarkers(scene, { navigable = true } = {}) {
     this.markers.clearMarkers();
-    // Hotspots (Wege zu anderen Szenen)
     for (const h of scene.hotspots || []) {
       try {
-        this.markers.addMarker({
-          id: `hs-${h.id}`,
-          position: { yaw: h.yaw, pitch: h.pitch },
-          image: PIN,
-          size: { width: 30, height: 38 },
-          anchor: 'bottom center',
-          className: 'psv-marker--pano',
-          tooltip: h.label || 'Weiter',
-          data: { type: 'hotspot', ...h },
-        });
-      } catch (e) { console.warn('Hotspot-Marker fehlgeschlagen', e); }
+        if (h.kind === 'info') {
+          const short = h.display === 'hover'
+            ? (h.title ? `<b>${escapeHtml(h.title)}</b>` : '') + (h.text ? `<br>${escapeHtml(h.text)}` : '')
+            : (h.title || 'Info');
+          this.markers.addMarker({
+            id: `hs-${h.id}`, position: { yaw: h.yaw, pitch: h.pitch },
+            html: infoBadge(h.icon), anchor: 'center center',
+            tooltip: short || 'Info', data: { type: 'info', ...h },
+          });
+        } else {
+          this.markers.addMarker({
+            id: `hs-${h.id}`, position: { yaw: h.yaw, pitch: h.pitch },
+            image: PIN, size: { width: 30, height: 38 }, anchor: 'bottom center',
+            className: 'psv-marker--pano', tooltip: h.label || 'Weiter',
+            data: { type: 'hotspot', ...h },
+          });
+        }
+      } catch (e) { console.warn('Marker fehlgeschlagen', e); }
     }
-    // Logo- / Stativ-Patch (flach am Boden liegend)
     this.renderLogo(scene);
+  }
+
+  showInfoPanel(data) {
+    let el = this.container.querySelector('.pano-info-panel');
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'pano-info-panel';
+      el.innerHTML = '<button class="pano-info-close" aria-label="Schließen">×</button><h4></h4><p></p>';
+      this.container.appendChild(el);
+      el.querySelector('.pano-info-close').onclick = () => { el.style.display = 'none'; };
+    }
+    el.querySelector('h4').textContent = data.title || 'Info';
+    el.querySelector('p').textContent = data.text || '';
+    el.style.display = 'block';
+  }
+
+  hideInfoPanel() {
+    const el = this.container.querySelector('.pano-info-panel');
+    if (el) el.style.display = 'none';
+  }
+
+  // Bewegungs-Illusion: in Richtung des nächsten Punktes „schieben" (Zoom-Push),
+  // dann weich auf das nächste Panorama überblenden — fühlt sich an wie Vorfahren.
+  async travelTo(scene, { towardYaw = null } = {}) {
+    this.hideInfoPanel();
+    this._playing = true;
+    const cur = this.getView();
+    await this._tween(cur, { yaw: towardYaw == null ? cur.yaw : towardYaw, pitch: cur.pitch, zoom: 100 }, 520);
+    this._playing = false;
+    await this.viewer.setPanorama(scene.image_path, {
+      position: { yaw: scene.default_yaw || 0, pitch: scene.default_pitch || 0 },
+      zoom: scene.default_zoom ?? 50, transition: true, showLoader: false,
+    });
+    this.renderMarkers(scene);
   }
 
   _hasMarker(id) { try { return this.markers.getMarkers().some((m) => m.id === id); } catch { return false; } }
