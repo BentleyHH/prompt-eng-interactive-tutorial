@@ -166,7 +166,16 @@ class GmailSource:
 
 
 def build_sources(config: Config, secrets: Secrets, dry_run: bool) -> list[DocumentSource]:
-    """Baut die passenden Ingestion-Quellen je nach Modus."""
+    """Baut die passenden Ingestion-Quellen je nach Modus.
+
+    Der manuelle Upload-Ordner (`inbox/`) ist IMMER aktiv — Papierrechnungen
+    und Quittungen kann man unabhängig vom Postfach jederzeit einwerfen.
+    """
+    from .upload_source import UploadSource
+
     if dry_run or not secrets.gmail_credentials_json:
-        return [SampleSource(config)]
-    return [GmailSource(config, secrets, e.mailbox) for e in config.entities]
+        sources: list[DocumentSource] = [SampleSource(config)]
+    else:
+        sources = [GmailSource(config, secrets, e.mailbox) for e in config.entities]
+    sources.append(UploadSource(config))
+    return sources

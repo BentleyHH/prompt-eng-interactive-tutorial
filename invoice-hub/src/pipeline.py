@@ -38,22 +38,26 @@ class Pipeline:
         self.archive = build_archive(config, secrets, dry_run, out_dir)
         self._seen: set[str] = set()
 
+    def process(self, doc) -> Invoice:
+        """Verarbeitet EIN Rohdokument: Extraktion -> Klassifikation ->
+        Duplikat-Check -> Ablage. Wird von run() und vom Einzelimport genutzt."""
+        inv = self.extractor.extract(doc)
+        inv = self.classifier.classify(inv)
+        if inv.id in self._seen:
+            inv.status = Status.DUPLIKAT
+            inv.notes = "Duplikat — bereits verarbeitet."
+        else:
+            self._seen.add(inv.id)
+            self.archive.store(inv, doc.data)
+        return inv
+
     def run(self, since: datetime | None = None, period: date | None = None) -> dict:
         sources = build_sources(self.config, self.secrets, self.dry_run)
         invoices: list[Invoice] = []
 
         for source in sources:
             for doc in source.fetch(since=since):
-                inv = self.extractor.extract(doc)
-                inv = self.classifier.classify(inv)
-
-                if inv.id in self._seen:
-                    inv.status = Status.DUPLIKAT
-                    inv.notes = "Duplikat — bereits verarbeitet."
-                else:
-                    self._seen.add(inv.id)
-                    self.archive.store(inv, doc.data)
-                invoices.append(inv)
+                invoices.append(self.process(doc))
 
         ref_period = period or _latest_period(invoices) or date.today()
         alerts = self.radar.check(

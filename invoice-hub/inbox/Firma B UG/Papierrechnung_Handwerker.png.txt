@@ -1,0 +1,8 @@
+Lieferant: Elektro Schmidt GmbH
+An: Firma B UG
+Rechnungsnummer: ES-2026-3391
+Rechnungsdatum: 09.07.2026
+Nettobetrag: 480,00 EUR
+USt 19 %: 91,20 EUR
+Rechnungsbetrag (brutto): 571,20 EUR
+IBAN: DE47500105170321654987

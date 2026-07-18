@@ -7,6 +7,9 @@ secrets/
 out/
 dashboard/sample_data.json
 
+# Verarbeitete Uploads (Original nach dem Import verschoben)
+inbox/_verarbeitet/
+
 # Python
 __pycache__/
 *.pyc

@@ -1,0 +1,7 @@
+Lieferant: OBI Baumarkt GmbH
+An: Privatkunde
+Rechnungsnummer: BON-2026-0715-8842
+Rechnungsdatum: 15.07.2026
+Nettobetrag: 20,08 EUR
+USt 19 %: 3,82 EUR
+Rechnungsbetrag (brutto): 23,90 EUR

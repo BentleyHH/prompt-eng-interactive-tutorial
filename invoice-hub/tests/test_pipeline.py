@@ -20,8 +20,33 @@ def _run(tmp_path):
 
 def test_pipeline_processes_all_samples(tmp_path):
     result = _run(tmp_path)
-    # 6 Beispiel-Eingänge (inkl. 1 Duplikat)
-    assert result["summary"]["total_invoices"] == 6
+    # 6 Postfach-Eingänge (inkl. 1 Duplikat) + 2 manuelle Uploads
+    assert result["summary"]["total_invoices"] == 8
+
+
+def test_upload_import_included(tmp_path):
+    result = _run(tmp_path)
+    vendors = {i["vendor"] for i in result["invoices"]}
+    # aus dem Bild-Scan (per OCR-Sidecar) und der Text-Quittung
+    assert "Elektro Schmidt GmbH" in vendors     # inbox/Firma B UG/*.png
+    assert "OBI Baumarkt GmbH" in vendors         # inbox/Privat/*.txt
+    # Bild-Rechnung landet der Einheit aus dem Ordner zugeordnet + als .png abgelegt
+    scan = next(i for i in result["invoices"] if i["vendor"] == "Elektro Schmidt GmbH")
+    assert scan["entity"] == "Firma B UG"
+    assert scan["storage_path"].endswith(".png")
+
+
+def test_import_read_document_sidecar(tmp_path):
+    from src.ingest.upload_source import read_document, _is_sidecar
+    img = tmp_path / "Beleg.png"
+    img.write_bytes(b"\x89PNG\r\n")
+    side = tmp_path / "Beleg.png.txt"
+    side.write_text("Lieferant: Test AG\nRechnungsbetrag (brutto): 10,00 EUR\n", encoding="utf-8")
+    assert _is_sidecar(side) is True
+    doc = read_document(img, "Privat")
+    assert doc.content_type == "image/png"
+    assert "Test AG" in doc.text          # OCR-Sidecar wurde mitgelesen
+    assert doc.data.startswith(b"\x89PNG")
 
 
 def test_duplicate_is_detected(tmp_path):

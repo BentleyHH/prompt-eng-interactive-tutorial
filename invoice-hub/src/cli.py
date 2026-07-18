@@ -43,6 +43,38 @@ def cmd_run(args) -> None:
     print(f"→ Archiv (lokal gespiegelt): {OUT_DIR / 'onedrive'}")
 
 
+def cmd_import(args) -> None:
+    """Einzelne Datei importieren (Papierrechnung-Scan, Quittungsfoto, PDF)."""
+    from .ingest.upload_source import read_document
+
+    path = Path(args.file)
+    if not path.exists():
+        print(f"✗ Datei nicht gefunden: {path}", file=sys.stderr)
+        raise SystemExit(1)
+
+    config = load_config()
+    secrets = load_secrets()
+    dry = args.dry_run or not secrets.anthropic_api_key
+
+    doc = read_document(path, args.entity)
+    if doc is None:
+        print(f"✗ Nicht unterstütztes Format: {path.suffix}", file=sys.stderr)
+        raise SystemExit(1)
+
+    pipe = Pipeline(config, secrets, dry_run=dry)
+    inv = pipe.process(doc)
+
+    print(f"✓ Importiert: {inv.vendor or path.name}")
+    print(f"  Einheit:   {inv.entity}")
+    print(f"  Richtung:  {inv.direction.value}")
+    print(f"  Betrag:    {inv.gross if inv.gross is not None else '—'} {inv.currency}")
+    print(f"  Konfidenz: {inv.confidence:.0%}  ·  Status: {inv.status.value}")
+    if inv.storage_path:
+        print(f"  Abgelegt:  {inv.storage_path}")
+    if inv.status.value == "pruefen":
+        print("  ⚠️  Bitte manuell prüfen (niedrige Konfidenz oder fehlender Betrag).")
+
+
 def cmd_dashboard(args) -> None:
     result = _run(args)
     DASHBOARD_DIR.mkdir(exist_ok=True)
@@ -67,8 +99,14 @@ def main(argv=None) -> int:
     p_dash = sub.add_parser("dashboard", help="Pipeline ausführen + Dashboard-Daten schreiben")
     p_dash.set_defaults(func=cmd_dashboard)
 
+    p_imp = sub.add_parser("import", help="Einzelne Datei importieren (PDF/Bild/Scan)")
+    p_imp.add_argument("file", help="Pfad zur Rechnung/Quittung (.pdf, .jpg, .png, .txt)")
+    p_imp.add_argument("--entity", default="Unbekannt",
+                       help="Buchungseinheit, z. B. \"Privat\" oder \"Firma A GmbH\"")
+    p_imp.set_defaults(func=cmd_import)
+
     # --dry-run auch nach dem Subcommand erlauben
-    for p in (p_run, p_dash):
+    for p in (p_run, p_dash, p_imp):
         p.add_argument("--dry-run", action="store_true", help=argparse.SUPPRESS)
 
     args = parser.parse_args(argv)

@@ -89,14 +89,25 @@ class ClaudeExtractor:
         if self._client is None:
             self._client = anthropic.Anthropic(api_key=self.secrets.anthropic_api_key)
 
+        import base64
+
         content: list = []
         if doc.content_type == "application/pdf" and doc.data:
-            import base64
             content.append({
                 "type": "document",
                 "source": {
                     "type": "base64",
                     "media_type": "application/pdf",
+                    "data": base64.standard_b64encode(doc.data).decode(),
+                },
+            })
+        elif doc.content_type.startswith("image/") and doc.data:
+            # Foto/Scan einer Quittung oder Papierrechnung -> Claude Vision
+            content.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": doc.content_type,
                     "data": base64.standard_b64encode(doc.data).decode(),
                 },
             })

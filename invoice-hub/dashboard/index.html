@@ -9,6 +9,7 @@
     --good:#2f8f5b; --good-soft:#2f8f5b1f;
     --warn:#b6791a; --warn-soft:#b6791a1f;
     --crit:#c1462f; --crit-soft:#c1462f1a;
+    --info:#2f6fb0; --info-soft:#2f6fb01f;
     --ent-a:#0c7368; --ent-b:#b5842b; --ent-p:#5b7b9a;
     --shadow:0 1px 2px #13201e0d, 0 8px 24px #13201e0a;
     --radius:14px;
@@ -24,6 +25,7 @@
       --good:#4bb277; --good-soft:#4bb27722;
       --warn:#d59a3a; --warn-soft:#d59a3a22;
       --crit:#e0654c; --crit-soft:#e0654c22;
+      --info:#5f9fe0; --info-soft:#5f9fe022;
       --ent-a:#40bcad; --ent-b:#d0a24e; --ent-p:#7fa1c2;
       --shadow:0 1px 2px #0006, 0 10px 30px #0004;
     }
@@ -36,6 +38,7 @@
     --good:#2f8f5b; --good-soft:#2f8f5b1f;
     --warn:#b6791a; --warn-soft:#b6791a1f;
     --crit:#c1462f; --crit-soft:#c1462f1a;
+    --info:#2f6fb0; --info-soft:#2f6fb01f;
     --ent-a:#0c7368; --ent-b:#b5842b; --ent-p:#5b7b9a;
     --shadow:0 1px 2px #13201e0d, 0 8px 24px #13201e0a;
   }
@@ -47,6 +50,7 @@
     --good:#4bb277; --good-soft:#4bb27722;
     --warn:#d59a3a; --warn-soft:#d59a3a22;
     --crit:#e0654c; --crit-soft:#e0654c22;
+    --info:#5f9fe0; --info-soft:#5f9fe022;
     --ent-a:#40bcad; --ent-b:#d0a24e; --ent-p:#7fa1c2;
     --shadow:0 1px 2px #0006, 0 10px 30px #0004;
   }
@@ -56,7 +60,6 @@
   .wrap{max-width:1160px;margin:0 auto;padding:22px 20px 64px}
   .tnum{font-variant-numeric:tabular-nums;font-family:var(--mono)}
 
-  /* Header */
   header.top{display:flex;align-items:flex-end;justify-content:space-between;
     gap:16px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--line)}
   .brand{display:flex;align-items:center;gap:12px}
@@ -73,18 +76,16 @@
     border:1px solid var(--line-strong);border-radius:9px;padding:7px 11px;cursor:pointer}
   .theme-btn:hover{color:var(--ink)}
 
-  /* KPI tiles */
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
   .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
     padding:15px 16px;box-shadow:var(--shadow)}
   .kpi .k-lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
   .kpi .k-val{font-size:27px;font-weight:640;margin-top:7px;letter-spacing:-.02em}
-  .kpi .k-val small{font-size:14px;color:var(--muted);font-weight:500}
   .kpi .k-sub{font-size:12px;color:var(--muted);margin-top:3px}
   .kpi.accent .k-val{color:var(--accent)}
 
-  /* Grid */
   .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start}
+  .col{display:flex;flex-direction:column;gap:16px}
   section.card{background:var(--surface);border:1px solid var(--line);
     border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
   .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -92,7 +93,23 @@
   .card-h h2{margin:0;font-size:14px;font-weight:640;letter-spacing:.01em}
   .card-h .hint{font-size:11.5px;color:var(--faint)}
 
-  /* Radar (hero) */
+  /* Import-Zone */
+  .imp .card-h h2{color:var(--info)}
+  .imp-body{padding:14px 16px}
+  .imp-row{display:flex;gap:10px;align-items:center;margin-bottom:11px}
+  .imp-row label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+  .imp-row select{flex:1;font:inherit;font-size:13px;color:var(--ink);background:var(--surface-2);
+    border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;cursor:pointer}
+  .drop{border:1.5px dashed var(--line-strong);border-radius:12px;background:var(--surface-2);
+    padding:20px 14px;text-align:center;cursor:pointer;transition:.15s}
+  .drop:hover{border-color:var(--info);background:var(--info-soft)}
+  .drop.drag{border-color:var(--info);background:var(--info-soft);transform:scale(1.01)}
+  .drop .ico{font-size:26px;line-height:1}
+  .drop .t{font-weight:600;font-size:13.5px;margin-top:8px}
+  .drop .s{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .imp-note{font-size:11.5px;color:var(--faint);margin-top:11px;line-height:1.45}
+  .imp-note b{color:var(--info)}
+
   .radar .card-h{background:var(--crit-soft)}
   .radar h2{color:var(--crit)}
   .radar .badge{background:var(--crit);color:#fff;font-size:11px;font-weight:650;
@@ -108,7 +125,6 @@
   .alert .a-msg{font-size:12.5px;color:var(--muted);margin-top:2px}
   .alert .a-ent{font-size:11px;color:var(--faint);margin-top:3px}
 
-  /* Entity cards */
   .ent{padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
   .ent:last-child{border-bottom:0}
   .ent:hover{background:var(--surface-2)}
@@ -122,7 +138,6 @@
   .ent-meta{display:flex;gap:14px;font-size:12px;color:var(--muted)}
   .ent-meta b{color:var(--ink);font-weight:600}
 
-  /* Filters + table */
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
   .chip{font:inherit;font-size:12.5px;background:var(--surface-2);color:var(--muted);
     border:1px solid var(--line-strong);border-radius:100px;padding:5px 12px;cursor:pointer;transition:.12s}
@@ -141,7 +156,11 @@
   tbody tr{transition:background .1s}
   tbody tr:hover{background:var(--surface-2)}
   tbody tr.dup{opacity:.55}
+  tbody tr.pending{background:var(--info-soft)}
   .v-strip{display:inline-block;width:3px;height:26px;border-radius:2px;vertical-align:middle;margin-right:10px}
+  .v-wrap{display:flex;align-items:center;gap:0}
+  .thumb{width:30px;height:30px;border-radius:6px;object-fit:cover;border:1px solid var(--line-strong);margin-right:10px;flex:none}
+  .thumb.doc{display:grid;place-items:center;background:var(--surface-2);font-size:14px}
   .vendor{font-weight:560}
   .sub{font-size:11.5px;color:var(--faint);margin-top:1px}
   td.r{text-align:right;white-space:nowrap}
@@ -153,17 +172,19 @@
   .st.abgelegt{background:var(--good-soft);color:var(--good)}
   .st.pruefen{background:var(--warn-soft);color:var(--warn)}
   .st.duplikat{background:var(--line);color:var(--muted)}
+  .st.import{background:var(--info-soft);color:var(--info)}
   .st .d{width:6px;height:6px;border-radius:50%;background:currentColor}
   .ebadge{font-size:10px;font-weight:700;letter-spacing:.03em;color:var(--accent);
     border:1px solid var(--accent);border-radius:5px;padding:1px 5px;margin-left:7px;vertical-align:middle}
+  .via{font-size:10px;font-weight:600;color:var(--info);background:var(--info-soft);
+    border-radius:5px;padding:1px 6px;margin-left:7px;vertical-align:middle}
   .path{font-size:11px;color:var(--faint);font-family:var(--mono);margin-top:3px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}
   .cat{font-size:11.5px;color:var(--muted)}
   .skr{color:var(--faint)}
 
   footer{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);
-    display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;
-    font-size:12px;color:var(--faint)}
+    display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;font-size:12px;color:var(--faint)}
   .pipe{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .pipe span{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:3px 9px;color:var(--muted)}
   .pipe b{color:var(--accent)}
@@ -189,9 +210,7 @@
     <div class="period">
       <span class="lbl">Zeitraum</span>
       <select id="period" aria-label="Zeitraum wählen">
-        <option>Juli 2026</option>
-        <option>Q3 2026</option>
-        <option>Gesamt 2026</option>
+        <option>Juli 2026</option><option>Q3 2026</option><option>Gesamt 2026</option>
       </select>
       <button class="theme-btn" id="theme" type="button">Theme</button>
     </div>
@@ -200,7 +219,7 @@
   <div class="kpis" id="kpis"></div>
 
   <div class="grid">
-    <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="col">
       <section class="card">
         <div class="toolbar" id="toolbar">
           <button class="chip on" data-ent="all" type="button">Alle Einheiten</button>
@@ -225,7 +244,30 @@
       </section>
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="col">
+      <section class="card imp">
+        <div class="card-h"><h2>Beleg importieren</h2><span class="hint">PDF · Foto · Scan</span></div>
+        <div class="imp-body">
+          <div class="imp-row">
+            <label for="impEnt">Einheit</label>
+            <select id="impEnt" aria-label="Einheit für Import">
+              <option>Privat</option><option>Firma A GmbH</option><option>Firma B UG</option>
+            </select>
+          </div>
+          <div class="drop" id="drop" role="button" tabindex="0" aria-label="Datei auswählen oder hierher ziehen">
+            <div class="ico">📄</div>
+            <div class="t">Datei hierher ziehen oder klicken</div>
+            <div class="s">Papierrechnung abfotografiert? Quittung als Bild? Einfach ablegen.</div>
+          </div>
+          <input type="file" id="file" accept=".pdf,image/*" multiple hidden>
+          <div class="imp-note">
+            <b>So läuft's:</b> Der Beleg wird der Verarbeitung übergeben — im Echtbetrieb
+            liest <b>Claude</b> Lieferant, Datum & Beträge automatisch aus (Vision für Fotos,
+            XML für ZUGFeRD) und legt ihn sortiert auf OneDrive ab.
+          </div>
+        </div>
+      </section>
+
       <section class="card radar">
         <div class="card-h">
           <h2>Fehlende-Rechnung-Radar</h2>
@@ -249,7 +291,7 @@
 
   <footer>
     <div class="pipe">
-      <span>Postfach</span><b>→</b><span>Claude-Extraktion</span><b>→</b>
+      <span>Postfach + Upload</span><b>→</b><span>Claude-Extraktion</span><b>→</b>
       <span>Klassifikation</span><b>→</b><span>OneDrive</span><b>→</b><span>Radar</span>
     </div>
     <div>Demo mit Beispieldaten · Dry-Run der Pipeline</div>
@@ -257,50 +299,42 @@
 </div>
 
 <script>
-const EMBEDDED = {"summary":{"total_invoices":6,"total_gross":3492.69,"by_entity":{"Firma A GmbH":{"count":4,"gross":3193.8,"eingang":3,"ausgang":1},"Firma B UG":{"count":1,"gross":249.9,"eingang":1,"ausgang":0},"Privat":{"count":1,"gross":48.99,"eingang":1,"ausgang":0}},"needs_review":0},"invoices":[{"entity":"Firma A GmbH","received_at":"2026-07-05T06:12:00","source_filename":"Telekom_Rechnung_Juli2026.pdf","vendor":"Telekom Deutschland GmbH","invoice_number":"TK-2026-07-4455","invoice_date":"2026-07-05","net":75.55,"vat":14.35,"gross":89.9,"direction":"eingang","category":"Telekommunikation","skr_account":"6805","status":"abgelegt","confidence":0.82,"is_einvoice":false,"storage_path":"/Buchhaltung/Firma A/Eingang/2026/Q3/07-Juli/2026-07-05_Telekom…_89.90.pdf"},{"entity":"Firma A GmbH","received_at":"2026-07-01T02:30:00","source_filename":"Hetzner_2026_07.pdf","vendor":"Hetzner Online GmbH","invoice_number":"HZ-2026-0700123","invoice_date":"2026-07-01","net":32.77,"vat":6.23,"gross":39.0,"direction":"eingang","category":"IT/Hosting","skr_account":"6837","status":"abgelegt","confidence":0.82,"is_einvoice":false,"storage_path":"/Buchhaltung/Firma A/Eingang/2026/Q3/07-Juli/2026-07-01_Hetzner…_39.00.pdf"},{"entity":"Firma B UG","received_at":"2026-07-08T09:00:00","source_filename":"CloudServices_CS-2026-991_zugferd.pdf","vendor":"Cloud Services AG","invoice_number":"CS-2026-991","invoice_date":"2026-07-08","net":210.0,"vat":39.9,"gross":249.9,"direction":"eingang","category":"","skr_account":"","status":"abgelegt","confidence":0.99,"is_einvoice":true,"storage_path":"/Buchhaltung/Firma B/Eingang/2026/Q3/07-Juli/2026-07-08_Cloud-Services-AG_249.90.pdf"},{"entity":"Firma A GmbH","received_at":"2026-07-12T14:05:00","source_filename":"AR-2026-0042_Meyer-KG.pdf","vendor":"Firma A GmbH","invoice_number":"AR-2026-0042","invoice_date":"2026-07-12","net":2500.0,"vat":475.0,"gross":2975.0,"direction":"ausgang","category":"","skr_account":"","status":"abgelegt","confidence":0.82,"is_einvoice":false,"storage_path":"/Buchhaltung/Firma A/Ausgang/2026/Q3/07-Juli/2026-07-12_Firma-A-GmbH_2975.00.pdf"},{"entity":"Privat","received_at":"2026-07-14T18:44:00","source_filename":"Amazon_303-1234567.pdf","vendor":"Amazon EU S.a.r.l.","invoice_number":"DE-303-1234567","invoice_date":"2026-07-14","net":41.17,"vat":7.82,"gross":48.99,"direction":"eingang","category":"","skr_account":"","status":"abgelegt","confidence":0.82,"is_einvoice":false,"storage_path":"/Buchhaltung/Privat/Eingang/2026/Q3/07-Juli/2026-07-14_Amazon…_48.99.pdf"},{"entity":"Firma A GmbH","received_at":"2026-07-06T08:00:00","source_filename":"Telekom_Rechnung_Juli2026_Kopie.pdf","vendor":"Telekom Deutschland GmbH","invoice_number":"TK-2026-07-4455","invoice_date":"2026-07-05","net":75.55,"vat":14.35,"gross":89.9,"direction":"eingang","category":"Telekommunikation","skr_account":"6805","status":"duplikat","confidence":0.82,"is_einvoice":false,"storage_path":""}],"alerts":[{"entity":"Firma B UG","vendor":"Vodafone","period":"2026-07","expected_gross":49.99,"message":"Vodafone-Rechnung für 07/2026 fehlt (erwartet ~49.99 € um den 10.)."},{"entity":"Privat","vendor":"Stadtwerke","period":"2026-07","expected_gross":120.0,"message":"Stadtwerke-Rechnung für 07/2026 fehlt (erwartet ~120.00 € um den 15.)."}]};
+const EMBEDDED = {"summary":{"total_invoices":8,"total_gross":4087.79,"by_entity":{"Firma A GmbH":{"count":4,"gross":3193.8,"eingang":3,"ausgang":1},"Firma B UG":{"count":2,"gross":821.1,"eingang":2,"ausgang":0},"Privat":{"count":2,"gross":72.89,"eingang":2,"ausgang":0}},"needs_review":0},"invoices":[{"entity":"Firma A GmbH","vendor":"Telekom Deutschland GmbH","invoice_number":"TK-2026-07-4455","invoice_date":"2026-07-05","net":75.55,"vat":14.35,"gross":89.9,"direction":"eingang","category":"Telekommunikation","skr_account":"6805","status":"abgelegt","confidence":0.82,"is_einvoice":false,"storage_path":"…/Firma A/Eingang/2026/Q3/07-Juli/2026-07-05_Telekom-Deutschland-GmbH_TK-2026-07-4455_89.90.pdf","source_filename":"Telekom_Rechnung_Juli2026.pdf","via":"postfach"},{"entity":"Firma A GmbH","vendor":"Hetzner Online GmbH","invoice_number":"HZ-2026-0700123","invoice_date":"2026-07-01","net":32.77,"vat":6.23,"gross":39.0,"direction":"eingang","category":"IT/Hosting","skr_account":"6837","status":"abgelegt","confidence":0.82,"is_einvoice":false,"storage_path":"…/Firma A/Eingang/2026/Q3/07-Juli/2026-07-01_Hetzner-Online-GmbH_HZ-2026-0700123_39.00.pdf","source_filename":"Hetzner_2026_07.pdf","via":"postfach"},{"entity":"Firma B UG","vendor":"Cloud Services AG","invoice_number":"CS-2026-991","invoice_date":"2026-07-08","net":210.0,"vat":39.9,"gross":249.9,"direction":"eingang","category":"","skr_account":"","status":"abgelegt","confidence":0.99,"is_einvoice":true,"storage_path":"…/Firma B/Eingang/2026/Q3/07-Juli/2026-07-08_Cloud-Services-AG_CS-2026-991_249.90.pdf","source_filename":"CloudServices_CS-2026-991_zugferd.pdf","via":"postfach"},{"entity":"Firma A GmbH","vendor":"Firma A GmbH","invoice_number":"AR-2026-0042","invoice_date":"2026-07-12","net":2500.0,"vat":475.0,"gross":2975.0,"direction":"ausgang","category":"","skr_account":"","status":"abgelegt","confidence":0.82,"is_einvoice":false,"storage_path":"…/Firma A/Ausgang/2026/Q3/07-Juli/2026-07-12_Firma-A-GmbH_AR-2026-0042_2975.00.pdf","source_filename":"AR-2026-0042_Meyer-KG.pdf","via":"postfach"},{"entity":"Privat","vendor":"Amazon EU S.a.r.l.","invoice_number":"DE-303-1234567","invoice_date":"2026-07-14","net":41.17,"vat":7.82,"gross":48.99,"direction":"eingang","category":"","skr_account":"","status":"abgelegt","confidence":0.82,"is_einvoice":false,"storage_path":"…/Privat/Eingang/2026/Q3/07-Juli/2026-07-14_Amazon-EU-S-a-r-l_DE-303-1234567_48.99.pdf","source_filename":"Amazon_303-1234567.pdf","via":"postfach"},{"entity":"Firma A GmbH","vendor":"Telekom Deutschland GmbH","invoice_number":"TK-2026-07-4455","invoice_date":"2026-07-05","net":75.55,"vat":14.35,"gross":89.9,"direction":"eingang","category":"Telekommunikation","skr_account":"6805","status":"duplikat","confidence":0.82,"is_einvoice":false,"storage_path":"","source_filename":"Telekom_Rechnung_Juli2026_Kopie.pdf","via":"postfach"},{"entity":"Firma B UG","vendor":"Elektro Schmidt GmbH","invoice_number":"ES-2026-3391","invoice_date":"2026-07-09","net":480.0,"vat":91.2,"gross":571.2,"direction":"eingang","category":"","skr_account":"","status":"abgelegt","confidence":0.82,"is_einvoice":false,"storage_path":"…/Firma B/Eingang/2026/Q3/07-Juli/2026-07-09_Elektro-Schmidt-GmbH_ES-2026-3391_571.20.png","source_filename":"Papierrechnung_Handwerker.png","via":"upload"},{"entity":"Privat","vendor":"OBI Baumarkt GmbH","invoice_number":"BON-2026-0715-8842","invoice_date":"2026-07-15","net":20.08,"vat":3.82,"gross":23.9,"direction":"eingang","category":"","skr_account":"","status":"abgelegt","confidence":0.82,"is_einvoice":false,"storage_path":"…/Privat/Eingang/2026/Q3/07-Juli/2026-07-15_OBI-Baumarkt-GmbH_BON-2026-0715-8842_23.90.txt","source_filename":"Quittung_Baumarkt.txt","via":"upload"}],"alerts":[{"entity":"Firma B UG","vendor":"Vodafone","period":"2026-07","expected_gross":49.99,"message":"Vodafone-Rechnung für 07/2026 fehlt (erwartet ~49.99 € um den 10.)."},{"entity":"Privat","vendor":"Stadtwerke","period":"2026-07","expected_gross":120.0,"message":"Stadtwerke-Rechnung für 07/2026 fehlt (erwartet ~120.00 € um den 15.)."}]};
 
 const ENT_COLORS = {"Firma A GmbH":"var(--ent-a)","Firma B UG":"var(--ent-b)","Privat":"var(--ent-p)"};
 const eur = n => (n==null?"—":n.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €");
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let DATA = EMBEDDED, filterEnt="all", filterDir="all";
 
-function boot(data){
-  DATA = data;
-  renderKPIs(); renderAlerts(); renderEntities(); renderRows();
-}
+function boot(data){ DATA = data; renderKPIs(); renderAlerts(); renderEntities(); renderRows(); }
 
 function renderKPIs(){
   const s = DATA.summary;
   const dup = DATA.invoices.filter(i=>i.status==="duplikat").length;
   const einv = DATA.invoices.filter(i=>i.is_einvoice).length;
+  const imported = DATA.invoices.filter(i=>i.via==="upload").length;
   const tiles = [
-    {l:"Rechnungen erfasst", v:s.total_invoices, sub:`${einv} als E-Rechnung (ZUGFeRD)`, cls:""},
+    {l:"Rechnungen erfasst", v:DATA.invoices.length, sub:`${einv} E-Rechnung · ${imported} importiert`, cls:""},
     {l:"Volumen brutto", v:eur(s.total_gross), sub:"über alle Einheiten", cls:"accent"},
     {l:"Zur Prüfung", v:s.needs_review, sub:"niedrige Konfidenz", cls:""},
-    {l:"Automatisch bereinigt", v:dup, sub:"Duplikat erkannt & übersprungen", cls:""},
+    {l:"Duplikate erkannt", v:dup, sub:"automatisch übersprungen", cls:""},
   ];
   document.getElementById("kpis").innerHTML = tiles.map(t=>`
-    <div class="kpi ${t.cls}">
-      <div class="k-lbl">${t.l}</div>
-      <div class="k-val">${t.v}</div>
-      <div class="k-sub">${t.sub}</div>
-    </div>`).join("");
+    <div class="kpi ${t.cls}"><div class="k-lbl">${t.l}</div>
+      <div class="k-val">${t.v}</div><div class="k-sub">${t.sub}</div></div>`).join("");
 }
 
 function renderAlerts(){
   const a = DATA.alerts||[];
   document.getElementById("rcount").textContent = a.length;
   document.getElementById("alerts").innerHTML = a.map(x=>`
-    <div class="alert">
-      <div class="dot"></div>
-      <div class="a-body">
-        <div class="a-top">
-          <span class="a-vendor">${x.vendor}</span>
-          <span class="a-amt tnum">~${eur(x.expected_gross)}</span>
-        </div>
-        <div class="a-msg">${x.message}</div>
-        <div class="a-ent">${x.entity} · Periode ${x.period}</div>
-      </div>
-    </div>`).join("") || `<div class="alert"><div class="a-body"><div class="a-msg">Keine fehlenden Rechnungen 🎉</div></div></div>`;
+    <div class="alert"><div class="dot"></div><div class="a-body">
+      <div class="a-top"><span class="a-vendor">${esc(x.vendor)}</span>
+        <span class="a-amt tnum">~${eur(x.expected_gross)}</span></div>
+      <div class="a-msg">${esc(x.message)}</div>
+      <div class="a-ent">${esc(x.entity)} · Periode ${esc(x.period)}</div>
+    </div></div>`).join("") ||
+    `<div class="alert"><div class="a-body"><div class="a-msg">Keine fehlenden Rechnungen 🎉</div></div></div>`;
 }
 
 function renderEntities(){
@@ -309,19 +343,12 @@ function renderEntities(){
   document.getElementById("entities").innerHTML = Object.entries(be).map(([name,e])=>{
     const c = ENT_COLORS[name]||"var(--accent)";
     const w = Math.max(4, e.gross/maxG*100);
-    const active = filterEnt===name ? "active":"";
-    return `<div class="ent ${active}" data-ent="${name}" role="button" tabindex="0">
-      <div class="ent-top">
-        <span class="ent-swatch" style="background:${c}"></span>
-        <span class="ent-name">${name}</span>
-        <span class="ent-gross tnum">${eur(e.gross)}</span>
-      </div>
+    return `<div class="ent ${filterEnt===name?'active':''}" data-ent="${esc(name)}" role="button" tabindex="0">
+      <div class="ent-top"><span class="ent-swatch" style="background:${c}"></span>
+        <span class="ent-name">${esc(name)}</span><span class="ent-gross tnum">${eur(e.gross)}</span></div>
       <div class="ent-bar"><i style="width:${w}%;background:${c}"></i></div>
-      <div class="ent-meta">
-        <span><b>${e.count}</b> Belege</span>
-        <span><b>${e.eingang||0}</b> Eingang</span>
-        <span><b>${e.ausgang||0}</b> Ausgang</span>
-      </div>
+      <div class="ent-meta"><span><b>${e.count}</b> Belege</span>
+        <span><b>${e.eingang||0}</b> Eingang</span><span><b>${e.ausgang||0}</b> Ausgang</span></div>
     </div>`;
   }).join("");
   document.querySelectorAll(".ent").forEach(el=>{
@@ -344,18 +371,25 @@ function renderRows(){
   document.getElementById("tcount").textContent = `${list.length} von ${DATA.invoices.length} Belegen`;
   document.getElementById("rows").innerHTML = list.map(i=>{
     const c = ENT_COLORS[i.entity]||"var(--accent)";
+    const pending = i.status==="import";
+    const thumb = i._thumb
+      ? `<img class="thumb" src="${i._thumb}" alt="">`
+      : (pending ? `<span class="thumb doc">📄</span>` : `<span class="v-strip" style="background:${c}"></span>`);
     const eb = i.is_einvoice ? `<span class="ebadge" title="ZUGFeRD/XRechnung strukturiert gelesen">E-RECHNUNG</span>`:"";
-    const cat = i.category ? `<span class="cat">${i.category}</span> <span class="skr">${i.skr_account?"· SKR "+i.skr_account:""}</span>`:`<span class="skr">—</span>`;
-    const stLbl = {abgelegt:"Abgelegt",pruefen:"Prüfen",duplikat:"Duplikat"}[i.status]||i.status;
-    const path = i.storage_path ? `<div class="path" title="${i.storage_path}">${i.storage_path.replace('/Buchhaltung','…')}</div>`:"";
-    return `<tr class="${i.status==='duplikat'?'dup':''}">
-      <td>
-        <span class="v-strip" style="background:${c}"></span>
-        <span class="vendor">${i.vendor}</span>${eb}
-        <div class="sub">${i.invoice_number} · ${i.invoice_date} · ${cat}</div>
-        ${path}
-      </td>
-      <td><span class="cat">${i.entity}</span></td>
+    const via = i.via==="upload" && !pending ? `<span class="via" title="Manuell importiert">Import</span>`:"";
+    const cat = i.category ? `${esc(i.category)} ${i.skr_account?"· SKR "+esc(i.skr_account):""}` : "—";
+    const stLbl = {abgelegt:"Abgelegt",pruefen:"Prüfen",duplikat:"Duplikat",import:"In Warteschlange"}[i.status]||i.status;
+    const sub = pending
+      ? `wird ausgelesen… · ${esc(i.source_filename||"")}`
+      : `${esc(i.invoice_number)} · ${esc(i.invoice_date)} · ${cat}`;
+    const path = (!pending && i.storage_path)
+      ? `<div class="path" title="${esc(i.storage_path)}">${esc(i.storage_path)}</div>`:"";
+    return `<tr class="${i.status==='duplikat'?'dup':''} ${pending?'pending':''}">
+      <td><div class="v-wrap">${thumb}<div>
+        <span class="vendor">${esc(i.vendor)}</span>${eb}${via}
+        <div class="sub">${sub}</div>${path}
+      </div></div></td>
+      <td><span class="cat">${esc(i.entity)}</span></td>
       <td><span class="dir ${i.direction}">${i.direction==='eingang'?'Eingang':'Ausgang'}</span></td>
       <td><span class="st ${i.status}"><span class="d"></span>${stLbl}</span></td>
       <td class="r tnum">${eur(i.net)}</td>
@@ -364,7 +398,7 @@ function renderRows(){
   }).join("");
 }
 
-// Filter chips (Richtung)
+/* Filter */
 document.querySelectorAll('[data-dir]').forEach(ch=>{
   ch.onclick=()=>{ filterDir=ch.dataset.dir;
     document.querySelectorAll('[data-dir]').forEach(x=>x.classList.toggle("on",x===ch));
@@ -372,7 +406,7 @@ document.querySelectorAll('[data-dir]').forEach(ch=>{
 });
 document.querySelector('[data-ent="all"]').onclick=()=>{ filterEnt="all"; syncEntChip(); renderEntities(); renderRows(); };
 
-// Theme toggle
+/* Theme */
 const root=document.documentElement;
 document.getElementById("theme").onclick=()=>{
   const cur=root.getAttribute("data-theme")
@@ -380,8 +414,34 @@ document.getElementById("theme").onclick=()=>{
   root.setAttribute("data-theme", cur==="dark"?"light":"dark");
 };
 
-// Wenn lokal per Pipeline erzeugte Daten vorliegen, diese bevorzugen.
-fetch("./sample_data.json").then(r=>r.ok?r.json():null).then(d=>{ if(d&&d.invoices) boot(d); }).catch(()=>{});
+/* Import: Drag & Drop + Dateiauswahl */
+const drop=document.getElementById("drop"), fileInput=document.getElementById("file");
+drop.onclick=()=>fileInput.click();
+drop.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();fileInput.click();} };
+fileInput.onchange=()=>{ addFiles(fileInput.files); fileInput.value=""; };
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag");}));
+drop.addEventListener("drop",e=>{ if(e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); });
 
+function addFiles(files){
+  const entity=document.getElementById("impEnt").value;
+  [...files].forEach(f=>{
+    const rec={ entity, vendor:f.name.replace(/\.[^.]+$/,""), invoice_number:"—",
+      invoice_date:"—", net:null, vat:null, gross:null, direction:"eingang",
+      category:"", skr_account:"", status:"import", confidence:0, is_einvoice:false,
+      storage_path:"", source_filename:f.name, via:"upload", _thumb:null };
+    DATA.invoices.unshift(rec);
+    if(f.type.startsWith("image/")){
+      const r=new FileReader();
+      r.onload=()=>{ rec._thumb=r.result; renderRows(); };
+      r.readAsDataURL(f);
+    }
+  });
+  if(filterEnt!=="all") filterEnt="all", syncEntChip(), renderEntities();
+  renderKPIs(); renderRows();
+}
+
+/* Falls per Pipeline erzeugte Daten lokal vorliegen, diese bevorzugen. */
+fetch("./sample_data.json").then(r=>r.ok?r.json():null).then(d=>{ if(d&&d.invoices) boot(d); }).catch(()=>{});
 boot(EMBEDDED);
 </script>

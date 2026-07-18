@@ -53,6 +53,34 @@ E-Rechnungspflicht im deutschen B2B (2025 ff.) kommen Rechnungen zunehmend als
 
 ---
 
+## Manueller Import (Papierrechnung / Quittung / Foto)
+
+Nicht alles kommt per E-Mail. Für Post-Rechnungen, Kassenbons und abfotografierte
+Belege gibt es drei Wege — alle enden in derselben Pipeline (Extraktion →
+Klassifikation → Ablage):
+
+**1. Drop-Ordner** — Datei in `inbox/<Einheit>/` legen, dann `run` starten:
+```
+inbox/Privat/Quittung_Baumarkt.jpg
+inbox/Firma B UG/Papierrechnung.pdf
+```
+> Tipp: `inbox/` als **OneDrive-Ordner** synchronisieren → vom Handy ein Foto in
+> `inbox/Privat/` ablegen, fertig.
+
+**2. CLI-Einzelimport:**
+```bash
+python -m src.cli import "Quittung.jpg" --entity "Privat"
+```
+
+**3. Dashboard** — Drag & Drop der Datei in die Import-Zone.
+
+Formate: **PDF, JPG, PNG, WebP, HEIC, TIFF** (und `.txt` für bereits erfassten
+Text). Fotos/Scans liest **Claude Vision** aus; PDFs mit eingebettetem ZUGFeRD
+werden strukturiert gelesen. Belege mit niedriger Konfidenz landen automatisch
+im Status **Prüfen**.
+
+---
+
 ## Architektur
 
 ```
@@ -83,6 +111,7 @@ Ablagestruktur auf OneDrive (aus `config.storage.path_template`):
 | Modul | Aufgabe |
 |---|---|
 | `src/ingest/gmail_source.py` | Rohdokumente aus Postfächern (Gmail API + Dry-Run-Quelle) |
+| `src/ingest/upload_source.py` | Manueller Import: PDF/Bild/Scan aus `inbox/<Einheit>/` |
 | `src/extract/zugferd.py` | ZUGFeRD/XRechnung-XML nativ parsen |
 | `src/extract/claude_extractor.py` | PDF-Rechnungen mit Claude strukturiert auslesen |
 | `src/classify/classifier.py` | Richtung, Kategorie, SKR-Konto, Prüf-Gate |
