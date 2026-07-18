@@ -5,6 +5,7 @@ import { dirname, join, extname } from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import db from './db.js';
+import { buildTourHtml } from './export-template.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOAD_DIR = join(__dirname, 'data', 'uploads');
@@ -172,6 +173,19 @@ app.put('/api/scenes/:id/keyframes', wrap((req, res) => {
       ins.run(sceneId, i, f.yaw, f.pitch, f.zoom ?? 50, f.duration ?? 2500));
   })();
   res.json(db.prepare('SELECT * FROM keyframes WHERE scene_id = ? ORDER BY position').all(sceneId));
+}));
+
+// ------------------------------------------------------------ HTML-Export ----
+// Liefert den Rundgang als eigenstaendige, teilbare HTML-Datei (alles inline).
+app.get('/api/tours/:id/export', wrap((req, res) => {
+  const tour = tourWithGraph(Number(req.params.id));
+  if (!tour) return res.status(404).json({ error: 'Rundgang nicht gefunden' });
+  if (!tour.scenes.length) return res.status(400).json({ error: 'Rundgang hat keine Szenen' });
+  const html = buildTourHtml(tour);
+  const fname = (tour.name || 'rundgang').replace(/[^\w\-]+/g, '_').toLowerCase() + '.html';
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+  res.send(html);
 }));
 
 // ------------------------------------------------------------------ Start ----

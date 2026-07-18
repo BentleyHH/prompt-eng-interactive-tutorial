@@ -3,13 +3,11 @@ import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
 import { AutorotatePlugin } from '@photo-sphere-viewer/autorotate-plugin';
 
 const PIN = `data:image/svg+xml;base64,${btoa(`
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="60" viewBox="0 0 48 60">
-  <defs><filter id="s" x="-40%" y="-40%" width="180%" height="180%">
-    <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".5"/></filter></defs>
-  <path filter="url(#s)" d="M24 2C13 2 4 11 4 22c0 15 20 34 20 34s20-19 20-34C44 11 35 2 24 2z"
-        fill="#4f8cff" stroke="#fff" stroke-width="2.5"/>
-  <circle cx="24" cy="22" r="8" fill="#fff"/>
-  <path d="M20 22h8M24 18v8" stroke="#4f8cff" stroke-width="2.5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">
+  <defs><filter id="s" x="-60%" y="-60%" width="220%" height="220%">
+    <feDropShadow dx="0" dy="1.5" stdDeviation="1.6" flood-color="#000" flood-opacity=".3"/></filter></defs>
+  <path filter="url(#s)" d="M15 2C8.9 2 4 6.9 4 13c0 8 11 21 11 21s11-13 11-21C26 6.9 21.1 2 15 2z" fill="#0071e3"/>
+  <circle cx="15" cy="13" r="4.4" fill="#fff"/>
 </svg>`)}`;
 
 const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -74,7 +72,7 @@ export class PanoViewer {
           id: `hs-${h.id}`,
           position: { yaw: h.yaw, pitch: h.pitch },
           image: PIN,
-          size: { width: 44, height: 55 },
+          size: { width: 30, height: 38 },
           anchor: 'bottom center',
           className: 'psv-marker--pano',
           tooltip: h.label || 'Weiter',
@@ -175,9 +173,9 @@ export class PanoViewer {
     keyframes.forEach((k, i) => {
       this.markers.addMarker({
         id: `kf-${i}`, position: { yaw: k.yaw, pitch: k.pitch },
-        html: `<div style="width:26px;height:26px;border-radius:50%;background:#23c483;
-          border:2px solid #fff;color:#fff;font:700 12px sans-serif;display:grid;
-          place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.5)">${i + 1}</div>`,
+        html: `<div style="width:24px;height:24px;border-radius:50%;background:#fff;
+          border:2px solid #0071e3;color:#0071e3;font:600 12px -apple-system,sans-serif;display:grid;
+          place-items:center;box-shadow:0 1px 5px rgba(0,0,0,.25)">${i + 1}</div>`,
         anchor: 'center center', tooltip: `Punkt ${i + 1}`,
       });
     });

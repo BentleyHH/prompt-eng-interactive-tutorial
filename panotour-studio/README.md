@@ -3,9 +3,11 @@
 Ein Dashboard, um aus 360°-Bildern einen interaktiven **Panorama-Rundgang** zu
 bauen — mit Hotspots zwischen Räumen, einem **Logo-Patch**, der Stativ oder
 Fotograf am Boden überdeckt, und einer **dynamischen Kamerafahrt** über frei
-gesetzte Punkte.
+gesetzte Punkte. Fertige Rundgänge lassen sich als **eigenständige HTML-Datei
+exportieren** und überall teilen.
 
-Läuft komplett lokal (eigener kleiner Server + SQLite-Datenbank). Die
+Helles, minimalistisches Design (Apple-Stil) mit schlanken Linien-Icons. Läuft
+komplett lokal (eigener kleiner Server + SQLite-Datenbank). Die
 Viewer-Bibliotheken sind mitgeliefert — **kein Internet nötig**.
 
 ![Übersicht](docs/screenshot-explore.png)
@@ -44,6 +46,7 @@ hochladen → loslegen.
 | **🎬 Kamerafahrt** | Blick ausrichten → „Punkt setzen". Beliebig viele Punkte, je mit eigener Dauer. „Abspielen" fährt die Kamera weich (ease-in-out) durch alle Punkte. |
 | **▶ Präsentieren** | Vollbild-Ansicht ohne Bedien-Panels, optional mit Auto-Rotation. |
 | **Startblick** | Aktuelle Blickrichtung + Zoom als Startansicht der Szene speichern. |
+| **⤴ HTML-Export** | Ganzen Rundgang als **eine** eigenständige `.html`-Datei exportieren (Bilder, Viewer, Logik eingebettet). Doppelklick zum Öffnen, überall teilen — kein Server, kein Internet. |
 
 Alles wird automatisch in der Datenbank gespeichert (kleiner Hinweis „Gespeichert ✓" oben rechts).
 
@@ -55,6 +58,9 @@ Alles wird automatisch in der Datenbank gespeichert (kleiner Hinweis „Gespeich
 panotour-studio/
 ├── server.js            Express-Server + REST-API
 ├── db.js                SQLite-Schema (better-sqlite3)
+├── export-template.js   baut die eigenständige Export-HTML
+├── export-runtime.js    Viewer-Laufzeit, die in den Export eingebettet wird
+├── build-export-bundle.mjs  bündelt three.js + PSV für den Export (esbuild)
 ├── generate-sample.js   erzeugt die Test-Panoramen in samples/
 ├── data/
 │   ├── panotour.db      Datenbank (wird automatisch angelegt)
@@ -65,6 +71,7 @@ panotour-studio/
 │   ├── js/app.js        Dashboard-Logik
 │   ├── js/viewer.js     360°-Viewer (Hotspots, Logo-Patch, Kamerafahrt)
 │   └── vendor/          Photo Sphere Viewer + three.js (lokal, kein CDN)
+│       └── psv-export-bundle.js  gebündelte Libs für den HTML-Export
 └── samples/             Beispiel-Panoramen + Logo
 ```
 
@@ -94,6 +101,27 @@ Patch-Einstellungen (Größe, Position, an/aus) pro Szene.
 
 ---
 
+## HTML-Export
+
+Oben rechts **„HTML-Export"** erzeugt aus dem aktiven Rundgang eine einzelne
+`.html`-Datei. Darin sind **alles** enthalten: die 360°-Bilder (als Data-URIs),
+der Viewer (three.js + Photo Sphere Viewer, gebündelt) und die Logik für
+Hotspot-Navigation, Logo-Patch und Kamerafahrt. Die Datei kann man per Mail
+verschicken, auf einen beliebigen Webspace legen oder lokal per Doppelklick
+öffnen — **ohne Server und ohne Internet**.
+
+Die Besucher-Ansicht bietet: Szenen-Navigation (Pfeile + anklickbare Hotspots),
+einen **„Rundgang"-Button**, der automatisch durch alle Szenen führt und dabei
+die Kamerafahrten abspielt, sowie Auto-Rotation und Vollbild.
+
+> Hinweis: Da alle Bilder eingebettet werden, kann die Datei groß werden
+> (grob: Summe der Bildgrößen + ~35 %). Für schlanke Exporte die Panoramen
+> vorher auf eine sinnvolle Auflösung (z. B. 4096×2048) bringen.
+
+Das gebündelte Viewer-Paket liegt fertig unter
+`public/vendor/psv-export-bundle.js`. Nur wenn du die Viewer-Bibliotheken
+austauschst, musst du es neu bauen: `npm install && npm run build:export`.
+
 ## Konfiguration & Offline
 
 - **Port ändern:** `PORT=8080 npm start`
@@ -107,7 +135,6 @@ Patch-Einstellungen (Größe, Position, an/aus) pro Szene.
 
 ## Nächste sinnvolle Schritte (Ausbau)
 
-- Export des Rundgangs als eigenständige, teilbare HTML-Datei
 - Automatische HEIC/TIFF-Konvertierung serverseitig (z. B. via `sharp`)
 - Kamerafahrt über mehrere Szenen hinweg (aktuell pro Szene)
 - Mehrbenutzer/Login, wenn die Rundgänge geteilt werden sollen

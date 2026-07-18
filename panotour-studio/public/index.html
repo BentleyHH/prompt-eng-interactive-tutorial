@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PanoTour Studio — 360° Rundgang-Builder</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%234f8cff'/%3E%3Cpath d='M50 6a44 44 0 000 88M6 50h88M50 6c-16 12-16 76 0 88M50 6c16 12 16 76 0 88' fill='none' stroke='%23fff' stroke-width='4'/%3E%3C/svg%3E" />
+  <title>PanoTour Studio</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230071e3' stroke-width='1.6'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M3 12h18M12 3c3 3.6 3 14.4 0 18M12 3c-3 3.6-3 14.4 0 18'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="vendor/psv-core.css" />
   <link rel="stylesheet" href="vendor/psv-markers.css" />
   <link rel="stylesheet" href="css/styles.css" />
@@ -20,25 +20,49 @@
   </script>
 </head>
 <body>
+  <!-- Icon-Sprite (dünne, minimalistische Linien-Icons) -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.6 3 14.4 0 18M12 3c-3 3.6-3 14.4 0 18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.5"/><path d="M4 17l5-5 4 4 2.5-2.5L20 17"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.7-6.5-10.5a6.5 6.5 0 1113 0C18.5 15.3 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.3"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3.6 12.6l7.8-7.8a2 2 0 011.4-.6H19a2 2 0 012 2v6.2a2 2 0 01-.6 1.4l-7.8 7.8a1.6 1.6 0 01-2.3 0L3.6 14.9a1.6 1.6 0 010-2.3z"/><circle cx="16" cy="8" r="1.3"/></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M8 5v14M16 5v14M3 12h18M3 8.5h5M16 8.5h5M3 15.5h5M16 15.5h5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 12.1A2 2 0 009 21h6a2 2 0 002-1.9L18 7"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5l12.5 7.5L7 19.5z"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v13M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M3 16v3a2 2 0 002 2h3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  </svg>
+
   <header class="topbar">
     <div class="brand">
-      <span class="logo-dot"></span>
+      <svg class="logo-dot ico"><use href="#i-globe"/></svg>
       <h1>PanoTour&nbsp;Studio</h1>
       <span class="tag">360° Rundgang-Builder</span>
     </div>
     <div class="topbar-actions">
       <span id="save-hint" class="save-hint"></span>
-      <button id="btn-present" class="btn btn-ghost" title="Vollbild-Vorschau">▶ Präsentieren</button>
+      <button id="btn-export" class="btn btn-ghost btn-sm" title="Rundgang als eigenständige HTML-Datei exportieren" disabled>
+        <svg class="ico"><use href="#i-share"/></svg> HTML-Export
+      </button>
+      <button id="btn-present" class="btn btn-sm" title="Vollbild-Vorschau">
+        <svg class="ico"><use href="#i-play"/></svg> Präsentieren
+      </button>
     </div>
   </header>
 
   <main class="layout">
-    <!-- Linke Spalte: Rundgänge + Szenen ------------------------------------->
     <aside class="col col-left">
       <section class="panel">
         <div class="panel-head">
           <h2>Rundgänge</h2>
-          <button id="btn-new-tour" class="btn btn-sm">+ Neu</button>
+          <button id="btn-new-tour" class="btn btn-sm"><svg class="ico sm"><use href="#i-plus"/></svg> Neu</button>
         </div>
         <ul id="tour-list" class="list"></ul>
       </section>
@@ -46,47 +70,45 @@
       <section class="panel" id="scenes-panel" hidden>
         <div class="panel-head">
           <h2>Szenen</h2>
-          <label class="btn btn-sm" for="scene-upload">+ Bild(er)</label>
+          <label class="btn btn-sm btn-ghost" for="scene-upload"><svg class="ico sm"><use href="#i-plus"/></svg> Bild</label>
           <input id="scene-upload" type="file" accept="image/*" multiple hidden />
         </div>
-        <p class="hint">360°-Bilder (equirectangular). JPG · PNG · WebP · AVIF … Reihenfolge per Drag &amp; Drop.</p>
+        <p class="hint">360°-Bilder (equirectangular). JPG · PNG · WebP · AVIF. Reihenfolge per Drag&nbsp;&amp;&nbsp;Drop.</p>
         <ul id="scene-list" class="list scene-list"></ul>
       </section>
     </aside>
 
-    <!-- Mitte: Viewer -------------------------------------------------------->
     <section class="col col-center">
       <div id="viewer" class="viewer"></div>
       <div id="viewer-empty" class="viewer-empty">
         <div>
-          <div class="big">🌐</div>
+          <svg class="ico"><use href="#i-globe"/></svg>
           <p>Leg links einen Rundgang an und lade ein 360°-Bild hoch.</p>
         </div>
       </div>
       <div class="viewer-toolbar" id="viewer-toolbar" hidden>
-        <button class="mode-btn active" data-mode="explore">🖐 Ansehen</button>
-        <button class="mode-btn" data-mode="hotspot">📍 Hotspot setzen</button>
-        <button class="mode-btn" data-mode="logo">🏷 Logo/Stativ-Patch</button>
-        <button class="mode-btn" data-mode="path">🎬 Kamerafahrt</button>
+        <button class="mode-btn active" data-mode="explore"><svg class="ico"><use href="#i-eye"/></svg> Ansehen</button>
+        <button class="mode-btn" data-mode="hotspot"><svg class="ico"><use href="#i-pin"/></svg> Hotspot</button>
+        <button class="mode-btn" data-mode="logo"><svg class="ico"><use href="#i-tag"/></svg> Logo-Patch</button>
+        <button class="mode-btn" data-mode="path"><svg class="ico"><use href="#i-film"/></svg> Kamerafahrt</button>
         <span class="sep"></span>
-        <button id="btn-set-start" class="btn btn-sm btn-ghost" title="Aktuellen Blick als Startansicht speichern">⌖ Startblick</button>
+        <button id="btn-set-start" class="icon-btn" title="Aktuellen Blick als Startansicht speichern"><svg class="ico"><use href="#i-target"/></svg></button>
       </div>
     </section>
 
-    <!-- Rechte Spalte: Inspektor --------------------------------------------->
     <aside class="col col-right">
       <div id="inspector" class="panel inspector">
-        <p class="hint pad">Wähle einen Modus in der Werkzeugleiste unter dem Bild.</p>
+        <p class="hint pad">Wähle ein Werkzeug in der Leiste unter dem Bild.</p>
       </div>
     </aside>
   </main>
 
-  <!-- Modal: neuer Rundgang -->
   <dialog id="tour-dialog" class="dialog">
     <form method="dialog">
       <h3>Neuer Rundgang</h3>
+      <p class="dsub">Gib deinem Panorama-Rundgang einen Namen.</p>
       <label>Name<input name="name" required placeholder="z. B. Ferienwohnung Alpenblick" /></label>
-      <label>Beschreibung<textarea name="description" rows="2"></textarea></label>
+      <label>Beschreibung<textarea name="description" rows="2" placeholder="Optional"></textarea></label>
       <menu>
         <button value="cancel" class="btn btn-ghost">Abbrechen</button>
         <button value="ok" class="btn">Anlegen</button>

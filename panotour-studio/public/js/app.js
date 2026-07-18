@@ -17,9 +17,12 @@ const api = {
 const state = { tours: [], tour: null, scene: null, mode: 'explore' };
 let viewer = null;
 const $ = (s) => document.querySelector(s);
+const icon = (id, cls = 'ico') => `<svg class="${cls}"><use href="#i-${id}"/></svg>`;
 
 const toast = (msg, err = false) => {
-  const t = $('#toast'); t.textContent = msg; t.className = 'toast' + (err ? ' err' : '');
+  const t = $('#toast'); t.className = 'toast' + (err ? ' err' : '');
+  t.innerHTML = `${icon(err ? 'x' : 'check')}<span></span>`;
+  t.querySelector('span').textContent = msg;
   t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 2600);
 };
 const saveHint = (txt) => { $('#save-hint').textContent = txt; if (txt) setTimeout(() => ($('#save-hint').textContent = ''), 1500); };
@@ -29,20 +32,20 @@ const deg = (rad) => Math.round((rad * 180) / Math.PI);
 async function loadTours() {
   state.tours = await api.get('/api/tours');
   const ul = $('#tour-list'); ul.innerHTML = '';
-  if (!state.tours.length) ul.innerHTML = '<li class="hint" style="cursor:default">Noch keine Rundgänge.</li>';
+  if (!state.tours.length) ul.innerHTML = '<li class="empty-note">Noch keine Rundgänge.</li>';
   for (const t of state.tours) {
     const li = document.createElement('li');
     li.className = state.tour?.id === t.id ? 'active' : '';
     li.innerHTML = `<span class="title">${escapeHtml(t.name)}</span>
-      <span class="meta">${t.scene_count} 📷</span>
-      <button class="row-del" title="Löschen">🗑</button>`;
+      <span class="meta"><span class="m">${icon('photo', 'ico sm')}${t.scene_count}</span></span>
+      <button class="row-del" title="Löschen">${icon('trash', 'ico sm')}</button>`;
     li.querySelector('.title').onclick = () => openTour(t.id);
     li.querySelector('.meta').onclick = () => openTour(t.id);
     li.querySelector('.row-del').onclick = async (e) => {
       e.stopPropagation();
       if (!confirm(`Rundgang „${t.name}" löschen?`)) return;
       await api.del(`/api/tours/${t.id}`);
-      if (state.tour?.id === t.id) { state.tour = null; state.scene = null; showEmpty(); }
+      if (state.tour?.id === t.id) { state.tour = null; state.scene = null; showEmpty(); $('#btn-export').disabled = true; $('#scenes-panel').hidden = true; }
       loadTours();
     };
     ul.appendChild(li);
@@ -55,6 +58,7 @@ async function openTour(id) {
   await loadTours();
   renderScenes();
   $('#scenes-panel').hidden = false;
+  $('#btn-export').disabled = false;
   if (state.tour.scenes.length) selectScene(state.tour.scenes[0].id);
   else { state.scene = null; showEmpty(); renderInspector(); }
 }
@@ -72,8 +76,9 @@ function renderScenes() {
     li.draggable = true; li.dataset.id = sc.id;
     li.innerHTML = `<img class="scene-thumb" src="${sc.image_path}" alt="">
       <span class="title">${escapeHtml(sc.name)}</span>
-      <span class="meta">${sc.hotspots?.length || 0}📍 ${sc.keyframes?.length || 0}🎬</span>
-      <button class="row-del" title="Löschen">🗑</button>`;
+      <span class="meta"><span class="m">${icon('pin', 'ico sm')}${sc.hotspots?.length || 0}</span>
+        <span class="m">${icon('film', 'ico sm')}${sc.keyframes?.length || 0}</span></span>
+      <button class="row-del" title="Löschen">${icon('trash', 'ico sm')}</button>`;
     li.onclick = () => selectScene(sc.id);
     li.querySelector('.row-del').onclick = async (e) => {
       e.stopPropagation();
@@ -172,6 +177,7 @@ function renderInspector() {
 
 const inspExplore = (sc) => `
   <h3>${escapeHtml(sc.name)}</h3>
+  <p class="sub">Szene bearbeiten</p>
   <div class="field">
     <label>Szenenname</label>
     <input type="text" id="scene-name" value="${escapeAttr(sc.name)}" />
@@ -179,9 +185,11 @@ const inspExplore = (sc) => `
   <div class="field">
     <label class="switch"><input type="checkbox" id="tour-autorotate" ${state.tour.autorotate ? 'checked' : ''}/> Auto-Rotation im Rundgang</label>
   </div>
-  <p class="hint">Ziehe die Ansicht, wähle dann oben ein Werkzeug: Hotspots verbinden Szenen, der Logo-Patch überdeckt das Stativ, die Kamerafahrt animiert den Blick.</p>
-  <span class="badge">${sc.hotspots.length} Hotspots</span>
-  <span class="badge">${sc.keyframes.length} Kamerapunkte</span>`;
+  <p class="hint">Ziehe die Ansicht, wähle dann unten ein Werkzeug: Hotspots verbinden Szenen, der Logo-Patch überdeckt das Stativ, die Kamerafahrt animiert den Blick.</p>
+  <div style="margin-top:14px">
+    <span class="badge">${icon('pin', 'ico sm')} ${sc.hotspots.length} Hotspots</span>
+    <span class="badge">${icon('film', 'ico sm')} ${sc.keyframes.length} Kamerapunkte</span>
+  </div>`;
 
 function inspHotspot(sc) {
   const others = state.tour.scenes.filter((s) => s.id !== sc.id);
@@ -195,28 +203,29 @@ function inspHotspot(sc) {
         </select>
       </div>
       <div class="field"><label>Beschriftung</label><input type="text" id="hs-label" placeholder="z. B. Zum Wohnzimmer"/></div>
-      <button class="btn btn-block" id="hs-save">Hotspot speichern</button>
+      <button class="btn btn-block" id="hs-save">${icon('check')} Hotspot speichern</button>
       <p class="hint">Position: Yaw ${deg(pendingHotspot.yaw)}° · Pitch ${deg(pendingHotspot.pitch)}°</p>`;
   }
-  return `<h3>📍 Hotspots</h3>${form}
+  return `<h3>Hotspots</h3><p class="sub">Szenen verbinden</p>${form}
     <ul class="kf-list">${(sc.hotspots || []).map((h) => `
-      <li><span class="idx">↗</span>
+      <li><span class="idx">${icon('arrow', 'ico sm')}</span>
         <span class="kf-meta">${escapeHtml(h.label || 'ohne Ziel')} ${h.target_scene_id ? '→ ' + escapeHtml(sceneName(h.target_scene_id)) : ''}</span>
-        <button class="row-del" data-del-hs="${h.id}">🗑</button></li>`).join('')}</ul>`;
+        <button class="row-del" data-del-hs="${h.id}">${icon('trash', 'ico sm')}</button></li>`).join('')}</ul>`;
 }
 
 function inspLogo(sc) {
-  if (!state.tour.logo_path) return `<h3>🏷 Logo / Stativ-Patch</h3>
-    <p class="hint">Lade ein Logo (PNG mit Transparenz ideal) hoch. Es wird flach am Boden platziert und überdeckt Stativ oder Fotograf.</p>
-    <label class="btn btn-block" for="logo-upload">Logo hochladen</label>
+  if (!state.tour.logo_path) return `<h3>Logo-Patch</h3>
+    <p class="sub">Stativ oder Fotograf überdecken</p>
+    <p class="hint">Lade ein Logo (transparentes PNG ideal) hoch. Es wird flach am Boden platziert und überdeckt Stativ oder Fotograf.</p>
+    <label class="btn btn-block" for="logo-upload">${icon('plus')} Logo hochladen</label>
     <input id="logo-upload" type="file" accept="image/*" hidden>`;
-  return `<h3>🏷 Logo / Stativ-Patch</h3>
-    <img src="${state.tour.logo_path}" alt="Logo" style="max-width:80px;background:#000;border-radius:8px;padding:6px">
-    <div class="field" style="margin-top:12px">
+  return `<h3>Logo-Patch</h3><p class="sub">Stativ oder Fotograf überdecken</p>
+    <img src="${state.tour.logo_path}" alt="Logo" class="logo-preview">
+    <div class="field" style="margin-top:14px">
       <label class="switch"><input type="checkbox" id="logo-on" ${sc.logo_enabled ? 'checked' : ''}/> Patch in dieser Szene anzeigen</label>
     </div>
     <div class="field"><label>Größe</label>
-      <div class="range-row"><input type="range" id="logo-scale" min="6" max="60" step="1" value="${sc.logo_scale}"><output>${sc.logo_scale}</output></div>
+      <div class="range-row"><input type="range" id="logo-scale" min="6" max="60" step="1" value="${sc.logo_scale}"><output>${sc.logo_scale}°</output></div>
     </div>
     <p class="hint">Nach unten schauen und <b>ins Bild klicken</b>, um das Logo exakt über dem Stativ zu platzieren.</p>
     <label class="btn btn-ghost btn-block" for="logo-upload">Logo ersetzen</label>
@@ -225,17 +234,16 @@ function inspLogo(sc) {
 
 function inspPath(sc) {
   const kf = sc.keyframes || [];
-  return `<h3>🎬 Kamerafahrt</h3>
-    <p class="hint">Blick ausrichten, dann Punkt setzen. Die Fahrt läuft weich durch alle Punkte.</p>
-    <button class="btn btn-block" id="kf-add">＋ Aktuellen Blick als Punkt</button>
+  return `<h3>Kamerafahrt</h3><p class="sub">Dynamischer Blick über gesetzte Punkte</p>
+    <button class="btn btn-block" id="kf-add">${icon('plus')} Aktuellen Blick als Punkt</button>
     <ul class="kf-list">${kf.map((k, i) => `
       <li><span class="idx">${i + 1}</span>
         <span class="kf-meta">Yaw ${deg(k.yaw)}° · Pitch ${deg(k.pitch)}°</span>
-        <input type="number" data-dur="${i}" value="${k.duration}" min="500" step="250" style="width:70px" title="ms">
-        <button class="row-del" data-del-kf="${i}">🗑</button></li>`).join('') || '<li class="hint" style="border:none;background:none">Noch keine Punkte.</li>'}</ul>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-block" id="kf-play" ${kf.length < 2 ? 'disabled' : ''}>▶ Abspielen</button>
-      <button class="btn btn-ghost" id="kf-stop">■</button>
+        <input type="number" data-dur="${i}" value="${k.duration}" min="500" step="250" title="Dauer in ms">
+        <button class="row-del" data-del-kf="${i}">${icon('trash', 'ico sm')}</button></li>`).join('') || '<li style="background:none"><span class="idx ghost">–</span><span class="kf-meta">Noch keine Punkte.</span></li>'}</ul>
+    <div class="btn-row">
+      <button class="btn btn-block" id="kf-play" ${kf.length < 2 ? 'disabled' : ''}>${icon('play')} Abspielen</button>
+      <button class="icon-btn btn-ghost" id="kf-stop" title="Stopp" style="border-radius:980px;width:40px"><svg class="ico"><use href="#i-stop"/></svg></button>
     </div>`;
 }
 
@@ -349,6 +357,25 @@ function bind() {
     const v = viewer.getView();
     Object.assign(state.scene, { default_yaw: v.yaw, default_pitch: v.pitch, default_zoom: v.zoom });
     saveScene(); toast('Startblick gespeichert');
+  };
+
+  $('#btn-export').onclick = async () => {
+    if (!state.tour) return;
+    if (!state.tour.scenes.length) return toast('Erst mindestens eine Szene hinzufügen', true);
+    const btn = $('#btn-export'), old = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = `${icon('share')} Exportiere…`;
+    try {
+      const res = await fetch(`/api/tours/${state.tour.id}/export`);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (state.tour.name || 'rundgang').replace(/[^\w\-]+/g, '_').toLowerCase() + '.html';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast('HTML-Datei exportiert');
+    } catch (e) { toast('Export fehlgeschlagen: ' + e.message, true); }
+    finally { btn.disabled = false; btn.innerHTML = old; }
   };
 
   $('#btn-present').onclick = () => {
