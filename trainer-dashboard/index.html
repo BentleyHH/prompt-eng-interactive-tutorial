@@ -1,0 +1,894 @@
+<title>ETAF Trainer-Koordination</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* ============ TOKENS ============ */
+  :root{
+    --petrol:#0F5257; --petrol-600:#0C4145; --petrol-050:#E4EEEE;
+    --amber:#C88A2E; --amber-050:#F6ECD9;
+    --ink:#0E2226; --muted:#5B6E70; --faint:#85989A;
+    --bg:#F3F6F5; --panel:#FFFFFF; --panel-2:#FAFCFB; --line:#DCE5E3;
+    --good:#2E9E6B; --good-bg:#E4F3EB;
+    --warn:#D98A1F; --warn-bg:#FBEFD9;
+    --crit:#CF4F49; --crit-bg:#FAE4E2;
+    --info:#3B7DB0; --info-bg:#E4EEF6;
+    --shadow:0 1px 2px rgba(14,34,38,.06), 0 8px 24px -12px rgba(14,34,38,.18);
+    --radius:12px; --radius-sm:8px;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --petrol:#3DA9A0; --petrol-600:#2C807A; --petrol-050:#16302F;
+      --amber:#E0AC5A; --amber-050:#2A2216;
+      --ink:#E7F0EE; --muted:#9DB1B0; --faint:#6D8382;
+      --bg:#0B1618; --panel:#122225; --panel-2:#0F1D20; --line:#213436;
+      --good:#4FBF87; --good-bg:#133024;
+      --warn:#E4A94C; --warn-bg:#33280F;
+      --crit:#E5726B; --crit-bg:#341C1A;
+      --info:#6BA6D4; --info-bg:#122636;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --petrol:#3DA9A0; --petrol-600:#2C807A; --petrol-050:#16302F;
+    --amber:#E0AC5A; --amber-050:#2A2216;
+    --ink:#E7F0EE; --muted:#9DB1B0; --faint:#6D8382;
+    --bg:#0B1618; --panel:#122225; --panel-2:#0F1D20; --line:#213436;
+    --good:#4FBF87; --good-bg:#133024; --warn:#E4A94C; --warn-bg:#33280F;
+    --crit:#E5726B; --crit-bg:#341C1A; --info:#6BA6D4; --info-bg:#122636;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+  }
+  :root[data-theme="light"]{
+    --petrol:#0F5257; --petrol-600:#0C4145; --petrol-050:#E4EEEE;
+    --amber:#C88A2E; --amber-050:#F6ECD9;
+    --ink:#0E2226; --muted:#5B6E70; --faint:#85989A;
+    --bg:#F3F6F5; --panel:#FFFFFF; --panel-2:#FAFCFB; --line:#DCE5E3;
+    --good:#2E9E6B; --good-bg:#E4F3EB; --warn:#D98A1F; --warn-bg:#FBEFD9;
+    --crit:#CF4F49; --crit-bg:#FAE4E2; --info:#3B7DB0; --info-bg:#E4EEF6;
+    --shadow:0 1px 2px rgba(14,34,38,.06), 0 8px 24px -12px rgba(14,34,38,.18);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  h1,h2,h3{text-wrap:balance;margin:0}
+  .tnum{font-variant-numeric:tabular-nums}
+  ::selection{background:var(--amber);color:#fff}
+
+  /* ============ LOGIN ============ */
+  #lock{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+    background:
+      radial-gradient(120% 90% at 80% -10%, var(--petrol-050), transparent 55%),
+      var(--bg);padding:24px}
+  .lock-card{width:min(380px,94vw);background:var(--panel);border:1px solid var(--line);
+    border-radius:20px;box-shadow:var(--shadow);padding:34px 30px 28px;text-align:center}
+  .wordmark{font-weight:800;letter-spacing:.14em;font-size:15px;color:var(--petrol)}
+  .wordmark small{color:var(--faint);font-weight:600}
+  .lock-card h1{font-size:19px;margin:18px 0 4px;letter-spacing:-.01em}
+  .lock-card p{color:var(--muted);font-size:13.5px;margin:0 0 20px}
+  .pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:22px}
+  .pin-dots span{width:13px;height:13px;border-radius:50%;border:2px solid var(--line);
+    transition:.15s}
+  .pin-dots span.on{background:var(--petrol);border-color:var(--petrol);transform:scale(1.05)}
+  .pin-dots.err span{border-color:var(--crit);animation:shake .4s}
+  @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .keys button{height:56px;border-radius:14px;border:1px solid var(--line);
+    background:var(--panel-2);font-size:21px;font-weight:600;color:var(--ink);
+    transition:.12s}
+  .keys button:hover{background:var(--petrol-050);border-color:var(--petrol)}
+  .keys button:active{transform:scale(.95)}
+  .keys button.ghost{border:none;background:transparent;font-size:13px;color:var(--muted);font-weight:600}
+  .lock-hint{margin-top:18px;font-size:12px;color:var(--faint)}
+  .lock-hint b{color:var(--muted);font-family:var(--mono);letter-spacing:.1em}
+
+  /* ============ APP SHELL ============ */
+  #app{display:none;min-height:100vh;grid-template-columns:236px 1fr}
+  @media(max-width:820px){#app{grid-template-columns:1fr}}
+  .side{background:var(--panel);border-right:1px solid var(--line);
+    padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+  @media(max-width:820px){.side{display:none}}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 16px}
+  .brand .mk{font-weight:800;letter-spacing:.12em;font-size:14px;color:var(--petrol)}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--amber)}
+  .nav{display:flex;flex-direction:column;gap:2px}
+  .nav button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    padding:9px 11px;border:none;background:transparent;border-radius:9px;color:var(--muted);
+    font-size:14px;font-weight:550}
+  .nav button svg{width:18px;height:18px;flex:none;opacity:.85}
+  .nav button:hover{background:var(--panel-2);color:var(--ink)}
+  .nav button.active{background:var(--petrol-050);color:var(--petrol);font-weight:650}
+  .nav .badge{margin-left:auto;font-size:11px;background:var(--crit-bg);color:var(--crit);
+    padding:1px 7px;border-radius:20px;font-weight:700}
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--line)}
+  .side-foot button{display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;
+    background:transparent;border-radius:8px;color:var(--muted);font-size:13px;font-weight:600}
+  .side-foot button:hover{background:var(--panel-2);color:var(--ink)}
+
+  main{min-width:0;padding:0 0 60px}
+  .topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+    padding:14px 30px;display:flex;align-items:center;gap:14px}
+  @media(max-width:820px){.topbar{padding:12px 16px}}
+  .topbar h2{font-size:17px;letter-spacing:-.01em}
+  .topbar .sub{color:var(--muted);font-size:13px}
+  .spacer{flex:1}
+  .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+    padding:8px 14px;border-radius:9px;font-weight:600;font-size:13.5px;display:inline-flex;
+    align-items:center;gap:7px;transition:.12s;white-space:nowrap}
+  .btn:hover{border-color:var(--petrol);color:var(--petrol)}
+  .btn.primary{background:var(--petrol);border-color:var(--petrol);color:#fff}
+  .btn.primary:hover{background:var(--petrol-600);color:#fff}
+  .btn.amber{background:var(--amber);border-color:var(--amber);color:#fff}
+  .btn.amber:hover{filter:brightness(1.05);color:#fff}
+  .btn.sm{padding:5px 10px;font-size:12.5px;border-radius:7px}
+  .btn svg{width:15px;height:15px}
+
+  .wrap{padding:24px 30px;max-width:1200px}
+  @media(max-width:820px){.wrap{padding:18px 16px}}
+  .view{display:none}.view.on{display:block;animation:fade .25s}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}}
+
+  /* ============ CARDS / KPI ============ */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 16px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .kpi .lab{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+  .kpi .val{font-size:30px;font-weight:750;margin-top:6px;letter-spacing:-.02em}
+  .kpi .val small{font-size:15px;color:var(--faint);font-weight:600}
+  .kpi .rail{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .kpi.g .rail{background:var(--good)} .kpi.w .rail{background:var(--warn)}
+  .kpi.c .rail{background:var(--crit)} .kpi.i .rail{background:var(--info)}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:20px}
+  .panel-h{display:flex;align-items:center;gap:10px;padding:15px 18px;border-bottom:1px solid var(--line)}
+  .panel-h h3{font-size:15px;letter-spacing:-.01em}
+  .panel-h .sub{color:var(--muted);font-size:12.5px}
+  .panel-b{padding:16px 18px}
+
+  /* status pills */
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;
+    font-size:12px;font-weight:650;white-space:nowrap}
+  .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+  .pill.good{background:var(--good-bg);color:var(--good)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn)}
+  .pill.crit{background:var(--crit-bg);color:var(--crit)}
+  .pill.info{background:var(--info-bg);color:var(--info)}
+  .pill.neutral{background:var(--panel-2);color:var(--muted)}
+
+  /* ============ 20-WEEK HEATMAP ============ */
+  .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .timeline{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+  .wk{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:var(--panel-2);
+    cursor:pointer;transition:.12s;position:relative}
+  .wk:hover{border-color:var(--petrol);transform:translateY(-2px);box-shadow:var(--shadow)}
+  .wk .kw{font-size:11px;color:var(--faint);font-weight:700;letter-spacing:.04em}
+  .wk .loc{font-size:13px;font-weight:650;margin:3px 0 8px;letter-spacing:-.01em}
+  .wk .bar{height:6px;border-radius:4px;background:var(--line);overflow:hidden}
+  .wk .bar i{display:block;height:100%;border-radius:4px}
+  .wk .cnt{font-size:11.5px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between}
+  .wk .flag{position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%}
+
+  /* ============ TABLE / LISTS ============ */
+  .row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .av{width:36px;height:36px;border-radius:50%;flex:none;display:grid;place-items:center;
+    font-weight:700;font-size:13px;color:#fff;letter-spacing:.02em}
+  .row .nm{font-weight:640;font-size:14px}
+  .row .meta{font-size:12.5px;color:var(--muted)}
+  .rowgrow{flex:1;min-width:0}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
+  .tag{font-size:11px;background:var(--panel-2);border:1px solid var(--line);color:var(--muted);
+    padding:1px 8px;border-radius:6px;font-weight:600}
+  .fit{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--petrol);
+    background:var(--petrol-050);padding:2px 7px;border-radius:6px}
+
+  /* attention list */
+  .att{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .att:last-child{border:none}
+  .att .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}
+  .att .ic.c{background:var(--crit-bg);color:var(--crit)}
+  .att .ic.w{background:var(--warn-bg);color:var(--warn)}
+
+  /* ============ TRAINING DETAIL ============ */
+  .split{display:grid;grid-template-columns:1.1fr 1fr;gap:20px}
+  @media(max-width:900px){.split{grid-template-columns:1fr}}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .kv:last-child{border:none}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-weight:600;text-align:right}
+  .slot-head{display:flex;align-items:center;justify-content:space-between;margin:2px 0 12px}
+  .slot-head .c{font-size:13px;color:var(--muted)}
+
+  /* ============ SLIDE-OVER (composer) ============ */
+  .scrim{position:fixed;inset:0;background:rgba(6,16,18,.42);z-index:40;opacity:0;
+    pointer-events:none;transition:.2s}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:var(--panel);
+    z-index:41;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4);transform:translateX(100%);
+    transition:.26s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+  .sheet.on{transform:none}
+  .sheet-h{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+  .sheet-h h3{font-size:16px}
+  .sheet-b{padding:18px 20px;overflow:auto;flex:1}
+  .sheet-f{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+  label.fld{display:block;font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.05em;margin:14px 0 6px}
+  .inp,select,textarea{width:100%;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
+    border-radius:9px;padding:10px 12px;font-family:inherit;font-size:14px}
+  textarea{min-height:230px;resize:vertical;line-height:1.6;font-size:13.5px}
+  .inp:focus,select:focus,textarea:focus{outline:2px solid var(--petrol);outline-offset:-1px;border-color:var(--petrol)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:var(--panel-2);padding:5px 11px;border-radius:20px;
+    font-size:12.5px;font-weight:600;color:var(--muted)}
+  .chip.on{background:var(--petrol);border-color:var(--petrol);color:#fff}
+  .recip{display:flex;align-items:center;gap:8px;background:var(--petrol-050);color:var(--petrol);
+    padding:5px 10px;border-radius:20px;font-size:13px;font-weight:640}
+  .rte{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+  .rte button{border:1px solid var(--line);background:var(--panel-2);width:32px;height:30px;
+    border-radius:7px;font-size:13px;font-weight:700;color:var(--muted)}
+  .rte button:hover{border-color:var(--petrol);color:var(--petrol)}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);z-index:60;
+    background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:11px;font-size:13.5px;
+    font-weight:600;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;
+    display:flex;align-items:center;gap:9px;max-width:90vw}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+
+  .grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .empty{color:var(--faint);font-size:13.5px;padding:22px;text-align:center}
+  .divider{height:1px;background:var(--line);margin:14px 0}
+  .mob-nav{display:none}
+  @media(max-width:820px){
+    .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:30;background:var(--panel);
+      border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+    .mob-nav button{flex:1;border:none;background:transparent;color:var(--muted);font-size:10.5px;
+      font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px}
+    .mob-nav button svg{width:20px;height:20px}
+    .mob-nav button.active{color:var(--petrol)}
+    main{padding-bottom:76px}
+  }
+</style>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="lock">
+  <div class="lock-card">
+    <div class="wordmark">ETAF <small>· TRAINER-KOORDINATION</small></div>
+    <h1>Willkommen zurück</h1>
+    <p>Bitte 6-stelligen PIN eingeben</p>
+    <div class="pin-dots" id="dots">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="keys" id="keys"></div>
+    <div class="lock-hint">Demo-PIN: <b>481509</b> · (jede 6-stellige Zahl entsperrt)</div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app">
+  <aside class="side">
+    <div class="brand"><span class="dot"></span><span class="mk">ETAF</span></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <button onclick="toggleTheme()" id="themeBtn">◐ Design wechseln</button>
+      <button onclick="lockNow()">⎋ Sperren</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h2 id="tt">Übersicht</h2>
+        <div class="sub" id="ts">Abu-Dhabi-Programm · 20 Trainings · nächste 14 Monate</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn amber" onclick="openQuick()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+        Schnell-Ersatz
+      </button>
+      <button class="btn primary" onclick="openImport()">＋ Import</button>
+    </div>
+
+    <div class="wrap">
+      <!-- DASHBOARD -->
+      <section class="view on" id="v-dash"></section>
+      <!-- TRAININGS -->
+      <section class="view" id="v-trainings"></section>
+      <!-- TRAINING DETAIL -->
+      <section class="view" id="v-detail"></section>
+      <!-- TRAINERS -->
+      <section class="view" id="v-trainers"></section>
+      <!-- TEMPLATES -->
+      <section class="view" id="v-templates"></section>
+    </div>
+  </main>
+</div>
+
+<nav class="mob-nav" id="mobnav"></nav>
+
+<!-- composer slide-over -->
+<div class="scrim" id="scrim" onclick="closeSheet()"></div>
+<aside class="sheet" id="sheet">
+  <div class="sheet-h">
+    <h3 id="sheetTitle">Anfrage senden</h3>
+    <div class="spacer"></div>
+    <button class="btn sm" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="sheet-b" id="sheetBody"></div>
+  <div class="sheet-f" id="sheetFoot"></div>
+</aside>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   ETAF Trainer-Koordination — klickbarer Prototyp
+   Reine Demo: Daten liegen im Browser (localStorage).
+   ============================================================ */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const uid=(p)=>p+Math.random().toString(36).slice(2,8);
+
+/* ---------- ICONS ---------- */
+const IC={
+  dash:'<path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/>',
+  cal:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11"/>',
+  mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/>'
+};
+const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+
+/* ---------- SEED DATA ---------- */
+const SPEC=["Implantologie","DNA-Diagnostik","Fingerprint Dental","Prothetik","Chirurgie","Digitale Abformung","Guided Surgery","Parodontologie"];
+const REGZ=["DE-Süd","DE-West","DE-Nord","AT","CH","UAE","UK"];
+const COLORS=["#0F5257","#C88A2E","#3B7DB0","#7A5CB0","#2E9E6B","#B0563B","#4A7A7F","#9A6B2E"];
+
+function seedTrainers(){
+  const first=["Dr. Amir","Dr. Lena","Dr. Youssef","Dr. Marie","Dr. Ben","Dr. Sara","Dr. Tobias","Dr. Nadia","Dr. Felix","Dr. Clara","Dr. Omar","Dr. Ines","Dr. Jan","Dr. Rania"];
+  const last=["Haddad","Vogt","Karim","Petit","Kraus","Mansour","Reuter","El-Sayed","Brandt","Winter","Farouk","Berger","Möller","Aziz"];
+  return first.map((f,i)=>{
+    const sp=[SPEC[i%SPEC.length], SPEC[(i+3)%SPEC.length]];
+    return {
+      id:uid("tr"), name:`${f} ${last[i]}`,
+      email:`${last[i].toLowerCase().replace(/[^a-z]/g,'')}@example.org`,
+      phone:"+49 15"+(20+i)+" "+(1000000+i*13731),
+      spec:sp, region:REGZ[i%REGZ.length],
+      langs:(i%3===0?["DE","EN","AR"]:i%3===1?["DE","EN"]:["EN","AR"]),
+      uae:i%2===0, load:Math.floor(Math.random()*4),
+      color:COLORS[i%COLORS.length],
+      rating:(4+(i%10)/10).toFixed(1)
+    };
+  });
+}
+function seedTrainings(){
+  const locs=[["Abu Dhabi","UAE"],["München","DE"],["Frankfurt","DE"],["Abu Dhabi","UAE"],["Hamburg","DE"],["Wien","AT"],["Abu Dhabi","UAE"],["Zürich","CH"]];
+  const topics=["Guided Surgery Level II","DNA-Diagnostik Basiskurs","Fingerprint Dental Advanced","Implantologie Masterclass","Digitale Abformung","Prothetik Kompakt","Full-Arch Workshop","Parodontologie Update"];
+  const need=[6,5,8,7,5,6,8,5];
+  return topics.map((t,i)=>{
+    const kw=8+i*6;
+    return {
+      id:uid("tg"), topic:t, city:locs[i][0], country:locs[i][1],
+      kw:"KW "+kw, month:["Sep","Okt","Dez","Feb","Mär","Mai","Jul","Sep"][i]+" ’2"+(i<3?"6":(i<7?"7":"7")),
+      spec:SPEC[i%SPEC.length], need:need[i],
+      participants:12+i*2,
+      roster:[] // {trainerId,status:asked|yes|maybe|no|confirmed}
+    };
+  });
+}
+
+const TEMPLATES=[
+  {id:"t1",name:"Verfügbarkeits-Anfrage",subject:"Anfrage Verfügbarkeit — {{topic}} ({{city}}, {{kw}})",
+   body:`Hallo {{firstName}},\n\nwir planen das Training „{{topic}}“ in {{city}} ({{kw}}) und würden dich sehr gern als Trainer dabei haben.\n\n• Training: {{topic}}\n• Ort: {{city}}, {{country}}\n• Zeitraum: {{kw}} / {{month}}\n• Team: {{teamSize}} Trainer\n\nBitte gib uns über die Buttons unten kurz Bescheid, ob du zu diesem Zeitpunkt verfügbar bist. Deine Antwort landet automatisch in unserer Planung.\n\n[ ✅ Ja, verfügbar ]   [ 🤔 Vielleicht ]   [ ❌ Nein ]\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam`},
+  {id:"t2",name:"Zusage-Bestätigung + Reisedaten",subject:"Bestätigung & Reisedaten — {{topic}} in {{city}}",
+   body:`Hallo {{firstName}},\n\nsuper, danke für deine Zusage zu „{{topic}}“ in {{city}}!\n\nHier die wichtigsten Eckdaten:\n• Anreise: 1 Tag vor Trainingsbeginn ({{kw}})\n• Flug/Hotel: Vorschlag folgt separat zur Bestätigung\n• Ansprechpartner vor Ort: wird nachgereicht\n\nBitte prüfe deine Reisepass-Gültigkeit (mind. 6 Monate) — wichtig für die Einreise UAE.\n\nHerzliche Grüße\nETAF-Koordination`},
+  {id:"t3",name:"Kurzfristiger Ersatz",subject:"Kurzfristig: Einspringen möglich? — {{topic}} ({{city}})",
+   body:`Hallo {{firstName}},\n\nbei „{{topic}}“ in {{city}} ({{kw}}) ist kurzfristig ein Trainer ausgefallen. Könntest du eventuell einspringen?\n\nWer zuerst über „✅ Ja“ zusagt, bekommt den Platz. Jede Rückmeldung hilft uns enorm.\n\n[ ✅ Ich springe ein ]   [ ❌ Diesmal nicht ]\n\nDanke dir!\nETAF-Koordination`}
+];
+
+/* ---------- STATE ---------- */
+let S=load();
+function load(){
+  try{const r=JSON.parse(localStorage.getItem("etaf_demo"));if(r&&r.trainers)return r;}catch(e){}
+  return {trainers:seedTrainers(),trainings:seedTrainings(),templates:TEMPLATES};
+}
+function save(){localStorage.setItem("etaf_demo",JSON.stringify(S));}
+function resetDemo(){localStorage.removeItem("etaf_demo");S=load();render();toast("Demo-Daten zurückgesetzt");}
+
+/* ---------- MATCHING (simulierte KI-Vorauswahl) ---------- */
+function scoreTrainer(tr,tg){
+  let s=40;
+  if(tr.spec.includes(tg.spec))s+=34; else if(tr.spec.some(x=>SPEC.indexOf(x)%2===SPEC.indexOf(tg.spec)%2))s+=10;
+  if(tg.country==="UAE"&&tr.uae)s+=14;
+  if(tg.country==="UAE"&&tr.langs.includes("AR"))s+=6;
+  if(tg.country!=="UAE"&&tr.region.startsWith("DE"))s+=8;
+  s+=(3-tr.load)*4;               // weniger Auslastung = besser
+  s+=(parseFloat(tr.rating)-4)*10;
+  return Math.max(35,Math.min(99,Math.round(s)));
+}
+function ranked(tg){
+  return S.trainers.map(tr=>({tr,fit:scoreTrainer(tr,tg),
+    status:(tg.roster.find(r=>r.trainerId===tr.id)||{}).status||null}))
+    .sort((a,b)=>b.fit-a.fit);
+}
+function rosterStats(tg){
+  const yes=tg.roster.filter(r=>r.status==="yes"||r.status==="confirmed").length;
+  const maybe=tg.roster.filter(r=>r.status==="maybe").length;
+  const asked=tg.roster.filter(r=>r.status==="asked").length;
+  return {yes,maybe,asked,need:tg.need};
+}
+function statusOf(tg){
+  const{yes,need}=rosterStats(tg);
+  if(yes>=need)return{cls:"good",label:"Vollständig besetzt"};
+  if(yes>=Math.ceil(need*0.6))return{cls:"warn",label:"Teilweise besetzt"};
+  if(yes>0||rosterStats(tg).asked>0)return{cls:"warn",label:"In Anfrage"};
+  return{cls:"crit",label:"Unterbesetzt"};
+}
+const SP={asked:{cls:"info",label:"Angefragt"},yes:{cls:"good",label:"Zugesagt"},
+  maybe:{cls:"warn",label:"Vielleicht"},no:{cls:"crit",label:"Abgesagt"},
+  confirmed:{cls:"good",label:"Bestätigt"}};
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+let pin="";
+function buildKeys(){
+  const k=$("#keys");
+  const layout=["1","2","3","4","5","6","7","8","9","clear","0","del"];
+  k.innerHTML=layout.map(x=>{
+    if(x==="clear")return `<button class="ghost" data-k="clear">Löschen</button>`;
+    if(x==="del")return `<button class="ghost" data-k="del">←</button>`;
+    return `<button data-k="${x}">${x}</button>`;
+  }).join("");
+  $$("#keys button").forEach(b=>b.onclick=()=>press(b.dataset.k));
+}
+function press(k){
+  if(k==="clear"){pin="";}
+  else if(k==="del"){pin=pin.slice(0,-1);}
+  else if(pin.length<6){pin+=k;}
+  drawDots();
+  if(pin.length===6)setTimeout(tryUnlock,140);
+}
+function drawDots(){$$("#dots span").forEach((s,i)=>s.classList.toggle("on",i<pin.length));}
+function tryUnlock(){
+  // Demo: jede 6-stellige Zahl entsperrt
+  if(pin.length===6){unlock();}
+  else{const d=$("#dots");d.classList.add("err");setTimeout(()=>d.classList.remove("err"),450);pin="";drawDots();}
+}
+function unlock(){$("#lock").style.display="none";$("#app").style.display="grid";render();}
+function lockNow(){pin="";drawDots();$("#lock").style.display="grid";$("#app").style.display="none";}
+document.addEventListener("keydown",e=>{
+  if($("#lock").style.display==="none")return;
+  if(/^[0-9]$/.test(e.key))press(e.key);
+  else if(e.key==="Backspace")press("del");
+});
+
+/* ============================================================
+   NAV / ROUTER
+   ============================================================ */
+const NAV=[
+  {id:"dash",label:"Übersicht",ic:IC.dash},
+  {id:"trainings",label:"Trainings",ic:IC.cal},
+  {id:"trainers",label:"Trainer",ic:IC.users},
+  {id:"templates",label:"Vorlagen",ic:IC.mail},
+];
+let route="dash";
+function buildNav(){
+  const crit=S.trainings.filter(t=>statusOf(t).cls==="crit").length;
+  $("#nav").innerHTML=NAV.map(n=>`
+    <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
+      ${svg(n.ic)}<span>${n.label}</span>
+      ${n.id==="trainings"&&crit?`<span class="badge">${crit}</span>`:""}
+    </button>`).join("");
+  $("#mobnav").innerHTML=NAV.map(n=>`
+    <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
+      ${svg(n.ic)}<span>${n.label}</span></button>`).join("");
+}
+const TITLES={dash:["Übersicht","Abu-Dhabi-Programm · 20 Trainings · nächste 14 Monate"],
+  trainings:["Trainings","Alle geplanten Einsätze und ihr Besetzungsstand"],
+  trainers:["Trainerpool","Profile, Kontaktdaten und Spezialisierungen"],
+  templates:["E-Mail-Vorlagen","Wiederverwendbare Textbausteine mit Platzhaltern"]};
+function go(r){route=r;render();}
+function render(){
+  buildNav();
+  $$(".view").forEach(v=>v.classList.remove("on"));
+  if(route==="dash"){renderDash();$("#v-dash").classList.add("on");}
+  else if(route==="trainings"){renderTrainings();$("#v-trainings").classList.add("on");}
+  else if(route==="detail"){$("#v-detail").classList.add("on");}
+  else if(route==="trainers"){renderTrainers();$("#v-trainers").classList.add("on");}
+  else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
+  const t=TITLES[route]||TITLES.dash;$("#tt").textContent=t[0];$("#ts").textContent=t[1];
+  save();
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDash(){
+  const T=S.trainings;
+  const full=T.filter(t=>statusOf(t).cls==="good").length;
+  const prog=T.filter(t=>statusOf(t).cls==="warn").length;
+  const crit=T.filter(t=>statusOf(t).cls==="crit").length;
+  const openReq=T.reduce((a,t)=>a+rosterStats(t).asked,0);
+
+  const kpis=`<div class="kpis">
+    <div class="kpi i"><span class="rail"></span><div class="lab">Trainings gesamt</div><div class="val tnum">${T.length}<small> / 20 geplant</small></div></div>
+    <div class="kpi g"><span class="rail"></span><div class="lab">Vollständig besetzt</div><div class="val tnum">${full}</div></div>
+    <div class="kpi w"><span class="rail"></span><div class="lab">Offene Anfragen</div><div class="val tnum">${openReq}</div></div>
+    <div class="kpi c"><span class="rail"></span><div class="lab">Unterbesetzt</div><div class="val tnum">${crit}</div></div>
+  </div>`;
+
+  // timeline
+  const cells=T.map(t=>{
+    const st=statusOf(t);const r=rosterStats(t);
+    const pct=Math.min(100,Math.round((r.yes/r.need)*100));
+    const col=st.cls==="good"?"var(--good)":st.cls==="warn"?"var(--warn)":"var(--crit)";
+    return `<div class="wk" onclick="openDetail('${t.id}')">
+      <span class="flag" style="background:${col}"></span>
+      <div class="kw">${t.kw} · ${t.month}</div>
+      <div class="loc">${t.city}</div>
+      <div class="bar"><i style="width:${pct}%;background:${col}"></i></div>
+      <div class="cnt"><span>${t.topic.slice(0,16)}${t.topic.length>16?'…':''}</span><span class="tnum">${r.yes}/${r.need}</span></div>
+    </div>`;
+  }).join("");
+
+  const timeline=`<div class="panel">
+    <div class="panel-h"><h3>Besetzungs-Timeline</h3><div class="sub">20 Trainingswochen im Überblick</div>
+      <div class="spacer"></div>
+      <div class="legend"><span><i style="background:var(--good)"></i>besetzt</span><span><i style="background:var(--warn)"></i>in Arbeit</span><span><i style="background:var(--crit)"></i>kritisch</span></div>
+    </div>
+    <div class="panel-b"><div class="timeline">${cells}</div></div>
+  </div>`;
+
+  // attention
+  const need=T.map(t=>({t,s:statusOf(t),r:rosterStats(t)}))
+    .filter(x=>x.s.cls!=="good")
+    .sort((a,b)=>(a.s.cls==="crit"?0:1)-(b.s.cls==="crit"?0:1));
+  const att=`<div class="panel">
+    <div class="panel-h"><h3>Braucht Aufmerksamkeit</h3><div class="sub">${need.length} Trainings offen</div></div>
+    <div class="panel-b">${need.length?need.map(x=>`
+      <div class="att">
+        <div class="ic ${x.s.cls==='crit'?'c':'w'}">${x.s.cls==='crit'?'!':'…'}</div>
+        <div class="rowgrow">
+          <div class="nm">${x.t.topic}</div>
+          <div class="meta">${x.t.city} · ${x.t.kw} · ${x.r.yes}/${x.r.need} zugesagt${x.r.asked?` · ${x.r.asked} angefragt`:''}</div>
+        </div>
+        <span class="pill ${x.s.cls}">${x.s.label}</span>
+        <button class="btn sm primary" onclick="openDetail('${x.t.id}')">Öffnen</button>
+      </div>`).join(""):'<div class="empty">Alles besetzt 🎉</div>'}</div>
+  </div>`;
+
+  $("#v-dash").innerHTML=kpis+timeline+att;
+}
+
+/* ============================================================
+   TRAININGS LIST
+   ============================================================ */
+function renderTrainings(){
+  const rows=S.trainings.map(t=>{
+    const st=statusOf(t);const r=rosterStats(t);
+    return `<div class="row">
+      <div class="av" style="background:var(--petrol)">${t.city.slice(0,2).toUpperCase()}</div>
+      <div class="rowgrow">
+        <div class="nm">${t.topic}</div>
+        <div class="meta">${t.city}, ${t.country} · ${t.kw} · ${t.month} · ${t.participants} Teilnehmer</div>
+        <div class="tags"><span class="tag">${t.spec}</span><span class="tag">${r.yes}/${r.need} Trainer</span></div>
+      </div>
+      <span class="pill ${st.cls}">${st.label}</span>
+      <button class="btn sm primary" onclick="openDetail('${t.id}')">Planen →</button>
+    </div>`;
+  }).join("");
+  $("#v-trainings").innerHTML=`<div class="panel"><div class="panel-b" style="padding:6px 18px">${rows}</div></div>`;
+}
+
+/* ============================================================
+   TRAINING DETAIL + MATCHING
+   ============================================================ */
+let curTg=null;
+function openDetail(id){
+  curTg=S.trainings.find(t=>t.id===id);route="detail";render();renderDetail();
+  $("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+curTg.kw;
+}
+function renderDetail(){
+  const t=curTg;const st=statusOf(t);const r=rosterStats(t);
+  const rk=ranked(t);
+  const suggested=rk.filter(x=>!x.status).slice(0,6);
+  const inRoster=rk.filter(x=>x.status);
+
+  const info=`<div class="panel">
+    <div class="panel-h"><h3>Training</h3><div class="spacer"></div><span class="pill ${st.cls}">${st.label}</span></div>
+    <div class="panel-b">
+      <div class="kv"><span class="k">Thema</span><span class="v">${t.topic}</span></div>
+      <div class="kv"><span class="k">Ort</span><span class="v">${t.city}, ${t.country}</span></div>
+      <div class="kv"><span class="k">Zeitraum</span><span class="v">${t.kw} · ${t.month}</span></div>
+      <div class="kv"><span class="k">Schwerpunkt</span><span class="v">${t.spec}</span></div>
+      <div class="kv"><span class="k">Teilnehmer</span><span class="v tnum">${t.participants}</span></div>
+      <div class="kv"><span class="k">Benötigte Trainer</span><span class="v tnum">${r.yes} zugesagt / ${r.need} nötig</span></div>
+    </div>
+    <div class="panel-b" style="border-top:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn primary" onclick="composeFor('${t.id}',null,'t1')">${svg(IC.mail)} Sammelanfrage senden</button>
+      <button class="btn amber" onclick="openQuick('${t.id}')">⚡ Ersatz suchen</button>
+    </div>
+  </div>`;
+
+  const roster=`<div class="panel">
+    <div class="panel-h"><h3>Team / Status</h3><div class="sub">${inRoster.length} im Prozess</div></div>
+    <div class="panel-b">${inRoster.length?inRoster.map(x=>rosterRow(x,t)).join(""):'<div class="empty">Noch niemand angefragt. Wähle unten aus den KI-Vorschlägen.</div>'}</div>
+  </div>`;
+
+  const sugg=`<div class="panel">
+    <div class="panel-h"><h3>KI-Vorauswahl</h3><div class="sub">nach Fachgebiet, Region, Auslastung & Bewertung</div></div>
+    <div class="panel-b">
+      <div class="slot-head"><span class="c">Vorgeschlagene Trainer — in Reihenfolge anfragen, Nachrücker rutschen automatisch nach</span></div>
+      ${suggested.map((x,i)=>`
+      <div class="row">
+        <div class="av" style="background:${x.tr.color}">${initials(x.tr.name)}</div>
+        <div class="rowgrow">
+          <div class="nm">${x.tr.name} ${i===0?'<span class="tag" style="border-color:var(--amber);color:var(--amber)">Top-Match</span>':''}</div>
+          <div class="meta">${x.tr.region} · ${x.tr.spec.join(", ")} · ⭐ ${x.tr.rating}${x.tr.uae?' · UAE-erfahren':''}</div>
+        </div>
+        <span class="fit">${x.fit}% Fit</span>
+        <button class="btn sm primary" onclick="composeFor('${t.id}','${x.tr.id}','t1')">Anfragen</button>
+      </div>`).join("")}
+    </div>
+  </div>`;
+
+  $("#v-detail").innerHTML=`<button class="btn sm" onclick="go('trainings')" style="margin-bottom:14px">← Alle Trainings</button>
+    <div class="split"><div>${info}${roster}</div><div>${sugg}</div></div>`;
+}
+function rosterRow(x,t){
+  const sp=SP[x.status];
+  const acts=x.status==="asked"
+    ? `<button class="btn sm" onclick="simReply('${t.id}','${x.tr.id}')" title="Antwort des Trainers simulieren">↩ Antwort simulieren</button>`
+    : x.status==="yes"
+    ? `<button class="btn sm primary" onclick="composeFor('${t.id}','${x.tr.id}','t2')">Reisedaten</button>`
+    : x.status==="no"
+    ? `<button class="btn sm" onclick="requestNext('${t.id}')">Nachrücker anfragen</button>`
+    : "";
+  return `<div class="row">
+    <div class="av" style="background:${x.tr.color}">${initials(x.tr.name)}</div>
+    <div class="rowgrow"><div class="nm">${x.tr.name}</div>
+      <div class="meta">${x.tr.spec[0]} · ${x.tr.region}</div></div>
+    <span class="pill ${sp.cls}">${sp.label}</span>${acts}
+  </div>`;
+}
+function setStatus(tgId,trId,status){
+  const t=S.trainings.find(x=>x.id===tgId);
+  const e=t.roster.find(r=>r.trainerId===trId);
+  if(e)e.status=status;else t.roster.push({trainerId:trId,status});
+  save();
+}
+function simReply(tgId,trId){
+  const roll=Math.random();
+  const status=roll<0.62?"yes":roll<0.82?"maybe":"no";
+  setStatus(tgId,trId,status);
+  const tr=S.trainers.find(x=>x.id===trId);
+  toast(`${tr.name.split(" ").slice(-1)}: ${SP[status].label}`, status==="yes"?"good":status==="no"?"crit":"warn");
+  renderDetail();buildNav();
+}
+function requestNext(tgId){
+  const t=S.trainings.find(x=>x.id===tgId);
+  const next=ranked(t).find(x=>!x.status);
+  if(next){composeFor(tgId,next.tr.id,'t1');}
+  else toast("Keine weiteren Vorschläge im Pool","warn");
+}
+
+/* ============================================================
+   TRAINERS
+   ============================================================ */
+function renderTrainers(){
+  const cards=S.trainers.map(tr=>`
+    <div class="panel" style="margin:0">
+      <div class="panel-b">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+          <div class="av" style="width:44px;height:44px;background:${tr.color}">${initials(tr.name)}</div>
+          <div class="rowgrow"><div class="nm">${tr.name}</div>
+            <div class="meta">${tr.region} · ⭐ ${tr.rating}${tr.uae?' · UAE ✓':''}</div></div>
+        </div>
+        <div class="tags">${tr.spec.map(s=>`<span class="tag">${s}</span>`).join("")}</div>
+        <div class="divider"></div>
+        <div class="meta" style="display:flex;flex-direction:column;gap:3px">
+          <span>✉︎ ${tr.email}</span><span>☎ ${tr.phone}</span>
+          <span>🗣 ${tr.langs.join(" · ")} · Auslastung ${["frei","gering","mittel","hoch"][tr.load]}</span>
+        </div>
+      </div>
+    </div>`).join("");
+  $("#v-trainers").innerHTML=`
+    <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px">
+      <div class="rowgrow"><b>${S.trainers.length} Trainer im Pool</b>
+      <div class="meta">In der Vollversion: Import per Excel/CSV oder KI-Extraktion aus Lebensläufen & Angeboten.</div></div>
+      <button class="btn" onclick="openImport()">＋ Profile importieren</button>
+    </div></div>
+    <div class="grid2">${cards}</div>`;
+}
+
+/* ============================================================
+   TEMPLATES
+   ============================================================ */
+let editTpl=null;
+function renderTemplates(){
+  const list=S.templates.map(tp=>`
+    <div class="panel"><div class="panel-b">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <b>${tp.name}</b><div class="spacer"></div>
+        <button class="btn sm" onclick="editTemplate('${tp.id}')">Bearbeiten</button>
+      </div>
+      <div class="meta" style="margin-bottom:6px">Betreff: ${tp.subject}</div>
+      <div style="white-space:pre-wrap;font-size:13px;color:var(--muted);max-height:120px;overflow:hidden">${tp.body}</div>
+    </div></div>`).join("");
+  $("#v-templates").innerHTML=`
+    <div class="panel"><div class="panel-b" style="display:flex;align-items:center">
+      <div class="rowgrow"><b>Platzhalter:</b> <span class="meta">{{firstName}} {{topic}} {{city}} {{country}} {{kw}} {{month}} {{teamSize}} — werden beim Senden automatisch gefüllt.</span></div>
+    </div></div>${list}`;
+}
+function editTemplate(id){
+  editTpl=S.templates.find(t=>t.id===id);
+  $("#sheetTitle").textContent="Vorlage bearbeiten";
+  $("#sheetBody").innerHTML=`
+    <label class="fld">Name</label><input class="inp" id="tName" value="${esc(editTpl.name)}">
+    <label class="fld">Betreff</label><input class="inp" id="tSubj" value="${esc(editTpl.subject)}">
+    <label class="fld">Text</label><textarea id="tBody">${esc(editTpl.body)}</textarea>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">Abbrechen</button>
+    <div class="spacer"></div><button class="btn primary" onclick="saveTpl()">Speichern</button>`;
+  openSheet();
+}
+function saveTpl(){
+  editTpl.name=$("#tName").value;editTpl.subject=$("#tSubj").value;editTpl.body=$("#tBody").value;
+  save();closeSheet();renderTemplates();toast("Vorlage gespeichert","good");
+}
+
+/* ============================================================
+   COMPOSER (E-Mail slide-over)
+   ============================================================ */
+let compose={tgId:null,recips:[],tplId:"t1"};
+function fillTpl(str,tg,tr){
+  return str
+    .replace(/{{firstName}}/g,tr?tr.name.replace(/^Dr\.\s*/,"").split(" ")[0]:"[Name]")
+    .replace(/{{topic}}/g,tg.topic).replace(/{{city}}/g,tg.city)
+    .replace(/{{country}}/g,tg.country).replace(/{{kw}}/g,tg.kw)
+    .replace(/{{month}}/g,tg.month).replace(/{{teamSize}}/g,tg.need);
+}
+function composeFor(tgId,trId,tplId){
+  const tg=S.trainings.find(t=>t.id===tgId);
+  compose={tgId,recips:trId?[trId]:ranked(tg).filter(x=>!x.status).slice(0,tg.need).map(x=>x.tr.id),tplId:tplId||"t1"};
+  drawComposer();openSheet();
+}
+function drawComposer(){
+  const tg=S.trainings.find(t=>t.id===compose.tgId);
+  const tpl=S.templates.find(t=>t.id===compose.tplId);
+  const first=compose.recips.length===1?S.trainers.find(t=>t.id===compose.recips[0]):null;
+  const recipChips=compose.recips.map(id=>{const tr=S.trainers.find(t=>t.id===id);
+    return `<span class="recip">${initials(tr.name)} · ${tr.name.split(" ").slice(-1)}
+      <span style="cursor:pointer;opacity:.6" onclick="rmRecip('${id}')">✕</span></span>`}).join("");
+  $("#sheetTitle").textContent=compose.recips.length>1?`Sammelanfrage · ${compose.recips.length} Trainer`:"Anfrage senden";
+  $("#sheetBody").innerHTML=`
+    <label class="fld">Von</label>
+    <input class="inp" value="trainer@etaf-akademie.org" readonly style="color:var(--muted)">
+    <label class="fld">An (${compose.recips.length})</label>
+    <div class="chips">${recipChips||'<span class="meta">keine Empfänger</span>'}</div>
+    <label class="fld">Vorlage</label>
+    <div class="chips">${S.templates.map(t=>`<span class="chip ${t.id===compose.tplId?'on':''}" onclick="pickTpl('${t.id}')">${t.name}</span>`).join("")}</div>
+    <label class="fld">Betreff</label>
+    <input class="inp" id="cSubj" value="${esc(fillTpl(tpl.subject,tg,first))}">
+    <label class="fld">Nachricht</label>
+    <div class="rte">
+      <button onclick="wrap('**')" title="Fett">B</button>
+      <button onclick="wrap('_')" title="Kursiv"><i>I</i></button>
+      <button onclick="ins('\\n• ')" title="Liste">•</button>
+      <button onclick="ins('[ ✅ Ja, verfügbar ]   [ 🤔 Vielleicht ]   [ ❌ Nein ]')" title="Antwort-Buttons">⛶</button>
+    </div>
+    <textarea id="cBody">${esc(fillTpl(tpl.body,tg,first))}</textarea>
+    <div class="meta" style="margin-top:8px">💡 Platzhalter sind bereits gefüllt. Bei Sammelanfragen wird {{firstName}} pro Empfänger personalisiert.</div>`;
+  $("#sheetFoot").innerHTML=`
+    <button class="btn" onclick="closeSheet()">Verwerfen</button>
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="sendCompose()">${svg(IC.mail)} Senden & Verfügbarkeit abfragen</button>`;
+}
+function pickTpl(id){
+  // keep edited subject/body? simpler: reset to template
+  compose.tplId=id;drawComposer();
+}
+function rmRecip(id){compose.recips=compose.recips.filter(x=>x!==id);drawComposer();}
+function wrap(m){const t=$("#cBody");const s=t.selectionStart,e=t.selectionEnd;
+  t.value=t.value.slice(0,s)+m+t.value.slice(s,e)+m+t.value.slice(e);t.focus();}
+function ins(x){const t=$("#cBody");const s=t.selectionStart;
+  t.value=t.value.slice(0,s)+x+t.value.slice(s);t.focus();}
+function sendCompose(){
+  compose.recips.forEach(id=>setStatus(compose.tgId,id,"asked"));
+  const n=compose.recips.length;
+  closeSheet();
+  toast(`${n} Anfrage${n>1?'n':''} über trainer@etaf-akademie.org versendet`,"good");
+  if(route==="detail")renderDetail();
+  buildNav();
+  // Simulierter Rücklauf: nach kurzer Zeit "trudeln Antworten ein"
+  compose.recips.forEach((id,i)=>{
+    setTimeout(()=>{
+      if(Math.random()<0.7){
+        const roll=Math.random();const st=roll<0.6?"yes":roll<0.82?"maybe":"no";
+        setStatus(compose.tgId,id,st);
+        const tr=S.trainers.find(t=>t.id===id);
+        toast(`↩ ${tr.name.split(" ").slice(-1)}: ${SP[st].label}`,st==="yes"?"good":st==="no"?"crit":"warn");
+        if(route==="detail")renderDetail();
+        if(route==="dash")renderDash();
+        buildNav();
+      }
+    }, 2600+i*1500+Math.random()*1500);
+  });
+}
+
+/* ============================================================
+   QUICK REPLACEMENT
+   ============================================================ */
+function openQuick(tgId){
+  const tg=tgId?S.trainings.find(t=>t.id===tgId):S.trainings.find(t=>statusOf(t).cls!=="good")||S.trainings[0];
+  const pool=ranked(tg).filter(x=>!x.status||x.status==="no").slice(0,5);
+  $("#sheetTitle").textContent="⚡ Schnell-Ersatz";
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:12px">Kurzfristig einen Ausfall ersetzen — Anfrage an die besten verfügbaren Trainer. Wer zuerst zusagt, bekommt den Platz.</div>
+    <label class="fld">Training</label>
+    <select id="qTg">${S.trainings.map(t=>`<option value="${t.id}" ${t.id===tg.id?'selected':''}>${t.topic} — ${t.city} (${t.kw})</option>`).join("")}</select>
+    <label class="fld">Vorgeschlagene Ersatz-Trainer</label>
+    ${pool.map(x=>`<div class="row">
+      <div class="av" style="background:${x.tr.color}">${initials(x.tr.name)}</div>
+      <div class="rowgrow"><div class="nm">${x.tr.name}</div><div class="meta">${x.tr.region} · ${x.tr.spec[0]} · ⚡ schnell erreichbar</div></div>
+      <span class="fit">${x.fit}%</span></div>`).join("")}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">Abbrechen</button><div class="spacer"></div>
+    <button class="btn amber" onclick="sendQuick()">Blitz-Anfrage senden</button>`;
+  openSheet();
+}
+function sendQuick(){
+  const tgId=$("#qTg").value;const tg=S.trainings.find(t=>t.id===tgId);
+  const pool=ranked(tg).filter(x=>!x.status||x.status==="no").slice(0,5);
+  pool.forEach(x=>setStatus(tgId,x.tr.id,"asked"));
+  closeSheet();toast(`Blitz-Anfrage an ${pool.length} Trainer raus ⚡`,"good");
+  buildNav();if(route==="detail"){curTg=tg;renderDetail();}if(route==="dash")renderDash();
+}
+
+/* ============================================================
+   IMPORT (mock)
+   ============================================================ */
+function openImport(){
+  $("#sheetTitle").textContent="Import";
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:14px">In der Vollversion importierst du hier Trainings & Trainer.</div>
+    <label class="fld">Quelle</label>
+    <div class="chips"><span class="chip on">Excel / CSV</span><span class="chip">Angebot (PDF)</span><span class="chip">KI aus Lebenslauf</span></div>
+    <label class="fld" style="margin-top:16px">Vorschau (Beispiel)</label>
+    <div class="panel" style="margin:0"><div class="panel-b">
+      <div class="kv"><span class="k">Erkannte Trainings</span><span class="v tnum">4</span></div>
+      <div class="kv"><span class="k">Erkannte Trainer-Profile</span><span class="v tnum">11</span></div>
+      <div class="kv"><span class="k">Spezialisierung erkannt</span><span class="v">DNA-Diagnostik, Fingerprint Dental …</span></div>
+    </div></div>
+    <div class="meta" style="margin-top:10px">Die KI legt Profile automatisch an — du prüfst und bestätigst vor der Übernahme.</div>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">Schließen</button><div class="spacer"></div>
+    <button class="btn primary" onclick="closeSheet();toast('Demo: Import ist im Prototyp nur angedeutet')">Übernehmen</button>`;
+  openSheet();
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function initials(n){return n.replace(/^Dr\.\s*/,"").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();}
+function esc(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function openSheet(){$("#scrim").classList.add("on");$("#sheet").classList.add("on");}
+function closeSheet(){$("#scrim").classList.remove("on");$("#sheet").classList.remove("on");}
+let toastT;
+function toast(msg,kind){
+  const el=$("#toast");el.textContent=msg;
+  el.style.borderLeft=kind?`4px solid var(--${kind==='good'?'good':kind==='crit'?'crit':kind==='warn'?'warn':'petrol'})`:"none";
+  el.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("on"),2600);
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute("data-theme");
+  const isDark=cur?cur==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
+  document.documentElement.setAttribute("data-theme",isDark?"light":"dark");
+}
+
+/* ---------- BOOT ---------- */
+buildKeys();drawDots();
+</script>
