@@ -38,9 +38,13 @@ async function loadTours() {
     li.className = state.tour?.id === t.id ? 'active' : '';
     li.innerHTML = `<span class="title">${escapeHtml(t.name)}</span>
       <span class="meta"><span class="m">${icon('photo', 'ico sm')}${t.scene_count}</span></span>
+      <button class="row-edit" title="Umbenennen">${icon('edit', 'ico sm')}</button>
       <button class="row-del" title="Löschen">${icon('trash', 'ico sm')}</button>`;
     li.querySelector('.title').onclick = () => openTour(t.id);
     li.querySelector('.meta').onclick = () => openTour(t.id);
+    const startRename = (e) => { e.stopPropagation(); renameTour(t, li); };
+    li.querySelector('.row-edit').onclick = startRename;
+    li.querySelector('.title').ondblclick = startRename;
     li.querySelector('.row-del').onclick = async (e) => {
       e.stopPropagation();
       if (!confirm(`Rundgang „${t.name}" löschen?`)) return;
@@ -66,6 +70,32 @@ async function openTour(id) {
 
 function attachLogoUrls() {
   for (const sc of state.tour.scenes) sc._logo_url = state.tour.logo_path || null;
+}
+
+// Projekt (Rundgang) direkt in der Liste umbenennen
+function renameTour(t, li) {
+  const titleEl = li.querySelector('.title');
+  const input = document.createElement('input');
+  input.type = 'text'; input.className = 'inline-edit'; input.value = t.name;
+  titleEl.replaceWith(input);
+  input.focus(); input.select();
+  let done = false;
+  const finish = async (save) => {
+    if (done) return; done = true;
+    const name = input.value.trim();
+    if (save && name && name !== t.name) {
+      await api.send(`/api/tours/${t.id}`, 'PUT', { name });
+      if (state.tour?.id === t.id) state.tour.name = name;
+      saveHint('Umbenannt');
+    }
+    await loadTours();
+  };
+  input.onclick = (ev) => ev.stopPropagation();
+  input.onkeydown = (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); finish(true); }
+    else if (ev.key === 'Escape') { ev.preventDefault(); finish(false); }
+  };
+  input.onblur = () => finish(true);
 }
 
 // ------------------------------------------------------------ Szenen-Liste --
@@ -399,15 +429,20 @@ function bind() {
 
   $('#btn-load-project').onclick = () => $('#project-import').click();
   $('#project-import').addEventListener('change', async (e) => {
-    const f = e.target.files[0]; e.target.value = '';
-    if (!f) return;
-    toast('Projekt wird geladen…');
-    try {
-      const fd = new FormData(); fd.append('project', f);
-      const tour = await api.form('/api/projects/import', fd);
-      await loadTours(); await openTour(tour.id);
-      toast('Projekt geladen');
-    } catch (err) { toast('Laden fehlgeschlagen: ' + err.message, true); }
+    const files = [...e.target.files]; e.target.value = '';
+    if (!files.length) return;
+    toast(files.length > 1 ? `${files.length} Projekte werden geladen…` : 'Projekt wird geladen…');
+    let lastId = null, ok = 0;
+    for (const f of files) {
+      try {
+        const fd = new FormData(); fd.append('project', f);
+        const tour = await api.form('/api/projects/import', fd);
+        lastId = tour.id; ok++;
+      } catch (err) { toast(`„${f.name}" fehlgeschlagen: ${err.message}`, true); }
+    }
+    await loadTours();
+    if (lastId) await openTour(lastId);
+    if (ok) toast(ok > 1 ? `${ok} Projekte geladen` : 'Projekt geladen');
   });
 
   $('#btn-present').onclick = () => {

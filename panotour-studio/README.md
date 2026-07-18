@@ -39,7 +39,8 @@ hochladen → loslegen.
 
 | Bereich | Was es kann |
 |---|---|
-| **Rundgänge & Szenen** | Beliebig viele Rundgänge, pro Szene ein 360°-Bild. Reihenfolge per Drag & Drop. |
+| **Projekte (Rundgänge)** | Beliebig viele Projekte **parallel** in der Liste. „+ Neu" legt eins mit Namen an, per Klick wechseln, Umbenennen über das Stift-Symbol (oder Doppelklick auf den Namen). |
+| **Szenen** | Pro Szene ein 360°-Bild, Reihenfolge per Drag & Drop. |
 | **Upload** | Gängige Formate: JPG, PNG, WebP, AVIF, GIF, BMP, TIFF, SVG (bis 60 MB). *Hinweis: HEIC/HEIF & manche TIFF zeigt der Browser nicht direkt an — vorher zu JPG/WebP konvertieren.* |
 | **📍 Hotspots** | Ins Bild klicken → Punkt setzen → mit einer anderen Szene verknüpfen. Im Rundgang klickt man sich so von Raum zu Raum. |
 | **🏷 Logo / Stativ-Patch** | Logo hochladen (transparentes PNG ideal). Es liegt flach am Boden und überdeckt Stativ/Fotograf. Größe per Regler, Position per Klick (nach unten schauen). |
@@ -143,7 +144,8 @@ Für Backup, Umzug auf einen anderen Rechner oder Übergabe klickst du oben
 **„Sichern"** → es lädt eine `.panotour.zip` herunter. Mit **„Laden"** (links
 über der Rundgang-Liste) ziehst du so eine Datei wieder rein — sie wird als
 **neuer, voll bearbeitbarer** Rundgang importiert (Hotspot-Verknüpfungen,
-Kamerafahrten und Logo inklusive).
+Kamerafahrten und Logo inklusive). Du kannst **mehrere Projektdateien auf
+einmal** auswählen — jede landet als eigenes Projekt in der Liste.
 
 ## Konfiguration & Offline
 
