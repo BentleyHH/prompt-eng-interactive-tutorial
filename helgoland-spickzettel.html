@@ -229,7 +229,7 @@
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Barlow',system-ui,sans-serif;color:var(--tinte);background:#e9e3d5;
-    -webkit-font-smoothing:antialiased;padding:22px;display:flex;justify-content:center}
+    -webkit-font-smoothing:antialiased;padding:22px;display:flex;flex-direction:column;align-items:center;gap:22px}
   .sheet{background:var(--gischt);width:100%;max-width:640px;border:1px solid var(--linie);
     border-radius:16px;padding:34px 34px 28px;position:relative;overflow:hidden}
   .sheet::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;
@@ -260,15 +260,33 @@
   .reserve b{color:var(--tinte);font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase}
   .merksatz{margin-top:20px;padding-top:16px;border-top:2px solid var(--tiefsee);
     font-family:'Fraunces',serif;font-style:italic;font-size:17px;line-height:1.35;color:var(--tiefsee)}
+
+  /* Seite 2 – Match-Tabelle */
+  .job{font-size:13px;color:var(--tinte-60);margin:-2px 0 16px}
+  .job b{color:var(--tinte)}
+  .match{width:100%;border-collapse:collapse}
+  .match td{vertical-align:top;padding:10px 0;border-top:1px solid var(--linie);line-height:1.34}
+  .match tr:first-child td{border-top:0}
+  .match .will{width:40%;padding-right:14px;font-weight:600;font-size:13.5px;color:var(--tinte)}
+  .match .bring{font-size:13px;color:var(--tinte-60)}
+  .match .bring::before{content:"→";color:var(--sonne);font-weight:600;margin-right:7px}
+  .ehrlich{margin-top:18px;border:1px solid var(--linie);border-left:3px solid var(--sonne);border-radius:11px;padding:13px 16px;background:#fff}
+  .ehrlich h3{font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#B9761A;margin-bottom:6px}
+  .ehrlich p{font-size:13px;color:var(--tinte-60);line-height:1.45}
+  .ehrlich b{color:var(--tinte)}
+
   @media print{
     @page{size:A4 portrait;margin:0}
-    body{background:#fff;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;min-height:297mm;align-items:flex-start}
-    .sheet{border:0;border-radius:0;max-width:none;width:210mm;min-height:297mm;padding:20mm 20mm 16mm}
+    body{background:#fff;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;gap:0;align-items:flex-start}
+    .sheet{border:0;border-radius:0;max-width:none;width:210mm;min-height:297mm;padding:20mm 20mm 16mm;page-break-after:always}
+    .sheet:last-child{page-break-after:auto}
     .sheet::before{width:8px}
   }
 </style>
 </head>
 <body>
+
+  <!-- SEITE 1 -->
   <div class="sheet">
     <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Spickzettel · Termin Bürgermeister</div>
     <h1>Zuhören schlägt <em>Antworten</em>.</h1>
@@ -307,5 +325,37 @@
 
     <p class="merksatz">Wer am Ende denkt „Der hat richtig gut zugehört", hat den Termin gewonnen.</p>
   </div>
+
+  <!-- SEITE 2 -->
+  <div class="sheet">
+    <div class="eyebrow"><span class="flagge"><i></i><i></i><i></i></span> Spickzettel · Seite 2 · Match zur Ausschreibung</div>
+    <h1>Was er will → was ich <em>bringe</em>.</h1>
+    <p class="job"><b>Tourismusdirektor:in (m/w/d)</b> · Leitung Helgoland Tourismus-Service · befristet · Frist 02.08.2026</p>
+
+    <table class="match">
+      <tr><td class="will">Attraktives Veranstaltungs­portfolio</td>
+          <td class="bring">25 Jahre Live-Kommunikation, 1.000+ Events, Eventlocation Kaispeicher mit aufgebaut &amp; vermarktet. Kerngeschäft.</td></tr>
+      <tr><td class="will">Moderne, digitale Tourismus­strategie</td>
+          <td class="bring">Kampagnen aus einer Hand + digital souverän: Prototyp „Insel-Puls", HelgolandCard durchgängig digital.</td></tr>
+      <tr><td class="will">Gesundheits­tourismus</td>
+          <td class="bring">Konkret: „Das Becken" (Bad/Spa), Thalasso, 200 Jahre Seebad weitergedacht.</td></tr>
+      <tr><td class="will">Kreative Ideen zur Tourismus­förderung</td>
+          <td class="bring">Ganzes Impulspapier: Robbenwinter buchbar, Quanteninsel, Buden-Flotte. Arbeitsprobe liegt vor.</td></tr>
+      <tr><td class="will">Betrieb mit sechs Einheiten führen</td>
+          <td class="bring">Führungsroutine: Richtung bei mir, Operatives bei starken Bereichsleitungen. Budget- &amp; Krisenroutine.</td></tr>
+      <tr><td class="will">Ganzjahresinsel / „neuer Lebenszyklus"</td>
+          <td class="bring">Winter als zweite Saison, Nebensaison-Formate, Wertschöpfung vor Volumen.</td></tr>
+      <tr><td class="will">Marke, Bild, Vermarktung</td>
+          <td class="bring">Auge für Auftritt, Fotografie, Erzählung – und Hamburg als Quellmarkt, Medien &amp; Netzwerk gleich mit.</td></tr>
+    </table>
+
+    <div class="ehrlich">
+      <h3>Der ehrliche Punkt</h3>
+      <p>Gefordert wird oft ein <b>Studium Tourismus/Marketing</b>. Ich bin <b>Praktiker</b> – kein Kurverwaltungs-Lebenslauf, sondern 25 Jahre genau auf diesem Feld, mit Belegen. Nicht verstecken – voranstellen. Ruhig, mit Track Record, nicht rechtfertigen.</p>
+    </div>
+
+    <p class="merksatz">„Sie suchen jemanden, der Events, digitale Strategie und Gesundheitstourismus zusammenbringt und dabei einen Betrieb führt. Das ist – zufällig – ziemlich genau mein Berufsleben."</p>
+  </div>
+
 </body>
 </html>
