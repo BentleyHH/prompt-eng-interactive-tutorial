@@ -111,7 +111,6 @@ function get_state(): array {
   $materials=array_map(function($r){
     return ['id'=>$r['id'],'name'=>$r['name'],'unit'=>$r['unit'],'cat'=>$r['cat']];
   }, q("SELECT * FROM materials ORDER BY sort_order,name")->fetchAll());
-
   // Material-Positionen je Training
   $matByT=[];
   foreach(q("SELECT * FROM training_materials")->fetchAll() as $m){
@@ -125,9 +124,10 @@ function get_state(): array {
 
   $trainings=array_map(function($r) use ($byT,$matByT){
     return [
-      'id'=>(string)$r['id'], 'clientId'=>$r['client_id']??null,
+      'id'=>(string)$r['id'], 'clientId'=>$r['client_id']??null, 'code'=>$r['code']??null,
       'topic'=>$r['topic'], 'city'=>$r['city'], 'country'=>$r['country'],
       'kw'=>$r['kw'], 'month'=>$r['month'], 'spec'=>$r['spec'],
+      'date'=>$r['start_date']??null, 'dateEnd'=>$r['end_date']??null,
       'need'=>(int)$r['need_cnt'], 'participants'=>(int)$r['participants'],
       'travel'=>[
         'venue'=>$r['venue']??'', 'hotel'=>$r['hotel']??'', 'hotelAddr'=>$r['hotel_addr']??'',

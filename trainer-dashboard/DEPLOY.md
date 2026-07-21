@@ -134,42 +134,50 @@ Zeitpunkt, Status) — Anfragen, Erinnerungen, Visum-Hinweise und Agenda-Mails a
 Grundlage ist die Tabelle `email_log`, die bei jedem Versand (auch bei `mail_mode='log'`)
 befüllt wird.
 
+## Vorgeladenes Programm (DVI Elite Team 2026–2027)
+Die Standard-Installation legt das reale **Operational DVI Elite Team Programme 2026–2027** an:
+24 Einsätze (W1–W20 mit exakten Datumsbereichen, PM-Modul in Weeze als Kohorte A/B, zwei
+Train-the-Trainer-Blöcke und die Abschluss-Zertifizierung), Kunde **Abu Dhabi Police — DVI**.
+Im **Demo-Modus** wird das Programm beim ersten Laden nach einem Update automatisch übernommen
+(Sprache, Einstellungen, E-Mail-Protokoll & Vorlagen bleiben erhalten). Willst du im Demo-Modus
+ganz neu starten, `localStorage` leeren.
+
 ## Mehrere Kunden / Projekte
-Jedes Training gehört zu einem **Kunden** (z. B. „ETAF Abu Dhabi", „Saudi-Arabien", „Inland/LKA")
-mit eigener Farbe. Oben rechts schaltest du zwischen **„Alle Kunden"** und einem einzelnen Kunden
-um. Bei „Alle Kunden" zeigt der **Leitstand** je Kunde eine Kachel: wo es brennt (kritisch), was in
-Arbeit und was fertig besetzt ist. Kunden legst du über **⚙ Kunden verwalten** an (Name, Kürzel,
-Farbe, Land); ein Training ordnest du in der Detailansicht per Auswahlfeld einem Kunden zu.
-Die Standard-Installation legt drei Beispiel-Kunden an; bestehende Trainings werden beim ersten
-Start automatisch nach Land zugeordnet.
+Das Tool ist mandantenfähig: jedes Training gehört zu einem **Kunden** mit eigener Farbe. Oben rechts
+schaltest du zwischen **„Alle Kunden"** und einem einzelnen Kunden um; bei „Alle Kunden" zeigt der
+**Leitstand** je Kunde eine Kachel (wo es brennt / in Arbeit / fertig besetzt). Standardmäßig ist nur
+**Abu Dhabi Police — DVI** angelegt; weitere Kunden (z. B. weitere Behörden/Länder) ergänzt du über
+**⚙ Kunden verwalten** (Name, Kürzel, Farbe, Land). Ein Training ordnest du in der Detailansicht per
+Auswahlfeld einem Kunden zu.
 
 ## Trainings anlegen & bearbeiten
 Unter **Trainings → + Neues Training** legst du ein Training direkt im Dashboard an (Kunde, Thema,
-Ort, Land, Kalenderwoche, Monat/Jahr, Schwerpunkt, benötigte Trainer, Teilnehmer). Bestehende
-Trainings öffnest du und bearbeitest sie über **✎ Bearbeiten** (oder löschst sie dort). Import bleibt
-zusätzlich möglich, ist aber nicht mehr nötig.
+Ort, Land, Beginn/Ende als Datum, Schwerpunkt, benötigte Trainer, Teilnehmer). Aus dem Datum werden
+Kalenderwoche und Monat automatisch abgeleitet. Bestehende Trainings öffnest und bearbeitest (oder
+löschst) du über **✎ Bearbeiten** in der Detailansicht.
 
 ## Intelligente Materialliste
-Jedes Training hat eine **Materialliste** (Positionen = Material + Anzahl). Die Materialien selbst
-pflegst du zentral über **⚙ Material-Katalog** (z. B. DVI-Kits, Leichensäcke, CBRN-Kits, Protokolle,
-Verbrauchsmaterial) mit Bezeichnung, Einheit und Kategorie. In der Trainingsansicht unter
-**Material bearbeiten** setzt du die Positionen und Mengen.
+Jedes Training hat eine **Materialliste** (Positionen = Material + Anzahl). Die Materialien pflegst
+du zentral über **⚙ Material-Katalog** (DVI-Kits, Leichensäcke, CBRN-Kits, Ante-/Post-Mortem-
+Protokolle, DNA-/Fingerprint-Sets, Schutzanzüge, Verbrauchsmaterial) mit Bezeichnung, Einheit und
+Kategorie. In der Trainingsansicht unter **Material bearbeiten** setzt du Positionen und Mengen.
 
 **Typ-Vorlagen (intelligent):** Über **💾 Als Standard für „<Schwerpunkt>" speichern** hinterlegst du
-die Standard-Materialliste für einen Schwerpunkt. Legst du später ein neues Training mit demselben
-Schwerpunkt an, wird diese Liste **automatisch übernommen** — wiederkehrende Trainings haben so sofort
-die richtige Auflistung. Über **🖨 Materialliste** druckst du die Liste als Packliste.
+die Standard-Materialliste für einen Schwerpunkt (z. B. „Post Mortem" oder „CBRN"). Legst du ein neues
+Training mit demselben Schwerpunkt an, wird diese Liste **automatisch übernommen**. Über
+**🖨 Materialliste** druckst du die Liste als Packliste. (Ausgeliefert sind bereits Vorlagen für
+Post Mortem, Ante Mortem, Scene & Recovery, CBRN und Simulation.)
 
 ## Kalender: iCal-Export & Wandkalender
 - **iCal-Datei (.ics)**: Über **⤓ iCal (.ics)** lädst du alle Trainings der aktuellen Kunden-Auswahl
-  als Kalenderdatei herunter (echte Termine aus KW+Jahr, Farbe/Kategorie pro Kunde) und importierst
+  als Kalenderdatei herunter (exakte Termine, Farbe/Kategorie pro Kunde) und importierst
   sie in Google/Apple/Outlook.
 - **Abonnierbarer Link (Live)**: Setze `ics_key` in `config.php` und trage in deinem Kalender
   „Kalender abonnieren" mit dieser URL ein — er aktualisiert sich automatisch:
   ```
   https://deine-domain.de/dashboard/backend/ics.php?key=DEIN_ICS_KEY
   ```
-  Optional nur ein Kunde: `…&client=<client_id>` (z. B. `cl-auh`).
+  Optional nur ein Kunde: `…&client=<client_id>` (z. B. `cl-adp`).
 - **Wandkalender (Druck)**: Über **📅 Wandkalender** öffnet sich eine chronologische, farbcodierte
   Monatsübersicht — im Querformat zum Ausdrucken und An-die-Wand-hängen.
 

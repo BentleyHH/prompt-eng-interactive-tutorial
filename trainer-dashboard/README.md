@@ -1,8 +1,10 @@
 # ETAF Trainer-Koordination
 
-Werkzeug für die Koordination der Trainings **über mehrere Kunden/Projekte parallel**
-(z. B. Abu Dhabi, Saudi-Arabien, Inland/LKA) – je Kunde eigene Farbe, plus ein
-**Gesamt-Leitstand** über alle Kunden. Kompletter Ablauf – von der KI-Vorauswahl über die
+Werkzeug für die Koordination der ETAF-Trainingsprogramme. Vorgeladen ist das reale
+**Operational DVI Elite Team Programme 2026–2027** für **Abu Dhabi Police** (24 Einsätze
+Sep 2026 – Nov 2027, inkl. PM-Modul in Weeze, Train-the-Trainer-Blöcke und Zertifizierung).
+Das Tool ist **mandantenfähig** (mehrere Kunden/Projekte parallel möglich, je eigene Farbe)
+mit **Gesamt-Leitstand** über alle Kunden. Kompletter Ablauf – von der KI-Vorauswahl über die
 E-Mail-Anfrage bis zum automatischen Verfügbarkeits-Rücklauf ins Dashboard.
 
 Läuft in **zwei Modi**:
@@ -48,12 +50,17 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
   als **abonnierbarer Link** (`ics.php`, aktualisiert sich automatisch).
 - **Druckbarer Wandkalender**: chronologische Monatsübersicht, farbcodiert pro Kunde, Querformat
   zum Ausdrucken/an-die-Wand-hängen.
-- **Trainings direkt anlegen/bearbeiten/löschen** im Dashboard (Kunde, Thema, Ort, KW, Monat,
-  Schwerpunkt, benötigte Trainer, Teilnehmer) — nicht mehr nur per Import.
+- **Echtes Programm vorgeladen**: das DVI-Programm 2026–2027 (W1–W20, TtT-Blöcke, Final) mit
+  **exakten Terminen** (Datumsbereiche statt nur KW), Orten (Abu Dhabi bzw. Weeze) und Schwerpunkten
+  (INTERPOL-DVI-Phasen: DVI-Grundlagen, Data Management, Ante/Post Mortem, Reconciliation,
+  Scene & Recovery, CBRN, Simulation, Site-Folder, Train-the-Trainer, Zertifizierung).
+- **Trainings direkt anlegen/bearbeiten/löschen** im Dashboard (Kunde, Thema, Ort, Beginn/Ende,
+  Schwerpunkt, benötigte Trainer, Teilnehmer) — nicht nur per Import.
 - **Intelligente Materialliste** je Training: Positionen (Material + Anzahl) aus einem zentralen
-  **Material-Katalog** (DVI-Kits, Leichensäcke, CBRN-Kits, Protokolle, Verbrauchsmaterial …).
-  Pro **Schwerpunkt** lässt sich eine **Typ-Vorlage** speichern — neue Trainings dieses Typs
-  bekommen die richtige Liste dann automatisch beim Anlegen. Liste als **Packliste druckbar**.
+  **Material-Katalog** (DVI-Kits, Leichensäcke, CBRN-Kits, Ante-/Post-Mortem-Protokolle, DNA-/
+  Fingerprint-Sets, Schutzanzüge, Verbrauchsmaterial). Pro **Schwerpunkt** eine **Typ-Vorlage** —
+  neue Trainings dieses Typs bekommen die richtige Liste automatisch beim Anlegen. Als **Packliste
+  druckbar**.
 - **Trainings** mit Besetzungsstand; Detailansicht je Training
 - **KI-Vorauswahl**: Trainer werden nach Fachgebiet, Region, UAE-Erfahrung, Auslastung &
   Bewertung gerankt (Fit-%). Manuell in Reihenfolge anfragen, Nachrücker rutschen nach
@@ -93,10 +100,11 @@ Rücklauf. Über **◐ Design wechseln** hell/dunkel testen.
 
 | Baustein | Demo | Live (jetzt) | Später |
 |---|---|---|---|
-| Trainings pflegen | anlegen/bearbeiten/löschen | **anlegen/bearbeiten/löschen (DB)** | Wiederholungs-Serien |
+| DVI-Programm 2026–2027 | vorgeladen (24 Einsätze, exakte Termine) | **seed_demo → DB** | Folge-Programme |
+| Trainings pflegen | anlegen/bearbeiten/löschen | **anlegen/bearbeiten/löschen (DB)** | Serien/Wiederholungen |
 | Materialliste | voll + Typ-Vorlagen | **materials/-presets-Tabellen** | Bestände/Nachbestellung |
 | Mehrere Kunden | voll (localStorage) | **clients-Tabelle + Zuordnung** | Rollen/Rechte je Kunde |
-| Gesamt-Leitstand | voll | **kundenübergreifende Übersicht** | Auslastungs-/Kostenreport |
+| Gesamt-Leitstand | voll | **kundenübergreifende Übersicht** | Auslastungsreport |
 | Kalender-Export | .ics-Download | **.ics + Abo-Link (`ics.php`)** | 2-Wege-Sync (CalDAV) |
 | Wandkalender | Druck (Querformat) | Druck (Querformat) | PDF-Serienexport |
 | Daten | localStorage | **MySQL @ artfiles** | Backups, Rollen |

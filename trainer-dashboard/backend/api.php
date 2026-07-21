@@ -88,17 +88,17 @@ switch($action){
     require_auth();
     $id=$in['id']??null;
     $spec=$in['spec']??'';
-    $f=[$in['clientId']??($in['client']??null), $in['topic']??'', $in['city']??'', $in['country']??'', $in['kw']??'', $in['month']??'',
+    $f=[$in['clientId']??($in['client']??null), $in['topic']??'', $in['city']??'', $in['country']??'',
+        $in['kw']??'', $in['month']??'', $in['date']??null, $in['dateEnd']??null, $in['code']??null,
         $spec, (int)($in['need']??5), (int)($in['participants']??0)];
     $prefilled=0;
     if($id){
-      q("UPDATE trainings SET client_id=?,topic=?,city=?,country=?,kw=?,month=?,spec=?,need_cnt=?,participants=? WHERE id=?",
+      q("UPDATE trainings SET client_id=?,topic=?,city=?,country=?,kw=?,month=?,start_date=?,end_date=?,code=?,spec=?,need_cnt=?,participants=? WHERE id=?",
         array_merge($f,[$id]));
     } else {
-      q("INSERT INTO trainings(client_id,topic,city,country,kw,month,spec,need_cnt,participants,created_at)
-         VALUES(?,?,?,?,?,?,?,?,?,?)", array_merge($f,[now()]));
+      q("INSERT INTO trainings(client_id,topic,city,country,kw,month,start_date,end_date,code,spec,need_cnt,participants,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", array_merge($f,[now()]));
       $id=db()->lastInsertId();
-      // Intelligente Materialliste: Typ-Vorlage für diesen Schwerpunkt übernehmen
       if($spec!==''){
         foreach(q("SELECT material_id,qty FROM material_presets WHERE spec=?",[$spec])->fetchAll() as $p){
           q("INSERT INTO training_materials(training_id,material_id,qty) VALUES(?,?,?)",[$id,$p['material_id'],$p['qty']]);
@@ -117,7 +117,7 @@ switch($action){
     q("DELETE FROM training_materials WHERE training_id=?",[$tid]);
     out(['ok'=>true]);
 
-  /* ---- Material-Katalog: anlegen/ändern ---- */
+  /* ---- Material-Katalog + Materiallisten ---- */
   case 'material.save':
     require_auth();
     $mid=$in['id']??''; if($mid==='') fail('Keine Material-ID.');
@@ -136,7 +136,6 @@ switch($action){
     q("DELETE FROM material_presets WHERE material_id=?",[$mid]);
     out(['ok'=>true]);
 
-  /* ---- Materialliste eines Trainings ersetzen ---- */
   case 'training.materials.save':
     require_auth();
     $tid=$in['training']??0; $lines=$in['materials']??[];
@@ -147,7 +146,6 @@ switch($action){
     }
     out(['ok'=>true]);
 
-  /* ---- Typ-Vorlage (Schwerpunkt → Materialliste) speichern ---- */
   case 'matpreset.save':
     require_auth();
     $spec=$in['spec']??''; if($spec==='') fail('Kein Schwerpunkt.');

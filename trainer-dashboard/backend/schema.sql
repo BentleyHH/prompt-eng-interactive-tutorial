@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS trainings (
   client_id VARCHAR(24),
   topic VARCHAR(190), city VARCHAR(96), country VARCHAR(16),
   kw VARCHAR(24), month VARCHAR(24), spec VARCHAR(96),
+  start_date VARCHAR(12), end_date VARCHAR(12), code VARCHAR(16),
   need_cnt INT DEFAULT 5, participants INT DEFAULT 0,
   created_at VARCHAR(20),
   INDEX(client_id)

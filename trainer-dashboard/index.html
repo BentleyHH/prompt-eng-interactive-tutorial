@@ -507,7 +507,7 @@ const L={
   tp_tpl:"E-Mail-Vorlagen", tp_tplSub:"Wiederverwendbare Textbausteine mit Platzhaltern",
   kpiTotal:"Trainings gesamt", kpiPlanned:" / 20 geplant",
   kpiFull:"Vollständig besetzt", kpiOpen:"Offene Anfragen", kpiUnder:"Unterbesetzt",
-  tlTitle:"Besetzungs-Timeline", tlSub:"20 Trainingswochen im Überblick",
+  tlTitle:"Besetzungs-Timeline", tlSub:"Alle Einsätze im Überblick",
   legFilled:"besetzt", legProg:"in Arbeit", legCrit:"kritisch",
   attTitle:"Braucht Aufmerksamkeit", attSub:n=>`${n} Trainings offen`,
   attAll:"Alles besetzt 🎉", confirmedShort:"zugesagt", askedShort:"angefragt", open:"Öffnen",
@@ -600,6 +600,7 @@ const L={
   icsSubHint:"Live-Abo-Link (aktualisiert sich automatisch): backend/ics.php",
   newTraining:"+ Neues Training", editTraining:"Training bearbeiten", createTraining:"Training anlegen",
   fCity:"Stadt", fCountry:"Land (Code, z. B. UAE)", fKw:"Kalenderwoche", fMonth:"Monat / Jahr",
+  fStart:"Beginn (JJJJ-MM-TT)", fEnd:"Ende (JJJJ-MM-TT)",
   trainingSaved:"Training gespeichert", trainingDeleted:"Training gelöscht",
   deleteTraining:"Löschen", delTrainingConfirm:"Dieses Training wirklich löschen? Anfragen & Reisedaten gehen verloren.",
   editBtn:"Bearbeiten", fieldReq:"Bitte mindestens Thema und Ort angeben.",
@@ -631,7 +632,7 @@ const L={
   tp_tpl:"Email templates", tp_tplSub:"Reusable text blocks with placeholders",
   kpiTotal:"Trainings total", kpiPlanned:" / 20 planned",
   kpiFull:"Fully staffed", kpiOpen:"Open requests", kpiUnder:"Understaffed",
-  tlTitle:"Staffing timeline", tlSub:"20 training weeks at a glance",
+  tlTitle:"Staffing timeline", tlSub:"All assignments at a glance",
   legFilled:"staffed", legProg:"in progress", legCrit:"critical",
   attTitle:"Needs attention", attSub:n=>`${n} trainings open`,
   attAll:"All staffed 🎉", confirmedShort:"confirmed", askedShort:"requested", open:"Open",
@@ -724,6 +725,7 @@ const L={
   icsSubHint:"Live subscription link (auto-updating): backend/ics.php",
   newTraining:"+ New training", editTraining:"Edit training", createTraining:"Create training",
   fCity:"City", fCountry:"Country (code, e.g. UAE)", fKw:"Calendar week", fMonth:"Month / year",
+  fStart:"Start (YYYY-MM-DD)", fEnd:"End (YYYY-MM-DD)",
   trainingSaved:"Training saved", trainingDeleted:"Training deleted",
   deleteTraining:"Delete", delTrainingConfirm:"Really delete this training? Requests & travel data will be lost.",
   editBtn:"Edit", fieldReq:"Please provide at least topic and location.",
@@ -748,7 +750,10 @@ const RESP={de:"[ ✅ Ja, verfügbar ]   [ 🤔 Vielleicht ]   [ ❌ Nein ]",
             en:"[ ✅ Yes, available ]   [ 🤔 Maybe ]   [ ❌ No ]"};
 
 /* ---------- SEED DATA ---------- */
-const SPEC=["Implantologie","DNA-Diagnostik","Fingerprint Dental","Prothetik","Chirurgie","Digitale Abformung","Guided Surgery","Parodontologie"];
+/* Bump erzwingt einmalig das Neu-Laden des echten DVI-Programms (ersetzt Demo-Trainings). */
+const SEED_VERSION=3;
+/* Schwerpunkte = INTERPOL-DVI-Phasen / funktionale Zellen */
+const SPEC=["DVI-Grundlagen","Data Management","Ante Mortem","Kommunikation & FCC","Logistik","Post Mortem","Reconciliation","Scene & Recovery","CBRN","Simulation","Site-Folder","Train-the-Trainer","Assessment & Readiness","Zertifizierung"];
 const REGZ=["DE-Süd","DE-West","DE-Nord","AT","CH","UAE","UK"];
 const COLORS=["#3E4852","#B23A42","#4E6E8E","#6E5A86","#3F7A5E","#A6642E","#557088","#8A5A52"];
 
@@ -769,61 +774,98 @@ function seedTrainers(){
     };
   });
 }
-/* Kunden / Projekte — mehrere Auftraggeber parallel, je eigene Farbe */
+/* Kunden / Projekte — mehrere Auftraggeber parallel, je eigene Farbe.
+   Aktuell aktiv: Abu Dhabi Police (DVI Elite Team Programme 2026–2027).
+   Weitere Kunden lassen sich jederzeit über „Kunden verwalten“ ergänzen. */
 function seedClients(){
   return [
-    {id:"cl-auh", name:"ETAF Abu Dhabi", short:"AUH", color:"#B23A42", cal:"firebrick", country:"UAE"},
-    {id:"cl-ksa", name:"Saudi-Arabien",  short:"KSA", color:"#3F7A5E", cal:"seagreen",  country:"KSA"},
-    {id:"cl-inl", name:"Inland / LKA",   short:"INL", color:"#4E6E8E", cal:"steelblue", country:"DE"}
+    {id:"cl-adp", name:"Abu Dhabi Police — DVI", short:"ADP", color:"#B23A42", cal:"firebrick", country:"UAE"}
   ];
 }
-/* Material-Katalog (zentral, editierbar) */
+/* Material-Katalog (zentral, editierbar) — DVI/Forensik */
 function seedMaterials(){
   return [
-    {id:"m-dvi",  name:"DVI-Kit",                unit:"Set", cat:"Kits"},
-    {id:"m-bag",  name:"Leichensack",            unit:"Stk", cat:"Verbrauch"},
-    {id:"m-cbrn", name:"CBRN-Kit",               unit:"Set", cat:"Kits"},
-    {id:"m-am",   name:"Protokoll — Ante Mortem",unit:"Stk", cat:"Protokolle"},
-    {id:"m-pm",   name:"Protokoll — Post Mortem",unit:"Stk", cat:"Protokolle"},
-    {id:"m-dna",  name:"DNA-Probenset",          unit:"Set", cat:"Proben"},
-    {id:"m-fp",   name:"Fingerprint-Set",        unit:"Set", cat:"Proben"},
-    {id:"m-dent", name:"Zahnstatus-Formular",    unit:"Stk", cat:"Protokolle"},
-    {id:"m-glove",name:"Einmalhandschuhe",       unit:"Box", cat:"Verbrauch"},
-    {id:"m-suit", name:"Schutzanzug",            unit:"Stk", cat:"Verbrauch"}
+    {id:"m-dvi",  name:"DVI-Kit (pre-coded)",     unit:"Set", cat:"Kits"},
+    {id:"m-bag",  name:"Leichensack",             unit:"Stk", cat:"Verbrauch"},
+    {id:"m-cbrn", name:"CBRN-Kit",                unit:"Set", cat:"Kits"},
+    {id:"m-am",   name:"Protokoll — Ante Mortem", unit:"Stk", cat:"Protokolle"},
+    {id:"m-pm",   name:"Protokoll — Post Mortem", unit:"Stk", cat:"Protokolle"},
+    {id:"m-dna",  name:"DNA-Probenset",           unit:"Set", cat:"Proben"},
+    {id:"m-fp",   name:"Fingerprint-Set",         unit:"Set", cat:"Proben"},
+    {id:"m-dent", name:"Zahnstatus-Formular (Odontologie)", unit:"Stk", cat:"Protokolle"},
+    {id:"m-glove",name:"Einmalhandschuhe",        unit:"Box", cat:"Verbrauch"},
+    {id:"m-suit", name:"CBRN-Schutzanzug",        unit:"Stk", cat:"Verbrauch"}
   ];
 }
-/* Intelligente Typ-Vorlagen: Schwerpunkt → Standard-Materialliste */
+/* Intelligente Typ-Vorlagen: Schwerpunkt → Standard-Materialliste (DVI) */
 function seedMatPresets(){
-  return {"Implantologie":[{matId:"m-dvi",qty:6},{matId:"m-bag",qty:20},{matId:"m-am",qty:30},{matId:"m-pm",qty:30},{matId:"m-glove",qty:10}]};
+  return {
+    "Post Mortem":[{matId:"m-dvi",qty:8},{matId:"m-pm",qty:40},{matId:"m-dna",qty:20},{matId:"m-fp",qty:20},{matId:"m-dent",qty:20},{matId:"m-glove",qty:10},{matId:"m-bag",qty:20}],
+    "Ante Mortem":[{matId:"m-am",qty:40},{matId:"m-glove",qty:6}],
+    "Scene & Recovery":[{matId:"m-dvi",qty:8},{matId:"m-bag",qty:30},{matId:"m-glove",qty:10},{matId:"m-am",qty:20}],
+    "CBRN":[{matId:"m-cbrn",qty:50},{matId:"m-suit",qty:40},{matId:"m-bag",qty:20},{matId:"m-glove",qty:12}],
+    "Simulation":[{matId:"m-dvi",qty:10},{matId:"m-bag",qty:40},{matId:"m-am",qty:40},{matId:"m-pm",qty:40},{matId:"m-glove",qty:15}]
+  };
+}
+/* Verbindlicher Programmkalender (ETAF Operational DVI Elite Team Programme 2026–2027, V3.2) */
+function isoWeekNum(d){
+  const t=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));
+  const day=t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-day);
+  const ys=new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  return Math.ceil((((t-ys)/86400000)+1)/7);
 }
 function seedTrainings(){
-  const locs=[["Abu Dhabi","UAE"],["Riyadh","KSA"],["München","DE"],["Abu Dhabi","UAE"],["Jeddah","KSA"],["Frankfurt","DE"],["Abu Dhabi","UAE"],["Hamburg","DE"]];
-  const cls =["cl-auh","cl-ksa","cl-inl","cl-auh","cl-ksa","cl-inl","cl-auh","cl-inl"];
-  const topics=["Guided Surgery Level II","DNA-Diagnostik Basiskurs","Fingerprint Dental Advanced","Implantologie Masterclass","Digitale Abformung","Prothetik Kompakt","Full-Arch Workshop","Parodontologie Update"];
-  const need=[6,5,8,7,5,6,8,5];
-  const emptyTravel=()=>({venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]});
-  return topics.map((t,i)=>{
-    const kw=8+i*6;
-    const travel=emptyTravel();
-    if(i===0){ travel.venue="ETAF Training Center, Al Maryah Island"; travel.hotel="Rosewood Abu Dhabi";
+  const MON=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+  const AD=["Abu Dhabi","UAE"], WZ=["Weeze","DE"];
+  /* code, start, end, topic, [city,country], spec, need, participants */
+  const P=[
+    ["W1","2026-09-14","2026-09-18","INTERPOL DVI Principles, Governance & Elite-Team-Struktur",AD,"DVI-Grundlagen",5,40],
+    ["W2","2026-09-28","2026-10-02","DVI Data Management & Reporting (PlassData)",AD,"Data Management",5,40],
+    ["W3","2026-10-12","2026-10-16","Ante Mortem — Family Liaison & Informationsgewinnung",AD,"Ante Mortem",5,40],
+    ["W4","2026-10-26","2026-10-30","Kommunikation: Family Coordination & Media",AD,"Kommunikation & FCC",5,40],
+    ["W5","2026-11-09","2026-11-13","Logistik & Kapazitätsplanung",AD,"Logistik",5,40],
+    ["W6","2026-11-23","2026-11-27","Post Mortem — Prozesse & Qualität",AD,"Post Mortem",5,40],
+    ["W7","2026-12-07","2026-12-11","Reconciliation & Identifizierungs-Entscheidungen",AD,"Reconciliation",5,40],
+    ["W8","2027-01-11","2027-01-15","Scene Management & Recovery",AD,"Scene & Recovery",5,40],
+    ["W9 ★","2027-01-25","2027-01-29","Full Simulation I (MCI) — End-to-End",AD,"Simulation",8,40],
+    ["W10","2027-02-01","2027-02-05","Stage I Final Assessment & Operational Readiness · TtT-Auswahl",AD,"Assessment & Readiness",5,40],
+    ["W11-A","2027-03-22","2027-03-26","PM Practical Module — Kohorte A (Körperspender)",WZ,"Post Mortem",8,20],
+    ["W11-B","2027-04-12","2027-04-16","PM Practical Module — Kohorte B (Körperspender)",WZ,"Post Mortem",8,20],
+    ["W12","2027-04-26","2027-04-30","Public Venues: Shopping Centres",AD,"Site-Folder",5,40],
+    ["W13","2027-05-10","2027-05-14","Transport Hubs: International Airport",AD,"Site-Folder",5,40],
+    ["W14","2027-05-24","2027-05-28","Major Events: Circuit / Arena / Events",AD,"Site-Folder",5,40],
+    ["W15","2027-06-07","2027-06-11","Natural Hazard: Heavy Rainfall / Flooding",AD,"Site-Folder",5,40],
+    ["TtT-I","2027-06-14","2027-06-16","Instructor Development Block I (TtT-Kandidaten)",AD,"Train-the-Trainer",2,10],
+    ["W16","2027-06-21","2027-06-25","CBRN / Nuclear: Contaminated Casualty Scenarios",AD,"CBRN",5,40],
+    ["W17","2027-07-05","2027-07-09","Maritime / Logistik: Port / Industrial Zone",AD,"Site-Folder",5,40],
+    ["W18","2027-07-19","2027-07-23","Energy & Utilities (Öl/Gas, Strom, Wasser, Entsalzung)",AD,"Site-Folder",5,40],
+    ["W19","2027-09-06","2027-09-10","Government / Symbolic Targets & Urban Nodes · National Master Folder",AD,"Site-Folder",5,40],
+    ["TtT-II","2027-10-04","2027-10-06","Instructor Development Block II & Teaching-Assessment",AD,"Train-the-Trainer",2,10],
+    ["W20 ★","2027-10-18","2027-10-22","Full Simulation II + Folder Drill (Pull-Out-Test)",AD,"Simulation",8,40],
+    ["Final","2027-11-08","2027-11-12","Final Readiness Review, Team- & National-Instructor-Zertifizierung",AD,"Zertifizierung",5,40]
+  ];
+  const PRE=seedMatPresets();
+  return P.map((r,i)=>{
+    const [code,start,end,topic,loc,spec,need,part]=r;
+    const sd=new Date(start+"T00:00:00Z"); const yy=String(sd.getUTCFullYear()).slice(2);
+    const travel={venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]};
+    if(i===0){ travel.venue="Abu Dhabi Police — DVI Training Facility"; travel.hotel="Rosewood Abu Dhabi";
       travel.hotelAddr="Al Maryah Island, Abu Dhabi, UAE"; travel.meetingPoint="Hotel-Lobby, 07:45 Uhr";
-      travel.contactName="Layla Al Nuaimi"; travel.contactPhone="+971 50 123 4567";
-      travel.dresscode="Business casual · OP-Kleidung wird gestellt"; travel.perDiem="120 EUR / Tag";
-      travel.notes="Reisepass mind. 6 Monate gültig. Flughafen-Transfer ist organisiert.";
+      travel.contactName="Lt. Col. Adil Al Ali (Head of DVI)"; travel.contactPhone="+971 2 000 0000";
+      travel.dresscode="Field/OP-Kleidung wird gestellt"; travel.perDiem="nach ETAF-Reiserichtlinie";
+      travel.notes="Reisepass mind. 6 Monate gültig. Flughafen-Transfer organisiert.";
       travel.agenda=[
-        {day:"Tag 1",time:"08:30",title:"Registrierung & Welcome Coffee"},
-        {day:"Tag 1",time:"09:00",title:"Guided Surgery — Theorie & Falldiskussion"},
-        {day:"Tag 1",time:"13:00",title:"Lunch"},
-        {day:"Tag 1",time:"14:00",title:"Hands-on Workshop am Modell"},
-        {day:"Tag 2",time:"09:00",title:"Live-OP Demonstration"},
-        {day:"Tag 2",time:"12:30",title:"Q&A & Zertifikatsübergabe"}];
+        {day:"Tag 1",time:"08:30",title:"Registrierung & Kick-off"},
+        {day:"Tag 1",time:"09:00",title:"INTERPOL DVI Principles & Governance"},
+        {day:"Tag 1",time:"14:00",title:"Elite-Team-Struktur — 8 funktionale Zellen"},
+        {day:"Tag 5",time:"11:00",title:"Baseline-Competency-Assessment"}];
     }
     return {
-      id:uid("tg"), clientId:cls[i], topic:t, city:locs[i][0], country:locs[i][1],
-      kw:"KW "+kw, month:["Sep","Okt","Dez","Feb","Mär","Mai","Jul","Sep"][i]+" ’2"+(i<3?"6":"7"),
-      spec:SPEC[i%SPEC.length], need:need[i],
-      participants:12+i*2, travel,
-      materials:i===0?[{matId:"m-dvi",qty:6},{matId:"m-bag",qty:20},{matId:"m-am",qty:30},{matId:"m-pm",qty:30},{matId:"m-glove",qty:10}]:[],
+      id:uid("tg"), clientId:"cl-adp", code, topic, city:loc[0], country:loc[1],
+      date:start, dateEnd:end,
+      kw:"KW "+isoWeekNum(sd), month:MON[sd.getUTCMonth()]+" ’"+yy,
+      spec, need, participants:part, travel,
+      materials:(PRE[spec]?JSON.parse(JSON.stringify(PRE[spec])):[]),
       roster:[]
     };
   });
@@ -862,12 +904,20 @@ function load(){
       if(!("clientFilter"in r))r.clientFilter=null;
       if(!r.materials||!r.materials.length)r.materials=seedMaterials();
       if(!r.matPresets)r.matPresets={};
+      /* Programm-Update: einmalig die Demo-Trainings durch das echte DVI-Programm ersetzen
+         (Sprache, Einstellungen, E-Mail-Protokoll & Vorlagen bleiben erhalten). */
+      if(r.seedVersion!==SEED_VERSION){
+        r.clients=seedClients(); r.clientFilter=null;
+        r.trainers=seedTrainers(); r.trainings=seedTrainings();
+        r.materials=seedMaterials(); r.matPresets=seedMatPresets();
+        r.seedVersion=SEED_VERSION;
+      }
       (r.trainings||[]).forEach(t=>{ if(!t.travel)t.travel={venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]};
-        if(!t.clientId)t.clientId=r.clients[0].id; if(!t.materials)t.materials=[]; });
+        if(!t.clientId)t.clientId=(r.clients[0]||{}).id; if(!t.materials)t.materials=[]; });
       return r;
     }
   }catch(e){}
-  return {lang:"de", emailLang:"en", clients:seedClients(), clientFilter:null,
+  return {lang:"de", emailLang:"en", seedVersion:SEED_VERSION, clients:seedClients(), clientFilter:null,
     materials:seedMaterials(), matPresets:seedMatPresets(),
     trainers:seedTrainers(), trainings:seedTrainings(),
     templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false}, emails:[]};
@@ -1027,7 +1077,7 @@ function render(){
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
   else if(route==="emails"){renderEmails();$("#v-emails").classList.add("on");}
-  if(route==="detail"&&curTg){$("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+curTg.kw;}
+  if(route==="detail"&&curTg){$("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+whenLabel(curTg);}
   else{const ti=titleFor(route);$("#tt").textContent=ti[0];$("#ts").textContent=ti[1];}
   save();
 }
@@ -1075,7 +1125,7 @@ function renderDash(){
     const col=st.cls==="good"?"var(--good)":st.cls==="warn"?"var(--warn)":"var(--crit)";
     return `<div class="wk" onclick="openDetail('${tg.id}')" style="border-top:3px solid ${cl?cl.color:'var(--line)'}">
       <span class="flag" style="background:${col}"></span>
-      <div class="kw">${tg.kw} · ${tg.month}</div>
+      <div class="kw">${tg.code?esc(tg.code)+" · ":""}${whenLabel(tg)}</div>
       <div class="loc">${tg.city}${cl?` <span class="tag" style="border-color:${cl.color};color:${cl.color};padding:0 5px">${esc(cl.short||'')}</span>`:''}</div>
       <div class="bar"><i style="width:${pct}%;background:${col}"></i></div>
       <div class="cnt"><span>${tg.topic.slice(0,16)}${tg.topic.length>16?'…':''}</span><span class="tnum">${r.yes}/${r.need}</span></div>
@@ -1125,7 +1175,7 @@ function renderTrainings(){
       <div class="av" style="background:${cl?cl.color:'var(--brand-solid)'}">${tg.city.slice(0,2).toUpperCase()}</div>
       <div class="rowgrow">
         <div class="nm">${tg.topic}${cl?` <span class="tag" style="border-color:${cl.color};color:${cl.color}">${esc(cl.name)}</span>`:''}</div>
-        <div class="meta">${tg.city}, ${tg.country} · ${tg.kw} · ${tg.month} · ${t("participants",tg.participants)}</div>
+        <div class="meta">${tg.city}, ${tg.country} · ${whenLabel(tg)} · ${t("participants",tg.participants)}</div>
         <div class="tags"><span class="tag">${tg.spec}</span><span class="tag">${t("trainersC",r.yes,r.need)}</span></div>
       </div>
       <span class="pill ${st.cls}">${t(st.key)}</span>
@@ -1168,7 +1218,7 @@ function renderDetail(){
           ${(S.clients||[]).map(c=>`<option value="${c.id}" ${c.id===tg.clientId?'selected':''}>${esc(c.name)}</option>`).join("")}
         </select></span></div>
       <div class="kv"><span class="k">${t("kOrt")}</span><span class="v">${tg.city}, ${tg.country}</span></div>
-      <div class="kv"><span class="k">${t("kZeit")}</span><span class="v">${tg.kw} · ${tg.month}</span></div>
+      <div class="kv"><span class="k">${t("kZeit")}</span><span class="v">${whenLabel(tg)}${tg.code?` <span class="tag">${esc(tg.code)}</span>`:''}</span></div>
       <div class="kv"><span class="k">${t("kSchwer")}</span><span class="v">${tg.spec}</span></div>
       <div class="kv"><span class="k">${t("kTeil")}</span><span class="v tnum">${tg.participants}</span></div>
       <div class="kv"><span class="k">${t("kNeed")}</span><span class="v tnum">${t("needVal",r.yes,r.need)}</span></div>
@@ -1682,15 +1732,34 @@ function isoWeekMonday(year,week){
   if(dow<=4)s.setUTCDate(s.getUTCDate()-dow+1); else s.setUTCDate(s.getUTCDate()+8-dow);
   return s;
 }
-function trainingDates(tg){const start=isoWeekMonday(trainingYear(tg),trainingKw(tg));
+function trainingDates(tg){
+  if(/^\d{4}-\d{2}-\d{2}$/.test(tg.date||"")){
+    const start=new Date(tg.date+"T00:00:00Z");
+    const e=/^\d{4}-\d{2}-\d{2}$/.test(tg.dateEnd||"")?new Date(tg.dateEnd+"T00:00:00Z"):new Date(start);
+    const end=new Date(e); end.setUTCDate(end.getUTCDate()+1); // DTEND exklusiv
+    return {start,end};
+  }
+  const start=isoWeekMonday(trainingYear(tg),trainingKw(tg));
   const end=new Date(start); end.setUTCDate(end.getUTCDate()+2); return {start,end};}
 const MONTHS_DE=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 const MONTHS_EN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+/* Zeitraum-Label: echter Datumsbereich wenn vorhanden, sonst KW · Monat */
+function whenLabel(tg){
+  if(/^\d{4}-\d{2}-\d{2}$/.test(tg.date||"")){
+    const M=(S.lang==='de'?MONTHS_DE:MONTHS_EN);
+    const s=new Date(tg.date+"T00:00:00Z");
+    const e=/^\d{4}-\d{2}-\d{2}$/.test(tg.dateEnd||"")?new Date(tg.dateEnd+"T00:00:00Z"):s;
+    if(s.getUTCMonth()===e.getUTCMonth()&&s.getUTCFullYear()===e.getUTCFullYear())
+      return s.getUTCDate()+".–"+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear();
+    return s.getUTCDate()+". "+M[s.getUTCMonth()]+" – "+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear();
+  }
+  return (tg.kw||"")+(tg.month?" · "+tg.month:"");
+}
 function pad2(n){return String(n).padStart(2,"0");}
 function icsDate(d){return d.getUTCFullYear()+pad2(d.getUTCMonth()+1)+pad2(d.getUTCDate());}
 function icsEsc(s){return String(s||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");}
 function icsStamp(){try{return new Date().toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";}catch(e){return "20260101T000000Z";}}
-function sortedForCal(){return curTrainings().slice().sort((a,b)=>(trainingYear(a)-trainingYear(b))||(trainingKw(a)-trainingKw(b)));}
+function sortedForCal(){return curTrainings().slice().sort((a,b)=>trainingDates(a).start-trainingDates(b).start);}
 function buildICS(){
   const stamp=icsStamp();
   const lines=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//ETAF//Trainer-Koordination//DE","CALSCALE:GREGORIAN","METHOD:PUBLISH",
@@ -1816,8 +1885,8 @@ function openTrainingEditor(id){
     </div>
     <datalist id="ctryList">${["UAE","KSA","DE","AT","CH","UK"].map(c=>`<option value="${c}">`).join("")}</datalist>
     <div style="display:flex;gap:10px">
-      <div style="flex:1"><label class="fld">${t("fKw")}</label><input class="inp" id="edKw" value="${esc(tg.kw)}" placeholder="KW 12"></div>
-      <div style="flex:1"><label class="fld">${t("fMonth")}</label><input class="inp" id="edMonth" value="${esc(tg.month)}" placeholder="Mär ’27"></div>
+      <div style="flex:1"><label class="fld">${t("fStart")}</label><input class="inp" id="edStart" value="${esc(tg.date||"")}" placeholder="2027-05-10"></div>
+      <div style="flex:1"><label class="fld">${t("fEnd")}</label><input class="inp" id="edEnd" value="${esc(tg.dateEnd||"")}" placeholder="2027-05-14"></div>
     </div>
     <label class="fld">${t("kSchwer")}</label>
     <select id="edSpec">${SPEC.map(s=>`<option ${s===tg.spec?'selected':''}>${esc(s)}</option>`).join("")}</select>
@@ -1831,11 +1900,19 @@ function openTrainingEditor(id){
     <button class="btn primary" onclick="saveTrainingEditor()">${t("save")}</button>`;
   openSheet();
 }
+function deriveWhen(startISO){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(startISO||""))return{kw:"",month:""};
+  const MON=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+  const sd=new Date(startISO+"T00:00:00Z");
+  return {kw:"KW "+isoWeekNum(sd), month:MON[sd.getUTCMonth()]+" ’"+String(sd.getUTCFullYear()).slice(2)};
+}
 async function saveTrainingEditor(){
   const topic=$("#edTopic").value.trim(), city=$("#edCity").value.trim();
   if(!topic||!city){toast(t("fieldReq"),"warn");return;}
+  const start=$("#edStart").value.trim(), end=$("#edEnd").value.trim();
+  const w=deriveWhen(start);
   const data={clientId:$("#edClient").value,topic,city,country:$("#edCountry").value.trim().toUpperCase(),
-    kw:$("#edKw").value.trim(),month:$("#edMonth").value.trim(),spec:$("#edSpec").value,
+    date:start||null,dateEnd:end||null,kw:w.kw,month:w.month,spec:$("#edSpec").value,
     need:parseInt($("#edNeed").value)||1,participants:parseInt($("#edPart").value)||0};
   let newId=null, prefilled=0;
   if(LIVE){
@@ -1966,7 +2043,7 @@ function printMaterials(tgId){
   $("#calBody").innerHTML=`<div class="cal-sheet" style="max-width:640px">
     <div class="ag-top"><div><div class="ag-eyebrow">${t("matPrintTitle")}</div>
       <div class="ag-h1">${esc(tg.topic)}</div>
-      <div class="meta">${esc(tg.city+", "+tg.country+" · "+tg.kw+" · "+tg.month)}${cl?" · "+esc(cl.name):""}</div></div>
+      <div class="meta">${esc(tg.city+", "+tg.country+" · "+whenLabel(tg))}${cl?" · "+esc(cl.name):""}</div></div>
       <span class="etaf" style="font-size:26px">ETAF<span class="rd"></span></span></div>
     <div class="ag-bar"></div>
     ${rows?`<table class="ag-table"><thead><tr><th style="text-align:left">${t("matColHead")}</th><th style="text-align:right;width:70px">${t("matColQty")}</th><th style="text-align:left;width:80px">${t("matColUnit")}</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="empty">${t("matNone")}</div>`}

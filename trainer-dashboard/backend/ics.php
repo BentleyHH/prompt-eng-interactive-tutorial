@@ -54,8 +54,15 @@ $out = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//ETAF//Trainer-Koordination//D
   "X-WR-TIMEZONE:UTC"];
 
 foreach($rows as $tg){
-  $start = iso_week_monday(training_year($tg), training_week($tg));
-  $end   = $start->modify('+2 days'); // 2-Tage-Training, DTEND exklusiv
+  if(!empty($tg['start_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tg['start_date'])){
+    $start = new DateTimeImmutable($tg['start_date'], new DateTimeZone('UTC'));
+    $endBase = (!empty($tg['end_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tg['end_date']))
+      ? new DateTimeImmutable($tg['end_date'], new DateTimeZone('UTC')) : $start;
+    $end = $endBase->modify('+1 day'); // DTEND exklusiv
+  } else {
+    $start = iso_week_monday(training_year($tg), training_week($tg));
+    $end   = $start->modify('+2 days'); // 2-Tage-Training, DTEND exklusiv
+  }
   $cl    = ($tg['client_id']!==null && isset($clients[$tg['client_id']])) ? $clients[$tg['client_id']] : null;
   $yes   = (int)q("SELECT COUNT(*) c FROM requests WHERE training_id=? AND status IN('yes','confirmed')",[$tg['id']])->fetch()['c'];
   $summary = ($cl ? $cl['short'].' · ' : '').$tg['topic'];
