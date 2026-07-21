@@ -337,6 +337,8 @@
 
 <div id="toast"></div>
 
+<!-- Optional: nur auf dem Server vorhanden. Aktiviert den Live-Modus (PHP+MySQL). -->
+<script src="config.js" onerror="/* Demo-Modus: keine config.js vorhanden */"></script>
 <script>
 /* ============================================================
    ETAF Trainer-Koordination — klickbarer Prototyp
@@ -355,6 +357,40 @@ const IC={
   mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+
+/* ============================================================
+   LIVE-MODUS — spricht mit dem PHP-Backend (config.js gesetzt).
+   Ohne config.js läuft alles als lokale Demo (localStorage).
+   ============================================================ */
+const API=(window.ETAF&&window.ETAF.apiBase)?String(window.ETAF.apiBase).replace(/\/$/,''):null;
+const LIVE=!!API;
+let AUTH=""; try{AUTH=localStorage.getItem("etaf_token")||"";}catch(e){}
+let pollTimer=null;
+async function apiCall(action,payload){
+  const r=await fetch(API+"/api.php?action="+encodeURIComponent(action),{
+    method:"POST", headers:{"Content-Type":"application/json","X-Auth-Token":AUTH},
+    body:JSON.stringify(payload||{})});
+  let d; try{d=await r.json();}catch(e){d={ok:false,error:"HTTP "+r.status};}
+  if(!r.ok||d.ok===false) throw new Error(d.error||("HTTP "+r.status));
+  return d;
+}
+async function pull(){
+  const d=await apiCall("state");
+  S.trainers=d.trainers; S.trainings=d.trainings; S.templates=d.templates;
+}
+function startPolling(){
+  if(!LIVE||pollTimer)return;
+  const ms=(window.ETAF&&window.ETAF.pollMs)||8000;
+  pollTimer=setInterval(async()=>{
+    try{ await pull();
+      if(route==="dash")renderDash();
+      else if(route==="detail")renderDetail();
+      else if(route==="trainings")renderTrainings();
+      buildNav();
+    }catch(e){}
+  }, ms);
+}
+function stopPolling(){ if(pollTimer){clearInterval(pollTimer);pollTimer=null;} }
 
 /* ============================================================
    I18N — UI-Sprache Deutsch / Englisch
@@ -645,12 +681,19 @@ function press(k){
   if(pin.length===6)setTimeout(tryUnlock,140);
 }
 function drawDots(){$$("#dots span").forEach((s,i)=>s.classList.toggle("on",i<pin.length));}
-function tryUnlock(){
-  if(pin.length===6){unlock();}
-  else{const d=$("#dots");d.classList.add("err");setTimeout(()=>d.classList.remove("err"),450);pin="";drawDots();}
+function pinError(){const d=$("#dots");d.classList.add("err");setTimeout(()=>d.classList.remove("err"),450);pin="";drawDots();}
+async function tryUnlock(){
+  if(pin.length!==6){pinError();return;}
+  if(LIVE){
+    try{
+      const d=await apiCall("login",{pin});
+      AUTH=d.token; try{localStorage.setItem("etaf_token",AUTH);}catch(e){}
+      await pull(); unlock();
+    }catch(e){ pinError(); toast(e.message||"Login fehlgeschlagen","crit"); }
+  } else { unlock(); }
 }
-function unlock(){$("#lock").style.display="none";$("#app").style.display="grid";render();}
-function lockNow(){pin="";drawDots();$("#lock").style.display="grid";$("#app").style.display="none";}
+function unlock(){$("#lock").style.display="none";$("#app").style.display="grid";render();startPolling();}
+function lockNow(){stopPolling();pin="";drawDots();$("#lock").style.display="grid";$("#app").style.display="none";}
 document.addEventListener("keydown",e=>{
   if($("#lock").style.display==="none")return;
   if(/^[0-9]$/.test(e.key))press(e.key);
@@ -826,7 +869,7 @@ function renderDetail(){
 }
 function rosterRow(x,tg){
   const acts=x.status==="asked"
-    ? `<button class="btn sm" onclick="simReply('${tg.id}','${x.tr.id}')" title="${t("simReplyT")}">↩ ${t("simReply")}</button>`
+    ? (LIVE ? "" : `<button class="btn sm" onclick="simReply('${tg.id}','${x.tr.id}')" title="${t("simReplyT")}">↩ ${t("simReply")}</button>`)
     : x.status==="yes"
     ? `<button class="btn sm primary" onclick="composeFor('${tg.id}','${x.tr.id}','t2')">${t("travelData")}</button>`
     : x.status==="no"
@@ -926,9 +969,13 @@ function editTemplate(id){
     <div class="spacer"></div><button class="btn primary" onclick="saveTpl()">${t("save")}</button>`;
   openSheet();
 }
-function saveTpl(){
+async function saveTpl(){
   const v=editTpl[tplLang];
   v.name=$("#tName").value;v.subject=$("#tSubj").value;v.body=$("#tBody").value;
+  if(LIVE){
+    try{ await apiCall("template.save",{id:editTpl.id,lang:tplLang,name:v.name,subject:v.subject,body:v.body}); }
+    catch(e){ toast("Fehler: "+e.message,"crit"); }
+  }
   save();closeSheet();renderTemplates();toast(t("savedTpl"),"good");
 }
 
@@ -938,7 +985,7 @@ function saveTpl(){
 let compose={tgId:null,recips:[],tplId:"t1",lang:"en"};
 function fillTpl(str,tg,tr){
   return str
-    .replace(/{{firstName}}/g,tr?tr.name.replace(/^Dr\.\s*/,"").split(" ")[0]:"[Name]")
+    .replace(/{{firstName}}/g,tr?tr.name.replace(/^Dr\.\s*/,"").split(" ")[0]:"{{firstName}}")
     .replace(/{{topic}}/g,tg.topic).replace(/{{city}}/g,tg.city)
     .replace(/{{country}}/g,tg.country).replace(/{{kw}}/g,tg.kw)
     .replace(/{{month}}/g,tg.month).replace(/{{teamSize}}/g,tg.need);
@@ -996,9 +1043,22 @@ function wrap(m){const el=$("#cBody");const s=el.selectionStart,e=el.selectionEn
 function ins(x){const el=$("#cBody");const s=el.selectionStart;
   el.value=el.value.slice(0,s)+x+el.value.slice(s);el.focus();}
 function insResp(){ins(RESP[compose.lang]);}
-function sendCompose(){
-  compose.recips.forEach(id=>setStatus(compose.tgId,id,"asked"));
+async function sendCompose(){
+  const subject=$("#cSubj")?$("#cSubj").value:"";
+  const bodyText=$("#cBody")?$("#cBody").value:"";
   const n=compose.recips.length;
+  if(LIVE){
+    const tgId=compose.tgId, recips=compose.recips.slice(), lang=compose.lang;
+    closeSheet();
+    try{
+      const d=await apiCall("request.create",{training:tgId,recipients:recips,lang,subject,body:bodyText});
+      await pull(); buildNav();
+      if(route==="detail")renderDetail(); if(route==="dash")renderDash();
+      toast(t("sentToast",d.sent!=null?d.sent:n),"good");
+    }catch(e){ toast("Fehler: "+e.message,"crit"); }
+    return;
+  }
+  compose.recips.forEach(id=>setStatus(compose.tgId,id,"asked"));
   closeSheet();
   toast(t("sentToast",n),"good");
   if(route==="detail")renderDetail();
@@ -1038,9 +1098,22 @@ function openQuick(tgId){
     <button class="btn amber" onclick="sendQuick()">${t("sendBlitz")}</button>`;
   openSheet();
 }
-function sendQuick(){
+async function sendQuick(){
   const tgId=$("#qTg").value;const tg=S.trainings.find(t=>t.id===tgId);
   const pool=ranked(tg).filter(x=>!x.status||x.status==="no").slice(0,5);
+  if(LIVE){
+    const lang=S.emailLang||"en"; const tpl=S.templates.find(t=>t.id==="t3")||S.templates[0];
+    closeSheet();
+    try{
+      const d=await apiCall("request.create",{training:tgId,recipients:pool.map(x=>x.tr.id),lang,
+        subject:tpl[lang].subject, body:tpl[lang].body});
+      await pull(); buildNav();
+      if(route==="detail"){curTg=S.trainings.find(t=>t.id===tgId);renderDetail();}
+      if(route==="dash")renderDash();
+      toast(t("blitzToast",d.sent!=null?d.sent:pool.length),"good");
+    }catch(e){ toast("Fehler: "+e.message,"crit"); }
+    return;
+  }
   pool.forEach(x=>setStatus(tgId,x.tr.id,"asked"));
   closeSheet();toast(t("blitzToast",pool.length),"good");
   buildNav();if(route==="detail"){curTg=tg;renderDetail();}if(route==="dash")renderDash();

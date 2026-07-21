@@ -1,0 +1,15 @@
+/**
+ * ETAF — Frontend-Live-Konfiguration
+ * ------------------------------------------------------------------
+ * Kopiere diese Datei nach `config.js` (liegt neben index.html auf
+ * artfiles). Sobald sie vorhanden ist, läuft das Dashboard im
+ * LIVE-Modus und spricht mit dem PHP-Backend (statt der lokalen Demo).
+ * Ohne config.js bleibt alles Demo (localStorage) — praktisch zum Zeigen.
+ * ------------------------------------------------------------------
+ */
+window.ETAF = {
+  // Pfad zum backend-Ordner, relativ zur index.html (oder absolute URL).
+  apiBase: 'backend',
+  // Intervall in ms, in dem neue Verfügbarkeiten (Magic-Link-Klicks) geholt werden.
+  pollMs: 8000
+};

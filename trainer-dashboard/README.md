@@ -1,17 +1,36 @@
-# ETAF Trainer-Koordination — Prototyp
+# ETAF Trainer-Koordination
 
-Klickbarer Prototyp für die Koordination der Abu-Dhabi-Trainings (ca. 20 Trainingswochen
-über 14 Monate, je 5–8 Trainer). Zeigt den kompletten Ablauf – von der KI-Vorauswahl über
-die E-Mail-Anfrage bis zum automatischen Verfügbarkeits-Rücklauf ins Dashboard.
+Werkzeug für die Koordination der Abu-Dhabi-Trainings (ca. 20 Trainingswochen über 14 Monate,
+je 5–8 Trainer). Kompletter Ablauf – von der KI-Vorauswahl über die E-Mail-Anfrage bis zum
+automatischen Verfügbarkeits-Rücklauf ins Dashboard.
 
-> **Status:** Frontend-Prototyp mit Beispieldaten. Alle Daten liegen lokal im Browser
-> (`localStorage`), E-Mail-Versand & Rücklauf sind **simuliert**. Kein Backend, keine echten
-> Nachrichten. Dient dazu, Flow und Design abzustimmen, bevor die produktive Version gebaut wird.
+Läuft in **zwei Modi**:
 
-## Öffnen
+- **Demo** (Standard, ohne Backend): Daten im Browser (`localStorage`), Versand & Rücklauf
+  **simuliert**. Ideal zum Zeigen und Abstimmen. → einfach `index.html` öffnen.
+- **Live** (PHP + MySQL, z. B. artfiles.de): echtes Backend, zentrale DB, echte E-Mails,
+  echter Magic-Link-Rückkanal, von mehreren Geräten nutzbar. → Anleitung in **`DEPLOY.md`**.
+  Aktiviert wird der Live-Modus durch eine `config.js` neben `index.html` (aus `config.js.sample`).
 
-`trainer-dashboard/index.html` im Browser öffnen. **Demo-PIN: `481509`** (jede 6-stellige
-Zahl entsperrt). Läuft auf Desktop und Handy, hell/dunkel automatisch.
+## Öffnen (Demo)
+
+`trainer-dashboard/index.html` im Browser öffnen. **Demo-PIN: `481509`** (im Demo-Modus
+entsperrt jede 6-stellige Zahl). Läuft auf Desktop und Handy, hell/dunkel automatisch.
+
+## Backend (Live)
+
+Dependency-freies **PHP-8-Backend mit MySQL** (PDO), self-provisioning (legt Tabellen und
+Demo-Daten beim ersten Start selbst an). Ordner `backend/`:
+
+| Datei | Zweck |
+|---|---|
+| `api.php` | JSON-API (Login, State, Anfragen, Vorlagen …) |
+| `respond.php` | Magic-Link-Landeseite (Trainer klickt ✅/🤔/❌) |
+| `db.php` / `lib.php` / `mailer.php` | Datenschicht, Helfer, E-Mail-Versand (mail/SMTP) |
+| `config.sample.php` | Vorlage für `config.php` (DB-Zugang, PIN, Absender, SMTP) |
+| `schema.sql` | MySQL-Schema (optional, für manuellen Import) |
+
+Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
 
 ## Was der Prototyp zeigt
 
@@ -34,16 +53,16 @@ Zahl entsperrt). Läuft auf Desktop und Handy, hell/dunkel automatisch.
 Tipp: „Antwort simulieren“ am angefragten Trainer bzw. das Warten nach dem Senden zeigt den
 Rücklauf. Über **◐ Design wechseln** hell/dunkel testen.
 
-## Weg zur Vollversion (Vorschlag)
+## Stand & nächste Ausbaustufen
 
-| Baustein | Prototyp | Produktiv |
-|---|---|---|
-| Daten | localStorage | Cloud-DB (Postgres/Supabase), multi-device, EU-Hosting (DSGVO) |
-| Login | 6-stelliger Demo-PIN | PIN + Magic-Link, Rollen & Audit-Log |
-| E-Mail | simuliert | Postfach `trainer@etaf…` + Versand-Service |
-| Verfügbarkeit | Zufalls-Simulation | One-Click-Buttons (Magic-Link) **+** KI-Parsing freier Antworten |
-| KI-Matching | Heuristik im Browser | Claude API: Profil-Anlage aus Rohdaten + Ranking |
-| Reise/Logistik | angedeutet | Flug-, Hotel-, Visum- & Per-Diem-Modul (wichtig für UAE) |
+| Baustein | Demo | Live (jetzt) | Später |
+|---|---|---|---|
+| Daten | localStorage | **MySQL @ artfiles** | Backups, Rollen |
+| Login | jeder 6-stellige PIN | **PIN serverseitig geprüft + Rate-Limit** | + Magic-Link, Audit-Log |
+| E-Mail | simuliert | **PHP mail() / SMTP** | Vorlagen-Editor je Kampagne |
+| Verfügbarkeit | Zufalls-Simulation | **Magic-Link ✅/🤔/❌ → DB → Polling** | + KI-Parsing freier Antworten |
+| KI-Matching | Heuristik im Browser | Heuristik (serverfähig) | Claude API: Profile aus Rohdaten + Ranking |
+| Reise/Logistik | angedeutet | — | Flug-, Hotel-, Visum-, Per-Diem-Modul (UAE) |
 
 Nicht vergessen: 50 Trainerprofile = personenbezogene Daten mit internationalem Transfer
-(Abu Dhabi) → Einwilligung, Löschkonzept und EU-Hosting von Anfang an mitdenken.
+(Abu Dhabi) → Einwilligung, AVV mit artfiles, Löschkonzept und HTTPS von Anfang an. Details in `DEPLOY.md`.

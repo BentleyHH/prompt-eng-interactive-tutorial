@@ -1,0 +1,11 @@
+# ETAF backend — Zugriffsschutz
+# config.php und lokale SQLite-Datei niemals ausliefern.
+<FilesMatch "^(config\.php|config\.sample\.php|.*\.sqlite|db\.php|lib\.php|mailer\.php)$">
+  Require all denied
+</FilesMatch>
+
+# db.php/lib.php/mailer.php werden nur per include genutzt, nie direkt.
+# api.php und respond.php bleiben erreichbar.
+
+# UTF-8
+AddDefaultCharset UTF-8

@@ -1,2 +1,7 @@
 .DS_Store
 
+# ETAF backend — Secrets & lokale DB niemals einchecken
+trainer-dashboard/backend/config.php
+trainer-dashboard/backend/config.js
+trainer-dashboard/backend/*.sqlite
+trainer-dashboard/**/config.js
