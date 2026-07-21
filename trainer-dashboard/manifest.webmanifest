@@ -1,0 +1,19 @@
+{
+  "name": "ETAF Trainer-Koordination",
+  "short_name": "ETAF DVI",
+  "description": "Koordination der ETAF-Trainingsprogramme (DVI Elite Team 2026–2027).",
+  "lang": "de",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F4F5F6",
+  "theme_color": "#3E4852",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
