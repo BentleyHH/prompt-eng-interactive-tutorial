@@ -45,6 +45,35 @@ function run_automation(): array {
     }
   }
 
+  /* 3) Visum-Erinnerungen: UAE-Trainings, bestätigte Trainer ohne genehmigtes Visum (einmalig) */
+  $visa=0;
+  $vrows=q("SELECT r.trainer_id, r.lang, t.id AS tid, t.topic, t.city, t.country, t.kw, t.month, t.need_cnt,
+              tr.name AS tname, tr.email AS temail,
+              tv.id AS tvid, tv.visa_status, tv.visa_reminded
+            FROM requests r
+            JOIN trainings t ON t.id=r.training_id
+            JOIN trainers  tr ON tr.id=r.trainer_id
+            LEFT JOIN travel tv ON tv.training_id=r.training_id AND tv.trainer_id=r.trainer_id
+            WHERE t.country='UAE' AND r.status IN('yes','confirmed')")->fetchAll();
+  foreach($vrows as $r){
+    if(($r['visa_status']??'none')==='approved') continue;
+    if((int)($r['visa_reminded']??0)===1) continue;
+    $lang=($r['lang']==='de')?'de':'en';
+    $tg=['topic'=>$r['topic'],'city'=>$r['city'],'country'=>$r['country'],'kw'=>$r['kw'],'month'=>$r['month'],'need_cnt'=>$r['need_cnt']];
+    $tr=['name'=>$r['tname']];
+    $subj=fill_tpl($lang==='de'?'Visum & Reisepass — {{topic}} in {{city}}':'Visa & passport — {{topic}} in {{city}}',$tg,$tr);
+    $bodyText=fill_tpl($lang==='de'
+      ? "Hallo {{firstName}},\n\nfür „{{topic}}“ in {{city}} ({{kw}}) benötigen wir für dein Visum bitte eine Kopie deines Reisepasses (mind. 6 Monate gültig). Schick sie uns möglichst bald — wir kümmern uns dann um den Rest."
+      : "Hi {{firstName}},\n\nfor \"{{topic}}\" in {{city}} ({{kw}}) we need a copy of your passport (valid at least 6 months) for your visa. Please send it to us soon — we'll take care of the rest.",
+      $tg,$tr);
+    $ok=send_email($r['temail'],$r['tname'],$subj,email_html($bodyText,''));
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[$r['tid'],$r['trainer_id'],$r['temail'],$subj,$bodyText,$lang,$ok?'sent':'failed',now()]);
+    if($r['tvid']) q("UPDATE travel SET visa_reminded=1 WHERE id=?",[$r['tvid']]);
+    else q("INSERT INTO travel(training_id,trainer_id,visa_status,visa_reminded,updated_at) VALUES(?,?, 'needed',1,?)",[$r['tid'],$r['trainer_id'],now()]);
+    if($ok)$visa++;
+  }
+
   /* 2) Nachrücken (optional): pro unterbesetztem Training den nächstbesten Trainer anfragen */
   if($autoAdv){
     foreach(q("SELECT * FROM trainings")->fetchAll() as $tg){
@@ -82,5 +111,5 @@ function run_automation(): array {
       }
     }
   }
-  return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'auto_advance'=>$autoAdv];
+  return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'auto_advance'=>$autoAdv];
 }

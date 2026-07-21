@@ -352,6 +352,7 @@
       <section class="view" id="v-trainers"></section>
       <section class="view" id="v-templates"></section>
       <section class="view" id="v-automation"></section>
+      <section class="view" id="v-emails"></section>
     </div>
   </main>
 </div>
@@ -399,7 +400,8 @@ const IC={
   cal:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>',
   users:'<path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11"/>',
   mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/>',
-  auto:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+  auto:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  log:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 
@@ -526,6 +528,11 @@ const L={
   tvFlightTitle:n=>`Flug & Zimmer — ${n}`, tvArrival:"Anreise", tvDeparture:"Abreise",
   tvFlightOut:"Hinflug", tvFlightReturn:"Rückflug", tvRoom:"Zimmer", printBtn:"Drucken",
   tvFlightHead:"Deine Reisedaten", tvLogHead:"Reise & Logistik", agFor:"Für",
+  visaLbl:"Visum", passportLbl:"Reisepass gültig bis", visaNotesLbl:"Visum-Notizen",
+  visa_none:"—", visa_needed:"benötigt", visa_applied:"beantragt", visa_approved:"genehmigt", visa_rejected:"abgelehnt",
+  flSuggest:"✈ Flug-Vorschläge", flSuggestHint:"Automatische Vorschläge nach Route (Region → Ziel). Zum Übernehmen anklicken.", flUse:"Übernehmen",
+  nav_emails:"Protokoll", tp_emails:"E-Mail-Protokoll", tp_emailsSub:"Alle versendeten Anfragen, Erinnerungen und Agenden",
+  emNone:"Noch keine E-Mails versendet.", em_sent:"gesendet", em_logged:"protokolliert", em_failed:"fehlgeschlagen",
   agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
   resetToast:"Demo-Daten zurückgesetzt"
  },
@@ -613,6 +620,11 @@ const L={
   tvFlightTitle:n=>`Flight & room — ${n}`, tvArrival:"Arrival", tvDeparture:"Departure",
   tvFlightOut:"Outbound flight", tvFlightReturn:"Return flight", tvRoom:"Room", printBtn:"Print",
   tvFlightHead:"Your travel details", tvLogHead:"Travel & logistics", agFor:"For",
+  visaLbl:"Visa", passportLbl:"Passport valid until", visaNotesLbl:"Visa notes",
+  visa_none:"—", visa_needed:"needed", visa_applied:"applied", visa_approved:"approved", visa_rejected:"rejected",
+  flSuggest:"✈ Flight suggestions", flSuggestHint:"Auto suggestions by route (region → destination). Click to use.", flUse:"Use",
+  nav_emails:"Log", tp_emails:"Email log", tp_emailsSub:"All sent requests, reminders and agendas",
+  emNone:"No emails sent yet.", em_sent:"sent", em_logged:"logged", em_failed:"failed",
   agendaHint:"The trainer receives this overview by email (print link) and can print it.",
   resetToast:"Demo data reset"
  }
@@ -702,13 +714,14 @@ function load(){
     if(r&&r.trainers){
       r.lang=r.lang||"de"; r.emailLang=r.emailLang||"en";
       r.settings=r.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false};
+      r.emails=r.emails||[];
       if(!r.templates||!r.templates[0]||!r.templates[0].de)r.templates=TEMPLATES;
       (r.trainings||[]).forEach(t=>{ if(!t.travel)t.travel={venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]}; });
       return r;
     }
   }catch(e){}
   return {lang:"de", emailLang:"en", trainers:seedTrainers(), trainings:seedTrainings(),
-    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false}};
+    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false}, emails:[]};
 }
 function save(){localStorage.setItem("etaf_demo",JSON.stringify(S));}
 function resetDemo(){localStorage.removeItem("etaf_demo");S=load();applyStatic();render();toast(t("resetToast"));}
@@ -726,7 +739,7 @@ function scoreTrainer(tr,tg){
 }
 function ranked(tg){
   return S.trainers.map(tr=>{const e=tg.roster.find(r=>r.trainerId===tr.id)||{};
-    return {tr,fit:scoreTrainer(tr,tg),status:e.status||null,reminded:!!e.reminded};})
+    return {tr,fit:scoreTrainer(tr,tg),status:e.status||null,reminded:!!e.reminded,flight:e.flight||null};})
     .sort((a,b)=>b.fit-a.fit);
 }
 function rosterStats(tg){
@@ -818,7 +831,7 @@ document.addEventListener("keydown",e=>{
 /* ============================================================
    NAV / ROUTER
    ============================================================ */
-const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"trainers",ic:IC.users},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto}];
+const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"trainers",ic:IC.users},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
 let route="dash";
 function buildNav(){
   const crit=S.trainings.filter(t=>statusOf(t).cls==="crit").length;
@@ -834,7 +847,7 @@ function buildNav(){
 function titleFor(r){
   const m={dash:["tp_dash","tp_dashSub"],trainings:["tp_trn","tp_trnSub"],
     trainers:["tp_pool","tp_poolSub"],templates:["tp_tpl","tp_tplSub"],
-    automation:["tp_auto","tp_autoSub"]};
+    automation:["tp_auto","tp_autoSub"],emails:["tp_emails","tp_emailsSub"]};
   const k=m[r]||m.dash; return [t(k[0]),t(k[1])];
 }
 function go(r){route=r;render();}
@@ -847,6 +860,7 @@ function render(){
   else if(route==="trainers"){renderTrainers();$("#v-trainers").classList.add("on");}
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
+  else if(route==="emails"){renderEmails();$("#v-emails").classList.add("on");}
   if(route==="detail"&&curTg){$("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+curTg.kw;}
   else{const ti=titleFor(route);$("#tt").textContent=ti[0];$("#ts").textContent=ti[1];}
   save();
@@ -1000,8 +1014,14 @@ function rosterRow(x,tg){
     <div class="rowgrow"><div class="nm">${x.tr.name}</div>
       <div class="meta">${x.tr.spec[0]} · ${x.tr.region}</div></div>
     ${x.reminded?`<span class="tag" style="border-color:var(--warn);color:var(--warn)">${t("reminded")}</span>`:''}
+    ${(tg.country==='UAE'&&(x.status==='yes'||x.status==='confirmed'))?visaChip(x):''}
     <span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${acts}
   </div>`;
+}
+function visaChip(x){
+  const vs=(x.flight&&x.flight.visaStatus)||'none';
+  const cls={approved:'good',rejected:'crit',needed:'warn',applied:'warn',none:'neutral'}[vs]||'neutral';
+  return `<span class="pill ${cls}">${t("visaLbl")}: ${t("visa_"+vs)}</span>`;
 }
 function setStatus(tgId,trId,status){
   const tg=S.trainings.find(x=>x.id===tgId);
@@ -1180,6 +1200,7 @@ async function sendCompose(){
     return;
   }
   compose.recips.forEach(id=>setStatus(compose.tgId,id,"asked"));
+  compose.recips.forEach(id=>{const trx=S.trainers.find(t=>t.id===id); if(trx)demoLog(trx.email,subject,compose.lang,"logged");});
   closeSheet();
   toast(t("sentToast",n),"good");
   if(route==="detail")renderDetail();
@@ -1236,6 +1257,7 @@ async function sendQuick(){
     return;
   }
   pool.forEach(x=>setStatus(tgId,x.tr.id,"asked"));
+  pool.forEach(x=>demoLog(x.tr.email,(S.lang==='de'?'Kurzfristig: Einspringen? — ':'Short notice: step in? — ')+tg.topic,S.emailLang,"logged"));
   closeSheet();toast(t("blitzToast",pool.length),"good");
   buildNav();if(route==="detail"){curTg=tg;renderDetail();}if(route==="dash")renderDash();
 }
@@ -1297,13 +1319,21 @@ async function saveTravel(){
 function openTrainerTravel(tgId,trId){
   travelTg=tgId; const tr=S.trainers.find(x=>x.id===trId);
   const e=tvGet(tgId).roster.find(r=>r.trainerId===trId)||{}; const fl=e.flight||{};
+  const uae=(S.trainings.find(x=>x.id===tgId)||{}).country==='UAE';
   $("#sheetTitle").textContent=t("tvFlightTitle",tr.name);
   $("#sheetBody").innerHTML=`
     ${tvField("flArr",t("tvArrival"),fl.arrival)}
     ${tvField("flDep",t("tvDeparture"),fl.departure)}
-    ${tvField("flOut",t("tvFlightOut"),fl.flightOut)}
-    ${tvField("flRet",t("tvFlightReturn"),fl.flightReturn)}
+    <div class="fldrow" style="margin-top:14px"><label class="fld" style="margin:0">${t("tvFlightOut")} / ${t("tvFlightReturn")}</label>
+      <button class="btn sm" onclick="showFlightSuggestions('${tgId}','${trId}')">${t("flSuggest")}</button></div>
+    <div id="flSug"></div>
+    <input class="inp" id="flOut" value="${esc(fl.flightOut||"")}" placeholder="${t("tvFlightOut")}" style="margin-top:6px">
+    <input class="inp" id="flRet" value="${esc(fl.flightReturn||"")}" placeholder="${t("tvFlightReturn")}" style="margin-top:6px">
     ${tvField("flRoom",t("tvRoom"),fl.room)}
+    <label class="fld">${t("passportLbl")}${uae?' ⚑':''}</label><input class="inp" id="flPass" value="${esc(fl.passportExpiry||"")}" placeholder="YYYY-MM-DD">
+    <label class="fld">${t("visaLbl")}${uae?' ⚑':''}</label>
+    <select id="flVisa">${["none","needed","applied","approved","rejected"].map(v=>`<option value="${v}" ${((fl.visaStatus||'none')===v)?'selected':''}>${t("visa_"+v)}</option>`).join("")}</select>
+    ${tvField("flVisaNotes",t("visaNotesLbl"),fl.visaNotes)}
     ${tvField("flNotes",t("tvNotes"),fl.notes)}`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
     <button class="btn" onclick="openAgenda('${tgId}','${trId}')">${t("agendaView")}</button>
@@ -1312,13 +1342,16 @@ function openTrainerTravel(tgId,trId){
 }
 async function saveTrainerTravel(tgId,trId){
   const flight={arrival:$("#flArr").value,departure:$("#flDep").value,flightOut:$("#flOut").value,
-    flightReturn:$("#flRet").value,room:$("#flRoom").value,notes:$("#flNotes").value};
+    flightReturn:$("#flRet").value,room:$("#flRoom").value,notes:$("#flNotes").value,
+    visaStatus:$("#flVisa")?$("#flVisa").value:"none",passportExpiry:$("#flPass")?$("#flPass").value:"",
+    visaNotes:$("#flVisaNotes")?$("#flVisaNotes").value:""};
   let e=tvGet(tgId).roster.find(r=>r.trainerId===trId);
   if(!e){e={trainerId:trId,status:"yes"};tvGet(tgId).roster.push(e);}
   e.flight=flight;
   if(LIVE){
     try{ await apiCall("trainer.travelSave",{training:tgId,trainer:trId,arrival:flight.arrival,departure:flight.departure,
-      flightOut:flight.flightOut,flightReturn:flight.flightReturn,room:flight.room,notes:flight.notes}); }
+      flightOut:flight.flightOut,flightReturn:flight.flightReturn,room:flight.room,notes:flight.notes,
+      visaStatus:flight.visaStatus,passportExpiry:flight.passportExpiry,visaNotes:flight.visaNotes}); }
     catch(err){ toast("Fehler: "+err.message,"crit"); return; }
   }
   save();closeSheet();toast(t("travelSaved"),"good");if(route==="detail")renderDetail();
@@ -1347,7 +1380,7 @@ function buildAgendaHTML(tg,tr,fl){
     <div class="ag-bar"></div>
     <div class="ag-kv">${row(t("agFor"),tr?tr.name:"")}${row(t("tvVenue"),v.venue)}</div>
     <div class="ag-h2">${t("tvFlightHead")}</div>
-    <div class="ag-kv">${row(t("tvArrival"),fl.arrival)}${row(t("tvDeparture"),fl.departure)}${row(t("tvFlightOut"),fl.flightOut)}${row(t("tvFlightReturn"),fl.flightReturn)}${row(t("tvRoom"),fl.room)}${fl.notes?row(t("tvNotes"),fl.notes):""}</div>
+    <div class="ag-kv">${row(t("tvArrival"),fl.arrival)}${row(t("tvDeparture"),fl.departure)}${row(t("tvFlightOut"),fl.flightOut)}${row(t("tvFlightReturn"),fl.flightReturn)}${row(t("tvRoom"),fl.room)}${(tg.country==='UAE'||fl.passportExpiry||(fl.visaStatus&&fl.visaStatus!=='none'))?row(t("passportLbl"),fl.passportExpiry)+rowH(t("visaLbl"),t("visa_"+(fl.visaStatus||'none'))):""}${fl.visaNotes?row(t("visaNotesLbl"),fl.visaNotes):""}${fl.notes?row(t("tvNotes"),fl.notes):""}</div>
     <div class="ag-h2">${t("tvLogHead")}</div>
     <div class="ag-kv">${rowH(t("tvHotel"),esc([v.hotel,v.hotelAddr].filter(Boolean).join(" · ")))}${row(t("tvMeet"),v.meetingPoint)}${rowH(t("tvContact"),esc([v.contactName,v.contactPhone].filter(Boolean).join(" · ")))}${row(t("tvDress"),v.dresscode)}${row(t("tvPerDiem"),v.perDiem)}${v.notes?row(t("tvNotes"),v.notes):""}</div>
     ${items?`<div class="ag-h2">${t("agTitle")}</div><table class="ag-table">${items}</table>`:""}
@@ -1360,7 +1393,56 @@ async function sendAgenda(tgId,trId){
     catch(e){ toast("Fehler: "+e.message,"crit"); }
     return;
   }
+  const tr=S.trainers.find(x=>x.id===trId), tg=S.trainings.find(x=>x.id===tgId);
+  demoLog(tr.email, (S.lang==='de'?'Deine Reise-Agenda — ':'Your travel agenda — ')+tg.topic, S.emailLang, "logged");
   toast(t("agendaSent"),"good");
+}
+
+/* ---------- Flug-Vorschläge (automatisch, Route Region→Ziel) ---------- */
+const AIRPORTS={"DE-Süd":["MUC","München"],"DE-West":["DUS","Düsseldorf"],"DE-Nord":["HAM","Hamburg"],"AT":["VIE","Wien"],"CH":["ZRH","Zürich"],"UAE":["AUH","Abu Dhabi"],"UK":["LHR","London"]};
+const DESTAP={"UAE":["AUH","Abu Dhabi"],"DE":["FRA","Frankfurt"],"AT":["VIE","Wien"],"CH":["ZRH","Zürich"]};
+const AIRLINES=["LH","EW","EK","EY","OS","LX","BA"];
+function flightSuggestions(tr,tg){
+  const o=AIRPORTS[tr.region]||["FRA","Frankfurt"], d=DESTAP[tg.country]||["FRA","Frankfurt"];
+  const seed=(tr.name.length*7+tg.topic.length*3);
+  const al=AIRLINES[seed%AIRLINES.length], al2=AIRLINES[(seed+3)%AIRLINES.length];
+  const n1=100+(seed*7)%800, n2=200+(seed*5)%700;
+  return [
+    {out:`${al} ${n1} ${o[0]}→${d[0]} 21:55–06:40 (+1)`, ret:`${al} ${n1+1} ${d[0]}→${o[0]} 02:35–07:10`},
+    {out:`${al2} ${n2} ${o[0]}→${d[0]} 10:20–19:15`,      ret:`${al2} ${n2+1} ${d[0]}→${o[0]} 08:45–13:20`}
+  ];
+}
+function showFlightSuggestions(tgId,trId){
+  const tr=S.trainers.find(x=>x.id===trId), tg=S.trainings.find(x=>x.id===tgId);
+  const sug=flightSuggestions(tr,tg); window._flSug=sug;
+  $("#flSug").innerHTML=`<div class="meta" style="margin:8px 0 4px">${t("flSuggestHint")}</div>`+
+    sug.map((s,i)=>`<div class="row" style="padding:8px 4px">
+      <div class="rowgrow"><div class="nm" style="font-size:13px">✈ ${esc(s.out)}</div>
+        <div class="meta">↩ ${esc(s.ret)}</div></div>
+      <button class="btn sm primary" onclick="useFlight(${i})">${t("flUse")}</button></div>`).join("");
+}
+function useFlight(i){const s=window._flSug[i]; if($("#flOut"))$("#flOut").value=s.out; if($("#flRet"))$("#flRet").value=s.ret;}
+
+/* ---------- E-Mail-Protokoll ---------- */
+function demoLog(to,subject,lang,status){
+  if(LIVE)return;
+  let ts=""; try{ts=new Date().toISOString().slice(0,16).replace("T"," ");}catch(e){}
+  S.emails.unshift({to_email:to,subject:subject,lang:lang||S.emailLang,status:status||"logged",created_at:ts});
+  if(S.emails.length>200)S.emails.length=200; save();
+}
+async function renderEmails(){
+  let list=[];
+  if(LIVE){ try{ const d=await apiCall("emails"); list=d.emails||[]; }catch(e){ list=[]; } }
+  else list=S.emails||[];
+  const stCls={sent:"good",logged:"info",failed:"crit"};
+  const rows=list.map(e=>`
+    <div class="row">
+      <div class="av" style="background:var(--brand-solid)">✉</div>
+      <div class="rowgrow"><div class="nm">${esc(e.subject||"")}</div>
+        <div class="meta">${esc(e.to_email||"")} · ${esc((e.created_at||"").replace('T',' ').slice(0,16))} · ${esc((e.lang||"").toUpperCase())}</div></div>
+      <span class="pill ${stCls[e.status]||'neutral'}">${t("em_"+e.status)!=="em_"+e.status?t("em_"+e.status):e.status}</span>
+    </div>`).join("");
+  $("#v-emails").innerHTML=`<div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">${t("emNone")}</div>`}</div></div>`;
 }
 
 /* ============================================================
@@ -1477,7 +1559,8 @@ async function runAutoNow(){
   }
   const s=S.settings||{}; let reminded=0,advanced=0;
   S.trainings.forEach(tg=>{
-    tg.roster.forEach(r=>{ if(r.status==="asked" && !r.reminded){ r.reminded=true; reminded++; } });
+    tg.roster.forEach(r=>{ if(r.status==="asked" && !r.reminded){ r.reminded=true; reminded++;
+      const trx=S.trainers.find(x=>x.id===r.trainerId); if(trx)demoLog(trx.email,(S.lang==='de'?'Erinnerung: ':'Reminder: ')+tg.topic,S.emailLang,"logged"); } });
     if(s.auto_advance){
       const active=tg.roster.filter(r=>["asked","maybe","yes","confirmed"].includes(r.status)).length;
       const gaps=tg.roster.filter(r=>r.status==="no").length;

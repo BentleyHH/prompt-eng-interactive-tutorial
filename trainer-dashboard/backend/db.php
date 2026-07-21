@@ -73,13 +73,16 @@ function ensure_schema(): void {
     dresscode VARCHAR(160), per_diem VARCHAR(64), travel_notes TEXT, agenda TEXT,
     created_at VARCHAR(20))$eng");
 
-  // Reisedaten je Trainer (Flug, Zimmer)
+  // Reisedaten je Trainer (Flug, Zimmer, Visum)
   $d->exec("CREATE TABLE IF NOT EXISTS travel (
     id $pk,
     training_id INT, trainer_id INT,
     arrival VARCHAR(48), departure VARCHAR(48),
     flight_out VARCHAR(190), flight_return VARCHAR(190),
-    room VARCHAR(48), notes TEXT, updated_at VARCHAR(20))$eng");
+    room VARCHAR(48), notes TEXT,
+    visa_status VARCHAR(16) DEFAULT 'none', passport_expiry VARCHAR(20),
+    visa_notes TEXT, visa_reminded INT DEFAULT 0,
+    updated_at VARCHAR(20))$eng");
 
   $d->exec("CREATE TABLE IF NOT EXISTS templates (
     id VARCHAR(16) PRIMARY KEY,
@@ -116,6 +119,11 @@ function ensure_schema(): void {
     "meeting_point VARCHAR(255)","contact_name VARCHAR(160)","contact_phone VARCHAR(64)",
     "dresscode VARCHAR(160)","per_diem VARCHAR(64)","travel_notes TEXT","agenda TEXT"
   ] as $col){ try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Migrationen (idempotent): Visum-Spalten für travel
+  foreach([
+    "visa_status VARCHAR(16) DEFAULT 'none'","passport_expiry VARCHAR(20)",
+    "visa_notes TEXT","visa_reminded INT DEFAULT 0"
+  ] as $col){ try{ db()->exec("ALTER TABLE travel ADD COLUMN $col"); }catch(Throwable $e){} }
 
   // Automatik-Standardwerte
   $ac=cfg();

@@ -59,8 +59,8 @@ Ohne diese Datei läuft das Dashboard weiter als lokale Demo — praktisch zum Z
 ## 5. Öffnen & testen
 - `https://deine-domain.de/dashboard/` aufrufen → PIN eingeben.
 - Ein Training öffnen → **Sammelanfrage senden**. Bei `mail_mode='log'` wird
-  nichts verschickt, aber alles protokolliert (Menüpunkt lässt sich später ergänzen;
-  vorerst in der DB-Tabelle `email_log` sichtbar).
+  nichts verschickt, aber alles protokolliert — sichtbar unter **Protokoll** im
+  Dashboard (und in der DB-Tabelle `email_log`).
 - Auf `mail_mode='mail'` (oder `'smtp'`) umstellen, sobald der Versand echt sein soll.
 
 ## 6. E-Mail-Versand
@@ -112,7 +112,26 @@ der Trainer eine E-Mail mit **Druck-Link** (`backend/agenda.php?token=…`) — 
 Login und lässt sich direkt ausdrucken. Der Token ist der der jeweiligen Anfrage; nichts weiter zu
 konfigurieren.
 
+## Visum-Workflow (Abu Dhabi)
+Im Reise-Editor je Trainer trägst du **Reisepass gültig bis** und **Visum-Status**
+(benötigt / beantragt / genehmigt / abgelehnt) samt Notizen ein; im Roster zeigt eine
+Statusampel den Stand. Die Automatik (siehe Cron oben) erinnert **bestätigte UAE-Trainer
+ohne genehmigtes Visum** einmalig automatisch an die Reisepass-Kopie — idempotent, es geht
+also keine doppelte Erinnerung raus. Pass- und Visum-Angaben erscheinen auch auf der
+druckbaren Agenda (`agenda.php`).
+
+## Automatische Flugvorschläge
+Im Reise-Editor liefert **„Flüge vorschlagen"** aus Heimatregion → Zielflughafen passende
+Verbindungen (z. B. München → Abu Dhabi). Ein Klick auf **Übernehmen** trägt Hin-/Rückflug
+in die Reisedaten ein. Die Vorschläge sind heuristisch (keine Live-Preise) und dienen als
+Ausfüllhilfe — die endgültige Buchung machst du wie gewohnt selbst.
+
+## E-Mail-Protokoll
+Der Menüpunkt **Protokoll** listet alle versendeten E-Mails (Empfänger, Betreff, Sprache,
+Zeitpunkt, Status) — Anfragen, Erinnerungen, Visum-Hinweise und Agenda-Mails an einem Ort.
+Grundlage ist die Tabelle `email_log`, die bei jedem Versand (auch bei `mail_mode='log'`)
+befüllt wird.
+
 ## Was später noch dazukommen könnte
-- E-Mail-Protokoll-Ansicht im Dashboard (Daten liegen schon in `email_log`).
 - KI-Auswertung frei geschriebener E-Mail-Antworten (zusätzlich zu den Magic-Link-Buttons).
-- Reise-/Flug-/Visum-Modul, Rollen & Audit-Log.
+- Anbindung an Airline-Buchung / Visum-Dienstleister, Rollen & Audit-Log.

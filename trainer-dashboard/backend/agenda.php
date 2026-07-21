@@ -23,14 +23,16 @@ $L = $lang==='de' ? [
   'dress'=>'Dresscode','perdiem'=>'Per Diem','arr'=>'Anreise','dep'=>'Abreise','fout'=>'Hinflug',
   'fret'=>'Rückflug','room'=>'Zimmer','notes'=>'Hinweise','travel'=>'Reise & Logistik',
   'flight'=>'Deine Reisedaten','program'=>'Programm','print'=>'Drucken','err'=>'Dieser Link ist ungültig oder abgelaufen.',
-  'nodata'=>'— noch nicht hinterlegt —'
+  'nodata'=>'— noch nicht hinterlegt —','passport'=>'Reisepass gültig bis','visa'=>'Visum',
+  'visa_none'=>'—','visa_needed'=>'benötigt','visa_applied'=>'beantragt','visa_approved'=>'genehmigt','visa_rejected'=>'abgelehnt'
 ] : [
   'title'=>'Travel agenda','training'=>'Training','for'=>'For','when'=>'Period','where'=>'Location',
   'venue'=>'Venue','hotel'=>'Hotel','meet'=>'Meeting point','contact'=>'On-site contact',
   'dress'=>'Dress code','perdiem'=>'Per diem','arr'=>'Arrival','dep'=>'Departure','fout'=>'Outbound flight',
   'fret'=>'Return flight','room'=>'Room','notes'=>'Notes','travel'=>'Travel & logistics',
   'flight'=>'Your travel details','program'=>'Programme','print'=>'Print','err'=>'This link is invalid or has expired.',
-  'nodata'=>'— not set yet —'
+  'nodata'=>'— not set yet —','passport'=>'Passport valid until','visa'=>'Visa',
+  'visa_none'=>'—','visa_needed'=>'needed','visa_applied'=>'applied','visa_approved'=>'approved','visa_rejected'=>'rejected'
 ];
 function e($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 $na = $L['nodata'];
@@ -102,6 +104,11 @@ $na = $L['nodata'];
       <div class="k"><?=e($L['fout'])?></div><div class="v"><?=e($tv['flight_out']??'') ?: $na?></div>
       <div class="k"><?=e($L['fret'])?></div><div class="v"><?=e($tv['flight_return']??'') ?: $na?></div>
       <div class="k"><?=e($L['room'])?></div><div class="v"><?=e($tv['room']??'') ?: $na?></div>
+      <?php if($req['country']==='UAE' || !empty($tv['passport_expiry']) || (($tv['visa_status']??'none')!=='none')): ?>
+        <div class="k"><?=e($L['passport'])?></div><div class="v"><?=e($tv['passport_expiry']??'') ?: $na?></div>
+        <div class="k"><?=e($L['visa'])?></div><div class="v"><?=e($L['visa_'.($tv['visa_status'] ?? 'none')] ?? '—')?></div>
+      <?php endif; ?>
+      <?php if(!empty($tv['visa_notes'])): ?><div class="k"><?=e($L['visa'])?></div><div class="v"><?=e($tv['visa_notes'])?></div><?php endif; ?>
       <?php if(!empty($tv['notes'])): ?><div class="k"><?=e($L['notes'])?></div><div class="v"><?=e($tv['notes'])?></div><?php endif; ?>
     </div>
 

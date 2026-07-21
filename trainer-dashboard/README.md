@@ -48,6 +48,16 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
   Dresscode, Per Diem, Hinweise) + Programm/Agenda; je Trainer Flug- & Zimmerdaten. Daraus wird
   eine **persönliche, druckbare Reise-Agenda** erzeugt — im Dashboard ansehen/drucken und per
   **E-Mail mit Druck-Link** an den Trainer senden (`agenda.php`, öffnet ohne Login).
+- **Visum-Workflow (Abu Dhabi)**: je Trainer Reisepass-Gültigkeit und Visum-Status
+  (benötigt / beantragt / genehmigt / abgelehnt) mit Notizen; Statusampel im Roster. Die
+  **Automatik erinnert** bestätigte UAE-Trainer ohne genehmigtes Visum einmalig automatisch
+  an die Reisepass-Kopie (per Cron, idempotent). Pass-/Visum-Angaben erscheinen auch auf der Agenda.
+- **Automatische Flugvorschläge**: pro Trainer werden aus Heimatregion → Zielflughafen
+  passende Verbindungen vorgeschlagen (z. B. München → Abu Dhabi) und per Klick in die
+  Flugdaten übernommen — spart Tipparbeit bei der Reiseplanung.
+- **E-Mail-Protokoll**: eigene Ansicht mit allen versendeten E-Mails (Empfänger, Betreff,
+  Sprache, Zeitpunkt, Status) — Anfragen, Erinnerungen, Visum-Hinweise und Agenda-Mails
+  an einem Ort nachvollziehbar.
 - **KI-Import**: Trainer → „Profile importieren" → Lebenslauf/Excel/Angebot einfügen → KI
   extrahiert strukturierte Profile (Claude API, Modell `claude-opus-4-8`) → prüfen → übernehmen
 - **Automatik**: Erinnerungen nach X Stunden ohne Antwort + optionales automatisches Nachrücken
@@ -72,7 +82,10 @@ Rücklauf. Über **◐ Design wechseln** hell/dunkel testen.
 | KI-Matching | Heuristik im Browser | Heuristik (serverfähig, auch fürs Nachrücken) | Feineres Ranking / Lernen |
 | KI-Profilanlage | simuliert (Textzerlegung) | **Claude API (`claude-opus-4-8`), strukturierte Extraktion** | Auto-Anlage aus Angeboten |
 | Erinnerungen/Nachrücken | Demo-Simulation | **Automatik + Cron (nach X Std.)** | Eskalationsstufen, Vertretungspools |
-| Reiseplanung & Agenda | voll (localStorage) | **DB + druckbare Agenda + E-Mail-Druck-Link** | Visum-Workflow, automatische Flugvorschläge |
+| Reiseplanung & Agenda | voll (localStorage) | **DB + druckbare Agenda + E-Mail-Druck-Link** | Buchungs-Import der Airlines |
+| Visum-Workflow (UAE) | voll (localStorage) | **Pass/Visum-Status + automatische Erinnerung (Cron)** | Anbindung an Visum-Dienstleister |
+| Flugvorschläge | Heuristik im Browser | Heuristik (region→Zielflughafen) | Echtzeit-Preise/Buchung |
+| E-Mail-Protokoll | localStorage-Log | **`email_log`-Tabelle (alle Mails)** | Zustellstatus/Bounces |
 
 Nicht vergessen: 50 Trainerprofile = personenbezogene Daten mit internationalem Transfer
 (Abu Dhabi) → Einwilligung, AVV mit artfiles, Löschkonzept und HTTPS von Anfang an. Details in `DEPLOY.md`.

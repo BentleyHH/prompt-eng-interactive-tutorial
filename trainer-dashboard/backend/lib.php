@@ -95,7 +95,9 @@ function get_state(): array {
       if($e['trainerId']===$trid){ $e['flight']=[
         'arrival'=>$tv['arrival'],'departure'=>$tv['departure'],
         'flightOut'=>$tv['flight_out'],'flightReturn'=>$tv['flight_return'],
-        'room'=>$tv['room'],'notes'=>$tv['notes']]; }
+        'room'=>$tv['room'],'notes'=>$tv['notes'],
+        'visaStatus'=>$tv['visa_status']??'none','passportExpiry'=>$tv['passport_expiry']??'',
+        'visaNotes'=>$tv['visa_notes']??'']; }
     }
     unset($e);
   }
