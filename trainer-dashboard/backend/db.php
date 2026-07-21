@@ -90,6 +90,15 @@ function ensure_schema(): void {
     visa_notes TEXT, visa_reminded INT DEFAULT 0,
     updated_at VARCHAR(20))$eng");
 
+  // Material-Katalog + Positionen je Training + Typ-Vorlagen
+  $d->exec("CREATE TABLE IF NOT EXISTS materials (
+    id VARCHAR(24) PRIMARY KEY,
+    name VARCHAR(160), unit VARCHAR(24), cat VARCHAR(64), sort_order INT DEFAULT 0)$eng");
+  $d->exec("CREATE TABLE IF NOT EXISTS training_materials (
+    id $pk, training_id INT, material_id VARCHAR(24), qty INT DEFAULT 0)$eng");
+  $d->exec("CREATE TABLE IF NOT EXISTS material_presets (
+    id $pk, spec VARCHAR(96), material_id VARCHAR(24), qty INT DEFAULT 0)$eng");
+
   $d->exec("CREATE TABLE IF NOT EXISTS templates (
     id VARCHAR(16) PRIMARY KEY,
     de_name VARCHAR(120), de_subject VARCHAR(255), de_body TEXT,
@@ -153,6 +162,10 @@ function ensure_schema(): void {
     q("UPDATE trainings SET client_id='cl-ksa' WHERE country='KSA' AND (client_id IS NULL OR client_id='')");
     q("UPDATE trainings SET client_id='cl-inl' WHERE (client_id IS NULL OR client_id='')");
   }
+  // Material-Katalog sicherstellen (auch für bestehende Installationen)
+  if((int)q("SELECT COUNT(*) c FROM materials")->fetch()['c']===0){
+    seed_materials();
+  }
 }
 
 function config_get(string $k){
@@ -187,6 +200,27 @@ function seed_templates(): void {
   ];
   foreach($T as $r){
     q("INSERT INTO templates(id,de_name,de_subject,de_body,en_name,en_subject,en_body) VALUES(?,?,?,?,?,?,?)",$r);
+  }
+}
+
+/** Material-Katalog anlegen (idempotent). */
+function seed_materials(): void {
+  $M=[
+    ['m-dvi','DVI-Kit','Set','Kits',1],
+    ['m-bag','Leichensack','Stk','Verbrauch',2],
+    ['m-cbrn','CBRN-Kit','Set','Kits',3],
+    ['m-am','Protokoll — Ante Mortem','Stk','Protokolle',4],
+    ['m-pm','Protokoll — Post Mortem','Stk','Protokolle',5],
+    ['m-dna','DNA-Probenset','Set','Proben',6],
+    ['m-fp','Fingerprint-Set','Set','Proben',7],
+    ['m-dent','Zahnstatus-Formular','Stk','Protokolle',8],
+    ['m-glove','Einmalhandschuhe','Box','Verbrauch',9],
+    ['m-suit','Schutzanzug','Stk','Verbrauch',10],
+  ];
+  foreach($M as $m){
+    if((int)q("SELECT COUNT(*) c FROM materials WHERE id=?",[$m[0]])->fetch()['c']===0){
+      q("INSERT INTO materials(id,name,unit,cat,sort_order) VALUES(?,?,?,?,?)",$m);
+    }
   }
 }
 
@@ -250,4 +284,12 @@ function seed_demo(): void {
     '120 EUR / Tag','Reisepass mind. 6 Monate gültig. Flughafen-Transfer ist organisiert.',
     $agenda,'Guided Surgery Level II'
   ]);
+  // Material-Katalog + Beispiel-Materialliste + Typ-Vorlage (Schwerpunkt des 1. Trainings)
+  seed_materials();
+  $mat=[['m-dvi',6],['m-bag',20],['m-am',30],['m-pm',30],['m-glove',10]];
+  $tg1=q("SELECT id,spec FROM trainings WHERE topic=?",['Guided Surgery Level II'])->fetch();
+  if($tg1){
+    foreach($mat as $x){ q("INSERT INTO training_materials(training_id,material_id,qty) VALUES(?,?,?)",[$tg1['id'],$x[0],$x[1]]); }
+    foreach($mat as $x){ q("INSERT INTO material_presets(spec,material_id,qty) VALUES(?,?,?)",[$tg1['spec'],$x[0],$x[1]]); }
+  }
 }

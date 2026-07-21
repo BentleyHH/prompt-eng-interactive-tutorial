@@ -87,8 +87,10 @@ switch($action){
   case 'training.save':
     require_auth();
     $id=$in['id']??null;
+    $spec=$in['spec']??'';
     $f=[$in['clientId']??($in['client']??null), $in['topic']??'', $in['city']??'', $in['country']??'', $in['kw']??'', $in['month']??'',
-        $in['spec']??'', (int)($in['need']??5), (int)($in['participants']??0)];
+        $spec, (int)($in['need']??5), (int)($in['participants']??0)];
+    $prefilled=0;
     if($id){
       q("UPDATE trainings SET client_id=?,topic=?,city=?,country=?,kw=?,month=?,spec=?,need_cnt=?,participants=? WHERE id=?",
         array_merge($f,[$id]));
@@ -96,8 +98,66 @@ switch($action){
       q("INSERT INTO trainings(client_id,topic,city,country,kw,month,spec,need_cnt,participants,created_at)
          VALUES(?,?,?,?,?,?,?,?,?,?)", array_merge($f,[now()]));
       $id=db()->lastInsertId();
+      // Intelligente Materialliste: Typ-Vorlage für diesen Schwerpunkt übernehmen
+      if($spec!==''){
+        foreach(q("SELECT material_id,qty FROM material_presets WHERE spec=?",[$spec])->fetchAll() as $p){
+          q("INSERT INTO training_materials(training_id,material_id,qty) VALUES(?,?,?)",[$id,$p['material_id'],$p['qty']]);
+          $prefilled++;
+        }
+      }
     }
-    out(['ok'=>true,'id'=>(string)$id]);
+    out(['ok'=>true,'id'=>(string)$id,'prefilled'=>$prefilled]);
+
+  case 'training.delete':
+    require_auth();
+    $tid=$in['id']??0;
+    q("DELETE FROM trainings WHERE id=?",[$tid]);
+    q("DELETE FROM requests WHERE training_id=?",[$tid]);
+    q("DELETE FROM travel WHERE training_id=?",[$tid]);
+    q("DELETE FROM training_materials WHERE training_id=?",[$tid]);
+    out(['ok'=>true]);
+
+  /* ---- Material-Katalog: anlegen/ändern ---- */
+  case 'material.save':
+    require_auth();
+    $mid=$in['id']??''; if($mid==='') fail('Keine Material-ID.');
+    $mf=[$in['name']??'', $in['unit']??'', $in['cat']??''];
+    $ex=q("SELECT id FROM materials WHERE id=?",[$mid])->fetch();
+    if($ex) q("UPDATE materials SET name=?,unit=?,cat=? WHERE id=?", array_merge($mf,[$mid]));
+    else    q("INSERT INTO materials(id,name,unit,cat,sort_order) VALUES(?,?,?,?, (SELECT COALESCE(MAX(sort_order),0)+1 FROM materials m))",
+              array_merge([$mid],$mf));
+    out(['ok'=>true,'id'=>$mid]);
+
+  case 'material.delete':
+    require_auth();
+    $mid=$in['id']??'';
+    q("DELETE FROM materials WHERE id=?",[$mid]);
+    q("DELETE FROM training_materials WHERE material_id=?",[$mid]);
+    q("DELETE FROM material_presets WHERE material_id=?",[$mid]);
+    out(['ok'=>true]);
+
+  /* ---- Materialliste eines Trainings ersetzen ---- */
+  case 'training.materials.save':
+    require_auth();
+    $tid=$in['training']??0; $lines=$in['materials']??[];
+    q("DELETE FROM training_materials WHERE training_id=?",[$tid]);
+    foreach($lines as $l){
+      if(empty($l['matId'])) continue;
+      q("INSERT INTO training_materials(training_id,material_id,qty) VALUES(?,?,?)",[$tid,$l['matId'],(int)($l['qty']??0)]);
+    }
+    out(['ok'=>true]);
+
+  /* ---- Typ-Vorlage (Schwerpunkt → Materialliste) speichern ---- */
+  case 'matpreset.save':
+    require_auth();
+    $spec=$in['spec']??''; if($spec==='') fail('Kein Schwerpunkt.');
+    $lines=$in['materials']??[];
+    q("DELETE FROM material_presets WHERE spec=?",[$spec]);
+    foreach($lines as $l){
+      if(empty($l['matId'])) continue;
+      q("INSERT INTO material_presets(spec,material_id,qty) VALUES(?,?,?)",[$spec,$l['matId'],(int)($l['qty']??0)]);
+    }
+    out(['ok'=>true]);
 
   /* ---- Vorlage speichern (pro Sprache) ---- */
   case 'template.save':

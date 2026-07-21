@@ -48,6 +48,12 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
   als **abonnierbarer Link** (`ics.php`, aktualisiert sich automatisch).
 - **Druckbarer Wandkalender**: chronologische Monatsübersicht, farbcodiert pro Kunde, Querformat
   zum Ausdrucken/an-die-Wand-hängen.
+- **Trainings direkt anlegen/bearbeiten/löschen** im Dashboard (Kunde, Thema, Ort, KW, Monat,
+  Schwerpunkt, benötigte Trainer, Teilnehmer) — nicht mehr nur per Import.
+- **Intelligente Materialliste** je Training: Positionen (Material + Anzahl) aus einem zentralen
+  **Material-Katalog** (DVI-Kits, Leichensäcke, CBRN-Kits, Protokolle, Verbrauchsmaterial …).
+  Pro **Schwerpunkt** lässt sich eine **Typ-Vorlage** speichern — neue Trainings dieses Typs
+  bekommen die richtige Liste dann automatisch beim Anlegen. Liste als **Packliste druckbar**.
 - **Trainings** mit Besetzungsstand; Detailansicht je Training
 - **KI-Vorauswahl**: Trainer werden nach Fachgebiet, Region, UAE-Erfahrung, Auslastung &
   Bewertung gerankt (Fit-%). Manuell in Reihenfolge anfragen, Nachrücker rutschen nach
@@ -87,6 +93,8 @@ Rücklauf. Über **◐ Design wechseln** hell/dunkel testen.
 
 | Baustein | Demo | Live (jetzt) | Später |
 |---|---|---|---|
+| Trainings pflegen | anlegen/bearbeiten/löschen | **anlegen/bearbeiten/löschen (DB)** | Wiederholungs-Serien |
+| Materialliste | voll + Typ-Vorlagen | **materials/-presets-Tabellen** | Bestände/Nachbestellung |
 | Mehrere Kunden | voll (localStorage) | **clients-Tabelle + Zuordnung** | Rollen/Rechte je Kunde |
 | Gesamt-Leitstand | voll | **kundenübergreifende Übersicht** | Auslastungs-/Kostenreport |
 | Kalender-Export | .ics-Download | **.ics + Abo-Link (`ics.php`)** | 2-Wege-Sync (CalDAV) |

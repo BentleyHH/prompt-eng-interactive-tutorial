@@ -107,7 +107,23 @@ function get_state(): array {
       'color'=>$r['color'],'cal'=>$r['cal'],'country'=>$r['country']];
   }, q("SELECT * FROM clients ORDER BY sort_order,id")->fetchAll());
 
-  $trainings=array_map(function($r) use ($byT){
+  // Material-Katalog
+  $materials=array_map(function($r){
+    return ['id'=>$r['id'],'name'=>$r['name'],'unit'=>$r['unit'],'cat'=>$r['cat']];
+  }, q("SELECT * FROM materials ORDER BY sort_order,name")->fetchAll());
+
+  // Material-Positionen je Training
+  $matByT=[];
+  foreach(q("SELECT * FROM training_materials")->fetchAll() as $m){
+    $matByT[(string)$m['training_id']][]=['matId'=>$m['material_id'],'qty'=>(int)$m['qty']];
+  }
+  // Typ-Vorlagen (Schwerpunkt → Materialliste)
+  $matPresets=[];
+  foreach(q("SELECT * FROM material_presets")->fetchAll() as $p){
+    $matPresets[$p['spec']][]=['matId'=>$p['material_id'],'qty'=>(int)$p['qty']];
+  }
+
+  $trainings=array_map(function($r) use ($byT,$matByT){
     return [
       'id'=>(string)$r['id'], 'clientId'=>$r['client_id']??null,
       'topic'=>$r['topic'], 'city'=>$r['city'], 'country'=>$r['country'],
@@ -120,6 +136,7 @@ function get_state(): array {
         'perDiem'=>$r['per_diem']??'', 'notes'=>$r['travel_notes']??'',
         'agenda'=>json_decode($r['agenda']?:'[]',true) ?: [],
       ],
+      'materials'=>$matByT[(string)$r['id']] ?? [],
       'roster'=>$byT[(string)$r['id']] ?? [],
     ];
   }, q("SELECT * FROM trainings ORDER BY id")->fetchAll());
@@ -131,7 +148,8 @@ function get_state(): array {
   }, q("SELECT * FROM templates ORDER BY id")->fetchAll());
 
   return ['ok'=>true,'lang'=>'de','emailLang'=>'en',
-    'clients'=>$clients,'trainers'=>$trainers,'trainings'=>$trainings,'templates'=>$templates];
+    'clients'=>$clients,'materials'=>$materials,'matPresets'=>$matPresets,
+    'trainers'=>$trainers,'trainings'=>$trainings,'templates'=>$templates];
 }
 
 /** Platzhalter füllen */

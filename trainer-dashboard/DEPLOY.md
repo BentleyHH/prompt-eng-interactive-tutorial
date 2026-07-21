@@ -143,6 +143,23 @@ Farbe, Land); ein Training ordnest du in der Detailansicht per Auswahlfeld einem
 Die Standard-Installation legt drei Beispiel-Kunden an; bestehende Trainings werden beim ersten
 Start automatisch nach Land zugeordnet.
 
+## Trainings anlegen & bearbeiten
+Unter **Trainings → + Neues Training** legst du ein Training direkt im Dashboard an (Kunde, Thema,
+Ort, Land, Kalenderwoche, Monat/Jahr, Schwerpunkt, benötigte Trainer, Teilnehmer). Bestehende
+Trainings öffnest du und bearbeitest sie über **✎ Bearbeiten** (oder löschst sie dort). Import bleibt
+zusätzlich möglich, ist aber nicht mehr nötig.
+
+## Intelligente Materialliste
+Jedes Training hat eine **Materialliste** (Positionen = Material + Anzahl). Die Materialien selbst
+pflegst du zentral über **⚙ Material-Katalog** (z. B. DVI-Kits, Leichensäcke, CBRN-Kits, Protokolle,
+Verbrauchsmaterial) mit Bezeichnung, Einheit und Kategorie. In der Trainingsansicht unter
+**Material bearbeiten** setzt du die Positionen und Mengen.
+
+**Typ-Vorlagen (intelligent):** Über **💾 Als Standard für „<Schwerpunkt>" speichern** hinterlegst du
+die Standard-Materialliste für einen Schwerpunkt. Legst du später ein neues Training mit demselben
+Schwerpunkt an, wird diese Liste **automatisch übernommen** — wiederkehrende Trainings haben so sofort
+die richtige Auflistung. Über **🖨 Materialliste** druckst du die Liste als Packliste.
+
 ## Kalender: iCal-Export & Wandkalender
 - **iCal-Datei (.ics)**: Über **⤓ iCal (.ics)** lädst du alle Trainings der aktuellen Kunden-Auswahl
   als Kalenderdatei herunter (echte Termine aus KW+Jahr, Farbe/Kategorie pro Kunde) und importierst
