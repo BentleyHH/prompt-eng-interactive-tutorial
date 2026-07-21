@@ -25,7 +25,10 @@ Zahl entsperrt). Läuft auf Desktop und Handy, hell/dunkel automatisch.
 - **Simulierter Rücklauf**: nach dem Senden „trudeln Antworten ein“ und färben den Status
   (zugesagt / vielleicht / abgesagt) automatisch zurück ins Dashboard
 - **Schnell-Ersatz**: Ein-Klick-Blitzanfrage an die besten verfügbaren Trainer bei Ausfall
-- **Vorlagen** bearbeiten & speichern
+- **Zweisprachig (DE/EN)**: Oberfläche per Umschalter (Login + Seitenleiste). Im E-Mail-Composer
+  ist die **Sprache der Anfrage separat wählbar** (Standard Englisch) mit eigenen Vorlagen je Sprache —
+  d. h. auf Deutsch planen, Anfragen auf Englisch versenden.
+- **Vorlagen** bearbeiten & speichern (je Sprache DE/EN)
 - **Import** (angedeutet): Excel/CSV, Angebot-PDF, KI-Extraktion aus Lebensläufen
 
 Tipp: „Antwort simulieren“ am angefragten Trainer bzw. das Warten nach dem Senden zeigt den

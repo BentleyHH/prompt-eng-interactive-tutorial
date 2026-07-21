@@ -57,6 +57,13 @@
   .tnum{font-variant-numeric:tabular-nums}
   ::selection{background:var(--accent);color:#fff}
 
+  /* language switch */
+  .langsw{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .langsw button{border:none;background:transparent;padding:5px 10px;font-size:12px;
+    font-weight:700;color:var(--muted);letter-spacing:.03em}
+  .langsw button.on{background:var(--brand-050);color:var(--brand)}
+  .langsw button:hover:not(.on){color:var(--ink)}
+
   /* ============ LOGIN ============ */
   #lock{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
     background:
@@ -64,6 +71,7 @@
       var(--bg);padding:24px}
   .lock-card{width:min(380px,94vw);background:var(--panel);border:1px solid var(--line);
     border-radius:20px;box-shadow:var(--shadow);padding:34px 30px 28px;text-align:center}
+  .lg-top{display:flex;justify-content:flex-end;margin:-10px -8px 2px}
   .etaf{display:inline-flex;align-items:flex-end;gap:.1em;line-height:.85;font-weight:800;
     letter-spacing:-.05em;color:var(--ink);font-family:var(--sans);font-style:normal}
   .etaf .rd{width:.24em;height:.24em;border-radius:50%;background:var(--accent);
@@ -95,8 +103,6 @@
     padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
   @media(max-width:820px){.side{display:none}}
   .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 16px}
-  .brand .mk{font-weight:800;letter-spacing:.12em;font-size:14px;color:var(--brand)}
-  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent)}
   .nav{display:flex;flex-direction:column;gap:2px}
   .nav button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
     padding:9px 11px;border:none;background:transparent;border-radius:9px;color:var(--muted);
@@ -107,9 +113,11 @@
   .nav .badge{margin-left:auto;font-size:11px;background:var(--crit-bg);color:var(--crit);
     padding:1px 7px;border-radius:20px;font-weight:700}
   .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--line)}
-  .side-foot button{display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;
+  .side-foot .langrow{display:flex;align-items:center;justify-content:space-between;padding:2px 10px 6px}
+  .side-foot .langrow span{font-size:12px;color:var(--faint);font-weight:600}
+  .side-foot button.lnk{display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;
     background:transparent;border-radius:8px;color:var(--muted);font-size:13px;font-weight:600}
-  .side-foot button:hover{background:var(--panel-2);color:var(--ink)}
+  .side-foot button.lnk:hover{background:var(--panel-2);color:var(--ink)}
 
   main{min-width:0;padding:0 0 60px}
   .topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);
@@ -223,6 +231,7 @@
   .sheet-f{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
   label.fld{display:block;font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;
     letter-spacing:.05em;margin:14px 0 6px}
+  .fldrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .inp,select,textarea{width:100%;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
     border-radius:9px;padding:10px 12px;font-family:inherit;font-size:14px}
   textarea{min-height:230px;resize:vertical;line-height:1.6;font-size:13.5px}
@@ -263,15 +272,16 @@
 <!-- ===================== LOGIN ===================== -->
 <div id="lock">
   <div class="lock-card">
+    <div class="lg-top"><span class="langsw" id="lgLang"></span></div>
     <div class="etaf" style="font-size:46px">ETAF<span class="rd"></span></div>
-    <div class="wm-sub">Trainer-Koordination</div>
-    <h1 style="margin-top:22px">Willkommen zurück</h1>
-    <p>Bitte 6-stelligen PIN eingeben</p>
+    <div class="wm-sub" id="lgSub">Trainer-Koordination</div>
+    <h1 id="lgWelcome" style="margin-top:22px">Willkommen zurück</h1>
+    <p id="lgEnter">Bitte 6-stelligen PIN eingeben</p>
     <div class="pin-dots" id="dots">
       <span></span><span></span><span></span><span></span><span></span><span></span>
     </div>
     <div class="keys" id="keys"></div>
-    <div class="lock-hint">Demo-PIN: <b>481509</b> · (jede 6-stellige Zahl entsperrt)</div>
+    <div class="lock-hint" id="lgHint"></div>
   </div>
 </div>
 
@@ -281,8 +291,9 @@
     <div class="brand"><span class="etaf" style="font-size:26px">ETAF<span class="rd"></span></span></div>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot">
-      <button onclick="toggleTheme()" id="themeBtn">◐ Design wechseln</button>
-      <button onclick="lockNow()">⎋ Sperren</button>
+      <div class="langrow"><span id="langLbl">Sprache</span><span class="langsw" id="sideLang"></span></div>
+      <button class="lnk" onclick="toggleTheme()" id="themeBtn">◐ Design wechseln</button>
+      <button class="lnk" onclick="lockNow()" id="lockBtn">⎋ Sperren</button>
     </div>
   </aside>
 
@@ -290,26 +301,21 @@
     <div class="topbar">
       <div>
         <h2 id="tt">Übersicht</h2>
-        <div class="sub" id="ts">Abu-Dhabi-Programm · 20 Trainings · nächste 14 Monate</div>
+        <div class="sub" id="ts"></div>
       </div>
       <div class="spacer"></div>
       <button class="btn amber" onclick="openQuick()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-        Schnell-Ersatz
+        <span id="qrLabel">Schnell-Ersatz</span>
       </button>
-      <button class="btn primary" onclick="openImport()">＋ Import</button>
+      <button class="btn primary" onclick="openImport()" id="impBtn">＋ Import</button>
     </div>
 
     <div class="wrap">
-      <!-- DASHBOARD -->
       <section class="view on" id="v-dash"></section>
-      <!-- TRAININGS -->
       <section class="view" id="v-trainings"></section>
-      <!-- TRAINING DETAIL -->
       <section class="view" id="v-detail"></section>
-      <!-- TRAINERS -->
       <section class="view" id="v-trainers"></section>
-      <!-- TEMPLATES -->
       <section class="view" id="v-templates"></section>
     </div>
   </main>
@@ -334,7 +340,8 @@
 <script>
 /* ============================================================
    ETAF Trainer-Koordination — klickbarer Prototyp
-   Reine Demo: Daten liegen im Browser (localStorage).
+   Demo: Daten liegen im Browser (localStorage). DE/EN Oberfläche,
+   E-Mail-Sprache pro Anfrage wählbar.
    ============================================================ */
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -348,6 +355,139 @@ const IC={
   mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+
+/* ============================================================
+   I18N — UI-Sprache Deutsch / Englisch
+   Werte sind Strings oder Funktionen (für Platzhalter).
+   ============================================================ */
+const L={
+ de:{
+  subTitle:"Trainer-Koordination", welcome:"Willkommen zurück",
+  enterPin:"Bitte 6-stelligen PIN eingeben",
+  demoPin:'Demo-PIN: <b>481509</b> · (jede 6-stellige Zahl entsperrt)',
+  keyClear:"Löschen", langLabel:"Sprache",
+  theme:"Design wechseln", lock:"Sperren",
+  nav_dash:"Übersicht", nav_trainings:"Trainings", nav_trainers:"Trainer", nav_templates:"Vorlagen",
+  quickReplace:"Schnell-Ersatz", import:"Import",
+  tp_dash:"Übersicht", tp_dashSub:"Abu-Dhabi-Programm · 20 Trainings · nächste 14 Monate",
+  tp_trn:"Trainings", tp_trnSub:"Alle geplanten Einsätze und ihr Besetzungsstand",
+  tp_pool:"Trainerpool", tp_poolSub:"Profile, Kontaktdaten und Spezialisierungen",
+  tp_tpl:"E-Mail-Vorlagen", tp_tplSub:"Wiederverwendbare Textbausteine mit Platzhaltern",
+  kpiTotal:"Trainings gesamt", kpiPlanned:" / 20 geplant",
+  kpiFull:"Vollständig besetzt", kpiOpen:"Offene Anfragen", kpiUnder:"Unterbesetzt",
+  tlTitle:"Besetzungs-Timeline", tlSub:"20 Trainingswochen im Überblick",
+  legFilled:"besetzt", legProg:"in Arbeit", legCrit:"kritisch",
+  attTitle:"Braucht Aufmerksamkeit", attSub:n=>`${n} Trainings offen`,
+  attAll:"Alles besetzt 🎉", confirmedShort:"zugesagt", askedShort:"angefragt", open:"Öffnen",
+  st_full:"Vollständig besetzt", st_partial:"Teilweise besetzt", st_req:"In Anfrage", st_under:"Unterbesetzt",
+  sp_asked:"Angefragt", sp_yes:"Zugesagt", sp_maybe:"Vielleicht", sp_no:"Abgesagt", sp_confirmed:"Bestätigt",
+  participants:n=>`${n} Teilnehmer`, trainersC:(y,n)=>`${y}/${n} Trainer`, plan:"Planen →",
+  back:"Alle Trainings", dTraining:"Training",
+  kThema:"Thema", kOrt:"Ort", kZeit:"Zeitraum", kSchwer:"Schwerpunkt", kTeil:"Teilnehmer", kNeed:"Benötigte Trainer",
+  needVal:(y,n)=>`${y} zugesagt / ${n} nötig`,
+  btnBulk:"Sammelanfrage senden", btnFindRep:"Ersatz suchen",
+  teamStatus:"Team / Status", inProcess:n=>`${n} im Prozess`,
+  noneAsked:"Noch niemand angefragt. Wähle unten aus den KI-Vorschlägen.",
+  aiTitle:"KI-Vorauswahl", aiSub:"nach Fachgebiet, Region, Auslastung & Bewertung",
+  aiHelp:"Vorgeschlagene Trainer — in Reihenfolge anfragen, Nachrücker rutschen automatisch nach",
+  topMatch:"Top-Match", uaeExp:"UAE-erfahren", fit:n=>`${n}% Fit`, ask:"Anfragen",
+  travelData:"Reisedaten", nextInLine:"Nachrücker anfragen",
+  simReply:"Antwort simulieren", simReplyT:"Antwort des Trainers simulieren",
+  noMore:"Keine weiteren Vorschläge im Pool",
+  poolCount:n=>`${n} Trainer im Pool`,
+  poolHint:"In der Vollversion: Import per Excel/CSV oder KI-Extraktion aus Lebensläufen & Angeboten.",
+  importProfiles:"Profile importieren", workload:"Auslastung",
+  load0:"frei", load1:"gering", load2:"mittel", load3:"hoch",
+  placeholders:"Platzhalter:",
+  placeholdersHint:"— werden beim Senden automatisch gefüllt.",
+  subjectLbl:"Betreff:", edit:"Bearbeiten", editTitle:"Vorlage bearbeiten",
+  name:"Name", subject:"Betreff", text:"Text", cancel:"Abbrechen", save:"Speichern",
+  savedTpl:"Vorlage gespeichert", tplLang:"Sprache der Vorlage",
+  sendReq:"Anfrage senden", bulkTitle:n=>`Sammelanfrage · ${n} Trainer`,
+  from:"Von", to:n=>`An (${n})`, noRecip:"keine Empfänger", template:"Vorlage",
+  emailLang:"Sprache der E-Mail", message:"Nachricht",
+  boldT:"Fett", italicT:"Kursiv", listT:"Liste", btnsT:"Antwort-Buttons",
+  composerHint:"💡 Platzhalter sind bereits gefüllt. Bei Sammelanfragen wird {{firstName}} pro Empfänger personalisiert.",
+  discard:"Verwerfen", sendCheck:"Senden & Verfügbarkeit abfragen",
+  sentToast:n=>`${n} ${n>1?'Anfragen':'Anfrage'} über trainer@etaf-akademie.org versendet`,
+  quickTitle:"⚡ Schnell-Ersatz",
+  quickDesc:"Kurzfristig einen Ausfall ersetzen — Anfrage an die besten verfügbaren Trainer. Wer zuerst zusagt, bekommt den Platz.",
+  trainingLbl:"Training", replCand:"Vorgeschlagene Ersatz-Trainer", reachable:"schnell erreichbar",
+  sendBlitz:"Blitz-Anfrage senden", blitzToast:n=>`Blitz-Anfrage an ${n} Trainer raus ⚡`,
+  importTitle:"Import", importDesc:"In der Vollversion importierst du hier Trainings & Trainer.",
+  source:"Quelle", srcExcel:"Excel / CSV", srcOffer:"Angebot (PDF)", srcAI:"KI aus Lebenslauf",
+  previewEx:"Vorschau (Beispiel)", detTrainings:"Erkannte Trainings", detProfiles:"Erkannte Trainer-Profile",
+  detSpec:"Spezialisierung erkannt",
+  importAIHint:"Die KI legt Profile automatisch an — du prüfst und bestätigst vor der Übernahme.",
+  close:"Schließen", apply:"Übernehmen", importDemoToast:"Demo: Import ist im Prototyp nur angedeutet",
+  resetToast:"Demo-Daten zurückgesetzt"
+ },
+ en:{
+  subTitle:"Trainer Coordination", welcome:"Welcome back",
+  enterPin:"Please enter your 6-digit PIN",
+  demoPin:'Demo PIN: <b>481509</b> · (any 6-digit number unlocks)',
+  keyClear:"Clear", langLabel:"Language",
+  theme:"Switch theme", lock:"Lock",
+  nav_dash:"Overview", nav_trainings:"Trainings", nav_trainers:"Trainers", nav_templates:"Templates",
+  quickReplace:"Quick replacement", import:"Import",
+  tp_dash:"Overview", tp_dashSub:"Abu Dhabi programme · 20 trainings · next 14 months",
+  tp_trn:"Trainings", tp_trnSub:"All planned sessions and their staffing",
+  tp_pool:"Trainer pool", tp_poolSub:"Profiles, contacts and specialisations",
+  tp_tpl:"Email templates", tp_tplSub:"Reusable text blocks with placeholders",
+  kpiTotal:"Trainings total", kpiPlanned:" / 20 planned",
+  kpiFull:"Fully staffed", kpiOpen:"Open requests", kpiUnder:"Understaffed",
+  tlTitle:"Staffing timeline", tlSub:"20 training weeks at a glance",
+  legFilled:"staffed", legProg:"in progress", legCrit:"critical",
+  attTitle:"Needs attention", attSub:n=>`${n} trainings open`,
+  attAll:"All staffed 🎉", confirmedShort:"confirmed", askedShort:"requested", open:"Open",
+  st_full:"Fully staffed", st_partial:"Partially staffed", st_req:"Requesting", st_under:"Understaffed",
+  sp_asked:"Requested", sp_yes:"Accepted", sp_maybe:"Maybe", sp_no:"Declined", sp_confirmed:"Confirmed",
+  participants:n=>`${n} participants`, trainersC:(y,n)=>`${y}/${n} trainers`, plan:"Plan →",
+  back:"All trainings", dTraining:"Training",
+  kThema:"Topic", kOrt:"Location", kZeit:"Period", kSchwer:"Focus", kTeil:"Participants", kNeed:"Trainers needed",
+  needVal:(y,n)=>`${y} accepted / ${n} needed`,
+  btnBulk:"Send group request", btnFindRep:"Find replacement",
+  teamStatus:"Team / status", inProcess:n=>`${n} in progress`,
+  noneAsked:"Nobody requested yet. Pick from the AI suggestions below.",
+  aiTitle:"AI shortlist", aiSub:"by specialty, region, workload & rating",
+  aiHelp:"Suggested trainers — request in order, the next in line moves up automatically",
+  topMatch:"Top match", uaeExp:"UAE-experienced", fit:n=>`${n}% fit`, ask:"Request",
+  travelData:"Travel details", nextInLine:"Request next in line",
+  simReply:"Simulate reply", simReplyT:"Simulate the trainer's reply",
+  noMore:"No more suggestions in the pool",
+  poolCount:n=>`${n} trainers in the pool`,
+  poolHint:"In the full version: import via Excel/CSV or AI extraction from CVs & offers.",
+  importProfiles:"Import profiles", workload:"Workload",
+  load0:"free", load1:"low", load2:"medium", load3:"high",
+  placeholders:"Placeholders:",
+  placeholdersHint:"— filled automatically when sending.",
+  subjectLbl:"Subject:", edit:"Edit", editTitle:"Edit template",
+  name:"Name", subject:"Subject", text:"Text", cancel:"Cancel", save:"Save",
+  savedTpl:"Template saved", tplLang:"Template language",
+  sendReq:"Send request", bulkTitle:n=>`Group request · ${n} trainers`,
+  from:"From", to:n=>`To (${n})`, noRecip:"no recipients", template:"Template",
+  emailLang:"Email language", message:"Message",
+  boldT:"Bold", italicT:"Italic", listT:"List", btnsT:"Reply buttons",
+  composerHint:"💡 Placeholders are already filled. For group requests, {{firstName}} is personalised per recipient.",
+  discard:"Discard", sendCheck:"Send & request availability",
+  sentToast:n=>`${n} ${n>1?'requests':'request'} sent via trainer@etaf-akademie.org`,
+  quickTitle:"⚡ Quick replacement",
+  quickDesc:"Replace a drop-out at short notice — request the best available trainers. First to accept gets the slot.",
+  trainingLbl:"Training", replCand:"Suggested replacement trainers", reachable:"quickly reachable",
+  sendBlitz:"Send instant request", blitzToast:n=>`Instant request sent to ${n} trainers ⚡`,
+  importTitle:"Import", importDesc:"In the full version you import trainings & trainers here.",
+  source:"Source", srcExcel:"Excel / CSV", srcOffer:"Offer (PDF)", srcAI:"AI from CV",
+  previewEx:"Preview (example)", detTrainings:"Detected trainings", detProfiles:"Detected trainer profiles",
+  detSpec:"Specialisation detected",
+  importAIHint:"The AI creates profiles automatically — you review and confirm before import.",
+  close:"Close", apply:"Apply", importDemoToast:"Demo: import is only indicated in the prototype",
+  resetToast:"Demo data reset"
+ }
+};
+function t(k,...a){const v=(L[S.lang]||L.de)[k]; return typeof v==="function"?v(...a):(v!=null?v:k);}
+/* Antwort-Buttons je E-Mail-Sprache */
+const RESP={de:"[ ✅ Ja, verfügbar ]   [ 🤔 Vielleicht ]   [ ❌ Nein ]",
+            en:"[ ✅ Yes, available ]   [ 🤔 Maybe ]   [ ❌ No ]"};
 
 /* ---------- SEED DATA ---------- */
 const SPEC=["Implantologie","DNA-Diagnostik","Fingerprint Dental","Prothetik","Chirurgie","Digitale Abformung","Guided Surgery","Parodontologie"];
@@ -379,31 +519,48 @@ function seedTrainings(){
     const kw=8+i*6;
     return {
       id:uid("tg"), topic:t, city:locs[i][0], country:locs[i][1],
-      kw:"KW "+kw, month:["Sep","Okt","Dez","Feb","Mär","Mai","Jul","Sep"][i]+" ’2"+(i<3?"6":(i<7?"7":"7")),
+      kw:"KW "+kw, month:["Sep","Okt","Dez","Feb","Mär","Mai","Jul","Sep"][i]+" ’2"+(i<3?"6":"7"),
       spec:SPEC[i%SPEC.length], need:need[i],
       participants:12+i*2,
-      roster:[] // {trainerId,status:asked|yes|maybe|no|confirmed}
+      roster:[]
     };
   });
 }
 
+/* Bilinguale Vorlagen (de/en) */
 const TEMPLATES=[
-  {id:"t1",name:"Verfügbarkeits-Anfrage",subject:"Anfrage Verfügbarkeit — {{topic}} ({{city}}, {{kw}})",
-   body:`Hallo {{firstName}},\n\nwir planen das Training „{{topic}}“ in {{city}} ({{kw}}) und würden dich sehr gern als Trainer dabei haben.\n\n• Training: {{topic}}\n• Ort: {{city}}, {{country}}\n• Zeitraum: {{kw}} / {{month}}\n• Team: {{teamSize}} Trainer\n\nBitte gib uns über die Buttons unten kurz Bescheid, ob du zu diesem Zeitpunkt verfügbar bist. Deine Antwort landet automatisch in unserer Planung.\n\n[ ✅ Ja, verfügbar ]   [ 🤔 Vielleicht ]   [ ❌ Nein ]\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam`},
-  {id:"t2",name:"Zusage-Bestätigung + Reisedaten",subject:"Bestätigung & Reisedaten — {{topic}} in {{city}}",
-   body:`Hallo {{firstName}},\n\nsuper, danke für deine Zusage zu „{{topic}}“ in {{city}}!\n\nHier die wichtigsten Eckdaten:\n• Anreise: 1 Tag vor Trainingsbeginn ({{kw}})\n• Flug/Hotel: Vorschlag folgt separat zur Bestätigung\n• Ansprechpartner vor Ort: wird nachgereicht\n\nBitte prüfe deine Reisepass-Gültigkeit (mind. 6 Monate) — wichtig für die Einreise UAE.\n\nHerzliche Grüße\nETAF-Koordination`},
-  {id:"t3",name:"Kurzfristiger Ersatz",subject:"Kurzfristig: Einspringen möglich? — {{topic}} ({{city}})",
-   body:`Hallo {{firstName}},\n\nbei „{{topic}}“ in {{city}} ({{kw}}) ist kurzfristig ein Trainer ausgefallen. Könntest du eventuell einspringen?\n\nWer zuerst über „✅ Ja“ zusagt, bekommt den Platz. Jede Rückmeldung hilft uns enorm.\n\n[ ✅ Ich springe ein ]   [ ❌ Diesmal nicht ]\n\nDanke dir!\nETAF-Koordination`}
+  {id:"t1",
+   de:{name:"Verfügbarkeits-Anfrage", subject:"Anfrage Verfügbarkeit — {{topic}} ({{city}}, {{kw}})",
+     body:`Hallo {{firstName}},\n\nwir planen das Training „{{topic}}“ in {{city}} ({{kw}}) und würden dich sehr gern als Trainer dabei haben.\n\n• Training: {{topic}}\n• Ort: {{city}}, {{country}}\n• Zeitraum: {{kw}} / {{month}}\n• Team: {{teamSize}} Trainer\n\nBitte gib uns über die Buttons unten kurz Bescheid, ob du zu diesem Zeitpunkt verfügbar bist. Deine Antwort landet automatisch in unserer Planung.\n\n[ ✅ Ja, verfügbar ]   [ 🤔 Vielleicht ]   [ ❌ Nein ]\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam`},
+   en:{name:"Availability request", subject:"Availability request — {{topic}} ({{city}}, {{kw}})",
+     body:`Hi {{firstName}},\n\nwe're planning the training "{{topic}}" in {{city}} ({{kw}}) and would love to have you on the team.\n\n• Training: {{topic}}\n• Location: {{city}}, {{country}}\n• Period: {{kw}} / {{month}}\n• Team: {{teamSize}} trainers\n\nPlease let us know via the buttons below whether you're available at this time. Your reply lands automatically in our planning.\n\n[ ✅ Yes, available ]   [ 🤔 Maybe ]   [ ❌ No ]\n\nBest regards\nYour ETAF coordination team`}},
+  {id:"t2",
+   de:{name:"Zusage-Bestätigung + Reisedaten", subject:"Bestätigung & Reisedaten — {{topic}} in {{city}}",
+     body:`Hallo {{firstName}},\n\nsuper, danke für deine Zusage zu „{{topic}}“ in {{city}}!\n\nHier die wichtigsten Eckdaten:\n• Anreise: 1 Tag vor Trainingsbeginn ({{kw}})\n• Flug/Hotel: Vorschlag folgt separat zur Bestätigung\n• Ansprechpartner vor Ort: wird nachgereicht\n\nBitte prüfe deine Reisepass-Gültigkeit (mind. 6 Monate) — wichtig für die Einreise UAE.\n\nHerzliche Grüße\nETAF-Koordination`},
+   en:{name:"Confirmation + travel details", subject:"Confirmation & travel details — {{topic}} in {{city}}",
+     body:`Hi {{firstName}},\n\ngreat, thanks for accepting "{{topic}}" in {{city}}!\n\nKey details:\n• Arrival: 1 day before the training starts ({{kw}})\n• Flight/hotel: proposal to follow separately for confirmation\n• On-site contact: to be provided\n\nPlease check your passport validity (min. 6 months) — important for entry to the UAE.\n\nBest regards\nETAF Coordination`}},
+  {id:"t3",
+   de:{name:"Kurzfristiger Ersatz", subject:"Kurzfristig: Einspringen möglich? — {{topic}} ({{city}})",
+     body:`Hallo {{firstName}},\n\nbei „{{topic}}“ in {{city}} ({{kw}}) ist kurzfristig ein Trainer ausgefallen. Könntest du eventuell einspringen?\n\nWer zuerst über „✅ Ja“ zusagt, bekommt den Platz. Jede Rückmeldung hilft uns enorm.\n\n[ ✅ Ich springe ein ]   [ ❌ Diesmal nicht ]\n\nDanke dir!\nETAF-Koordination`},
+   en:{name:"Short-notice replacement", subject:"Short notice: able to step in? — {{topic}} ({{city}})",
+     body:`Hi {{firstName}},\n\na trainer has dropped out of "{{topic}}" in {{city}} ({{kw}}) at short notice. Could you possibly step in?\n\nWhoever accepts first via "✅ Yes" gets the slot. Every reply helps us enormously.\n\n[ ✅ I'll step in ]   [ ❌ Not this time ]\n\nThank you!\nETAF Coordination`}}
 ];
 
 /* ---------- STATE ---------- */
 let S=load();
 function load(){
-  try{const r=JSON.parse(localStorage.getItem("etaf_demo"));if(r&&r.trainers)return r;}catch(e){}
-  return {trainers:seedTrainers(),trainings:seedTrainings(),templates:TEMPLATES};
+  try{
+    const r=JSON.parse(localStorage.getItem("etaf_demo"));
+    if(r&&r.trainers){
+      r.lang=r.lang||"de"; r.emailLang=r.emailLang||"en";
+      if(!r.templates||!r.templates[0]||!r.templates[0].de)r.templates=TEMPLATES;
+      return r;
+    }
+  }catch(e){}
+  return {lang:"de", emailLang:"en", trainers:seedTrainers(), trainings:seedTrainings(), templates:TEMPLATES};
 }
 function save(){localStorage.setItem("etaf_demo",JSON.stringify(S));}
-function resetDemo(){localStorage.removeItem("etaf_demo");S=load();render();toast("Demo-Daten zurückgesetzt");}
+function resetDemo(){localStorage.removeItem("etaf_demo");S=load();applyStatic();render();toast(t("resetToast"));}
 
 /* ---------- MATCHING (simulierte KI-Vorauswahl) ---------- */
 function scoreTrainer(tr,tg){
@@ -412,7 +569,7 @@ function scoreTrainer(tr,tg){
   if(tg.country==="UAE"&&tr.uae)s+=14;
   if(tg.country==="UAE"&&tr.langs.includes("AR"))s+=6;
   if(tg.country!=="UAE"&&tr.region.startsWith("DE"))s+=8;
-  s+=(3-tr.load)*4;               // weniger Auslastung = besser
+  s+=(3-tr.load)*4;
   s+=(parseFloat(tr.rating)-4)*10;
   return Math.max(35,Math.min(99,Math.round(s)));
 }
@@ -429,14 +586,42 @@ function rosterStats(tg){
 }
 function statusOf(tg){
   const{yes,need}=rosterStats(tg);
-  if(yes>=need)return{cls:"good",label:"Vollständig besetzt"};
-  if(yes>=Math.ceil(need*0.6))return{cls:"warn",label:"Teilweise besetzt"};
-  if(yes>0||rosterStats(tg).asked>0)return{cls:"warn",label:"In Anfrage"};
-  return{cls:"crit",label:"Unterbesetzt"};
+  if(yes>=need)return{cls:"good",key:"st_full"};
+  if(yes>=Math.ceil(need*0.6))return{cls:"warn",key:"st_partial"};
+  if(yes>0||rosterStats(tg).asked>0)return{cls:"warn",key:"st_req"};
+  return{cls:"crit",key:"st_under"};
 }
-const SP={asked:{cls:"info",label:"Angefragt"},yes:{cls:"good",label:"Zugesagt"},
-  maybe:{cls:"warn",label:"Vielleicht"},no:{cls:"crit",label:"Abgesagt"},
-  confirmed:{cls:"good",label:"Bestätigt"}};
+const SPCLS={asked:"info",yes:"good",maybe:"warn",no:"crit",confirmed:"good"};
+const spCls=s=>SPCLS[s];
+const spLabel=s=>t("sp_"+s);
+
+/* ============================================================
+   LANGUAGE + STATIC TEXT
+   ============================================================ */
+function langSwitch(){
+  return `<button onclick="setLang('de')" class="${S.lang==='de'?'on':''}">DE</button>`+
+         `<button onclick="setLang('en')" class="${S.lang==='en'?'on':''}">EN</button>`;
+}
+function setLang(l){
+  if(l===S.lang)return;
+  S.lang=l;save();applyStatic();
+  if($("#app").style.display==="grid")render();
+}
+function applyStatic(){
+  $("#lgSub").textContent=t("subTitle");
+  $("#lgWelcome").textContent=t("welcome");
+  $("#lgEnter").textContent=t("enterPin");
+  $("#lgHint").innerHTML=t("demoPin");
+  $("#lgLang").innerHTML=langSwitch();
+  $("#sideLang").innerHTML=langSwitch();
+  $("#langLbl").textContent=t("langLabel");
+  $("#themeBtn").textContent="◐ "+t("theme");
+  $("#lockBtn").textContent="⎋ "+t("lock");
+  $("#qrLabel").textContent=t("quickReplace");
+  $("#impBtn").textContent="＋ "+t("import");
+  const clr=$('#keys button[data-k="clear"]'); if(clr)clr.textContent=t("keyClear");
+  document.documentElement.lang=S.lang;
+}
 
 /* ============================================================
    LOGIN
@@ -446,7 +631,7 @@ function buildKeys(){
   const k=$("#keys");
   const layout=["1","2","3","4","5","6","7","8","9","clear","0","del"];
   k.innerHTML=layout.map(x=>{
-    if(x==="clear")return `<button class="ghost" data-k="clear">Löschen</button>`;
+    if(x==="clear")return `<button class="ghost" data-k="clear">${t("keyClear")}</button>`;
     if(x==="del")return `<button class="ghost" data-k="del">←</button>`;
     return `<button data-k="${x}">${x}</button>`;
   }).join("");
@@ -461,7 +646,6 @@ function press(k){
 }
 function drawDots(){$$("#dots span").forEach((s,i)=>s.classList.toggle("on",i<pin.length));}
 function tryUnlock(){
-  // Demo: jede 6-stellige Zahl entsperrt
   if(pin.length===6){unlock();}
   else{const d=$("#dots");d.classList.add("err");setTimeout(()=>d.classList.remove("err"),450);pin="";drawDots();}
 }
@@ -476,38 +660,35 @@ document.addEventListener("keydown",e=>{
 /* ============================================================
    NAV / ROUTER
    ============================================================ */
-const NAV=[
-  {id:"dash",label:"Übersicht",ic:IC.dash},
-  {id:"trainings",label:"Trainings",ic:IC.cal},
-  {id:"trainers",label:"Trainer",ic:IC.users},
-  {id:"templates",label:"Vorlagen",ic:IC.mail},
-];
+const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"trainers",ic:IC.users},{id:"templates",ic:IC.mail}];
 let route="dash";
 function buildNav(){
   const crit=S.trainings.filter(t=>statusOf(t).cls==="crit").length;
   $("#nav").innerHTML=NAV.map(n=>`
     <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
-      ${svg(n.ic)}<span>${n.label}</span>
+      ${svg(n.ic)}<span>${t("nav_"+n.id)}</span>
       ${n.id==="trainings"&&crit?`<span class="badge">${crit}</span>`:""}
     </button>`).join("");
   $("#mobnav").innerHTML=NAV.map(n=>`
     <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
-      ${svg(n.ic)}<span>${n.label}</span></button>`).join("");
+      ${svg(n.ic)}<span>${t("nav_"+n.id)}</span></button>`).join("");
 }
-const TITLES={dash:["Übersicht","Abu-Dhabi-Programm · 20 Trainings · nächste 14 Monate"],
-  trainings:["Trainings","Alle geplanten Einsätze und ihr Besetzungsstand"],
-  trainers:["Trainerpool","Profile, Kontaktdaten und Spezialisierungen"],
-  templates:["E-Mail-Vorlagen","Wiederverwendbare Textbausteine mit Platzhaltern"]};
+function titleFor(r){
+  const m={dash:["tp_dash","tp_dashSub"],trainings:["tp_trn","tp_trnSub"],
+    trainers:["tp_pool","tp_poolSub"],templates:["tp_tpl","tp_tplSub"]};
+  const k=m[r]||m.dash; return [t(k[0]),t(k[1])];
+}
 function go(r){route=r;render();}
 function render(){
   buildNav();
   $$(".view").forEach(v=>v.classList.remove("on"));
   if(route==="dash"){renderDash();$("#v-dash").classList.add("on");}
   else if(route==="trainings"){renderTrainings();$("#v-trainings").classList.add("on");}
-  else if(route==="detail"){$("#v-detail").classList.add("on");}
+  else if(route==="detail"){renderDetail();$("#v-detail").classList.add("on");}
   else if(route==="trainers"){renderTrainers();$("#v-trainers").classList.add("on");}
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
-  const t=TITLES[route]||TITLES.dash;$("#tt").textContent=t[0];$("#ts").textContent=t[1];
+  if(route==="detail"&&curTg){$("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+curTg.kw;}
+  else{const ti=titleFor(route);$("#tt").textContent=ti[0];$("#ts").textContent=ti[1];}
   save();
 }
 
@@ -517,55 +698,52 @@ function render(){
 function renderDash(){
   const T=S.trainings;
   const full=T.filter(t=>statusOf(t).cls==="good").length;
-  const prog=T.filter(t=>statusOf(t).cls==="warn").length;
   const crit=T.filter(t=>statusOf(t).cls==="crit").length;
   const openReq=T.reduce((a,t)=>a+rosterStats(t).asked,0);
 
   const kpis=`<div class="kpis">
-    <div class="kpi i"><span class="rail"></span><div class="lab">Trainings gesamt</div><div class="val tnum">${T.length}<small> / 20 geplant</small></div></div>
-    <div class="kpi g"><span class="rail"></span><div class="lab">Vollständig besetzt</div><div class="val tnum">${full}</div></div>
-    <div class="kpi w"><span class="rail"></span><div class="lab">Offene Anfragen</div><div class="val tnum">${openReq}</div></div>
-    <div class="kpi c"><span class="rail"></span><div class="lab">Unterbesetzt</div><div class="val tnum">${crit}</div></div>
+    <div class="kpi i"><span class="rail"></span><div class="lab">${t("kpiTotal")}</div><div class="val tnum">${T.length}<small>${t("kpiPlanned")}</small></div></div>
+    <div class="kpi g"><span class="rail"></span><div class="lab">${t("kpiFull")}</div><div class="val tnum">${full}</div></div>
+    <div class="kpi w"><span class="rail"></span><div class="lab">${t("kpiOpen")}</div><div class="val tnum">${openReq}</div></div>
+    <div class="kpi c"><span class="rail"></span><div class="lab">${t("kpiUnder")}</div><div class="val tnum">${crit}</div></div>
   </div>`;
 
-  // timeline
-  const cells=T.map(t=>{
-    const st=statusOf(t);const r=rosterStats(t);
+  const cells=T.map(tg=>{
+    const st=statusOf(tg);const r=rosterStats(tg);
     const pct=Math.min(100,Math.round((r.yes/r.need)*100));
     const col=st.cls==="good"?"var(--good)":st.cls==="warn"?"var(--warn)":"var(--crit)";
-    return `<div class="wk" onclick="openDetail('${t.id}')">
+    return `<div class="wk" onclick="openDetail('${tg.id}')">
       <span class="flag" style="background:${col}"></span>
-      <div class="kw">${t.kw} · ${t.month}</div>
-      <div class="loc">${t.city}</div>
+      <div class="kw">${tg.kw} · ${tg.month}</div>
+      <div class="loc">${tg.city}</div>
       <div class="bar"><i style="width:${pct}%;background:${col}"></i></div>
-      <div class="cnt"><span>${t.topic.slice(0,16)}${t.topic.length>16?'…':''}</span><span class="tnum">${r.yes}/${r.need}</span></div>
+      <div class="cnt"><span>${tg.topic.slice(0,16)}${tg.topic.length>16?'…':''}</span><span class="tnum">${r.yes}/${r.need}</span></div>
     </div>`;
   }).join("");
 
   const timeline=`<div class="panel">
-    <div class="panel-h"><h3>Besetzungs-Timeline</h3><div class="sub">20 Trainingswochen im Überblick</div>
+    <div class="panel-h"><h3>${t("tlTitle")}</h3><div class="sub">${t("tlSub")}</div>
       <div class="spacer"></div>
-      <div class="legend"><span><i style="background:var(--good)"></i>besetzt</span><span><i style="background:var(--warn)"></i>in Arbeit</span><span><i style="background:var(--crit)"></i>kritisch</span></div>
+      <div class="legend"><span><i style="background:var(--good)"></i>${t("legFilled")}</span><span><i style="background:var(--warn)"></i>${t("legProg")}</span><span><i style="background:var(--crit)"></i>${t("legCrit")}</span></div>
     </div>
     <div class="panel-b"><div class="timeline">${cells}</div></div>
   </div>`;
 
-  // attention
-  const need=T.map(t=>({t,s:statusOf(t),r:rosterStats(t)}))
+  const need=T.map(tg=>({tg,s:statusOf(tg),r:rosterStats(tg)}))
     .filter(x=>x.s.cls!=="good")
     .sort((a,b)=>(a.s.cls==="crit"?0:1)-(b.s.cls==="crit"?0:1));
   const att=`<div class="panel">
-    <div class="panel-h"><h3>Braucht Aufmerksamkeit</h3><div class="sub">${need.length} Trainings offen</div></div>
+    <div class="panel-h"><h3>${t("attTitle")}</h3><div class="sub">${t("attSub",need.length)}</div></div>
     <div class="panel-b">${need.length?need.map(x=>`
       <div class="att">
         <div class="ic ${x.s.cls==='crit'?'c':'w'}">${x.s.cls==='crit'?'!':'…'}</div>
         <div class="rowgrow">
-          <div class="nm">${x.t.topic}</div>
-          <div class="meta">${x.t.city} · ${x.t.kw} · ${x.r.yes}/${x.r.need} zugesagt${x.r.asked?` · ${x.r.asked} angefragt`:''}</div>
+          <div class="nm">${x.tg.topic}</div>
+          <div class="meta">${x.tg.city} · ${x.tg.kw} · ${x.r.yes}/${x.r.need} ${t("confirmedShort")}${x.r.asked?` · ${x.r.asked} ${t("askedShort")}`:''}</div>
         </div>
-        <span class="pill ${x.s.cls}">${x.s.label}</span>
-        <button class="btn sm primary" onclick="openDetail('${x.t.id}')">Öffnen</button>
-      </div>`).join(""):'<div class="empty">Alles besetzt 🎉</div>'}</div>
+        <span class="pill ${x.s.cls}">${t(x.s.key)}</span>
+        <button class="btn sm primary" onclick="openDetail('${x.tg.id}')">${t("open")}</button>
+      </div>`).join(""):`<div class="empty">${t("attAll")}</div>`}</div>
   </div>`;
 
   $("#v-dash").innerHTML=kpis+timeline+att;
@@ -575,17 +753,17 @@ function renderDash(){
    TRAININGS LIST
    ============================================================ */
 function renderTrainings(){
-  const rows=S.trainings.map(t=>{
-    const st=statusOf(t);const r=rosterStats(t);
+  const rows=S.trainings.map(tg=>{
+    const st=statusOf(tg);const r=rosterStats(tg);
     return `<div class="row">
-      <div class="av" style="background:var(--brand-solid)">${t.city.slice(0,2).toUpperCase()}</div>
+      <div class="av" style="background:var(--brand-solid)">${tg.city.slice(0,2).toUpperCase()}</div>
       <div class="rowgrow">
-        <div class="nm">${t.topic}</div>
-        <div class="meta">${t.city}, ${t.country} · ${t.kw} · ${t.month} · ${t.participants} Teilnehmer</div>
-        <div class="tags"><span class="tag">${t.spec}</span><span class="tag">${r.yes}/${r.need} Trainer</span></div>
+        <div class="nm">${tg.topic}</div>
+        <div class="meta">${tg.city}, ${tg.country} · ${tg.kw} · ${tg.month} · ${t("participants",tg.participants)}</div>
+        <div class="tags"><span class="tag">${tg.spec}</span><span class="tag">${t("trainersC",r.yes,r.need)}</span></div>
       </div>
-      <span class="pill ${st.cls}">${st.label}</span>
-      <button class="btn sm primary" onclick="openDetail('${t.id}')">Planen →</button>
+      <span class="pill ${st.cls}">${t(st.key)}</span>
+      <button class="btn sm primary" onclick="openDetail('${tg.id}')">${t("plan")}</button>
     </div>`;
   }).join("");
   $("#v-trainings").innerHTML=`<div class="panel"><div class="panel-b" style="padding:6px 18px">${rows}</div></div>`;
@@ -596,76 +774,75 @@ function renderTrainings(){
    ============================================================ */
 let curTg=null;
 function openDetail(id){
-  curTg=S.trainings.find(t=>t.id===id);route="detail";render();renderDetail();
-  $("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+curTg.kw;
+  curTg=S.trainings.find(t=>t.id===id);route="detail";render();
 }
 function renderDetail(){
-  const t=curTg;const st=statusOf(t);const r=rosterStats(t);
-  const rk=ranked(t);
+  if(!curTg)return;
+  const tg=curTg;const st=statusOf(tg);const r=rosterStats(tg);
+  const rk=ranked(tg);
   const suggested=rk.filter(x=>!x.status).slice(0,6);
   const inRoster=rk.filter(x=>x.status);
 
   const info=`<div class="panel">
-    <div class="panel-h"><h3>Training</h3><div class="spacer"></div><span class="pill ${st.cls}">${st.label}</span></div>
+    <div class="panel-h"><h3>${t("dTraining")}</h3><div class="spacer"></div><span class="pill ${st.cls}">${t(st.key)}</span></div>
     <div class="panel-b">
-      <div class="kv"><span class="k">Thema</span><span class="v">${t.topic}</span></div>
-      <div class="kv"><span class="k">Ort</span><span class="v">${t.city}, ${t.country}</span></div>
-      <div class="kv"><span class="k">Zeitraum</span><span class="v">${t.kw} · ${t.month}</span></div>
-      <div class="kv"><span class="k">Schwerpunkt</span><span class="v">${t.spec}</span></div>
-      <div class="kv"><span class="k">Teilnehmer</span><span class="v tnum">${t.participants}</span></div>
-      <div class="kv"><span class="k">Benötigte Trainer</span><span class="v tnum">${r.yes} zugesagt / ${r.need} nötig</span></div>
+      <div class="kv"><span class="k">${t("kThema")}</span><span class="v">${tg.topic}</span></div>
+      <div class="kv"><span class="k">${t("kOrt")}</span><span class="v">${tg.city}, ${tg.country}</span></div>
+      <div class="kv"><span class="k">${t("kZeit")}</span><span class="v">${tg.kw} · ${tg.month}</span></div>
+      <div class="kv"><span class="k">${t("kSchwer")}</span><span class="v">${tg.spec}</span></div>
+      <div class="kv"><span class="k">${t("kTeil")}</span><span class="v tnum">${tg.participants}</span></div>
+      <div class="kv"><span class="k">${t("kNeed")}</span><span class="v tnum">${t("needVal",r.yes,r.need)}</span></div>
     </div>
     <div class="panel-b" style="border-top:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn primary" onclick="composeFor('${t.id}',null,'t1')">${svg(IC.mail)} Sammelanfrage senden</button>
-      <button class="btn amber" onclick="openQuick('${t.id}')">⚡ Ersatz suchen</button>
+      <button class="btn primary" onclick="composeFor('${tg.id}',null,'t1')">${svg(IC.mail)} ${t("btnBulk")}</button>
+      <button class="btn amber" onclick="openQuick('${tg.id}')">⚡ ${t("btnFindRep")}</button>
     </div>
   </div>`;
 
   const roster=`<div class="panel">
-    <div class="panel-h"><h3>Team / Status</h3><div class="sub">${inRoster.length} im Prozess</div></div>
-    <div class="panel-b">${inRoster.length?inRoster.map(x=>rosterRow(x,t)).join(""):'<div class="empty">Noch niemand angefragt. Wähle unten aus den KI-Vorschlägen.</div>'}</div>
+    <div class="panel-h"><h3>${t("teamStatus")}</h3><div class="sub">${t("inProcess",inRoster.length)}</div></div>
+    <div class="panel-b">${inRoster.length?inRoster.map(x=>rosterRow(x,tg)).join(""):`<div class="empty">${t("noneAsked")}</div>`}</div>
   </div>`;
 
   const sugg=`<div class="panel">
-    <div class="panel-h"><h3>KI-Vorauswahl</h3><div class="sub">nach Fachgebiet, Region, Auslastung & Bewertung</div></div>
+    <div class="panel-h"><h3>${t("aiTitle")}</h3><div class="sub">${t("aiSub")}</div></div>
     <div class="panel-b">
-      <div class="slot-head"><span class="c">Vorgeschlagene Trainer — in Reihenfolge anfragen, Nachrücker rutschen automatisch nach</span></div>
+      <div class="slot-head"><span class="c">${t("aiHelp")}</span></div>
       ${suggested.map((x,i)=>`
       <div class="row">
         <div class="av" style="background:${x.tr.color}">${initials(x.tr.name)}</div>
         <div class="rowgrow">
-          <div class="nm">${x.tr.name} ${i===0?'<span class="tag" style="border-color:var(--accent);color:var(--accent)">Top-Match</span>':''}</div>
-          <div class="meta">${x.tr.region} · ${x.tr.spec.join(", ")} · ⭐ ${x.tr.rating}${x.tr.uae?' · UAE-erfahren':''}</div>
+          <div class="nm">${x.tr.name} ${i===0?`<span class="tag" style="border-color:var(--accent);color:var(--accent)">${t("topMatch")}</span>`:''}</div>
+          <div class="meta">${x.tr.region} · ${x.tr.spec.join(", ")} · ⭐ ${x.tr.rating}${x.tr.uae?' · '+t("uaeExp"):''}</div>
         </div>
-        <span class="fit">${x.fit}% Fit</span>
-        <button class="btn sm primary" onclick="composeFor('${t.id}','${x.tr.id}','t1')">Anfragen</button>
+        <span class="fit">${t("fit",x.fit)}</span>
+        <button class="btn sm primary" onclick="composeFor('${tg.id}','${x.tr.id}','t1')">${t("ask")}</button>
       </div>`).join("")}
     </div>
   </div>`;
 
-  $("#v-detail").innerHTML=`<button class="btn sm" onclick="go('trainings')" style="margin-bottom:14px">← Alle Trainings</button>
+  $("#v-detail").innerHTML=`<button class="btn sm" onclick="go('trainings')" style="margin-bottom:14px">← ${t("back")}</button>
     <div class="split"><div>${info}${roster}</div><div>${sugg}</div></div>`;
 }
-function rosterRow(x,t){
-  const sp=SP[x.status];
+function rosterRow(x,tg){
   const acts=x.status==="asked"
-    ? `<button class="btn sm" onclick="simReply('${t.id}','${x.tr.id}')" title="Antwort des Trainers simulieren">↩ Antwort simulieren</button>`
+    ? `<button class="btn sm" onclick="simReply('${tg.id}','${x.tr.id}')" title="${t("simReplyT")}">↩ ${t("simReply")}</button>`
     : x.status==="yes"
-    ? `<button class="btn sm primary" onclick="composeFor('${t.id}','${x.tr.id}','t2')">Reisedaten</button>`
+    ? `<button class="btn sm primary" onclick="composeFor('${tg.id}','${x.tr.id}','t2')">${t("travelData")}</button>`
     : x.status==="no"
-    ? `<button class="btn sm" onclick="requestNext('${t.id}')">Nachrücker anfragen</button>`
+    ? `<button class="btn sm" onclick="requestNext('${tg.id}')">${t("nextInLine")}</button>`
     : "";
   return `<div class="row">
     <div class="av" style="background:${x.tr.color}">${initials(x.tr.name)}</div>
     <div class="rowgrow"><div class="nm">${x.tr.name}</div>
       <div class="meta">${x.tr.spec[0]} · ${x.tr.region}</div></div>
-    <span class="pill ${sp.cls}">${sp.label}</span>${acts}
+    <span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${acts}
   </div>`;
 }
 function setStatus(tgId,trId,status){
-  const t=S.trainings.find(x=>x.id===tgId);
-  const e=t.roster.find(r=>r.trainerId===trId);
-  if(e)e.status=status;else t.roster.push({trainerId:trId,status});
+  const tg=S.trainings.find(x=>x.id===tgId);
+  const e=tg.roster.find(r=>r.trainerId===trId);
+  if(e)e.status=status;else tg.roster.push({trainerId:trId,status});
   save();
 }
 function simReply(tgId,trId){
@@ -673,14 +850,14 @@ function simReply(tgId,trId){
   const status=roll<0.62?"yes":roll<0.82?"maybe":"no";
   setStatus(tgId,trId,status);
   const tr=S.trainers.find(x=>x.id===trId);
-  toast(`${tr.name.split(" ").slice(-1)}: ${SP[status].label}`, status==="yes"?"good":status==="no"?"crit":"warn");
+  toast(`${tr.name.split(" ").slice(-1)}: ${spLabel(status)}`, status==="yes"?"good":status==="no"?"crit":"warn");
   renderDetail();buildNav();
 }
 function requestNext(tgId){
-  const t=S.trainings.find(x=>x.id===tgId);
-  const next=ranked(t).find(x=>!x.status);
+  const tg=S.trainings.find(x=>x.id===tgId);
+  const next=ranked(tg).find(x=>!x.status);
   if(next){composeFor(tgId,next.tr.id,'t1');}
-  else toast("Keine weiteren Vorschläge im Pool","warn");
+  else toast(t("noMore"),"warn");
 }
 
 /* ============================================================
@@ -699,15 +876,15 @@ function renderTrainers(){
         <div class="divider"></div>
         <div class="meta" style="display:flex;flex-direction:column;gap:3px">
           <span>✉︎ ${tr.email}</span><span>☎ ${tr.phone}</span>
-          <span>🗣 ${tr.langs.join(" · ")} · Auslastung ${["frei","gering","mittel","hoch"][tr.load]}</span>
+          <span>🗣 ${tr.langs.join(" · ")} · ${t("workload")} ${t("load"+tr.load)}</span>
         </div>
       </div>
     </div>`).join("");
   $("#v-trainers").innerHTML=`
     <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px">
-      <div class="rowgrow"><b>${S.trainers.length} Trainer im Pool</b>
-      <div class="meta">In der Vollversion: Import per Excel/CSV oder KI-Extraktion aus Lebensläufen & Angeboten.</div></div>
-      <button class="btn" onclick="openImport()">＋ Profile importieren</button>
+      <div class="rowgrow"><b>${t("poolCount",S.trainers.length)}</b>
+      <div class="meta">${t("poolHint")}</div></div>
+      <button class="btn" onclick="openImport()">＋ ${t("importProfiles")}</button>
     </div></div>
     <div class="grid2">${cards}</div>`;
 }
@@ -715,42 +892,50 @@ function renderTrainers(){
 /* ============================================================
    TEMPLATES
    ============================================================ */
-let editTpl=null;
+let editTpl=null, tplLang=null;
 function renderTemplates(){
-  const list=S.templates.map(tp=>`
+  if(!tplLang)tplLang=S.lang;
+  const list=S.templates.map(tp=>{const v=tp[tplLang];return `
     <div class="panel"><div class="panel-b">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <b>${tp.name}</b><div class="spacer"></div>
-        <button class="btn sm" onclick="editTemplate('${tp.id}')">Bearbeiten</button>
+        <b>${v.name}</b><div class="spacer"></div>
+        <button class="btn sm" onclick="editTemplate('${tp.id}')">${t("edit")}</button>
       </div>
-      <div class="meta" style="margin-bottom:6px">Betreff: ${tp.subject}</div>
-      <div style="white-space:pre-wrap;font-size:13px;color:var(--muted);max-height:120px;overflow:hidden">${tp.body}</div>
-    </div></div>`).join("");
+      <div class="meta" style="margin-bottom:6px">${t("subjectLbl")} ${v.subject}</div>
+      <div style="white-space:pre-wrap;font-size:13px;color:var(--muted);max-height:120px;overflow:hidden">${esc(v.body)}</div>
+    </div></div>`;}).join("");
   $("#v-templates").innerHTML=`
-    <div class="panel"><div class="panel-b" style="display:flex;align-items:center">
-      <div class="rowgrow"><b>Platzhalter:</b> <span class="meta">{{firstName}} {{topic}} {{city}} {{country}} {{kw}} {{month}} {{teamSize}} — werden beim Senden automatisch gefüllt.</span></div>
+    <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="rowgrow"><b>${t("placeholders")}</b> <span class="meta">{{firstName}} {{topic}} {{city}} {{country}} {{kw}} {{month}} {{teamSize}} ${t("placeholdersHint")}</span></div>
+      <span class="langsw">
+        <button onclick="setTplLang('de')" class="${tplLang==='de'?'on':''}">DE</button>
+        <button onclick="setTplLang('en')" class="${tplLang==='en'?'on':''}">EN</button>
+      </span>
     </div></div>${list}`;
 }
+function setTplLang(l){tplLang=l;renderTemplates();}
 function editTemplate(id){
   editTpl=S.templates.find(t=>t.id===id);
-  $("#sheetTitle").textContent="Vorlage bearbeiten";
+  const v=editTpl[tplLang];
+  $("#sheetTitle").textContent=t("editTitle")+" · "+tplLang.toUpperCase();
   $("#sheetBody").innerHTML=`
-    <label class="fld">Name</label><input class="inp" id="tName" value="${esc(editTpl.name)}">
-    <label class="fld">Betreff</label><input class="inp" id="tSubj" value="${esc(editTpl.subject)}">
-    <label class="fld">Text</label><textarea id="tBody">${esc(editTpl.body)}</textarea>`;
-  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">Abbrechen</button>
-    <div class="spacer"></div><button class="btn primary" onclick="saveTpl()">Speichern</button>`;
+    <label class="fld">${t("name")}</label><input class="inp" id="tName" value="${esc(v.name)}">
+    <label class="fld">${t("subject")}</label><input class="inp" id="tSubj" value="${esc(v.subject)}">
+    <label class="fld">${t("text")}</label><textarea id="tBody">${esc(v.body)}</textarea>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <div class="spacer"></div><button class="btn primary" onclick="saveTpl()">${t("save")}</button>`;
   openSheet();
 }
 function saveTpl(){
-  editTpl.name=$("#tName").value;editTpl.subject=$("#tSubj").value;editTpl.body=$("#tBody").value;
-  save();closeSheet();renderTemplates();toast("Vorlage gespeichert","good");
+  const v=editTpl[tplLang];
+  v.name=$("#tName").value;v.subject=$("#tSubj").value;v.body=$("#tBody").value;
+  save();closeSheet();renderTemplates();toast(t("savedTpl"),"good");
 }
 
 /* ============================================================
-   COMPOSER (E-Mail slide-over)
+   COMPOSER (E-Mail slide-over) — mit Sprachwahl DE/EN
    ============================================================ */
-let compose={tgId:null,recips:[],tplId:"t1"};
+let compose={tgId:null,recips:[],tplId:"t1",lang:"en"};
 function fillTpl(str,tg,tr){
   return str
     .replace(/{{firstName}}/g,tr?tr.name.replace(/^Dr\.\s*/,"").split(" ")[0]:"[Name]")
@@ -760,64 +945,71 @@ function fillTpl(str,tg,tr){
 }
 function composeFor(tgId,trId,tplId){
   const tg=S.trainings.find(t=>t.id===tgId);
-  compose={tgId,recips:trId?[trId]:ranked(tg).filter(x=>!x.status).slice(0,tg.need).map(x=>x.tr.id),tplId:tplId||"t1"};
+  compose={tgId,recips:trId?[trId]:ranked(tg).filter(x=>!x.status).slice(0,tg.need).map(x=>x.tr.id),
+    tplId:tplId||"t1", lang:S.emailLang||"en"};
   drawComposer();openSheet();
 }
+function setComposeLang(l){compose.lang=l;S.emailLang=l;save();drawComposer();}
 function drawComposer(){
   const tg=S.trainings.find(t=>t.id===compose.tgId);
   const tpl=S.templates.find(t=>t.id===compose.tplId);
+  const v=tpl[compose.lang];
   const first=compose.recips.length===1?S.trainers.find(t=>t.id===compose.recips[0]):null;
   const recipChips=compose.recips.map(id=>{const tr=S.trainers.find(t=>t.id===id);
     return `<span class="recip">${initials(tr.name)} · ${tr.name.split(" ").slice(-1)}
       <span style="cursor:pointer;opacity:.6" onclick="rmRecip('${id}')">✕</span></span>`}).join("");
-  $("#sheetTitle").textContent=compose.recips.length>1?`Sammelanfrage · ${compose.recips.length} Trainer`:"Anfrage senden";
+  $("#sheetTitle").textContent=compose.recips.length>1?t("bulkTitle",compose.recips.length):t("sendReq");
   $("#sheetBody").innerHTML=`
-    <label class="fld">Von</label>
+    <label class="fld">${t("from")}</label>
     <input class="inp" value="trainer@etaf-akademie.org" readonly style="color:var(--muted)">
-    <label class="fld">An (${compose.recips.length})</label>
-    <div class="chips">${recipChips||'<span class="meta">keine Empfänger</span>'}</div>
-    <label class="fld">Vorlage</label>
-    <div class="chips">${S.templates.map(t=>`<span class="chip ${t.id===compose.tplId?'on':''}" onclick="pickTpl('${t.id}')">${t.name}</span>`).join("")}</div>
-    <label class="fld">Betreff</label>
-    <input class="inp" id="cSubj" value="${esc(fillTpl(tpl.subject,tg,first))}">
-    <label class="fld">Nachricht</label>
-    <div class="rte">
-      <button onclick="wrap('**')" title="Fett">B</button>
-      <button onclick="wrap('_')" title="Kursiv"><i>I</i></button>
-      <button onclick="ins('\\n• ')" title="Liste">•</button>
-      <button onclick="ins('[ ✅ Ja, verfügbar ]   [ 🤔 Vielleicht ]   [ ❌ Nein ]')" title="Antwort-Buttons">⛶</button>
+    <label class="fld">${t("to",compose.recips.length)}</label>
+    <div class="chips">${recipChips||`<span class="meta">${t("noRecip")}</span>`}</div>
+    <div class="fldrow">
+      <label class="fld">${t("emailLang")}</label>
+      <span class="langsw">
+        <button onclick="setComposeLang('de')" class="${compose.lang==='de'?'on':''}">DE</button>
+        <button onclick="setComposeLang('en')" class="${compose.lang==='en'?'on':''}">EN</button>
+      </span>
     </div>
-    <textarea id="cBody">${esc(fillTpl(tpl.body,tg,first))}</textarea>
-    <div class="meta" style="margin-top:8px">💡 Platzhalter sind bereits gefüllt. Bei Sammelanfragen wird {{firstName}} pro Empfänger personalisiert.</div>`;
+    <label class="fld">${t("template")}</label>
+    <div class="chips">${S.templates.map(tp=>`<span class="chip ${tp.id===compose.tplId?'on':''}" onclick="pickTpl('${tp.id}')">${tp[compose.lang].name}</span>`).join("")}</div>
+    <label class="fld">${t("subject")}</label>
+    <input class="inp" id="cSubj" value="${esc(fillTpl(v.subject,tg,first))}">
+    <label class="fld">${t("message")}</label>
+    <div class="rte">
+      <button onclick="wrap('**')" title="${t("boldT")}">B</button>
+      <button onclick="wrap('_')" title="${t("italicT")}"><i>I</i></button>
+      <button onclick="ins('\\n• ')" title="${t("listT")}">•</button>
+      <button onclick="insResp()" title="${t("btnsT")}">⛶</button>
+    </div>
+    <textarea id="cBody">${esc(fillTpl(v.body,tg,first))}</textarea>
+    <div class="meta" style="margin-top:8px">${t("composerHint")}</div>`;
   $("#sheetFoot").innerHTML=`
-    <button class="btn" onclick="closeSheet()">Verwerfen</button>
+    <button class="btn" onclick="closeSheet()">${t("discard")}</button>
     <div class="spacer"></div>
-    <button class="btn primary" onclick="sendCompose()">${svg(IC.mail)} Senden & Verfügbarkeit abfragen</button>`;
+    <button class="btn primary" onclick="sendCompose()">${svg(IC.mail)} ${t("sendCheck")}</button>`;
 }
-function pickTpl(id){
-  // keep edited subject/body? simpler: reset to template
-  compose.tplId=id;drawComposer();
-}
+function pickTpl(id){compose.tplId=id;drawComposer();}
 function rmRecip(id){compose.recips=compose.recips.filter(x=>x!==id);drawComposer();}
-function wrap(m){const t=$("#cBody");const s=t.selectionStart,e=t.selectionEnd;
-  t.value=t.value.slice(0,s)+m+t.value.slice(s,e)+m+t.value.slice(e);t.focus();}
-function ins(x){const t=$("#cBody");const s=t.selectionStart;
-  t.value=t.value.slice(0,s)+x+t.value.slice(s);t.focus();}
+function wrap(m){const el=$("#cBody");const s=el.selectionStart,e=el.selectionEnd;
+  el.value=el.value.slice(0,s)+m+el.value.slice(s,e)+m+el.value.slice(e);el.focus();}
+function ins(x){const el=$("#cBody");const s=el.selectionStart;
+  el.value=el.value.slice(0,s)+x+el.value.slice(s);el.focus();}
+function insResp(){ins(RESP[compose.lang]);}
 function sendCompose(){
   compose.recips.forEach(id=>setStatus(compose.tgId,id,"asked"));
   const n=compose.recips.length;
   closeSheet();
-  toast(`${n} Anfrage${n>1?'n':''} über trainer@etaf-akademie.org versendet`,"good");
+  toast(t("sentToast",n),"good");
   if(route==="detail")renderDetail();
   buildNav();
-  // Simulierter Rücklauf: nach kurzer Zeit "trudeln Antworten ein"
   compose.recips.forEach((id,i)=>{
     setTimeout(()=>{
       if(Math.random()<0.7){
         const roll=Math.random();const st=roll<0.6?"yes":roll<0.82?"maybe":"no";
         setStatus(compose.tgId,id,st);
         const tr=S.trainers.find(t=>t.id===id);
-        toast(`↩ ${tr.name.split(" ").slice(-1)}: ${SP[st].label}`,st==="yes"?"good":st==="no"?"crit":"warn");
+        toast(`↩ ${tr.name.split(" ").slice(-1)}: ${spLabel(st)}`,st==="yes"?"good":st==="no"?"crit":"warn");
         if(route==="detail")renderDetail();
         if(route==="dash")renderDash();
         buildNav();
@@ -832,25 +1024,25 @@ function sendCompose(){
 function openQuick(tgId){
   const tg=tgId?S.trainings.find(t=>t.id===tgId):S.trainings.find(t=>statusOf(t).cls!=="good")||S.trainings[0];
   const pool=ranked(tg).filter(x=>!x.status||x.status==="no").slice(0,5);
-  $("#sheetTitle").textContent="⚡ Schnell-Ersatz";
+  $("#sheetTitle").textContent=t("quickTitle");
   $("#sheetBody").innerHTML=`
-    <div class="meta" style="margin-bottom:12px">Kurzfristig einen Ausfall ersetzen — Anfrage an die besten verfügbaren Trainer. Wer zuerst zusagt, bekommt den Platz.</div>
-    <label class="fld">Training</label>
-    <select id="qTg">${S.trainings.map(t=>`<option value="${t.id}" ${t.id===tg.id?'selected':''}>${t.topic} — ${t.city} (${t.kw})</option>`).join("")}</select>
-    <label class="fld">Vorgeschlagene Ersatz-Trainer</label>
+    <div class="meta" style="margin-bottom:12px">${t("quickDesc")}</div>
+    <label class="fld">${t("trainingLbl")}</label>
+    <select id="qTg">${S.trainings.map(x=>`<option value="${x.id}" ${x.id===tg.id?'selected':''}>${x.topic} — ${x.city} (${x.kw})</option>`).join("")}</select>
+    <label class="fld">${t("replCand")}</label>
     ${pool.map(x=>`<div class="row">
       <div class="av" style="background:${x.tr.color}">${initials(x.tr.name)}</div>
-      <div class="rowgrow"><div class="nm">${x.tr.name}</div><div class="meta">${x.tr.region} · ${x.tr.spec[0]} · ⚡ schnell erreichbar</div></div>
+      <div class="rowgrow"><div class="nm">${x.tr.name}</div><div class="meta">${x.tr.region} · ${x.tr.spec[0]} · ⚡ ${t("reachable")}</div></div>
       <span class="fit">${x.fit}%</span></div>`).join("")}`;
-  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">Abbrechen</button><div class="spacer"></div>
-    <button class="btn amber" onclick="sendQuick()">Blitz-Anfrage senden</button>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
+    <button class="btn amber" onclick="sendQuick()">${t("sendBlitz")}</button>`;
   openSheet();
 }
 function sendQuick(){
   const tgId=$("#qTg").value;const tg=S.trainings.find(t=>t.id===tgId);
   const pool=ranked(tg).filter(x=>!x.status||x.status==="no").slice(0,5);
   pool.forEach(x=>setStatus(tgId,x.tr.id,"asked"));
-  closeSheet();toast(`Blitz-Anfrage an ${pool.length} Trainer raus ⚡`,"good");
+  closeSheet();toast(t("blitzToast",pool.length),"good");
   buildNav();if(route==="detail"){curTg=tg;renderDetail();}if(route==="dash")renderDash();
 }
 
@@ -858,20 +1050,20 @@ function sendQuick(){
    IMPORT (mock)
    ============================================================ */
 function openImport(){
-  $("#sheetTitle").textContent="Import";
+  $("#sheetTitle").textContent=t("importTitle");
   $("#sheetBody").innerHTML=`
-    <div class="meta" style="margin-bottom:14px">In der Vollversion importierst du hier Trainings & Trainer.</div>
-    <label class="fld">Quelle</label>
-    <div class="chips"><span class="chip on">Excel / CSV</span><span class="chip">Angebot (PDF)</span><span class="chip">KI aus Lebenslauf</span></div>
-    <label class="fld" style="margin-top:16px">Vorschau (Beispiel)</label>
+    <div class="meta" style="margin-bottom:14px">${t("importDesc")}</div>
+    <label class="fld">${t("source")}</label>
+    <div class="chips"><span class="chip on">${t("srcExcel")}</span><span class="chip">${t("srcOffer")}</span><span class="chip">${t("srcAI")}</span></div>
+    <label class="fld" style="margin-top:16px">${t("previewEx")}</label>
     <div class="panel" style="margin:0"><div class="panel-b">
-      <div class="kv"><span class="k">Erkannte Trainings</span><span class="v tnum">4</span></div>
-      <div class="kv"><span class="k">Erkannte Trainer-Profile</span><span class="v tnum">11</span></div>
-      <div class="kv"><span class="k">Spezialisierung erkannt</span><span class="v">DNA-Diagnostik, Fingerprint Dental …</span></div>
+      <div class="kv"><span class="k">${t("detTrainings")}</span><span class="v tnum">4</span></div>
+      <div class="kv"><span class="k">${t("detProfiles")}</span><span class="v tnum">11</span></div>
+      <div class="kv"><span class="k">${t("detSpec")}</span><span class="v">DNA-Diagnostik, Fingerprint Dental …</span></div>
     </div></div>
-    <div class="meta" style="margin-top:10px">Die KI legt Profile automatisch an — du prüfst und bestätigst vor der Übernahme.</div>`;
-  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">Schließen</button><div class="spacer"></div>
-    <button class="btn primary" onclick="closeSheet();toast('Demo: Import ist im Prototyp nur angedeutet')">Übernehmen</button>`;
+    <div class="meta" style="margin-top:10px">${t("importAIHint")}</div>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button><div class="spacer"></div>
+    <button class="btn primary" onclick="closeSheet();toast(t('importDemoToast'))">${t("apply")}</button>`;
   openSheet();
 }
 
@@ -895,5 +1087,5 @@ function toggleTheme(){
 }
 
 /* ---------- BOOT ---------- */
-buildKeys();drawDots();
+buildKeys();drawDots();applyStatic();
 </script>
