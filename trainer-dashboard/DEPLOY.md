@@ -42,6 +42,8 @@ Lade den kompletten Ordner `trainer-dashboard/` in dein Webverzeichnis, z. B. na
 'from_email'  => 'trainer@etaf-dvi.org',
 'base_url'    => 'https://deine-domain.de/dashboard/backend',
 'mail_mode'   => 'mail',            // erst 'log' zum Testen, dann 'mail' oder 'smtp'
+'anthropic_key' => '',              // Claude-API-Key für KI-Import (leer = aus)
+'cron_key'    => 'ein-zufälliger-wert', // schützt backend/cron.php
 'seed_demo'   => true,              // Beispieldaten beim ersten Start
 ```
 > `config.php` wird durch `.htaccess` vor direktem Zugriff geschützt und ist im
@@ -86,8 +88,23 @@ Es muss niemand eine E-Mail lesen oder abtippen.
   und EU-Hosting mitdenken.
 - Regelmäßige DB-Backups im artfiles-Menü aktivieren.
 
-## Was später leicht ergänzt werden kann
+## KI-Import (Profile aus Lebenslauf / Excel / Angebot)
+- API-Key von **console.anthropic.com** holen und als `anthropic_key` in `config.php` eintragen
+  (Modell: `claude-opus-4-8`).
+- Im Dashboard unter **Trainer → Profile importieren**: Text einfügen → **Mit KI analysieren** →
+  erkannte Profile prüfen → **übernehmen**. Ohne Key bleibt der Import deaktiviert (klarer Hinweis).
+
+## Automatik (Erinnerungen + Nachrücken) per Cron
+Im Dashboard unter **Automatik** einstellbar: Erinnerung nach X Stunden, „überfällig nach" X Stunden,
+und „automatisch nachrücken" (bei Absage/Überfälligkeit den nächstbesten Trainer anfragen).
+Manuell auslösbar über **Jetzt prüfen & senden**. Für den Automatikbetrieb im artfiles-Kundenmenü
+einen **Cronjob** anlegen, z. B. stündlich:
+```
+curl -s "https://deine-domain.de/dashboard/backend/cron.php?key=DEIN_CRON_KEY"
+```
+Der `key` muss mit `cron_key` aus `config.php` übereinstimmen (schützt den Endpunkt).
+
+## Was später noch dazukommen könnte
 - E-Mail-Protokoll-Ansicht im Dashboard (Daten liegen schon in `email_log`).
-- Automatisches Nachrücken + Erinnerungen nach X Stunden ohne Antwort.
-- KI: Profile aus Lebensläufen/Excel anlegen, freie E-Mail-Antworten auswerten.
+- KI-Auswertung frei geschriebener E-Mail-Antworten (zusätzlich zu den Magic-Link-Buttons).
 - Reise-/Flug-/Visum-Modul, Rollen & Audit-Log.

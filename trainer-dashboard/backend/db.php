@@ -96,6 +96,16 @@ function ensure_schema(): void {
   }
   if(!config_get('org_name')) config_set('org_name', cfg()['org_name']);
 
+  // Migrationen (idempotent): Erinnerungs-Spalten für requests
+  try{ db()->exec("ALTER TABLE requests ADD COLUMN reminded_at VARCHAR(20)"); }catch(Throwable $e){}
+  try{ db()->exec("ALTER TABLE requests ADD COLUMN reminder_count INT DEFAULT 0"); }catch(Throwable $e){}
+
+  // Automatik-Standardwerte
+  $ac=cfg();
+  if(config_get('reminder_hours')===null) config_set('reminder_hours',(string)($ac['reminder_hours']??48));
+  if(config_get('escalate_hours')===null) config_set('escalate_hours',(string)($ac['escalate_hours']??72));
+  if(config_get('auto_advance')===null)   config_set('auto_advance', !empty($ac['auto_advance'])?'1':'0');
+
   // Demo-Seed
   if((cfg()['seed_demo']??false) && (int)q("SELECT COUNT(*) c FROM trainers")->fetch()['c']===0){
     seed_demo();

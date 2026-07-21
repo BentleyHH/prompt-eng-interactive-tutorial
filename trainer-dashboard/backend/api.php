@@ -6,6 +6,8 @@
  */
 require_once __DIR__.'/lib.php';
 require_once __DIR__.'/mailer.php';
+require_once __DIR__.'/ai.php';
+require_once __DIR__.'/automation.php';
 
 header('Access-Control-Allow-Origin: '.($_SERVER['HTTP_ORIGIN'] ?? '*'));
 header('Access-Control-Allow-Headers: Content-Type, X-Auth-Token');
@@ -122,6 +124,55 @@ switch($action){
   case 'emails':
     require_auth();
     out(['ok'=>true,'emails'=>q("SELECT * FROM email_log ORDER BY id DESC LIMIT 100")->fetchAll()]);
+
+  /* ---- KI: Profile aus Text extrahieren (zur Prüfung, noch nicht speichern) ---- */
+  case 'ai.extract':
+    require_auth();
+    $text=trim((string)($in['text']??''));
+    if($text==='') fail('Kein Text übergeben.');
+    out(['ok'=>true,'profiles'=>ai_extract_profiles($text)]);
+
+  /* ---- KI-Import bestätigen: Profile anlegen ---- */
+  case 'trainers.bulkCreate':
+    require_auth();
+    $profiles=$in['profiles']??[];
+    if(!is_array($profiles)||!count($profiles)) fail('Keine Profile übergeben.');
+    $colors=["#3E4852","#B23A42","#4E6E8E","#6E5A86","#3F7A5E","#A6642E","#557088","#8A5A52"];
+    $created=0;
+    foreach($profiles as $i=>$p){
+      if(empty($p['name'])) continue;
+      q("INSERT INTO trainers(name,email,phone,spec,region,langs,uae,load_lvl,color,rating,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?)",[
+        $p['name'], $p['email']??'', $p['phone']??'',
+        json_encode($p['spec']??[],JSON_UNESCAPED_UNICODE), $p['region']??'',
+        json_encode($p['langs']??[]), !empty($p['uae'])?1:0, 0,
+        $colors[$i%count($colors)], (string)($p['rating']??'4.5'), now()
+      ]);
+      $created++;
+    }
+    out(['ok'=>true,'created'=>$created]);
+
+  /* ---- Automatik-Einstellungen ---- */
+  case 'settings.get':
+    require_auth();
+    out(['ok'=>true,'settings'=>[
+      'reminder_hours'=>(int)(config_get('reminder_hours')??48),
+      'escalate_hours'=>(int)(config_get('escalate_hours')??72),
+      'auto_advance'=>(config_get('auto_advance')==='1'),
+      'ai_enabled'=>trim(cfg()['anthropic_key']??'')!=='',
+    ]]);
+
+  case 'settings.save':
+    require_auth();
+    if(isset($in['reminder_hours'])) config_set('reminder_hours',(string)max(1,(int)$in['reminder_hours']));
+    if(isset($in['escalate_hours'])) config_set('escalate_hours',(string)max(1,(int)$in['escalate_hours']));
+    if(isset($in['auto_advance']))   config_set('auto_advance', !empty($in['auto_advance'])?'1':'0');
+    out(['ok'=>true]);
+
+  /* ---- Automatik jetzt ausführen (Button) ---- */
+  case 'automation.run':
+    require_auth();
+    out(run_automation());
 
   default:
     fail('Unbekannte Aktion: '.$action, 404);

@@ -44,6 +44,10 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
 - **Simulierter Rücklauf**: nach dem Senden „trudeln Antworten ein“ und färben den Status
   (zugesagt / vielleicht / abgesagt) automatisch zurück ins Dashboard
 - **Schnell-Ersatz**: Ein-Klick-Blitzanfrage an die besten verfügbaren Trainer bei Ausfall
+- **KI-Import**: Trainer → „Profile importieren" → Lebenslauf/Excel/Angebot einfügen → KI
+  extrahiert strukturierte Profile (Claude API, Modell `claude-opus-4-8`) → prüfen → übernehmen
+- **Automatik**: Erinnerungen nach X Stunden ohne Antwort + optionales automatisches Nachrücken
+  (nächstbester Trainer bei Absage/Überfälligkeit). Manuell per Knopf oder automatisch per Cron.
 - **Zweisprachig (DE/EN)**: Oberfläche per Umschalter (Login + Seitenleiste). Im E-Mail-Composer
   ist die **Sprache der Anfrage separat wählbar** (Standard Englisch) mit eigenen Vorlagen je Sprache —
   d. h. auf Deutsch planen, Anfragen auf Englisch versenden.
@@ -61,7 +65,9 @@ Rücklauf. Über **◐ Design wechseln** hell/dunkel testen.
 | Login | jeder 6-stellige PIN | **PIN serverseitig geprüft + Rate-Limit** | + Magic-Link, Audit-Log |
 | E-Mail | simuliert | **PHP mail() / SMTP** | Vorlagen-Editor je Kampagne |
 | Verfügbarkeit | Zufalls-Simulation | **Magic-Link ✅/🤔/❌ → DB → Polling** | + KI-Parsing freier Antworten |
-| KI-Matching | Heuristik im Browser | Heuristik (serverfähig) | Claude API: Profile aus Rohdaten + Ranking |
+| KI-Matching | Heuristik im Browser | Heuristik (serverfähig, auch fürs Nachrücken) | Feineres Ranking / Lernen |
+| KI-Profilanlage | simuliert (Textzerlegung) | **Claude API (`claude-opus-4-8`), strukturierte Extraktion** | Auto-Anlage aus Angeboten |
+| Erinnerungen/Nachrücken | Demo-Simulation | **Automatik + Cron (nach X Std.)** | Eskalationsstufen, Vertretungspools |
 | Reise/Logistik | angedeutet | — | Flug-, Hotel-, Visum-, Per-Diem-Modul (UAE) |
 
 Nicht vergessen: 50 Trainerprofile = personenbezogene Daten mit internationalem Transfer

@@ -47,6 +47,20 @@ return [
     'pass' => '',
   ],
 
+  // ---- KI: Profilanlage aus Text (Claude API) ---------------------
+  // API-Key aus console.anthropic.com. Leer lassen = KI-Import deaktiviert
+  // (das Dashboard läuft trotzdem, der Import zeigt dann einen Hinweis).
+  'anthropic_key' => '',
+  'anthropic_model' => 'claude-opus-4-8',
+
+  // ---- Automatik: Erinnerungen & Nachrücken -----------------------
+  // Diese Werte sind Startwerte; sie lassen sich im Dashboard ändern.
+  'reminder_hours' => 48,   // nach X h ohne Antwort: Erinnerung senden
+  'escalate_hours' => 72,   // nach X h ohne Antwort: als überfällig behandeln
+  'auto_advance'   => false, // true = bei Absage/Überfälligkeit automatisch nachrücken
+  // Schlüssel zum Absichern des Cron-Aufrufs (backend/cron.php?key=...).
+  'cron_key' => 'CHANGE_ME_zufälliger_wert',
+
   // ---- Demo-Daten -------------------------------------------------
   // true = beim ersten Start Beispiel-Trainer/-Trainings anlegen.
   // Auf false stellen, sobald du echte Daten importiert hast.

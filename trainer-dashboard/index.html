@@ -63,6 +63,13 @@
     font-weight:700;color:var(--muted);letter-spacing:.03em}
   .langsw button.on{background:var(--brand-050);color:var(--brand)}
   .langsw button:hover:not(.on){color:var(--ink)}
+  /* toggle switch */
+  .sw{position:relative;display:inline-block;width:44px;height:24px;flex:none}
+  .sw input{opacity:0;width:0;height:0}
+  .sw span{position:absolute;inset:0;background:var(--line);border-radius:20px;transition:.2s;cursor:pointer}
+  .sw span::before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .sw input:checked+span{background:var(--good)}
+  .sw input:checked+span::before{transform:translateX(20px)}
 
   /* ============ LOGIN ============ */
   #lock{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
@@ -317,6 +324,7 @@
       <section class="view" id="v-detail"></section>
       <section class="view" id="v-trainers"></section>
       <section class="view" id="v-templates"></section>
+      <section class="view" id="v-automation"></section>
     </div>
   </main>
 </div>
@@ -354,7 +362,8 @@ const IC={
   dash:'<path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/>',
   cal:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>',
   users:'<path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11"/>',
-  mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/>'
+  mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/>',
+  auto:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 
@@ -456,6 +465,22 @@ const L={
   detSpec:"Spezialisierung erkannt",
   importAIHint:"Die KI legt Profile automatisch an — du prüfst und bestätigst vor der Übernahme.",
   close:"Schließen", apply:"Übernehmen", importDemoToast:"Demo: Import ist im Prototyp nur angedeutet",
+  nav_automation:"Automatik",
+  tp_auto:"Automatik", tp_autoSub:"Erinnerungen & automatisches Nachrücken",
+  importPaste:"Text einfügen (Lebenslauf, Excel-Kopie, Angebot …)",
+  importAnalyze:"Mit KI analysieren", importAnalyzing:"KI analysiert …",
+  importReview:"Erkannte Profile — prüfen und übernehmen",
+  importApply:n=>`${n} Profile übernehmen`, importFound:n=>`${n} Profile erkannt`,
+  importCreated:n=>`${n} Profile angelegt`,
+  importNoAI:"Für den echten KI-Import trägst du in config.php einen Claude-API-Key ein. Ohne Key kannst du hier Beispielprofile aus dem Text übernehmen.",
+  importErr:"Analyse fehlgeschlagen",
+  autoReminderLbl:"Erinnerung nach (Stunden)", autoEscalateLbl:"Als überfällig nach (Stunden)",
+  autoAdvanceLbl:"Automatisch nachrücken",
+  autoAdvanceHint:"Bei Absage oder Überfälligkeit automatisch den nächstbesten Trainer anfragen.",
+  autoRunNow:"Jetzt prüfen & senden", autoSaved:"Einstellungen gespeichert",
+  autoRan:(r,a)=>`${r} Erinnerung(en), ${a} Nachrücker versendet`,
+  autoDesc:"Läuft automatisch per Cron (siehe DEPLOY.md) — hier kannst du es auch manuell auslösen.",
+  reminded:"erinnert",
   resetToast:"Demo-Daten zurückgesetzt"
  },
  en:{
@@ -517,6 +542,22 @@ const L={
   detSpec:"Specialisation detected",
   importAIHint:"The AI creates profiles automatically — you review and confirm before import.",
   close:"Close", apply:"Apply", importDemoToast:"Demo: import is only indicated in the prototype",
+  nav_automation:"Automation",
+  tp_auto:"Automation", tp_autoSub:"Reminders & automatic backfill",
+  importPaste:"Paste text (CV, Excel copy, offer …)",
+  importAnalyze:"Analyse with AI", importAnalyzing:"AI analysing …",
+  importReview:"Detected profiles — review and import",
+  importApply:n=>`Import ${n} profiles`, importFound:n=>`${n} profiles detected`,
+  importCreated:n=>`${n} profiles created`,
+  importNoAI:"For real AI import, set a Claude API key in config.php. Without a key you can import the sample profiles derived from the text here.",
+  importErr:"Analysis failed",
+  autoReminderLbl:"Remind after (hours)", autoEscalateLbl:"Overdue after (hours)",
+  autoAdvanceLbl:"Automatic backfill",
+  autoAdvanceHint:"On decline or overdue, automatically request the next-best trainer.",
+  autoRunNow:"Check & send now", autoSaved:"Settings saved",
+  autoRan:(r,a)=>`${r} reminder(s), ${a} backfill request(s) sent`,
+  autoDesc:"Runs automatically via cron (see DEPLOY.md) — you can also trigger it manually here.",
+  reminded:"reminded",
   resetToast:"Demo data reset"
  }
 };
@@ -589,11 +630,13 @@ function load(){
     const r=JSON.parse(localStorage.getItem("etaf_demo"));
     if(r&&r.trainers){
       r.lang=r.lang||"de"; r.emailLang=r.emailLang||"en";
+      r.settings=r.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false};
       if(!r.templates||!r.templates[0]||!r.templates[0].de)r.templates=TEMPLATES;
       return r;
     }
   }catch(e){}
-  return {lang:"de", emailLang:"en", trainers:seedTrainers(), trainings:seedTrainings(), templates:TEMPLATES};
+  return {lang:"de", emailLang:"en", trainers:seedTrainers(), trainings:seedTrainings(),
+    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false}};
 }
 function save(){localStorage.setItem("etaf_demo",JSON.stringify(S));}
 function resetDemo(){localStorage.removeItem("etaf_demo");S=load();applyStatic();render();toast(t("resetToast"));}
@@ -610,8 +653,8 @@ function scoreTrainer(tr,tg){
   return Math.max(35,Math.min(99,Math.round(s)));
 }
 function ranked(tg){
-  return S.trainers.map(tr=>({tr,fit:scoreTrainer(tr,tg),
-    status:(tg.roster.find(r=>r.trainerId===tr.id)||{}).status||null}))
+  return S.trainers.map(tr=>{const e=tg.roster.find(r=>r.trainerId===tr.id)||{};
+    return {tr,fit:scoreTrainer(tr,tg),status:e.status||null,reminded:!!e.reminded};})
     .sort((a,b)=>b.fit-a.fit);
 }
 function rosterStats(tg){
@@ -703,7 +746,7 @@ document.addEventListener("keydown",e=>{
 /* ============================================================
    NAV / ROUTER
    ============================================================ */
-const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"trainers",ic:IC.users},{id:"templates",ic:IC.mail}];
+const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"trainers",ic:IC.users},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto}];
 let route="dash";
 function buildNav(){
   const crit=S.trainings.filter(t=>statusOf(t).cls==="crit").length;
@@ -718,7 +761,8 @@ function buildNav(){
 }
 function titleFor(r){
   const m={dash:["tp_dash","tp_dashSub"],trainings:["tp_trn","tp_trnSub"],
-    trainers:["tp_pool","tp_poolSub"],templates:["tp_tpl","tp_tplSub"]};
+    trainers:["tp_pool","tp_poolSub"],templates:["tp_tpl","tp_tplSub"],
+    automation:["tp_auto","tp_autoSub"]};
   const k=m[r]||m.dash; return [t(k[0]),t(k[1])];
 }
 function go(r){route=r;render();}
@@ -730,6 +774,7 @@ function render(){
   else if(route==="detail"){renderDetail();$("#v-detail").classList.add("on");}
   else if(route==="trainers"){renderTrainers();$("#v-trainers").classList.add("on");}
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
+  else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
   if(route==="detail"&&curTg){$("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+curTg.kw;}
   else{const ti=titleFor(route);$("#tt").textContent=ti[0];$("#ts").textContent=ti[1];}
   save();
@@ -879,6 +924,7 @@ function rosterRow(x,tg){
     <div class="av" style="background:${x.tr.color}">${initials(x.tr.name)}</div>
     <div class="rowgrow"><div class="nm">${x.tr.name}</div>
       <div class="meta">${x.tr.spec[0]} · ${x.tr.region}</div></div>
+    ${x.reminded?`<span class="tag" style="border-color:var(--warn);color:var(--warn)">${t("reminded")}</span>`:''}
     <span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${acts}
   </div>`;
 }
@@ -1122,22 +1168,128 @@ async function sendQuick(){
 /* ============================================================
    IMPORT (mock)
    ============================================================ */
+let importProfiles=[];
+const IMPORT_SAMPLE="Dr. Amir Haddad — Implantologie, Guided Surgery. Sprachen: DE, EN, AR. Region: UAE. Viel Erfahrung in Abu Dhabi.\nDr. Lena Vogt, DNA-Diagnostik & Prothetik, DE-West, DE/EN, Bewertung 4.7\nDr. Youssef Karim, Fingerprint Dental, UAE, EN/AR";
 function openImport(){
+  importProfiles=[];
   $("#sheetTitle").textContent=t("importTitle");
   $("#sheetBody").innerHTML=`
-    <div class="meta" style="margin-bottom:14px">${t("importDesc")}</div>
-    <label class="fld">${t("source")}</label>
-    <div class="chips"><span class="chip on">${t("srcExcel")}</span><span class="chip">${t("srcOffer")}</span><span class="chip">${t("srcAI")}</span></div>
-    <label class="fld" style="margin-top:16px">${t("previewEx")}</label>
-    <div class="panel" style="margin:0"><div class="panel-b">
-      <div class="kv"><span class="k">${t("detTrainings")}</span><span class="v tnum">4</span></div>
-      <div class="kv"><span class="k">${t("detProfiles")}</span><span class="v tnum">11</span></div>
-      <div class="kv"><span class="k">${t("detSpec")}</span><span class="v">DNA-Diagnostik, Fingerprint Dental …</span></div>
-    </div></div>
-    <div class="meta" style="margin-top:10px">${t("importAIHint")}</div>`;
+    <div class="meta" style="margin-bottom:10px">${t("importDesc")}</div>
+    ${LIVE?'':`<div class="meta" style="margin-bottom:10px">${t("importNoAI")}</div>`}
+    <label class="fld">${t("importPaste")}</label>
+    <textarea id="impText" style="min-height:150px">${LIVE?'':esc(IMPORT_SAMPLE)}</textarea>
+    <div id="impResult"></div>`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button><div class="spacer"></div>
-    <button class="btn primary" onclick="closeSheet();toast(t('importDemoToast'))">${t("apply")}</button>`;
+    <button class="btn primary" id="impBtnAnalyze" onclick="runImportAnalyze()">✨ ${t("importAnalyze")}</button>`;
   openSheet();
+}
+async function runImportAnalyze(){
+  const text=($("#impText")?$("#impText").value:"").trim();
+  if(!text){toast(t("importErr"),"warn");return;}
+  const btn=$("#impBtnAnalyze"); if(btn){btn.disabled=true;btn.textContent="… "+t("importAnalyzing");}
+  try{
+    if(LIVE){ const d=await apiCall("ai.extract",{text}); importProfiles=d.profiles||[]; }
+    else { importProfiles=demoExtract(text); await new Promise(r=>setTimeout(r,500)); }
+    drawImportReview();
+  }catch(e){ toast(t("importErr")+": "+e.message,"crit"); if(btn){btn.disabled=false;btn.textContent="✨ "+t("importAnalyze");} }
+}
+function demoExtract(text){
+  const SP=["Implantologie","DNA-Diagnostik","Fingerprint Dental","Prothetik","Guided Surgery","Parodontologie","Chirurgie"];
+  return text.split(/\n+/).map(l=>l.trim()).filter(Boolean).slice(0,8).map(line=>{
+    const name=(line.match(/Dr\.?\s+[A-Za-zÄÖÜäöü'\-]+\s+[A-Za-zÄÖÜäöü'\-]+/)||[line.split(/[,—-]/)[0].trim()])[0];
+    const spec=SP.filter(s=>line.toLowerCase().includes(s.toLowerCase().slice(0,6)));
+    const langs=(line.match(/\b(DE|EN|AR)\b/g)||[]).filter((v,i,a)=>a.indexOf(v)===i);
+    const uae=/uae|abu dhabi|dubai/i.test(line);
+    const reg=(line.match(/DE-(Süd|West|Nord)|AT|CH|UAE|UK/)||[uae?"UAE":"DE-West"])[0];
+    const rate=(line.match(/([45]\.\d)/)||["4.5"])[0];
+    return {name:name.trim(),email:"",phone:"",spec:spec.length?spec:[SP[0]],region:reg,langs:langs.length?langs:["DE","EN"],uae,rating:rate};
+  });
+}
+function drawImportReview(){
+  const n=importProfiles.length;
+  $("#impResult").innerHTML=`
+    <label class="fld">${t("importReview")} · ${t("importFound",n)}</label>
+    ${importProfiles.map((p,i)=>`
+      <div class="row">
+        <div class="av" style="background:var(--brand-solid)">${initials(p.name||"?")}</div>
+        <div class="rowgrow"><div class="nm">${esc(p.name||"—")}</div>
+          <div class="meta">${(p.spec||[]).join(", ")} · ${esc(p.region||"")} · ${(p.langs||[]).join("/")}${p.uae?" · UAE":""} · ⭐ ${esc(p.rating||"4.5")}</div></div>
+        <button class="btn sm" onclick="rmImport(${i})">✕</button>
+      </div>`).join("")}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
+    <button class="btn primary" onclick="applyImport()">${t("importApply",n)}</button>`;
+}
+function rmImport(i){importProfiles.splice(i,1);drawImportReview();}
+async function applyImport(){
+  const profs=importProfiles.slice(); const n=profs.length;
+  if(!n){closeSheet();return;}
+  if(LIVE){
+    try{ const d=await apiCall("trainers.bulkCreate",{profiles:profs}); await pull();
+      closeSheet(); if(route==="trainers")renderTrainers(); toast(t("importCreated",d.created!=null?d.created:n),"good");
+    }catch(e){ toast("Fehler: "+e.message,"crit"); }
+    return;
+  }
+  const COL=["#3E4852","#B23A42","#4E6E8E","#6E5A86","#3F7A5E","#A6642E","#557088","#8A5A52"];
+  profs.forEach((p,i)=>S.trainers.push({id:uid("tr"),name:p.name||"—",email:p.email||"",phone:p.phone||"",
+    spec:p.spec||[],region:p.region||"",langs:p.langs||[],uae:!!p.uae,load:0,
+    color:COL[i%COL.length],rating:String(p.rating||"4.5")}));
+  save();closeSheet();if(route==="trainers")renderTrainers();toast(t("importCreated",n),"good");
+}
+
+/* ============================================================
+   AUTOMATION (Erinnerungen + Nachrücken)
+   ============================================================ */
+function renderAutomation(){
+  if(LIVE && !S._settingsLoaded){
+    S._settingsLoaded=true;
+    apiCall("settings.get").then(d=>{S.settings=d.settings;renderAutomation();}).catch(()=>{});
+  }
+  const s=S.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false};
+  $("#v-automation").innerHTML=`
+    <div class="panel">
+      <div class="panel-h"><h3>${t("tp_auto")}</h3><div class="sub">${t("tp_autoSub")}</div></div>
+      <div class="panel-b">
+        <div class="meta" style="margin-bottom:14px">${t("autoDesc")}</div>
+        <div class="kv"><span class="k">${t("autoReminderLbl")}</span>
+          <input class="inp" style="width:110px" type="number" min="1" id="aRem" value="${s.reminder_hours}" onchange="saveAuto()"></div>
+        <div class="kv"><span class="k">${t("autoEscalateLbl")}</span>
+          <input class="inp" style="width:110px" type="number" min="1" id="aEsc" value="${s.escalate_hours}" onchange="saveAuto()"></div>
+        <div class="kv" style="align-items:flex-start">
+          <span class="k">${t("autoAdvanceLbl")}<div class="meta" style="max-width:360px;margin-top:2px">${t("autoAdvanceHint")}</div></span>
+          <label class="sw"><input type="checkbox" id="aAdv" ${s.auto_advance?'checked':''} onchange="saveAuto()"><span></span></label></div>
+      </div>
+      <div class="panel-b" style="border-top:1px solid var(--line)">
+        <button class="btn amber" onclick="runAutoNow()">⚡ ${t("autoRunNow")}</button>
+      </div>
+    </div>`;
+}
+function saveAuto(){
+  const s={reminder_hours:parseInt($("#aRem").value)||48,escalate_hours:parseInt($("#aEsc").value)||72,auto_advance:$("#aAdv").checked};
+  S.settings=s;save();
+  if(LIVE){ apiCall("settings.save",s).then(()=>toast(t("autoSaved"),"good")).catch(e=>toast("Fehler: "+e.message,"crit")); }
+  else toast(t("autoSaved"),"good");
+}
+async function runAutoNow(){
+  if(LIVE){
+    try{ const d=await apiCall("automation.run"); await pull(); buildNav();
+      if(route==="detail")renderDetail(); if(route==="dash")renderDash();
+      toast(t("autoRan",d.reminded,d.advanced),"good");
+    }catch(e){ toast("Fehler: "+e.message,"crit"); }
+    return;
+  }
+  const s=S.settings||{}; let reminded=0,advanced=0;
+  S.trainings.forEach(tg=>{
+    tg.roster.forEach(r=>{ if(r.status==="asked" && !r.reminded){ r.reminded=true; reminded++; } });
+    if(s.auto_advance){
+      const active=tg.roster.filter(r=>["asked","maybe","yes","confirmed"].includes(r.status)).length;
+      const gaps=tg.roster.filter(r=>r.status==="no").length;
+      const toAdd=Math.min(gaps,Math.max(0,tg.need-active));
+      const next=ranked(tg).filter(x=>!x.status);
+      for(let i=0;i<toAdd && i<next.length;i++){ tg.roster.push({trainerId:next[i].tr.id,status:"asked"}); advanced++; }
+    }
+  });
+  save();buildNav();renderAutomation();if(route==="dash")renderDash();
+  toast(t("autoRan",reminded,advanced),"good");
 }
 
 /* ============================================================

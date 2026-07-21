@@ -81,9 +81,12 @@ function get_state(): array {
   }, q("SELECT * FROM trainers ORDER BY id")->fetchAll());
 
   // roster je training
-  $reqs=q("SELECT training_id,trainer_id,status FROM requests")->fetchAll();
+  $reqs=q("SELECT training_id,trainer_id,status,reminder_count FROM requests")->fetchAll();
   $byT=[];
-  foreach($reqs as $r){ $byT[(string)$r['training_id']][]=['trainerId'=>(string)$r['trainer_id'],'status'=>$r['status']]; }
+  foreach($reqs as $r){ $byT[(string)$r['training_id']][]=[
+    'trainerId'=>(string)$r['trainer_id'],'status'=>$r['status'],
+    'reminded'=>((int)($r['reminder_count']??0)>0)
+  ]; }
 
   $trainings=array_map(function($r) use ($byT){
     return [
@@ -112,6 +115,33 @@ function fill_tpl(string $s, array $tg, ?array $tr): string {
     '{{country}}'=>$tg['country'], '{{kw}}'=>$tg['kw'], '{{month}}'=>$tg['month'],
     '{{teamSize}}'=>(string)$tg['need_cnt'],
   ]);
+}
+
+/** KI-Vorauswahl-Score (serverseitige Portierung der Frontend-Heuristik). */
+function php_score(array $tr, array $tg): int {
+  $s=40;
+  $spec=json_decode($tr['spec']?:'[]',true) ?: [];
+  $langs=json_decode($tr['langs']?:'[]',true) ?: [];
+  if(in_array($tg['spec'],$spec,true)) $s+=34;
+  if(($tg['country']??'')==='UAE' && (int)($tr['uae']??0)===1) $s+=14;
+  if(($tg['country']??'')==='UAE' && in_array('AR',$langs,true)) $s+=6;
+  if(($tg['country']??'')!=='UAE' && strpos($tr['region']??'','DE')===0) $s+=8;
+  $s += (3-(int)($tr['load_lvl']??0))*4;
+  $s += ((float)($tr['rating']??4)-4)*10;
+  return max(35,min(99,(int)round($s)));
+}
+/** Bester noch nicht angefragter Trainer für ein Training. */
+function next_candidate(int $tgId): ?array {
+  $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+  if(!$tg) return null;
+  $taken=q("SELECT trainer_id FROM requests WHERE training_id=?",[$tgId])->fetchAll(PDO::FETCH_COLUMN);
+  $best=null; $bestScore=-1;
+  foreach(q("SELECT * FROM trainers")->fetchAll() as $tr){
+    if(in_array($tr['id'],$taken)) continue;
+    $sc=php_score($tr,$tg);
+    if($sc>$bestScore){ $bestScore=$sc; $best=$tr; }
+  }
+  return $best;
 }
 
 function base_url(): string {
