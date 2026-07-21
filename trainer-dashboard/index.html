@@ -274,6 +274,33 @@
     .mob-nav button.active{color:var(--brand)}
     main{padding-bottom:76px}
   }
+
+  /* ============ AGENDA PRINT OVERLAY ============ */
+  #agendaPrint{position:fixed;inset:0;z-index:70;background:var(--bg);overflow:auto;display:none;padding:22px}
+  #agendaPrint.on{display:block}
+  .ag-toolbar{max-width:800px;margin:0 auto 12px;display:flex;justify-content:flex-end;gap:10px}
+  .ag-sheet{max-width:800px;margin:0 auto;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:34px 38px;box-shadow:var(--shadow)}
+  .ag-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .ag-eyebrow{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+  .ag-h1{font-size:23px;font-weight:750;letter-spacing:-.01em;margin:4px 0 2px}
+  .ag-bar{height:3px;background:var(--brand);border-radius:3px;margin:16px 0 20px}
+  .ag-h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--brand);
+    margin:20px 0 8px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .ag-kv{display:grid;grid-template-columns:190px 1fr;gap:6px 14px;font-size:14px}
+  .ag-kv .ag-k{color:var(--muted)} .ag-kv .ag-v{font-weight:600}
+  .ag-table{width:100%;border-collapse:collapse;font-size:14px}
+  .ag-table td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  .ag-table td.ag-t{white-space:nowrap;color:var(--brand);font-weight:700;width:110px}
+  .ag-table td.ag-d{white-space:nowrap;color:var(--muted);width:66px}
+  @media print{
+    :root{--bg:#fff;--panel:#fff;--ink:#242b31;--muted:#5c666e;--line:#e2e5e8;--brand:#3e4852}
+    body>*{display:none!important}
+    #agendaPrint{display:block!important;position:static;padding:0;background:#fff;overflow:visible}
+    .ag-toolbar{display:none!important}
+    .ag-sheet{border:none;border-radius:0;box-shadow:none;padding:0;max-width:none}
+    @page{margin:16mm}
+  }
 </style>
 
 <!-- ===================== LOGIN ===================== -->
@@ -344,6 +371,15 @@
 </aside>
 
 <div id="toast"></div>
+
+<!-- Druckbare Reise-Agenda (Overlay) -->
+<div id="agendaPrint">
+  <div class="ag-toolbar">
+    <button class="btn primary" onclick="window.print()">🖨 <span id="agPrintLbl">Drucken</span></button>
+    <button class="btn" onclick="closeAgenda()">✕</button>
+  </div>
+  <div id="agendaBody"></div>
+</div>
 
 <!-- Optional: nur auf dem Server vorhanden. Aktiviert den Live-Modus (PHP+MySQL). -->
 <script src="config.js" onerror="/* Demo-Modus: keine config.js vorhanden */"></script>
@@ -481,6 +517,16 @@ const L={
   autoRan:(r,a)=>`${r} Erinnerung(en), ${a} Nachrücker versendet`,
   autoDesc:"Läuft automatisch per Cron (siehe DEPLOY.md) — hier kannst du es auch manuell auslösen.",
   reminded:"erinnert",
+  travelAgenda:"Reise & Agenda", trTravel:"✈ Reise", agendaView:"🖨 Agenda", agendaSend:"✉ Agenda senden",
+  agendaSent:"Reise-Agenda versendet", travelSaved:"Reisedaten gespeichert",
+  tvLogistics:"Reise & Logistik (für alle im Team)", tvVenue:"Veranstaltungsort", tvHotel:"Hotel",
+  tvHotelAddr:"Hotel-Adresse", tvMeet:"Treffpunkt", tvContact:"Ansprechpartner vor Ort",
+  tvContactPhone:"Telefon vor Ort", tvDress:"Dresscode", tvPerDiem:"Per Diem", tvNotes:"Hinweise",
+  agTitle:"Agenda / Programm", agAddItem:"+ Programmpunkt", agDay:"Tag", agTime:"Zeit", agWhat:"Titel",
+  tvFlightTitle:n=>`Flug & Zimmer — ${n}`, tvArrival:"Anreise", tvDeparture:"Abreise",
+  tvFlightOut:"Hinflug", tvFlightReturn:"Rückflug", tvRoom:"Zimmer", printBtn:"Drucken",
+  tvFlightHead:"Deine Reisedaten", tvLogHead:"Reise & Logistik", agFor:"Für",
+  agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
   resetToast:"Demo-Daten zurückgesetzt"
  },
  en:{
@@ -558,6 +604,16 @@ const L={
   autoRan:(r,a)=>`${r} reminder(s), ${a} backfill request(s) sent`,
   autoDesc:"Runs automatically via cron (see DEPLOY.md) — you can also trigger it manually here.",
   reminded:"reminded",
+  travelAgenda:"Travel & agenda", trTravel:"✈ Travel", agendaView:"🖨 Agenda", agendaSend:"✉ Send agenda",
+  agendaSent:"Travel agenda sent", travelSaved:"Travel details saved",
+  tvLogistics:"Travel & logistics (for the whole team)", tvVenue:"Venue", tvHotel:"Hotel",
+  tvHotelAddr:"Hotel address", tvMeet:"Meeting point", tvContact:"On-site contact",
+  tvContactPhone:"On-site phone", tvDress:"Dress code", tvPerDiem:"Per diem", tvNotes:"Notes",
+  agTitle:"Agenda / programme", agAddItem:"+ Item", agDay:"Day", agTime:"Time", agWhat:"Title",
+  tvFlightTitle:n=>`Flight & room — ${n}`, tvArrival:"Arrival", tvDeparture:"Departure",
+  tvFlightOut:"Outbound flight", tvFlightReturn:"Return flight", tvRoom:"Room", printBtn:"Print",
+  tvFlightHead:"Your travel details", tvLogHead:"Travel & logistics", agFor:"For",
+  agendaHint:"The trainer receives this overview by email (print link) and can print it.",
   resetToast:"Demo data reset"
  }
 };
@@ -592,13 +648,28 @@ function seedTrainings(){
   const locs=[["Abu Dhabi","UAE"],["München","DE"],["Frankfurt","DE"],["Abu Dhabi","UAE"],["Hamburg","DE"],["Wien","AT"],["Abu Dhabi","UAE"],["Zürich","CH"]];
   const topics=["Guided Surgery Level II","DNA-Diagnostik Basiskurs","Fingerprint Dental Advanced","Implantologie Masterclass","Digitale Abformung","Prothetik Kompakt","Full-Arch Workshop","Parodontologie Update"];
   const need=[6,5,8,7,5,6,8,5];
+  const emptyTravel=()=>({venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]});
   return topics.map((t,i)=>{
     const kw=8+i*6;
+    const travel=emptyTravel();
+    if(i===0){ travel.venue="ETAF Training Center, Al Maryah Island"; travel.hotel="Rosewood Abu Dhabi";
+      travel.hotelAddr="Al Maryah Island, Abu Dhabi, UAE"; travel.meetingPoint="Hotel-Lobby, 07:45 Uhr";
+      travel.contactName="Layla Al Nuaimi"; travel.contactPhone="+971 50 123 4567";
+      travel.dresscode="Business casual · OP-Kleidung wird gestellt"; travel.perDiem="120 EUR / Tag";
+      travel.notes="Reisepass mind. 6 Monate gültig. Flughafen-Transfer ist organisiert.";
+      travel.agenda=[
+        {day:"Tag 1",time:"08:30",title:"Registrierung & Welcome Coffee"},
+        {day:"Tag 1",time:"09:00",title:"Guided Surgery — Theorie & Falldiskussion"},
+        {day:"Tag 1",time:"13:00",title:"Lunch"},
+        {day:"Tag 1",time:"14:00",title:"Hands-on Workshop am Modell"},
+        {day:"Tag 2",time:"09:00",title:"Live-OP Demonstration"},
+        {day:"Tag 2",time:"12:30",title:"Q&A & Zertifikatsübergabe"}];
+    }
     return {
       id:uid("tg"), topic:t, city:locs[i][0], country:locs[i][1],
       kw:"KW "+kw, month:["Sep","Okt","Dez","Feb","Mär","Mai","Jul","Sep"][i]+" ’2"+(i<3?"6":"7"),
       spec:SPEC[i%SPEC.length], need:need[i],
-      participants:12+i*2,
+      participants:12+i*2, travel,
       roster:[]
     };
   });
@@ -632,6 +703,7 @@ function load(){
       r.lang=r.lang||"de"; r.emailLang=r.emailLang||"en";
       r.settings=r.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false};
       if(!r.templates||!r.templates[0]||!r.templates[0].de)r.templates=TEMPLATES;
+      (r.trainings||[]).forEach(t=>{ if(!t.travel)t.travel={venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]}; });
       return r;
     }
   }catch(e){}
@@ -883,6 +955,7 @@ function renderDetail(){
     </div>
     <div class="panel-b" style="border-top:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn primary" onclick="composeFor('${tg.id}',null,'t1')">${svg(IC.mail)} ${t("btnBulk")}</button>
+      <button class="btn" onclick="openTravel('${tg.id}')">✈ ${t("travelAgenda")}</button>
       <button class="btn amber" onclick="openQuick('${tg.id}')">⚡ ${t("btnFindRep")}</button>
     </div>
   </div>`;
@@ -915,8 +988,10 @@ function renderDetail(){
 function rosterRow(x,tg){
   const acts=x.status==="asked"
     ? (LIVE ? "" : `<button class="btn sm" onclick="simReply('${tg.id}','${x.tr.id}')" title="${t("simReplyT")}">↩ ${t("simReply")}</button>`)
-    : x.status==="yes"
-    ? `<button class="btn sm primary" onclick="composeFor('${tg.id}','${x.tr.id}','t2')">${t("travelData")}</button>`
+    : (x.status==="yes"||x.status==="confirmed")
+    ? `<button class="btn sm" onclick="openTrainerTravel('${tg.id}','${x.tr.id}')">${t("trTravel")}</button>`
+      +`<button class="btn sm" onclick="openAgenda('${tg.id}','${x.tr.id}')">${t("agendaView")}</button>`
+      +`<button class="btn sm primary" onclick="sendAgenda('${tg.id}','${x.tr.id}')">${t("agendaSend")}</button>`
     : x.status==="no"
     ? `<button class="btn sm" onclick="requestNext('${tg.id}')">${t("nextInLine")}</button>`
     : "";
@@ -1163,6 +1238,129 @@ async function sendQuick(){
   pool.forEach(x=>setStatus(tgId,x.tr.id,"asked"));
   closeSheet();toast(t("blitzToast",pool.length),"good");
   buildNav();if(route==="detail"){curTg=tg;renderDetail();}if(route==="dash")renderDash();
+}
+
+/* ============================================================
+   REISE & AGENDA
+   ============================================================ */
+let travelTg=null;
+function tvGet(tgId){const tg=S.trainings.find(t=>t.id===tgId);
+  if(!tg.travel)tg.travel={venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]};
+  if(!tg.travel.agenda)tg.travel.agenda=[]; return tg;}
+function tvField(id,lab,val){return `<label class="fld">${lab}</label><input class="inp" id="${id}" value="${esc(val||"")}">`;}
+function openTravel(tgId){
+  travelTg=tgId; const v=tvGet(tgId).travel;
+  $("#sheetTitle").textContent=t("travelAgenda");
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:8px">${t("tvLogistics")}</div>
+    ${tvField("tvVenue",t("tvVenue"),v.venue)}
+    ${tvField("tvHotel",t("tvHotel"),v.hotel)}
+    ${tvField("tvHotelAddr",t("tvHotelAddr"),v.hotelAddr)}
+    ${tvField("tvMeet",t("tvMeet"),v.meetingPoint)}
+    ${tvField("tvContact",t("tvContact"),v.contactName)}
+    ${tvField("tvContactPhone",t("tvContactPhone"),v.contactPhone)}
+    ${tvField("tvDress",t("tvDress"),v.dresscode)}
+    ${tvField("tvPerDiem",t("tvPerDiem"),v.perDiem)}
+    <label class="fld">${t("tvNotes")}</label><textarea id="tvNotes" style="min-height:70px">${esc(v.notes||"")}</textarea>
+    <div class="fldrow" style="margin-top:16px"><label class="fld" style="margin:0">${t("agTitle")}</label>
+      <button class="btn sm" onclick="agAdd()">${t("agAddItem")}</button></div>
+    <div id="agItems"></div>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
+    <button class="btn primary" onclick="saveTravel()">${t("save")}</button>`;
+  drawAgendaItems(); openSheet();
+}
+function drawAgendaItems(){
+  const a=tvGet(travelTg).travel.agenda;
+  $("#agItems").innerHTML=a.map((it,i)=>`
+    <div style="display:flex;gap:6px;margin-bottom:6px">
+      <input class="inp" style="flex:0 0 84px" placeholder="${t("agDay")}" value="${esc(it.day||"")}" oninput="agSet(${i},'day',this.value)">
+      <input class="inp" style="flex:0 0 74px" placeholder="${t("agTime")}" value="${esc(it.time||"")}" oninput="agSet(${i},'time',this.value)">
+      <input class="inp" style="flex:1" placeholder="${t("agWhat")}" value="${esc(it.title||"")}" oninput="agSet(${i},'title',this.value)">
+      <button class="btn sm" onclick="agRm(${i})">✕</button>
+    </div>`).join("")||`<div class="meta">—</div>`;
+}
+function agAdd(){tvGet(travelTg).travel.agenda.push({day:"",time:"",title:""});drawAgendaItems();}
+function agRm(i){tvGet(travelTg).travel.agenda.splice(i,1);drawAgendaItems();}
+function agSet(i,k,val){tvGet(travelTg).travel.agenda[i][k]=val;}
+async function saveTravel(){
+  const v=tvGet(travelTg).travel;
+  v.venue=$("#tvVenue").value; v.hotel=$("#tvHotel").value; v.hotelAddr=$("#tvHotelAddr").value;
+  v.meetingPoint=$("#tvMeet").value; v.contactName=$("#tvContact").value; v.contactPhone=$("#tvContactPhone").value;
+  v.dresscode=$("#tvDress").value; v.perDiem=$("#tvPerDiem").value; v.notes=$("#tvNotes").value;
+  if(LIVE){
+    try{ await apiCall("training.travelSave",{training:travelTg,venue:v.venue,hotel:v.hotel,hotelAddr:v.hotelAddr,
+      meetingPoint:v.meetingPoint,contactName:v.contactName,contactPhone:v.contactPhone,dresscode:v.dresscode,
+      perDiem:v.perDiem,notes:v.notes,agenda:v.agenda}); }catch(e){ toast("Fehler: "+e.message,"crit"); return; }
+  }
+  save();closeSheet();toast(t("travelSaved"),"good");if(route==="detail")renderDetail();
+}
+function openTrainerTravel(tgId,trId){
+  travelTg=tgId; const tr=S.trainers.find(x=>x.id===trId);
+  const e=tvGet(tgId).roster.find(r=>r.trainerId===trId)||{}; const fl=e.flight||{};
+  $("#sheetTitle").textContent=t("tvFlightTitle",tr.name);
+  $("#sheetBody").innerHTML=`
+    ${tvField("flArr",t("tvArrival"),fl.arrival)}
+    ${tvField("flDep",t("tvDeparture"),fl.departure)}
+    ${tvField("flOut",t("tvFlightOut"),fl.flightOut)}
+    ${tvField("flRet",t("tvFlightReturn"),fl.flightReturn)}
+    ${tvField("flRoom",t("tvRoom"),fl.room)}
+    ${tvField("flNotes",t("tvNotes"),fl.notes)}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
+    <button class="btn" onclick="openAgenda('${tgId}','${trId}')">${t("agendaView")}</button>
+    <button class="btn primary" onclick="saveTrainerTravel('${tgId}','${trId}')">${t("save")}</button>`;
+  openSheet();
+}
+async function saveTrainerTravel(tgId,trId){
+  const flight={arrival:$("#flArr").value,departure:$("#flDep").value,flightOut:$("#flOut").value,
+    flightReturn:$("#flRet").value,room:$("#flRoom").value,notes:$("#flNotes").value};
+  let e=tvGet(tgId).roster.find(r=>r.trainerId===trId);
+  if(!e){e={trainerId:trId,status:"yes"};tvGet(tgId).roster.push(e);}
+  e.flight=flight;
+  if(LIVE){
+    try{ await apiCall("trainer.travelSave",{training:tgId,trainer:trId,arrival:flight.arrival,departure:flight.departure,
+      flightOut:flight.flightOut,flightReturn:flight.flightReturn,room:flight.room,notes:flight.notes}); }
+    catch(err){ toast("Fehler: "+err.message,"crit"); return; }
+  }
+  save();closeSheet();toast(t("travelSaved"),"good");if(route==="detail")renderDetail();
+}
+function openAgenda(tgId,trId){
+  const tg=tvGet(tgId); const tr=S.trainers.find(x=>x.id===trId);
+  const e=tg.roster.find(r=>r.trainerId===trId)||{};
+  $("#agPrintLbl").textContent=t("printBtn");
+  $("#agendaBody").innerHTML=buildAgendaHTML(tg,tr,e.flight||{});
+  $("#agendaPrint").classList.add("on");
+}
+function closeAgenda(){$("#agendaPrint").classList.remove("on");}
+function buildAgendaHTML(tg,tr,fl){
+  const v=tg.travel||{}; const na=`<span style="color:var(--faint)">—</span>`;
+  const row=(k,val)=>`<div class="ag-k">${k}</div><div class="ag-v">${val?esc(val):na}</div>`;
+  const rowH=(k,val)=>`<div class="ag-k">${k}</div><div class="ag-v">${val||na}</div>`;
+  const items=(v.agenda||[]).filter(a=>a.title).map(a=>
+    `<tr><td class="ag-d">${esc(a.day||"")}</td><td class="ag-t">${esc(a.time||"")}</td><td>${esc(a.title||"")}</td></tr>`).join("");
+  return `<div class="ag-sheet">
+    <div class="ag-top">
+      <div><div class="ag-eyebrow">${t("travelAgenda")}</div>
+        <div class="ag-h1">${esc(tg.topic)}</div>
+        <div class="meta">${esc(tg.city+", "+tg.country+" · "+tg.kw+" · "+tg.month)}</div></div>
+      <span class="etaf" style="font-size:26px">ETAF<span class="rd"></span></span>
+    </div>
+    <div class="ag-bar"></div>
+    <div class="ag-kv">${row(t("agFor"),tr?tr.name:"")}${row(t("tvVenue"),v.venue)}</div>
+    <div class="ag-h2">${t("tvFlightHead")}</div>
+    <div class="ag-kv">${row(t("tvArrival"),fl.arrival)}${row(t("tvDeparture"),fl.departure)}${row(t("tvFlightOut"),fl.flightOut)}${row(t("tvFlightReturn"),fl.flightReturn)}${row(t("tvRoom"),fl.room)}${fl.notes?row(t("tvNotes"),fl.notes):""}</div>
+    <div class="ag-h2">${t("tvLogHead")}</div>
+    <div class="ag-kv">${rowH(t("tvHotel"),esc([v.hotel,v.hotelAddr].filter(Boolean).join(" · ")))}${row(t("tvMeet"),v.meetingPoint)}${rowH(t("tvContact"),esc([v.contactName,v.contactPhone].filter(Boolean).join(" · ")))}${row(t("tvDress"),v.dresscode)}${row(t("tvPerDiem"),v.perDiem)}${v.notes?row(t("tvNotes"),v.notes):""}</div>
+    ${items?`<div class="ag-h2">${t("agTitle")}</div><table class="ag-table">${items}</table>`:""}
+    <div class="meta" style="text-align:center;margin-top:22px">ETAF · Trainer-Koordination</div>
+  </div>`;
+}
+async function sendAgenda(tgId,trId){
+  if(LIVE){
+    try{ await apiCall("travel.sendAgenda",{training:tgId,trainer:trId}); toast(t("agendaSent"),"good"); }
+    catch(e){ toast("Fehler: "+e.message,"crit"); }
+    return;
+  }
+  toast(t("agendaSent"),"good");
 }
 
 /* ============================================================

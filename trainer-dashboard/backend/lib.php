@@ -85,14 +85,33 @@ function get_state(): array {
   $byT=[];
   foreach($reqs as $r){ $byT[(string)$r['training_id']][]=[
     'trainerId'=>(string)$r['trainer_id'],'status'=>$r['status'],
-    'reminded'=>((int)($r['reminder_count']??0)>0)
+    'reminded'=>((int)($r['reminder_count']??0)>0), 'flight'=>null
   ]; }
+  // Flug-/Zimmerdaten je Trainer an den Roster-Eintrag hängen
+  foreach(q("SELECT * FROM travel")->fetchAll() as $tv){
+    $tid=(string)$tv['training_id']; $trid=(string)$tv['trainer_id'];
+    if(!isset($byT[$tid])) continue;
+    foreach($byT[$tid] as &$e){
+      if($e['trainerId']===$trid){ $e['flight']=[
+        'arrival'=>$tv['arrival'],'departure'=>$tv['departure'],
+        'flightOut'=>$tv['flight_out'],'flightReturn'=>$tv['flight_return'],
+        'room'=>$tv['room'],'notes'=>$tv['notes']]; }
+    }
+    unset($e);
+  }
 
   $trainings=array_map(function($r) use ($byT){
     return [
       'id'=>(string)$r['id'], 'topic'=>$r['topic'], 'city'=>$r['city'], 'country'=>$r['country'],
       'kw'=>$r['kw'], 'month'=>$r['month'], 'spec'=>$r['spec'],
       'need'=>(int)$r['need_cnt'], 'participants'=>(int)$r['participants'],
+      'travel'=>[
+        'venue'=>$r['venue']??'', 'hotel'=>$r['hotel']??'', 'hotelAddr'=>$r['hotel_addr']??'',
+        'meetingPoint'=>$r['meeting_point']??'', 'contactName'=>$r['contact_name']??'',
+        'contactPhone'=>$r['contact_phone']??'', 'dresscode'=>$r['dresscode']??'',
+        'perDiem'=>$r['per_diem']??'', 'notes'=>$r['travel_notes']??'',
+        'agenda'=>json_decode($r['agenda']?:'[]',true) ?: [],
+      ],
       'roster'=>$byT[(string)$r['id']] ?? [],
     ];
   }, q("SELECT * FROM trainings ORDER BY id")->fetchAll());

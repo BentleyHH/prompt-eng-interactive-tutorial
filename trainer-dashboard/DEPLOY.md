@@ -104,6 +104,14 @@ curl -s "https://deine-domain.de/dashboard/backend/cron.php?key=DEIN_CRON_KEY"
 ```
 Der `key` muss mit `cron_key` aus `config.php` übereinstimmen (schützt den Endpunkt).
 
+## Reiseplanung & druckbare Agenda
+Im Training unter **„✈ Reise & Agenda"** trägst du Hotel, Treffpunkt, Ansprechpartner, Dresscode,
+Per Diem, Hinweise und das Programm ein; je Trainer (Status „zugesagt") Flug- & Zimmerdaten.
+Über **🖨 Agenda** siehst/druckst du die persönliche Reise-Info; über **✉ Agenda senden** bekommt
+der Trainer eine E-Mail mit **Druck-Link** (`backend/agenda.php?token=…`) — die Seite öffnet ohne
+Login und lässt sich direkt ausdrucken. Der Token ist der der jeweiligen Anfrage; nichts weiter zu
+konfigurieren.
+
 ## Was später noch dazukommen könnte
 - E-Mail-Protokoll-Ansicht im Dashboard (Daten liegen schon in `email_log`).
 - KI-Auswertung frei geschriebener E-Mail-Antworten (zusätzlich zu den Magic-Link-Buttons).

@@ -44,6 +44,10 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
 - **Simulierter Rücklauf**: nach dem Senden „trudeln Antworten ein“ und färben den Status
   (zugesagt / vielleicht / abgesagt) automatisch zurück ins Dashboard
 - **Schnell-Ersatz**: Ein-Klick-Blitzanfrage an die besten verfügbaren Trainer bei Ausfall
+- **Reiseplanung & druckbare Agenda**: je Training Reisedaten (Hotel, Treffpunkt, Ansprechpartner,
+  Dresscode, Per Diem, Hinweise) + Programm/Agenda; je Trainer Flug- & Zimmerdaten. Daraus wird
+  eine **persönliche, druckbare Reise-Agenda** erzeugt — im Dashboard ansehen/drucken und per
+  **E-Mail mit Druck-Link** an den Trainer senden (`agenda.php`, öffnet ohne Login).
 - **KI-Import**: Trainer → „Profile importieren" → Lebenslauf/Excel/Angebot einfügen → KI
   extrahiert strukturierte Profile (Claude API, Modell `claude-opus-4-8`) → prüfen → übernehmen
 - **Automatik**: Erinnerungen nach X Stunden ohne Antwort + optionales automatisches Nachrücken
@@ -68,7 +72,7 @@ Rücklauf. Über **◐ Design wechseln** hell/dunkel testen.
 | KI-Matching | Heuristik im Browser | Heuristik (serverfähig, auch fürs Nachrücken) | Feineres Ranking / Lernen |
 | KI-Profilanlage | simuliert (Textzerlegung) | **Claude API (`claude-opus-4-8`), strukturierte Extraktion** | Auto-Anlage aus Angeboten |
 | Erinnerungen/Nachrücken | Demo-Simulation | **Automatik + Cron (nach X Std.)** | Eskalationsstufen, Vertretungspools |
-| Reise/Logistik | angedeutet | — | Flug-, Hotel-, Visum-, Per-Diem-Modul (UAE) |
+| Reiseplanung & Agenda | voll (localStorage) | **DB + druckbare Agenda + E-Mail-Druck-Link** | Visum-Workflow, automatische Flugvorschläge |
 
 Nicht vergessen: 50 Trainerprofile = personenbezogene Daten mit internationalem Transfer
 (Abu Dhabi) → Einwilligung, AVV mit artfiles, Löschkonzept und HTTPS von Anfang an. Details in `DEPLOY.md`.

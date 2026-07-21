@@ -174,6 +174,54 @@ switch($action){
     require_auth();
     out(run_automation());
 
+  /* ---- Reisedaten & Agenda je Training speichern ---- */
+  case 'training.travelSave':
+    require_auth();
+    q("UPDATE trainings SET venue=?,hotel=?,hotel_addr=?,meeting_point=?,contact_name=?,contact_phone=?,dresscode=?,per_diem=?,travel_notes=?,agenda=? WHERE id=?",[
+      $in['venue']??'', $in['hotel']??'', $in['hotelAddr']??'', $in['meetingPoint']??'',
+      $in['contactName']??'', $in['contactPhone']??'', $in['dresscode']??'', $in['perDiem']??'',
+      $in['notes']??'', json_encode($in['agenda']??[],JSON_UNESCAPED_UNICODE), $in['training']??0]);
+    out(['ok'=>true]);
+
+  /* ---- Flug-/Zimmerdaten je Trainer speichern ---- */
+  case 'trainer.travelSave':
+    require_auth();
+    $tgId=$in['training']??0; $trId=$in['trainer']??0;
+    $ex=q("SELECT id FROM travel WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+    $f=[$in['arrival']??'', $in['departure']??'', $in['flightOut']??'', $in['flightReturn']??'', $in['room']??'', $in['notes']??''];
+    if($ex) q("UPDATE travel SET arrival=?,departure=?,flight_out=?,flight_return=?,room=?,notes=?,updated_at=? WHERE id=?",
+      array_merge($f,[now(),$ex['id']]));
+    else q("INSERT INTO travel(training_id,trainer_id,arrival,departure,flight_out,flight_return,room,notes,updated_at)
+            VALUES(?,?,?,?,?,?,?,?,?)", array_merge([$tgId,$trId],$f,[now()]));
+    out(['ok'=>true]);
+
+  /* ---- Persönliche Reise-Agenda per E-Mail senden (mit Druck-Link) ---- */
+  case 'travel.sendAgenda':
+    require_auth();
+    $tgId=$in['training']??0; $trId=$in['trainer']??0;
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
+    if(!$tg||!$tr) fail('Training oder Trainer nicht gefunden.',404);
+    $rq=q("SELECT * FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+    $lang=($rq['lang']??'en')==='de'?'de':'en';
+    $tok=$rq['tok']??'';
+    if(!$tok){ $tok=token(40);
+      q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?, 'yes',?,?,?)",[$tgId,$trId,$lang,$tok,now()]); }
+    $link=base_url().'/agenda.php?token='.$tok;
+    $subj=fill_tpl($lang==='de'?'Deine Reise-Agenda — {{topic}} in {{city}}':'Your travel agenda — {{topic}} in {{city}}',$tg,$tr);
+    $intro=fill_tpl($lang==='de'
+      ? "Hallo {{firstName}},\n\nanbei deine persönliche Reise-Agenda für „{{topic}}“ in {{city}} ({{kw}}). Über den Button kannst du sie öffnen und ausdrucken."
+      : "Hi {{firstName}},\n\nhere is your personal travel agenda for \"{{topic}}\" in {{city}} ({{kw}}). Open and print it via the button below.",
+      $tg,$tr);
+    $btnLabel=$lang==='de'?'📄 Agenda öffnen & drucken':'📄 Open & print agenda';
+    $btns='<div style="margin:22px 0"><a href="'.$link.'" style="display:inline-block;padding:12px 20px;'
+      .'border-radius:8px;background:#3e4852;color:#fff;font:600 14px system-ui,Arial,sans-serif;text-decoration:none">'
+      .$btnLabel.'</a></div>';
+    $ok=send_email($tr['email'],$tr['name'],$subj,email_html($intro,$btns));
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[$tgId,$trId,$tr['email'],$subj,$intro."\n".$link,$lang,$ok?'sent':'failed',now()]);
+    out(['ok'=>true,'link'=>$link,'sent'=>$ok?1:0]);
+
   default:
     fail('Unbekannte Aktion: '.$action, 404);
 }

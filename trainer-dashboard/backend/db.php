@@ -68,7 +68,18 @@ function ensure_schema(): void {
     topic VARCHAR(190), city VARCHAR(96), country VARCHAR(16),
     kw VARCHAR(24), month VARCHAR(24), spec VARCHAR(96),
     need_cnt INT DEFAULT 5, participants INT DEFAULT 0,
+    venue VARCHAR(255), hotel VARCHAR(190), hotel_addr VARCHAR(255),
+    meeting_point VARCHAR(255), contact_name VARCHAR(160), contact_phone VARCHAR(64),
+    dresscode VARCHAR(160), per_diem VARCHAR(64), travel_notes TEXT, agenda TEXT,
     created_at VARCHAR(20))$eng");
+
+  // Reisedaten je Trainer (Flug, Zimmer)
+  $d->exec("CREATE TABLE IF NOT EXISTS travel (
+    id $pk,
+    training_id INT, trainer_id INT,
+    arrival VARCHAR(48), departure VARCHAR(48),
+    flight_out VARCHAR(190), flight_return VARCHAR(190),
+    room VARCHAR(48), notes TEXT, updated_at VARCHAR(20))$eng");
 
   $d->exec("CREATE TABLE IF NOT EXISTS templates (
     id VARCHAR(16) PRIMARY KEY,
@@ -99,6 +110,12 @@ function ensure_schema(): void {
   // Migrationen (idempotent): Erinnerungs-Spalten für requests
   try{ db()->exec("ALTER TABLE requests ADD COLUMN reminded_at VARCHAR(20)"); }catch(Throwable $e){}
   try{ db()->exec("ALTER TABLE requests ADD COLUMN reminder_count INT DEFAULT 0"); }catch(Throwable $e){}
+  // Migrationen (idempotent): Reise-Spalten für trainings
+  foreach([
+    "venue VARCHAR(255)","hotel VARCHAR(190)","hotel_addr VARCHAR(255)",
+    "meeting_point VARCHAR(255)","contact_name VARCHAR(160)","contact_phone VARCHAR(64)",
+    "dresscode VARCHAR(160)","per_diem VARCHAR(64)","travel_notes TEXT","agenda TEXT"
+  ] as $col){ try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){} }
 
   // Automatik-Standardwerte
   $ac=cfg();
@@ -180,4 +197,19 @@ function seed_demo(): void {
       $SPEC[$i%count($SPEC)],$need[$i],12+$i*2,now()
     ]);
   }
+  // Beispiel-Reisedaten + Agenda für das erste Abu-Dhabi-Training
+  $agenda=json_encode([
+    ['day'=>'Tag 1','time'=>'08:30','title'=>'Registrierung & Welcome Coffee'],
+    ['day'=>'Tag 1','time'=>'09:00','title'=>'Guided Surgery — Theorie & Falldiskussion'],
+    ['day'=>'Tag 1','time'=>'13:00','title'=>'Lunch'],
+    ['day'=>'Tag 1','time'=>'14:00','title'=>'Hands-on Workshop am Modell'],
+    ['day'=>'Tag 2','time'=>'09:00','title'=>'Live-OP Demonstration'],
+    ['day'=>'Tag 2','time'=>'12:30','title'=>'Q&A & Zertifikatsübergabe'],
+  ], JSON_UNESCAPED_UNICODE);
+  q("UPDATE trainings SET venue=?,hotel=?,hotel_addr=?,meeting_point=?,contact_name=?,contact_phone=?,dresscode=?,per_diem=?,travel_notes=?,agenda=? WHERE topic=?",[
+    'ETAF Training Center, Al Maryah Island','Rosewood Abu Dhabi','Al Maryah Island, Abu Dhabi, UAE',
+    'Hotel-Lobby, 07:45 Uhr','Layla Al Nuaimi','+971 50 123 4567','Business casual · OP-Kleidung wird gestellt',
+    '120 EUR / Tag','Reisepass mind. 6 Monate gültig. Flughafen-Transfer ist organisiert.',
+    $agenda,'Guided Surgery Level II'
+  ]);
 }
