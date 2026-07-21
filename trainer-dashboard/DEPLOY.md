@@ -26,6 +26,7 @@ Lade den kompletten Ordner `trainer-dashboard/` in dein Webverzeichnis, z. B. na
   config.js            ← aus config.js.sample erstellen (Schritt 4)
   backend/
     api.php  respond.php  db.php  lib.php  mailer.php
+    agenda.php  ics.php  cron.php  ai.php  automation.php
     config.php          ← aus config.sample.php erstellen (Schritt 3)
     .htaccess  schema.sql
 ```
@@ -44,7 +45,8 @@ Lade den kompletten Ordner `trainer-dashboard/` in dein Webverzeichnis, z. B. na
 'mail_mode'   => 'mail',            // erst 'log' zum Testen, dann 'mail' oder 'smtp'
 'anthropic_key' => '',              // Claude-API-Key für KI-Import (leer = aus)
 'cron_key'    => 'ein-zufälliger-wert', // schützt backend/cron.php
-'seed_demo'   => true,              // Beispieldaten beim ersten Start
+'ics_key'     => 'ein-kalender-schluessel', // schützt den iCal-Abo-Link (backend/ics.php)
+'seed_demo'   => true,              // Beispieldaten (inkl. 3 Kunden) beim ersten Start
 ```
 > `config.php` wird durch `.htaccess` vor direktem Zugriff geschützt und ist im
 > Git ausgeschlossen. **Niemals Zugangsdaten committen.**
@@ -132,6 +134,29 @@ Zeitpunkt, Status) — Anfragen, Erinnerungen, Visum-Hinweise und Agenda-Mails a
 Grundlage ist die Tabelle `email_log`, die bei jedem Versand (auch bei `mail_mode='log'`)
 befüllt wird.
 
+## Mehrere Kunden / Projekte
+Jedes Training gehört zu einem **Kunden** (z. B. „ETAF Abu Dhabi", „Saudi-Arabien", „Inland/LKA")
+mit eigener Farbe. Oben rechts schaltest du zwischen **„Alle Kunden"** und einem einzelnen Kunden
+um. Bei „Alle Kunden" zeigt der **Leitstand** je Kunde eine Kachel: wo es brennt (kritisch), was in
+Arbeit und was fertig besetzt ist. Kunden legst du über **⚙ Kunden verwalten** an (Name, Kürzel,
+Farbe, Land); ein Training ordnest du in der Detailansicht per Auswahlfeld einem Kunden zu.
+Die Standard-Installation legt drei Beispiel-Kunden an; bestehende Trainings werden beim ersten
+Start automatisch nach Land zugeordnet.
+
+## Kalender: iCal-Export & Wandkalender
+- **iCal-Datei (.ics)**: Über **⤓ iCal (.ics)** lädst du alle Trainings der aktuellen Kunden-Auswahl
+  als Kalenderdatei herunter (echte Termine aus KW+Jahr, Farbe/Kategorie pro Kunde) und importierst
+  sie in Google/Apple/Outlook.
+- **Abonnierbarer Link (Live)**: Setze `ics_key` in `config.php` und trage in deinem Kalender
+  „Kalender abonnieren" mit dieser URL ein — er aktualisiert sich automatisch:
+  ```
+  https://deine-domain.de/dashboard/backend/ics.php?key=DEIN_ICS_KEY
+  ```
+  Optional nur ein Kunde: `…&client=<client_id>` (z. B. `cl-auh`).
+- **Wandkalender (Druck)**: Über **📅 Wandkalender** öffnet sich eine chronologische, farbcodierte
+  Monatsübersicht — im Querformat zum Ausdrucken und An-die-Wand-hängen.
+
 ## Was später noch dazukommen könnte
 - KI-Auswertung frei geschriebener E-Mail-Antworten (zusätzlich zu den Magic-Link-Buttons).
 - Anbindung an Airline-Buchung / Visum-Dienstleister, Rollen & Audit-Log.
+- 2-Wege-Kalender-Sync (CalDAV) statt reinem Abo-Feed.

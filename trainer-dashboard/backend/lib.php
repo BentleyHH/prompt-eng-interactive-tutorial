@@ -102,9 +102,15 @@ function get_state(): array {
     unset($e);
   }
 
+  $clients=array_map(function($r){
+    return ['id'=>$r['id'],'name'=>$r['name'],'short'=>$r['short'],
+      'color'=>$r['color'],'cal'=>$r['cal'],'country'=>$r['country']];
+  }, q("SELECT * FROM clients ORDER BY sort_order,id")->fetchAll());
+
   $trainings=array_map(function($r) use ($byT){
     return [
-      'id'=>(string)$r['id'], 'topic'=>$r['topic'], 'city'=>$r['city'], 'country'=>$r['country'],
+      'id'=>(string)$r['id'], 'clientId'=>$r['client_id']??null,
+      'topic'=>$r['topic'], 'city'=>$r['city'], 'country'=>$r['country'],
       'kw'=>$r['kw'], 'month'=>$r['month'], 'spec'=>$r['spec'],
       'need'=>(int)$r['need_cnt'], 'participants'=>(int)$r['participants'],
       'travel'=>[
@@ -125,7 +131,7 @@ function get_state(): array {
   }, q("SELECT * FROM templates ORDER BY id")->fetchAll());
 
   return ['ok'=>true,'lang'=>'de','emailLang'=>'en',
-    'trainers'=>$trainers,'trainings'=>$trainings,'templates'=>$templates];
+    'clients'=>$clients,'trainers'=>$trainers,'trainings'=>$trainings,'templates'=>$templates];
 }
 
 /** Platzhalter füllen */

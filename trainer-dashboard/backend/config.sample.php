@@ -61,6 +61,13 @@ return [
   // Schlüssel zum Absichern des Cron-Aufrufs (backend/cron.php?key=...).
   'cron_key' => 'CHANGE_ME_zufälliger_wert',
 
+  // ---- Kalender-Abo (iCal-Feed) -----------------------------------
+  // Schlüssel für den abonnierbaren Kalender-Link:
+  //   backend/ics.php?key=<ics_key>[&client=<client_id>]
+  // Diesen Link in Google/Apple/Outlook als "Kalender abonnieren" eintragen —
+  // er aktualisiert sich automatisch. Leer lassen = Feed deaktiviert.
+  'ics_key' => 'CHANGE_ME_kalender_schluessel',
+
   // ---- Demo-Daten -------------------------------------------------
   // true = beim ersten Start Beispiel-Trainer/-Trainings anlegen.
   // Auf false stellen, sobald du echte Daten importiert hast.

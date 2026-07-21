@@ -1,8 +1,9 @@
 # ETAF Trainer-Koordination
 
-Werkzeug für die Koordination der Abu-Dhabi-Trainings (ca. 20 Trainingswochen über 14 Monate,
-je 5–8 Trainer). Kompletter Ablauf – von der KI-Vorauswahl über die E-Mail-Anfrage bis zum
-automatischen Verfügbarkeits-Rücklauf ins Dashboard.
+Werkzeug für die Koordination der Trainings **über mehrere Kunden/Projekte parallel**
+(z. B. Abu Dhabi, Saudi-Arabien, Inland/LKA) – je Kunde eigene Farbe, plus ein
+**Gesamt-Leitstand** über alle Kunden. Kompletter Ablauf – von der KI-Vorauswahl über die
+E-Mail-Anfrage bis zum automatischen Verfügbarkeits-Rücklauf ins Dashboard.
 
 Läuft in **zwei Modi**:
 
@@ -35,7 +36,18 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
 ## Was der Prototyp zeigt
 
 - **PIN-Login** (6-stellig) als Zugangsschutz
-- **Übersicht** mit KPIs und Besetzungs-Timeline über alle 20 Wochen (Ampel: besetzt / in Arbeit / kritisch)
+- **Mehrere Kunden/Projekte parallel**: jedes Training gehört zu einem Kunden mit eigener Farbe.
+  Kunden-Umschalter oben (**„Alle Kunden"** oder einzeln), Kunden anlegen/umbenennen/umfärben,
+  Training per Klick einem Kunden zuordnen.
+- **Gesamt-Leitstand** (bei „Alle Kunden"): Portfolio-Kachel je Kunde — **wo es brennt**
+  (kritisch), was **in Arbeit** und was **fertig besetzt** ist, mit Mini-Balken; Klick filtert.
+- **Übersicht** mit KPIs und Besetzungs-Timeline (Ampel: besetzt / in Arbeit / kritisch),
+  Timeline & Listen zusätzlich kundenfarbig
+- **Kalender-Export**: **iCal-Datei (.ics)** aller Trainings mit echten Terminen (aus KW+Jahr),
+  Farbe/Kategorie pro Kunde → direkt in Google/Apple/Outlook importierbar; im Live-Betrieb auch
+  als **abonnierbarer Link** (`ics.php`, aktualisiert sich automatisch).
+- **Druckbarer Wandkalender**: chronologische Monatsübersicht, farbcodiert pro Kunde, Querformat
+  zum Ausdrucken/an-die-Wand-hängen.
 - **Trainings** mit Besetzungsstand; Detailansicht je Training
 - **KI-Vorauswahl**: Trainer werden nach Fachgebiet, Region, UAE-Erfahrung, Auslastung &
   Bewertung gerankt (Fit-%). Manuell in Reihenfolge anfragen, Nachrücker rutschen nach
@@ -75,6 +87,10 @@ Rücklauf. Über **◐ Design wechseln** hell/dunkel testen.
 
 | Baustein | Demo | Live (jetzt) | Später |
 |---|---|---|---|
+| Mehrere Kunden | voll (localStorage) | **clients-Tabelle + Zuordnung** | Rollen/Rechte je Kunde |
+| Gesamt-Leitstand | voll | **kundenübergreifende Übersicht** | Auslastungs-/Kostenreport |
+| Kalender-Export | .ics-Download | **.ics + Abo-Link (`ics.php`)** | 2-Wege-Sync (CalDAV) |
+| Wandkalender | Druck (Querformat) | Druck (Querformat) | PDF-Serienexport |
 | Daten | localStorage | **MySQL @ artfiles** | Backups, Rollen |
 | Login | jeder 6-stellige PIN | **PIN serverseitig geprüft + Rate-Limit** | + Magic-Link, Audit-Log |
 | E-Mail | simuliert | **PHP mail() / SMTP** | Vorlagen-Editor je Kampagne |

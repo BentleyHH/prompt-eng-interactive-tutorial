@@ -57,18 +57,44 @@ switch($action){
     q("DELETE FROM trainers WHERE id=?",[$in['id']??0]);
     out(['ok'=>true]);
 
+  /* ---- Kunde anlegen/ändern (Upsert per id) ---- */
+  case 'client.save':
+    require_auth();
+    $cid=$in['id']??''; if($cid==='') fail('Keine Kunden-ID.');
+    $f=[$in['name']??'', $in['short']??'', $in['color']??'#3E4852', $in['cal']??'slategray', $in['country']??''];
+    $ex=q("SELECT id FROM clients WHERE id=?",[$cid])->fetch();
+    if($ex) q("UPDATE clients SET name=?,short=?,color=?,cal=?,country=? WHERE id=?", array_merge($f,[$cid]));
+    else    q("INSERT INTO clients(id,name,short,color,cal,country,sort_order) VALUES(?,?,?,?,?,?, (SELECT COALESCE(MAX(sort_order),0)+1 FROM clients c))",
+              array_merge([$cid],$f));
+    out(['ok'=>true,'id'=>$cid]);
+
+  case 'client.delete':
+    require_auth();
+    $cid=$in['id']??'';
+    $cnt=(int)q("SELECT COUNT(*) c FROM clients")->fetch()['c'];
+    if($cnt<=1) fail('Der letzte Kunde kann nicht entfernt werden.');
+    $fb=q("SELECT id FROM clients WHERE id<>? ORDER BY sort_order,id LIMIT 1",[$cid])->fetch();
+    if($fb) q("UPDATE trainings SET client_id=? WHERE client_id=?",[$fb['id'],$cid]);
+    q("DELETE FROM clients WHERE id=?",[$cid]);
+    out(['ok'=>true]);
+
+  case 'training.setClient':
+    require_auth();
+    q("UPDATE trainings SET client_id=? WHERE id=?",[$in['client']??null, $in['training']??0]);
+    out(['ok'=>true]);
+
   /* ---- Training anlegen/ändern ---- */
   case 'training.save':
     require_auth();
     $id=$in['id']??null;
-    $f=[$in['topic']??'', $in['city']??'', $in['country']??'', $in['kw']??'', $in['month']??'',
+    $f=[$in['clientId']??($in['client']??null), $in['topic']??'', $in['city']??'', $in['country']??'', $in['kw']??'', $in['month']??'',
         $in['spec']??'', (int)($in['need']??5), (int)($in['participants']??0)];
     if($id){
-      q("UPDATE trainings SET topic=?,city=?,country=?,kw=?,month=?,spec=?,need_cnt=?,participants=? WHERE id=?",
+      q("UPDATE trainings SET client_id=?,topic=?,city=?,country=?,kw=?,month=?,spec=?,need_cnt=?,participants=? WHERE id=?",
         array_merge($f,[$id]));
     } else {
-      q("INSERT INTO trainings(topic,city,country,kw,month,spec,need_cnt,participants,created_at)
-         VALUES(?,?,?,?,?,?,?,?,?)", array_merge($f,[now()]));
+      q("INSERT INTO trainings(client_id,topic,city,country,kw,month,spec,need_cnt,participants,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?)", array_merge($f,[now()]));
       $id=db()->lastInsertId();
     }
     out(['ok'=>true,'id'=>(string)$id]);

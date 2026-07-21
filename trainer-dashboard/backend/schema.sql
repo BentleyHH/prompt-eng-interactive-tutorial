@@ -32,12 +32,20 @@ CREATE TABLE IF NOT EXISTS trainers (
   created_at VARCHAR(20)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS clients (
+  id VARCHAR(24) PRIMARY KEY,
+  name VARCHAR(160), short VARCHAR(24), color VARCHAR(16),
+  cal VARCHAR(24), country VARCHAR(16), sort_order INT DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS trainings (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  client_id VARCHAR(24),
   topic VARCHAR(190), city VARCHAR(96), country VARCHAR(16),
   kw VARCHAR(24), month VARCHAR(24), spec VARCHAR(96),
   need_cnt INT DEFAULT 5, participants INT DEFAULT 0,
-  created_at VARCHAR(20)
+  created_at VARCHAR(20),
+  INDEX(client_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS templates (

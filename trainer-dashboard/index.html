@@ -162,6 +162,18 @@
   .kpi.g .rail{background:var(--good)} .kpi.w .rail{background:var(--warn)}
   .kpi.c .rail{background:var(--crit)} .kpi.i .rail{background:var(--info)}
 
+  /* client portfolio cards */
+  .pf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  .pf{position:relative;overflow:hidden;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:var(--radius);padding:14px 15px 13px;cursor:pointer;transition:.12s}
+  .pf:hover{border-color:var(--brand);transform:translateY(-2px);box-shadow:var(--shadow)}
+  .pf-rail{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .pf-top{display:flex;align-items:center;gap:8px;font-size:14.5px}
+  .pf-dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .pf .bar{height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-bottom:8px}
+  .pf .bar i{display:block;height:100%;border-radius:4px}
+  .pf-kv{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600}
+
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
     box-shadow:var(--shadow);margin-bottom:20px}
   .panel-h{display:flex;align-items:center;gap:10px;padding:15px 18px;border-bottom:1px solid var(--line)}
@@ -276,8 +288,8 @@
   }
 
   /* ============ AGENDA PRINT OVERLAY ============ */
-  #agendaPrint{position:fixed;inset:0;z-index:70;background:var(--bg);overflow:auto;display:none;padding:22px}
-  #agendaPrint.on{display:block}
+  .printable{position:fixed;inset:0;z-index:70;background:var(--bg);overflow:auto;display:none;padding:22px}
+  .printable.on{display:block}
   .ag-toolbar{max-width:800px;margin:0 auto 12px;display:flex;justify-content:flex-end;gap:10px}
   .ag-sheet{max-width:800px;margin:0 auto;background:var(--panel);border:1px solid var(--line);
     border-radius:14px;padding:34px 38px;box-shadow:var(--shadow)}
@@ -293,13 +305,34 @@
   .ag-table td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
   .ag-table td.ag-t{white-space:nowrap;color:var(--brand);font-weight:700;width:110px}
   .ag-table td.ag-d{white-space:nowrap;color:var(--muted);width:66px}
+
+  /* ============ WANDKALENDER ============ */
+  .cal-sheet{max-width:900px;margin:0 auto;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:30px 34px;box-shadow:var(--shadow)}
+  .cal-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 18px;font-size:12.5px;color:var(--muted)}
+  .cal-lg{display:inline-flex;align-items:center;gap:6px}
+  .cal-lg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .cal-month{margin-bottom:16px;break-inside:avoid}
+  .cal-month h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--brand);
+    border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:8px}
+  .cal-block{display:flex;align-items:center;gap:12px;padding:8px 12px;margin-bottom:6px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:9px;break-inside:avoid}
+  .cal-dt{flex:0 0 66px;font-weight:700;font-size:13px;color:var(--ink);line-height:1.2}
+  .cal-dt span{display:block;font-size:10.5px;color:var(--faint);font-weight:600}
+  .cal-main{flex:1;min-width:0}
+  .cal-tt{font-weight:640;font-size:13.5px}
+  .cal-ss{font-size:12px;color:var(--muted)}
+  .cal-bd{flex:none;font-family:var(--mono);font-weight:700;font-size:13px}
+  @media(min-width:720px){.cal-sheet .cal-month{columns:1}}
+
   @media print{
-    :root{--bg:#fff;--panel:#fff;--ink:#242b31;--muted:#5c666e;--line:#e2e5e8;--brand:#3e4852}
+    :root{--bg:#fff;--panel:#fff;--panel-2:#f6f7f8;--ink:#242b31;--muted:#5c666e;--faint:#8a939a;--line:#e2e5e8;--brand:#3e4852}
     body>*{display:none!important}
-    #agendaPrint{display:block!important;position:static;padding:0;background:#fff;overflow:visible}
+    .printable.on{display:block!important;position:static;padding:0;background:#fff;overflow:visible}
     .ag-toolbar{display:none!important}
-    .ag-sheet{border:none;border-radius:0;box-shadow:none;padding:0;max-width:none}
-    @page{margin:16mm}
+    .ag-sheet,.cal-sheet{border:none;border-radius:0;box-shadow:none;padding:0;max-width:none}
+    .cal-block{background:#fff}
+    .cal-grid{columns:2;column-gap:26px}
   }
 </style>
 
@@ -338,6 +371,7 @@
         <div class="sub" id="ts"></div>
       </div>
       <div class="spacer"></div>
+      <span id="clientBar"></span>
       <button class="btn amber" onclick="openQuick()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
         <span id="qrLabel">Schnell-Ersatz</span>
@@ -374,13 +408,25 @@
 <div id="toast"></div>
 
 <!-- Druckbare Reise-Agenda (Overlay) -->
-<div id="agendaPrint">
+<div id="agendaPrint" class="printable">
   <div class="ag-toolbar">
     <button class="btn primary" onclick="window.print()">🖨 <span id="agPrintLbl">Drucken</span></button>
     <button class="btn" onclick="closeAgenda()">✕</button>
   </div>
   <div id="agendaBody"></div>
 </div>
+
+<!-- Druckbarer Wandkalender (Overlay), farbcodiert nach Kunde -->
+<div id="calPrint" class="printable">
+  <div class="ag-toolbar">
+    <button class="btn primary" onclick="window.print()">🖨 <span id="agPrintLbl2">Drucken</span></button>
+    <button class="btn" onclick="closeCalendar()">✕</button>
+  </div>
+  <div id="calBody"></div>
+</div>
+
+<!-- dynamische Seitenausrichtung für den Druck (Agenda=Hoch, Kalender=Quer) -->
+<style id="pageOrient">@page{size:A4 portrait;margin:16mm}</style>
 
 <!-- Optional: nur auf dem Server vorhanden. Aktiviert den Live-Modus (PHP+MySQL). -->
 <script src="config.js" onerror="/* Demo-Modus: keine config.js vorhanden */"></script>
@@ -424,6 +470,7 @@ async function apiCall(action,payload){
 async function pull(){
   const d=await apiCall("state");
   S.trainers=d.trainers; S.trainings=d.trainings; S.templates=d.templates;
+  if(d.clients&&d.clients.length)S.clients=d.clients;
 }
 function startPolling(){
   if(!LIVE||pollTimer)return;
@@ -452,7 +499,7 @@ const L={
   theme:"Design wechseln", lock:"Sperren",
   nav_dash:"Übersicht", nav_trainings:"Trainings", nav_trainers:"Trainer", nav_templates:"Vorlagen",
   quickReplace:"Schnell-Ersatz", import:"Import",
-  tp_dash:"Übersicht", tp_dashSub:"Abu-Dhabi-Programm · 20 Trainings · nächste 14 Monate",
+  tp_dash:"Übersicht", tp_dashSub:"Leitstand über alle Kunden · Trainings & Besetzung",
   tp_trn:"Trainings", tp_trnSub:"Alle geplanten Einsätze und ihr Besetzungsstand",
   tp_pool:"Trainerpool", tp_poolSub:"Profile, Kontaktdaten und Spezialisierungen",
   tp_tpl:"E-Mail-Vorlagen", tp_tplSub:"Wiederverwendbare Textbausteine mit Platzhaltern",
@@ -534,7 +581,21 @@ const L={
   nav_emails:"Protokoll", tp_emails:"E-Mail-Protokoll", tp_emailsSub:"Alle versendeten Anfragen, Erinnerungen und Agenden",
   emNone:"Noch keine E-Mails versendet.", em_sent:"gesendet", em_logged:"protokolliert", em_failed:"fehlgeschlagen",
   agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
-  resetToast:"Demo-Daten zurückgesetzt"
+  resetToast:"Demo-Daten zurückgesetzt",
+  clientAll:"Alle Kunden", clientLbl:"Kunde", clientsWord:"Kunden",
+  pfTitle:"Kunden-Übersicht", pfSub:"Status je Kunde — wo es brennt, was schon steht",
+  pf_done:"besetzt", pf_prog:"in Arbeit", pf_crit:"kritisch",
+  pfTrainings:n=>`${n} Trainings`, pfShowAll:"Alle Trainings dieses Kunden",
+  manageClients:"Kunden verwalten", addClient:"+ Neuer Kunde",
+  clientName:"Name", clientShort:"Kürzel", clientColor:"Farbe", clientCountry:"Land (Code)",
+  clientSaved:"Kunde gespeichert", clientDeleted:"Kunde entfernt", clientDelConfirm:"Kunde wirklich entfernen? Trainings bleiben erhalten.",
+  clientAssign:"Kunde zuordnen", clientNoDel:"Der letzte Kunde kann nicht entfernt werden.",
+  exportTitle:"Export", exportCal:"📅 Wandkalender", exportIcs:"⤓ iCal (.ics)",
+  exportHint:"Kalender & Export beziehen sich auf die aktuelle Kunden-Auswahl.",
+  calTitle:"Trainings-Kalender", calSub:"Alle Einsätze chronologisch · Farbe = Kunde",
+  calPrint:"Drucken", calEmpty:"Keine Trainings für diese Auswahl.",
+  icsToast:"Kalenderdatei (.ics) erzeugt — in Google/Apple/Outlook importierbar",
+  icsSubHint:"Live-Abo-Link (aktualisiert sich automatisch): backend/ics.php"
  },
  en:{
   subTitle:"Trainer Coordination", welcome:"Welcome back",
@@ -544,7 +605,7 @@ const L={
   theme:"Switch theme", lock:"Lock",
   nav_dash:"Overview", nav_trainings:"Trainings", nav_trainers:"Trainers", nav_templates:"Templates",
   quickReplace:"Quick replacement", import:"Import",
-  tp_dash:"Overview", tp_dashSub:"Abu Dhabi programme · 20 trainings · next 14 months",
+  tp_dash:"Overview", tp_dashSub:"Control centre across all clients · trainings & staffing",
   tp_trn:"Trainings", tp_trnSub:"All planned sessions and their staffing",
   tp_pool:"Trainer pool", tp_poolSub:"Profiles, contacts and specialisations",
   tp_tpl:"Email templates", tp_tplSub:"Reusable text blocks with placeholders",
@@ -626,7 +687,21 @@ const L={
   nav_emails:"Log", tp_emails:"Email log", tp_emailsSub:"All sent requests, reminders and agendas",
   emNone:"No emails sent yet.", em_sent:"sent", em_logged:"logged", em_failed:"failed",
   agendaHint:"The trainer receives this overview by email (print link) and can print it.",
-  resetToast:"Demo data reset"
+  resetToast:"Demo data reset",
+  clientAll:"All clients", clientLbl:"Client", clientsWord:"Clients",
+  pfTitle:"Client overview", pfSub:"Status per client — what's on fire, what's done",
+  pf_done:"staffed", pf_prog:"in progress", pf_crit:"critical",
+  pfTrainings:n=>`${n} trainings`, pfShowAll:"All trainings for this client",
+  manageClients:"Manage clients", addClient:"+ New client",
+  clientName:"Name", clientShort:"Short", clientColor:"Colour", clientCountry:"Country (code)",
+  clientSaved:"Client saved", clientDeleted:"Client removed", clientDelConfirm:"Really remove this client? Trainings are kept.",
+  clientAssign:"Assign client", clientNoDel:"The last client cannot be removed.",
+  exportTitle:"Export", exportCal:"📅 Wall calendar", exportIcs:"⤓ iCal (.ics)",
+  exportHint:"Calendar & export refer to the current client selection.",
+  calTitle:"Trainings calendar", calSub:"All assignments chronologically · colour = client",
+  calPrint:"Print", calEmpty:"No trainings for this selection.",
+  icsToast:"Calendar file (.ics) created — importable into Google/Apple/Outlook",
+  icsSubHint:"Live subscription link (auto-updating): backend/ics.php"
  }
 };
 function t(k,...a){const v=(L[S.lang]||L.de)[k]; return typeof v==="function"?v(...a):(v!=null?v:k);}
@@ -656,8 +731,17 @@ function seedTrainers(){
     };
   });
 }
+/* Kunden / Projekte — mehrere Auftraggeber parallel, je eigene Farbe */
+function seedClients(){
+  return [
+    {id:"cl-auh", name:"ETAF Abu Dhabi", short:"AUH", color:"#B23A42", cal:"firebrick", country:"UAE"},
+    {id:"cl-ksa", name:"Saudi-Arabien",  short:"KSA", color:"#3F7A5E", cal:"seagreen",  country:"KSA"},
+    {id:"cl-inl", name:"Inland / LKA",   short:"INL", color:"#4E6E8E", cal:"steelblue", country:"DE"}
+  ];
+}
 function seedTrainings(){
-  const locs=[["Abu Dhabi","UAE"],["München","DE"],["Frankfurt","DE"],["Abu Dhabi","UAE"],["Hamburg","DE"],["Wien","AT"],["Abu Dhabi","UAE"],["Zürich","CH"]];
+  const locs=[["Abu Dhabi","UAE"],["Riyadh","KSA"],["München","DE"],["Abu Dhabi","UAE"],["Jeddah","KSA"],["Frankfurt","DE"],["Abu Dhabi","UAE"],["Hamburg","DE"]];
+  const cls =["cl-auh","cl-ksa","cl-inl","cl-auh","cl-ksa","cl-inl","cl-auh","cl-inl"];
   const topics=["Guided Surgery Level II","DNA-Diagnostik Basiskurs","Fingerprint Dental Advanced","Implantologie Masterclass","Digitale Abformung","Prothetik Kompakt","Full-Arch Workshop","Parodontologie Update"];
   const need=[6,5,8,7,5,6,8,5];
   const emptyTravel=()=>({venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]});
@@ -678,7 +762,7 @@ function seedTrainings(){
         {day:"Tag 2",time:"12:30",title:"Q&A & Zertifikatsübergabe"}];
     }
     return {
-      id:uid("tg"), topic:t, city:locs[i][0], country:locs[i][1],
+      id:uid("tg"), clientId:cls[i], topic:t, city:locs[i][0], country:locs[i][1],
       kw:"KW "+kw, month:["Sep","Okt","Dez","Feb","Mär","Mai","Jul","Sep"][i]+" ’2"+(i<3?"6":"7"),
       spec:SPEC[i%SPEC.length], need:need[i],
       participants:12+i*2, travel,
@@ -716,11 +800,15 @@ function load(){
       r.settings=r.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false};
       r.emails=r.emails||[];
       if(!r.templates||!r.templates[0]||!r.templates[0].de)r.templates=TEMPLATES;
-      (r.trainings||[]).forEach(t=>{ if(!t.travel)t.travel={venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]}; });
+      if(!r.clients||!r.clients.length)r.clients=seedClients();
+      if(!("clientFilter"in r))r.clientFilter=null;
+      (r.trainings||[]).forEach(t=>{ if(!t.travel)t.travel={venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]};
+        if(!t.clientId)t.clientId=r.clients[0].id; });
       return r;
     }
   }catch(e){}
-  return {lang:"de", emailLang:"en", trainers:seedTrainers(), trainings:seedTrainings(),
+  return {lang:"de", emailLang:"en", clients:seedClients(), clientFilter:null,
+    trainers:seedTrainers(), trainings:seedTrainings(),
     templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false}, emails:[]};
 }
 function save(){localStorage.setItem("etaf_demo",JSON.stringify(S));}
@@ -758,6 +846,23 @@ function statusOf(tg){
 const SPCLS={asked:"info",yes:"good",maybe:"warn",no:"crit",confirmed:"good"};
 const spCls=s=>SPCLS[s];
 const spLabel=s=>t("sp_"+s);
+
+/* ---------- KUNDEN / CLIENTS ---------- */
+const VISA_COUNTRIES=["UAE","KSA"];
+function needsVisa(c){return VISA_COUNTRIES.includes(c);}
+function clientOf(tg){return (S.clients||[]).find(c=>c.id===tg.clientId)||null;}
+function clientColor(tg){const c=clientOf(tg);return c?c.color:"var(--brand-solid)";}
+function activeClient(){return S.clientFilter?(S.clients||[]).find(c=>c.id===S.clientFilter)||null:null;}
+function curTrainings(){return S.clientFilter?S.trainings.filter(t=>t.clientId===S.clientFilter):S.trainings;}
+function clientStats(cid){
+  const list=S.trainings.filter(t=>t.clientId===cid);
+  const good=list.filter(t=>statusOf(t).cls==="good").length;
+  const crit=list.filter(t=>statusOf(t).cls==="crit").length;
+  const open=list.reduce((a,t)=>a+rosterStats(t).asked,0);
+  const cls=crit?"crit":(good===list.length&&list.length)?"good":"warn";
+  const key=crit?"pf_crit":(good===list.length&&list.length)?"pf_done":"pf_prog";
+  return {list,total:list.length,good,crit,open,cls,key};
+}
 
 /* ============================================================
    LANGUAGE + STATIC TEXT
@@ -852,7 +957,7 @@ function titleFor(r){
 }
 function go(r){route=r;render();}
 function render(){
-  buildNav();
+  buildNav();buildClientBar();
   $$(".view").forEach(v=>v.classList.remove("on"));
   if(route==="dash"){renderDash();$("#v-dash").classList.add("on");}
   else if(route==="trainings"){renderTrainings();$("#v-trainings").classList.add("on");}
@@ -870,26 +975,47 @@ function render(){
    DASHBOARD
    ============================================================ */
 function renderDash(){
-  const T=S.trainings;
+  const T=curTrainings();
   const full=T.filter(t=>statusOf(t).cls==="good").length;
   const crit=T.filter(t=>statusOf(t).cls==="crit").length;
   const openReq=T.reduce((a,t)=>a+rosterStats(t).asked,0);
 
   const kpis=`<div class="kpis">
-    <div class="kpi i"><span class="rail"></span><div class="lab">${t("kpiTotal")}</div><div class="val tnum">${T.length}<small>${t("kpiPlanned")}</small></div></div>
+    <div class="kpi i"><span class="rail"></span><div class="lab">${t("kpiTotal")}</div><div class="val tnum">${T.length}</div></div>
     <div class="kpi g"><span class="rail"></span><div class="lab">${t("kpiFull")}</div><div class="val tnum">${full}</div></div>
     <div class="kpi w"><span class="rail"></span><div class="lab">${t("kpiOpen")}</div><div class="val tnum">${openReq}</div></div>
     <div class="kpi c"><span class="rail"></span><div class="lab">${t("kpiUnder")}</div><div class="val tnum">${crit}</div></div>
   </div>`;
 
+  /* Kunden-Übersicht (Leitstand) — nur bei „Alle Kunden“ */
+  let portfolio="";
+  if(!S.clientFilter && (S.clients||[]).length){
+    const cards=(S.clients||[]).map(c=>{const cs=clientStats(c.id);
+      const pct=cs.total?Math.round((cs.good/cs.total)*100):0;
+      return `<div class="pf" onclick="setClientFilter('${c.id}')">
+        <span class="pf-rail" style="background:${c.color}"></span>
+        <div class="pf-top"><span class="pf-dot" style="background:${c.color}"></span>
+          <b>${esc(c.name)}</b><span class="spacer"></span><span class="pill ${cs.cls}">${t(cs.key)}</span></div>
+        <div class="meta" style="margin:2px 0 8px">${t("pfTrainings",cs.total)}${c.country?" · "+esc(c.country):""}</div>
+        <div class="bar"><i style="width:${pct}%;background:${c.color}"></i></div>
+        <div class="pf-kv"><span>✅ ${cs.good} ${t("pf_done")}</span><span>… ${cs.open} ${t("kpiOpen").toLowerCase()}</span><span style="color:var(--crit)">! ${cs.crit} ${t("pf_crit")}</span></div>
+      </div>`;}).join("");
+    portfolio=`<div class="panel">
+      <div class="panel-h"><h3>${t("pfTitle")}</h3><div class="sub">${t("pfSub")}</div>
+        <div class="spacer"></div>
+        <button class="btn sm" onclick="openClients()">⚙ ${t("manageClients")}</button></div>
+      <div class="panel-b"><div class="pf-grid">${cards}</div></div>
+    </div>`;
+  }
+
   const cells=T.map(tg=>{
-    const st=statusOf(tg);const r=rosterStats(tg);
+    const st=statusOf(tg);const r=rosterStats(tg);const cl=clientOf(tg);
     const pct=Math.min(100,Math.round((r.yes/r.need)*100));
     const col=st.cls==="good"?"var(--good)":st.cls==="warn"?"var(--warn)":"var(--crit)";
-    return `<div class="wk" onclick="openDetail('${tg.id}')">
+    return `<div class="wk" onclick="openDetail('${tg.id}')" style="border-top:3px solid ${cl?cl.color:'var(--line)'}">
       <span class="flag" style="background:${col}"></span>
       <div class="kw">${tg.kw} · ${tg.month}</div>
-      <div class="loc">${tg.city}</div>
+      <div class="loc">${tg.city}${cl?` <span class="tag" style="border-color:${cl.color};color:${cl.color};padding:0 5px">${esc(cl.short||'')}</span>`:''}</div>
       <div class="bar"><i style="width:${pct}%;background:${col}"></i></div>
       <div class="cnt"><span>${tg.topic.slice(0,16)}${tg.topic.length>16?'…':''}</span><span class="tnum">${r.yes}/${r.need}</span></div>
     </div>`;
@@ -898,12 +1024,16 @@ function renderDash(){
   const timeline=`<div class="panel">
     <div class="panel-h"><h3>${t("tlTitle")}</h3><div class="sub">${t("tlSub")}</div>
       <div class="spacer"></div>
-      <div class="legend"><span><i style="background:var(--good)"></i>${t("legFilled")}</span><span><i style="background:var(--warn)"></i>${t("legProg")}</span><span><i style="background:var(--crit)"></i>${t("legCrit")}</span></div>
+      <button class="btn sm" onclick="openCalendar()">${t("exportCal")}</button>
+      <button class="btn sm" onclick="exportIcs()">${t("exportIcs")}</button>
     </div>
-    <div class="panel-b"><div class="timeline">${cells}</div></div>
+    <div class="panel-b">
+      <div class="legend" style="margin-bottom:12px"><span><i style="background:var(--good)"></i>${t("legFilled")}</span><span><i style="background:var(--warn)"></i>${t("legProg")}</span><span><i style="background:var(--crit)"></i>${t("legCrit")}</span><span class="spacer"></span><span style="color:var(--faint)">${t("exportHint")}</span></div>
+      <div class="timeline">${cells}</div>
+    </div>
   </div>`;
 
-  const need=T.map(tg=>({tg,s:statusOf(tg),r:rosterStats(tg)}))
+  const need=T.map(tg=>({tg,s:statusOf(tg),r:rosterStats(tg),c:clientOf(tg)}))
     .filter(x=>x.s.cls!=="good")
     .sort((a,b)=>(a.s.cls==="crit"?0:1)-(b.s.cls==="crit"?0:1));
   const att=`<div class="panel">
@@ -912,7 +1042,7 @@ function renderDash(){
       <div class="att">
         <div class="ic ${x.s.cls==='crit'?'c':'w'}">${x.s.cls==='crit'?'!':'…'}</div>
         <div class="rowgrow">
-          <div class="nm">${x.tg.topic}</div>
+          <div class="nm">${x.tg.topic}${x.c?` <span class="tag" style="border-color:${x.c.color};color:${x.c.color}">${esc(x.c.short||x.c.name)}</span>`:''}</div>
           <div class="meta">${x.tg.city} · ${x.tg.kw} · ${x.r.yes}/${x.r.need} ${t("confirmedShort")}${x.r.asked?` · ${x.r.asked} ${t("askedShort")}`:''}</div>
         </div>
         <span class="pill ${x.s.cls}">${t(x.s.key)}</span>
@@ -920,19 +1050,20 @@ function renderDash(){
       </div>`).join(""):`<div class="empty">${t("attAll")}</div>`}</div>
   </div>`;
 
-  $("#v-dash").innerHTML=kpis+timeline+att;
+  $("#v-dash").innerHTML=kpis+portfolio+timeline+att;
 }
 
 /* ============================================================
    TRAININGS LIST
    ============================================================ */
 function renderTrainings(){
-  const rows=S.trainings.map(tg=>{
-    const st=statusOf(tg);const r=rosterStats(tg);
+  const list=curTrainings();
+  const rows=list.map(tg=>{
+    const st=statusOf(tg);const r=rosterStats(tg);const cl=clientOf(tg);
     return `<div class="row">
-      <div class="av" style="background:var(--brand-solid)">${tg.city.slice(0,2).toUpperCase()}</div>
+      <div class="av" style="background:${cl?cl.color:'var(--brand-solid)'}">${tg.city.slice(0,2).toUpperCase()}</div>
       <div class="rowgrow">
-        <div class="nm">${tg.topic}</div>
+        <div class="nm">${tg.topic}${cl?` <span class="tag" style="border-color:${cl.color};color:${cl.color}">${esc(cl.name)}</span>`:''}</div>
         <div class="meta">${tg.city}, ${tg.country} · ${tg.kw} · ${tg.month} · ${t("participants",tg.participants)}</div>
         <div class="tags"><span class="tag">${tg.spec}</span><span class="tag">${t("trainersC",r.yes,r.need)}</span></div>
       </div>
@@ -940,7 +1071,15 @@ function renderTrainings(){
       <button class="btn sm primary" onclick="openDetail('${tg.id}')">${t("plan")}</button>
     </div>`;
   }).join("");
-  $("#v-trainings").innerHTML=`<div class="panel"><div class="panel-b" style="padding:6px 18px">${rows}</div></div>`;
+  $("#v-trainings").innerHTML=`
+    <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="rowgrow"><b>${activeClient()?esc(activeClient().name):t("clientAll")}</b>
+        <span class="meta">· ${t("pfTrainings",list.length)}</span></div>
+      <button class="btn sm" onclick="openClients()">⚙ ${t("manageClients")}</button>
+      <button class="btn sm" onclick="openCalendar()">${t("exportCal")}</button>
+      <button class="btn sm" onclick="exportIcs()">${t("exportIcs")}</button>
+    </div></div>
+    <div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">${t("calEmpty")}</div>`}</div></div>`;
 }
 
 /* ============================================================
@@ -961,6 +1100,10 @@ function renderDetail(){
     <div class="panel-h"><h3>${t("dTraining")}</h3><div class="spacer"></div><span class="pill ${st.cls}">${t(st.key)}</span></div>
     <div class="panel-b">
       <div class="kv"><span class="k">${t("kThema")}</span><span class="v">${tg.topic}</span></div>
+      <div class="kv"><span class="k">${t("clientLbl")}</span><span class="v">
+        <select onchange="assignClient('${tg.id}',this.value)" style="width:auto;padding:4px 8px;font-weight:600">
+          ${(S.clients||[]).map(c=>`<option value="${c.id}" ${c.id===tg.clientId?'selected':''}>${esc(c.name)}</option>`).join("")}
+        </select></span></div>
       <div class="kv"><span class="k">${t("kOrt")}</span><span class="v">${tg.city}, ${tg.country}</span></div>
       <div class="kv"><span class="k">${t("kZeit")}</span><span class="v">${tg.kw} · ${tg.month}</span></div>
       <div class="kv"><span class="k">${t("kSchwer")}</span><span class="v">${tg.spec}</span></div>
@@ -1014,7 +1157,7 @@ function rosterRow(x,tg){
     <div class="rowgrow"><div class="nm">${x.tr.name}</div>
       <div class="meta">${x.tr.spec[0]} · ${x.tr.region}</div></div>
     ${x.reminded?`<span class="tag" style="border-color:var(--warn);color:var(--warn)">${t("reminded")}</span>`:''}
-    ${(tg.country==='UAE'&&(x.status==='yes'||x.status==='confirmed'))?visaChip(x):''}
+    ${(needsVisa(tg.country)&&(x.status==='yes'||x.status==='confirmed'))?visaChip(x):''}
     <span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${acts}
   </div>`;
 }
@@ -1319,7 +1462,7 @@ async function saveTravel(){
 function openTrainerTravel(tgId,trId){
   travelTg=tgId; const tr=S.trainers.find(x=>x.id===trId);
   const e=tvGet(tgId).roster.find(r=>r.trainerId===trId)||{}; const fl=e.flight||{};
-  const uae=(S.trainings.find(x=>x.id===tgId)||{}).country==='UAE';
+  const uae=needsVisa((S.trainings.find(x=>x.id===tgId)||{}).country);
   $("#sheetTitle").textContent=t("tvFlightTitle",tr.name);
   $("#sheetBody").innerHTML=`
     ${tvField("flArr",t("tvArrival"),fl.arrival)}
@@ -1361,6 +1504,7 @@ function openAgenda(tgId,trId){
   const e=tg.roster.find(r=>r.trainerId===trId)||{};
   $("#agPrintLbl").textContent=t("printBtn");
   $("#agendaBody").innerHTML=buildAgendaHTML(tg,tr,e.flight||{});
+  setPageOrient("portrait");
   $("#agendaPrint").classList.add("on");
 }
 function closeAgenda(){$("#agendaPrint").classList.remove("on");}
@@ -1380,7 +1524,7 @@ function buildAgendaHTML(tg,tr,fl){
     <div class="ag-bar"></div>
     <div class="ag-kv">${row(t("agFor"),tr?tr.name:"")}${row(t("tvVenue"),v.venue)}</div>
     <div class="ag-h2">${t("tvFlightHead")}</div>
-    <div class="ag-kv">${row(t("tvArrival"),fl.arrival)}${row(t("tvDeparture"),fl.departure)}${row(t("tvFlightOut"),fl.flightOut)}${row(t("tvFlightReturn"),fl.flightReturn)}${row(t("tvRoom"),fl.room)}${(tg.country==='UAE'||fl.passportExpiry||(fl.visaStatus&&fl.visaStatus!=='none'))?row(t("passportLbl"),fl.passportExpiry)+rowH(t("visaLbl"),t("visa_"+(fl.visaStatus||'none'))):""}${fl.visaNotes?row(t("visaNotesLbl"),fl.visaNotes):""}${fl.notes?row(t("tvNotes"),fl.notes):""}</div>
+    <div class="ag-kv">${row(t("tvArrival"),fl.arrival)}${row(t("tvDeparture"),fl.departure)}${row(t("tvFlightOut"),fl.flightOut)}${row(t("tvFlightReturn"),fl.flightReturn)}${row(t("tvRoom"),fl.room)}${(needsVisa(tg.country)||fl.passportExpiry||(fl.visaStatus&&fl.visaStatus!=='none'))?row(t("passportLbl"),fl.passportExpiry)+rowH(t("visaLbl"),t("visa_"+(fl.visaStatus||'none'))):""}${fl.visaNotes?row(t("visaNotesLbl"),fl.visaNotes):""}${fl.notes?row(t("tvNotes"),fl.notes):""}</div>
     <div class="ag-h2">${t("tvLogHead")}</div>
     <div class="ag-kv">${rowH(t("tvHotel"),esc([v.hotel,v.hotelAddr].filter(Boolean).join(" · ")))}${row(t("tvMeet"),v.meetingPoint)}${rowH(t("tvContact"),esc([v.contactName,v.contactPhone].filter(Boolean).join(" · ")))}${row(t("tvDress"),v.dresscode)}${row(t("tvPerDiem"),v.perDiem)}${v.notes?row(t("tvNotes"),v.notes):""}</div>
     ${items?`<div class="ag-h2">${t("agTitle")}</div><table class="ag-table">${items}</table>`:""}
@@ -1443,6 +1587,140 @@ async function renderEmails(){
       <span class="pill ${stCls[e.status]||'neutral'}">${t("em_"+e.status)!=="em_"+e.status?t("em_"+e.status):e.status}</span>
     </div>`).join("");
   $("#v-emails").innerHTML=`<div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">${t("emNone")}</div>`}</div></div>`;
+}
+
+/* ============================================================
+   KUNDEN-UMSCHALTER + EXPORT (iCal + druckbarer Wandkalender)
+   ============================================================ */
+function buildClientBar(){
+  const el=$("#clientBar"); if(!el)return;
+  const opts=`<option value="">${t("clientAll")}</option>`+
+    (S.clients||[]).map(c=>`<option value="${c.id}" ${S.clientFilter===c.id?'selected':''}>${esc(c.name)}</option>`).join("");
+  el.innerHTML=`<select id="clientSel" onchange="setClientFilter(this.value)" title="${t("clientLbl")}" style="min-width:150px;max-width:210px">${opts}</select>`;
+}
+function setClientFilter(v){S.clientFilter=v||null;save();buildClientBar();render();}
+
+function trainingYear(tg){const m=(tg.month||"").match(/(\d{2})\D*$/); return m?2000+parseInt(m[1],10):2026;}
+function trainingKw(tg){return parseInt((tg.kw||"").replace(/\D/g,""))||1;}
+function isoWeekMonday(year,week){
+  const s=new Date(Date.UTC(year,0,1+(week-1)*7)); const dow=s.getUTCDay();
+  if(dow<=4)s.setUTCDate(s.getUTCDate()-dow+1); else s.setUTCDate(s.getUTCDate()+8-dow);
+  return s;
+}
+function trainingDates(tg){const start=isoWeekMonday(trainingYear(tg),trainingKw(tg));
+  const end=new Date(start); end.setUTCDate(end.getUTCDate()+2); return {start,end};}
+const MONTHS_DE=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const MONTHS_EN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function pad2(n){return String(n).padStart(2,"0");}
+function icsDate(d){return d.getUTCFullYear()+pad2(d.getUTCMonth()+1)+pad2(d.getUTCDate());}
+function icsEsc(s){return String(s||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");}
+function icsStamp(){try{return new Date().toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";}catch(e){return "20260101T000000Z";}}
+function sortedForCal(){return curTrainings().slice().sort((a,b)=>(trainingYear(a)-trainingYear(b))||(trainingKw(a)-trainingKw(b)));}
+function buildICS(){
+  const stamp=icsStamp();
+  const lines=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//ETAF//Trainer-Koordination//DE","CALSCALE:GREGORIAN","METHOD:PUBLISH",
+    "X-WR-CALNAME:"+icsEsc("ETAF Trainings"+(activeClient()?" · "+activeClient().name:""))];
+  sortedForCal().forEach(tg=>{
+    const d=trainingDates(tg), cl=clientOf(tg), r=rosterStats(tg), st=statusOf(tg);
+    lines.push("BEGIN:VEVENT","UID:"+tg.id+"@etaf-trainer","DTSTAMP:"+stamp,
+      "DTSTART;VALUE=DATE:"+icsDate(d.start),"DTEND;VALUE=DATE:"+icsDate(d.end),
+      "SUMMARY:"+icsEsc((cl?cl.short+" · ":"")+tg.topic),
+      "LOCATION:"+icsEsc(tg.city+", "+tg.country),
+      "CATEGORIES:"+icsEsc(cl?cl.name:"ETAF"));
+    if(cl&&cl.cal)lines.push("COLOR:"+cl.cal);
+    lines.push("DESCRIPTION:"+icsEsc(tg.spec+" — "+r.yes+"/"+r.need+" "+t("confirmedShort")+" · "+t(st.key)+(cl?" · "+cl.name:"")),"END:VEVENT");
+  });
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n");
+}
+function download(name,text,mime){
+  try{const b=new Blob([text],{type:mime||"text/plain"});const u=URL.createObjectURL(b);
+    const a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();
+    a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);}catch(e){toast("Export: "+e.message,"crit");}
+}
+function exportIcs(){
+  const suffix=activeClient()?("-"+(activeClient().short||"kunde").toLowerCase()):"-alle";
+  download("etaf-trainings"+suffix+".ics",buildICS(),"text/calendar;charset=utf-8");
+  toast(t("icsToast"),"good");
+}
+function setPageOrient(o){const el=$("#pageOrient");
+  if(el)el.textContent="@page{size:A4 "+o+";margin:"+(o==="landscape"?"12mm":"16mm")+"}";}
+function openCalendar(){
+  const M=(S.lang==='de'?MONTHS_DE:MONTHS_EN); const list=sortedForCal();
+  const legend=(S.clients||[]).map(c=>`<span class="cal-lg"><i style="background:${c.color}"></i>${esc(c.name)}</span>`).join("");
+  let body;
+  if(!list.length){ body=`<div class="empty">${t("calEmpty")}</div>`; }
+  else{
+    const groups={};
+    list.forEach(tg=>{const s=trainingDates(tg).start; const key=s.getUTCFullYear()+"-"+pad2(s.getUTCMonth()+1);
+      (groups[key]=groups[key]||{y:s.getUTCFullYear(),m:s.getUTCMonth(),items:[]}).items.push({tg,s});});
+    body="<div class='cal-grid'>"+Object.keys(groups).sort().map(k=>{const g=groups[k];
+      return `<div class="cal-month"><h3>${M[g.m]} ${g.y}</h3>`+
+        g.items.map(({tg,s})=>{const cl=clientOf(tg),r=rosterStats(tg),st=statusOf(tg);
+          const stcol=st.cls==="good"?"var(--good)":st.cls==="warn"?"var(--warn)":"var(--crit)";
+          return `<div class="cal-block" style="border-left:6px solid ${cl?cl.color:'var(--brand)'}">
+            <div class="cal-dt">${s.getUTCDate()}.${pad2(s.getUTCMonth()+1)}.<span>${esc(tg.kw)}</span></div>
+            <div class="cal-main"><div class="cal-tt">${esc(tg.topic)}</div>
+              <div class="cal-ss">${esc(tg.city+", "+tg.country)}${cl?" · "+esc(cl.name):""}</div></div>
+            <div class="cal-bd" style="color:${stcol}">${r.yes}/${r.need}</div>
+          </div>`;}).join("")+`</div>`;
+    }).join("")+"</div>";
+  }
+  $("#calBody").innerHTML=`<div class="cal-sheet">
+    <div class="ag-top"><div><div class="ag-eyebrow">${t("calTitle")}</div>
+      <div class="ag-h1">${activeClient()?esc(activeClient().name):t("clientAll")}</div>
+      <div class="meta">${t("calSub")}</div></div>
+      <span class="etaf" style="font-size:26px">ETAF<span class="rd"></span></span></div>
+    <div class="ag-bar"></div>
+    <div class="cal-legend">${legend}</div>${body}
+    <div class="meta" style="text-align:center;margin-top:22px">ETAF · Trainer-Koordination</div></div>`;
+  setPageOrient("landscape"); $("#agPrintLbl2")&&($("#agPrintLbl2").textContent=t("calPrint"));
+  $("#calPrint").classList.add("on");
+}
+function closeCalendar(){$("#calPrint").classList.remove("on");}
+
+/* ---------- Kunden verwalten ---------- */
+function openClients(){drawClientManager();openSheet();}
+function drawClientManager(){
+  $("#sheetTitle").textContent=t("manageClients");
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:10px">${t("pfSub")}</div>
+    <div id="clRows">${(S.clients||[]).map(clientEditRow).join("")}</div>
+    <button class="btn" style="margin-top:12px" onclick="addClientRow()">${t("addClient")}</button>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button><div class="spacer"></div>
+    <button class="btn primary" onclick="saveClients()">${t("save")}</button>`;
+}
+function clientEditRow(c){
+  return `<div class="row" style="gap:8px;padding:8px 2px">
+    <input type="color" value="${esc(c.color||'#3E4852')}" oninput="clSet('${c.id}','color',this.value)" style="width:32px;height:32px;padding:0;border:1px solid var(--line);border-radius:8px;background:none;flex:none">
+    <input class="inp" value="${esc(c.name||'')}" placeholder="${t("clientName")}" oninput="clSet('${c.id}','name',this.value)" style="flex:1;min-width:0">
+    <input class="inp" value="${esc(c.short||'')}" placeholder="${t("clientShort")}" oninput="clSet('${c.id}','short',this.value)" style="width:64px">
+    <input class="inp" value="${esc(c.country||'')}" placeholder="${t("clientCountry")}" oninput="clSet('${c.id}','country',this.value)" style="width:72px">
+    <button class="btn sm" onclick="delClient('${c.id}')" title="✕">✕</button>
+  </div>`;
+}
+function clSet(id,k,v){const c=S.clients.find(x=>x.id===id);if(c)c[k]=v;}
+function addClientRow(){S.clients.push({id:uid("cl"),name:"",short:"",color:COLORS[S.clients.length%COLORS.length],cal:"slategray",country:""});drawClientManager();}
+function delClient(id){
+  if((S.clients||[]).length<=1){toast(t("clientNoDel"),"warn");return;}
+  if(!confirm(t("clientDelConfirm")))return;
+  const fb=S.clients.find(c=>c.id!==id).id;
+  S.trainings.forEach(tg=>{if(tg.clientId===id)tg.clientId=fb;});
+  S.clients=S.clients.filter(c=>c.id!==id);
+  if(S.clientFilter===id)S.clientFilter=null;
+  if(LIVE)apiCall("client.delete",{id}).catch(()=>{});
+  drawClientManager();
+}
+async function saveClients(){
+  S.clients=(S.clients||[]).filter(c=>(c.name||"").trim());
+  if(!S.clients.length)S.clients=seedClients();
+  if(LIVE){ try{ for(const c of S.clients){ await apiCall("client.save",c); } }catch(e){ toast("Fehler: "+e.message,"crit"); } }
+  save();closeSheet();buildClientBar();render();toast(t("clientSaved"),"good");
+}
+function assignClient(tgId,cid){
+  const tg=S.trainings.find(x=>x.id===tgId); if(!tg)return; tg.clientId=cid;
+  if(LIVE)apiCall("training.setClient",{training:tgId,client:cid}).catch(e=>toast("Fehler: "+e.message,"crit"));
+  save();renderDetail();
 }
 
 /* ============================================================

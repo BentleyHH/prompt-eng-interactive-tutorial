@@ -63,8 +63,14 @@ function ensure_schema(): void {
     color VARCHAR(16), rating VARCHAR(8),
     created_at VARCHAR(20))$eng");
 
+  $d->exec("CREATE TABLE IF NOT EXISTS clients (
+    id VARCHAR(24) PRIMARY KEY,
+    name VARCHAR(160), short VARCHAR(24), color VARCHAR(16),
+    cal VARCHAR(24), country VARCHAR(16), sort_order INT DEFAULT 0)$eng");
+
   $d->exec("CREATE TABLE IF NOT EXISTS trainings (
     id $pk,
+    client_id VARCHAR(24),
     topic VARCHAR(190), city VARCHAR(96), country VARCHAR(16),
     kw VARCHAR(24), month VARCHAR(24), spec VARCHAR(96),
     need_cnt INT DEFAULT 5, participants INT DEFAULT 0,
@@ -117,7 +123,8 @@ function ensure_schema(): void {
   foreach([
     "venue VARCHAR(255)","hotel VARCHAR(190)","hotel_addr VARCHAR(255)",
     "meeting_point VARCHAR(255)","contact_name VARCHAR(160)","contact_phone VARCHAR(64)",
-    "dresscode VARCHAR(160)","per_diem VARCHAR(64)","travel_notes TEXT","agenda TEXT"
+    "dresscode VARCHAR(160)","per_diem VARCHAR(64)","travel_notes TEXT","agenda TEXT",
+    "client_id VARCHAR(24)"
   ] as $col){ try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){} }
   // Migrationen (idempotent): Visum-Spalten für travel
   foreach([
@@ -138,6 +145,13 @@ function ensure_schema(): void {
   // Vorlagen sicherstellen
   if((int)q("SELECT COUNT(*) c FROM templates")->fetch()['c']===0){
     seed_templates();
+  }
+  // Kunden sicherstellen (auch für bestehende Installationen) + bestehende Trainings zuordnen
+  if((int)q("SELECT COUNT(*) c FROM clients")->fetch()['c']===0){
+    seed_clients();
+    q("UPDATE trainings SET client_id='cl-auh' WHERE country='UAE' AND (client_id IS NULL OR client_id='')");
+    q("UPDATE trainings SET client_id='cl-ksa' WHERE country='KSA' AND (client_id IS NULL OR client_id='')");
+    q("UPDATE trainings SET client_id='cl-inl' WHERE (client_id IS NULL OR client_id='')");
   }
 }
 
@@ -176,6 +190,20 @@ function seed_templates(): void {
   }
 }
 
+/** Standard-Kunden anlegen (idempotent). */
+function seed_clients(): void {
+  $clients=[
+    ['cl-auh','ETAF Abu Dhabi','AUH','#B23A42','firebrick','UAE',1],
+    ['cl-ksa','Saudi-Arabien','KSA','#3F7A5E','seagreen','KSA',2],
+    ['cl-inl','Inland / LKA','INL','#4E6E8E','steelblue','DE',3],
+  ];
+  foreach($clients as $c){
+    if((int)q("SELECT COUNT(*) c FROM clients WHERE id=?",[$c[0]])->fetch()['c']===0){
+      q("INSERT INTO clients(id,name,short,color,cal,country,sort_order) VALUES(?,?,?,?,?,?,?)",$c);
+    }
+  }
+}
+
 function seed_demo(): void {
   $SPEC=["Implantologie","DNA-Diagnostik","Fingerprint Dental","Prothetik","Chirurgie","Digitale Abformung","Guided Surgery","Parodontologie"];
   $REG=["DE-Süd","DE-West","DE-Nord","AT","CH","UAE","UK"];
@@ -193,15 +221,17 @@ function seed_demo(): void {
       $i%2===0?1:0, random_int(0,3), $COL[$i%count($COL)], number_format(4+($i%10)/10,1), now()
     ]);
   }
-  $locs=[["Abu Dhabi","UAE"],["München","DE"],["Frankfurt","DE"],["Abu Dhabi","UAE"],["Hamburg","DE"],["Wien","AT"],["Abu Dhabi","UAE"],["Zürich","CH"]];
+  seed_clients();
+  $locs=[["Abu Dhabi","UAE"],["Riyadh","KSA"],["München","DE"],["Abu Dhabi","UAE"],["Jeddah","KSA"],["Frankfurt","DE"],["Abu Dhabi","UAE"],["Hamburg","DE"]];
+  $cls =["cl-auh","cl-ksa","cl-inl","cl-auh","cl-ksa","cl-inl","cl-auh","cl-inl"];
   $topics=["Guided Surgery Level II","DNA-Diagnostik Basiskurs","Fingerprint Dental Advanced","Implantologie Masterclass","Digitale Abformung","Prothetik Kompakt","Full-Arch Workshop","Parodontologie Update"];
   $need=[6,5,8,7,5,6,8,5];
   $mon=["Sep","Okt","Dez","Feb","Mär","Mai","Jul","Sep"];
   foreach($topics as $i=>$tp){
     $kw=8+$i*6;
-    q("INSERT INTO trainings(topic,city,country,kw,month,spec,need_cnt,participants,created_at)
-       VALUES(?,?,?,?,?,?,?,?,?)",[
-      $tp,$locs[$i][0],$locs[$i][1],"KW $kw",$mon[$i]." ’2".($i<3?"6":"7"),
+    q("INSERT INTO trainings(client_id,topic,city,country,kw,month,spec,need_cnt,participants,created_at)
+       VALUES(?,?,?,?,?,?,?,?,?,?)",[
+      $cls[$i],$tp,$locs[$i][0],$locs[$i][1],"KW $kw",$mon[$i]." ’2".($i<3?"6":"7"),
       $SPEC[$i%count($SPEC)],$need[$i],12+$i*2,now()
     ]);
   }

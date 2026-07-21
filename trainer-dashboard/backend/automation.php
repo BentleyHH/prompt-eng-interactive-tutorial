@@ -54,7 +54,7 @@ function run_automation(): array {
             JOIN trainings t ON t.id=r.training_id
             JOIN trainers  tr ON tr.id=r.trainer_id
             LEFT JOIN travel tv ON tv.training_id=r.training_id AND tv.trainer_id=r.trainer_id
-            WHERE t.country='UAE' AND r.status IN('yes','confirmed')")->fetchAll();
+            WHERE t.country IN('UAE','KSA') AND r.status IN('yes','confirmed')")->fetchAll();
   foreach($vrows as $r){
     if(($r['visa_status']??'none')==='approved') continue;
     if((int)($r['visa_reminded']??0)===1) continue;

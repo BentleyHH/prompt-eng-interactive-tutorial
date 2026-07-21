@@ -104,7 +104,7 @@ $na = $L['nodata'];
       <div class="k"><?=e($L['fout'])?></div><div class="v"><?=e($tv['flight_out']??'') ?: $na?></div>
       <div class="k"><?=e($L['fret'])?></div><div class="v"><?=e($tv['flight_return']??'') ?: $na?></div>
       <div class="k"><?=e($L['room'])?></div><div class="v"><?=e($tv['room']??'') ?: $na?></div>
-      <?php if($req['country']==='UAE' || !empty($tv['passport_expiry']) || (($tv['visa_status']??'none')!=='none')): ?>
+      <?php if(in_array($req['country'],['UAE','KSA']) || !empty($tv['passport_expiry']) || (($tv['visa_status']??'none')!=='none')): ?>
         <div class="k"><?=e($L['passport'])?></div><div class="v"><?=e($tv['passport_expiry']??'') ?: $na?></div>
         <div class="k"><?=e($L['visa'])?></div><div class="v"><?=e($L['visa_'.($tv['visa_status'] ?? 'none')] ?? '—')?></div>
       <?php endif; ?>
