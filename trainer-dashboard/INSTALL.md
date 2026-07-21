@@ -37,13 +37,14 @@ entsperrt jede 6-stellige Zahl).
 So bekommst du die App aufs Handy und optional das echte Backend (zentrale
 Datenbank, echte E-Mails, Mehrgeräte-Nutzung).
 
-1. **Kompletten Ordner `trainer-dashboard/` hochladen** (FTP/SFTP oder
-   artfiles-Dateimanager) in dein Web-Verzeichnis, z. B. nach `/dashboard/`.
-   Wichtig: der Ordner `icons/` und `manifest.webmanifest` müssen **mit hoch**.
-2. Sicherstellen, dass die Domain über **HTTPS** läuft (artfiles bietet
-   kostenlose Let's-Encrypt-Zertifikate).
-3. Aufrufen: `https://deine-domain.de/dashboard/` → PIN eingeben. Fertig für den
-   Demo-Betrieb auf dem Server.
+1. **Inhalt von `trainer-dashboard/` hochladen** (FTP/SFTP oder Dateimanager) in
+   das Web-Verzeichnis (Document Root) der Subdomain **`training.dvi-systems.com`**,
+   sodass `index.html` direkt unter `https://training.dvi-systems.com/` liegt.
+   Wichtig: `icons/` und `manifest.webmanifest` müssen **mit hoch** (für die
+   App-Installation).
+2. Sicherstellen, dass die Subdomain über **HTTPS** läuft (Let's-Encrypt-Zertifikat).
+3. Aufrufen: `https://training.dvi-systems.com/` → PIN `481509` eingeben. Fertig für
+   den Demo-Betrieb auf dem Server.
 4. **Live-Backend** (optional, für zentrale DB + echten E-Mail-Rückkanal):
    Anleitung in **`DEPLOY.md`** — `backend/config.php` aus `config.sample.php`
    anlegen und `config.js` aus `config.js.sample` neben `index.html` erstellen.

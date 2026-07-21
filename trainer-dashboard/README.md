@@ -65,7 +65,7 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
 - **KI-Vorauswahl**: Trainer werden nach Fachgebiet, Region, UAE-Erfahrung, Auslastung &
   Bewertung gerankt (Fit-%). Manuell in Reihenfolge anfragen, Nachrücker rutschen nach
 - **E-Mail-Composer** (Slide-over) mit Vorlagen, gefüllten Platzhaltern und Mini-Editor;
-  Absender `trainer@etaf-akademie.org`
+  Absender `training@dvi-systems.com`
 - **Simulierter Rücklauf**: nach dem Senden „trudeln Antworten ein“ und färben den Status
   (zugesagt / vielleicht / abgesagt) automatisch zurück ins Dashboard
 - **Schnell-Ersatz**: Ein-Klick-Blitzanfrage an die besten verfügbaren Trainer bei Ausfall

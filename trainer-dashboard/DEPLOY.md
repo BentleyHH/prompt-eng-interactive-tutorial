@@ -18,11 +18,15 @@ Im artfiles-Kundenmenü eine MySQL-Datenbank erstellen. Du bekommst:
 > über phpMyAdmin importieren.)
 
 ## 2. Dateien hochladen
-Lade den kompletten Ordner `trainer-dashboard/` in dein Webverzeichnis, z. B. nach
-`/dashboard/`. Struktur danach:
+Lade den **Inhalt** von `trainer-dashboard/` in das Web-Verzeichnis (Document Root)
+der Subdomain **`training.dvi-systems.com`**, sodass `index.html` direkt unter
+`https://training.dvi-systems.com/` liegt. Wichtig: `icons/` und `manifest.webmanifest`
+**mit hochladen** (für die App-Installation aufs Handy). Struktur danach:
 ```
-/dashboard/
+(Document Root von training.dvi-systems.com)
   index.html
+  manifest.webmanifest
+  icons/               ← App-Icons (ETAF)
   config.js            ← aus config.js.sample erstellen (Schritt 4)
   backend/
     api.php  respond.php  db.php  lib.php  mailer.php
@@ -40,8 +44,8 @@ Lade den kompletten Ordner `trainer-dashboard/` in dein Webverzeichnis, z. B. na
 'db_user'  => 'DEIN_DB_USER',
 'db_pass'  => 'DEIN_DB_PASSWORT',
 'default_pin' => '481509',          // dein Wunsch-PIN (wird gehasht gespeichert)
-'from_email'  => 'trainer@etaf-dvi.org',
-'base_url'    => 'https://deine-domain.de/dashboard/backend',
+'from_email'  => 'training@dvi-systems.com',
+'base_url'    => 'https://training.dvi-systems.com/backend',
 'mail_mode'   => 'mail',            // erst 'log' zum Testen, dann 'mail' oder 'smtp'
 'anthropic_key' => '',              // Claude-API-Key für KI-Import (leer = aus)
 'cron_key'    => 'ein-zufälliger-wert', // schützt backend/cron.php
@@ -59,7 +63,7 @@ window.ETAF = { apiBase: 'backend', pollMs: 8000 };
 Ohne diese Datei läuft das Dashboard weiter als lokale Demo — praktisch zum Zeigen.
 
 ## 5. Öffnen & testen
-- `https://deine-domain.de/dashboard/` aufrufen → PIN eingeben.
+- `https://training.dvi-systems.com/` aufrufen → PIN eingeben.
 - Ein Training öffnen → **Sammelanfrage senden**. Bei `mail_mode='log'` wird
   nichts verschickt, aber alles protokolliert — sichtbar unter **Protokoll** im
   Dashboard (und in der DB-Tabelle `email_log`).
@@ -71,7 +75,7 @@ Ohne diese Datei läuft das Dashboard weiter als lokale Demo — praktisch zum Z
   ```php
   'mail_mode' => 'smtp',
   'smtp' => ['host'=>'smtp.artfiles.de','port'=>587,'secure'=>'tls',
-             'user'=>'trainer@etaf-dvi.org','pass'=>'DEIN_MAIL_PASSWORT'],
+             'user'=>'training@dvi-systems.com','pass'=>'DEIN_MAIL_PASSWORT'],
   ```
 
 ## Wie der Verfügbarkeits-Rückkanal funktioniert
@@ -102,7 +106,7 @@ und „automatisch nachrücken" (bei Absage/Überfälligkeit den nächstbesten T
 Manuell auslösbar über **Jetzt prüfen & senden**. Für den Automatikbetrieb im artfiles-Kundenmenü
 einen **Cronjob** anlegen, z. B. stündlich:
 ```
-curl -s "https://deine-domain.de/dashboard/backend/cron.php?key=DEIN_CRON_KEY"
+curl -s "https://training.dvi-systems.com/backend/cron.php?key=DEIN_CRON_KEY"
 ```
 Der `key` muss mit `cron_key` aus `config.php` übereinstimmen (schützt den Endpunkt).
 
@@ -175,7 +179,7 @@ Post Mortem, Ante Mortem, Scene & Recovery, CBRN und Simulation.)
 - **Abonnierbarer Link (Live)**: Setze `ics_key` in `config.php` und trage in deinem Kalender
   „Kalender abonnieren" mit dieser URL ein — er aktualisiert sich automatisch:
   ```
-  https://deine-domain.de/dashboard/backend/ics.php?key=DEIN_ICS_KEY
+  https://training.dvi-systems.com/backend/ics.php?key=DEIN_ICS_KEY
   ```
   Optional nur ein Kunde: `…&client=<client_id>` (z. B. `cl-adp`).
 - **Wandkalender (Druck)**: Über **📅 Wandkalender** öffnet sich eine chronologische, farbcodierte

@@ -28,11 +28,12 @@ return [
 
   // ---- Organisation / Absender ------------------------------------
   'org_name' => 'ETAF',
-  'from_email' => 'trainer@etaf-dvi.org',
+  // Absender der Trainer-Anfragen. Mailbox muss existieren (SPF/DKIM sauber setzen).
+  'from_email' => 'training@dvi-systems.com',
   'from_name' => 'ETAF Koordination',
-  // Basis-URL der Installation (ohne Slash am Ende). Wird für die
-  // Magic-Link-Buttons in den E-Mails gebraucht. Leer lassen = automatisch.
-  'base_url' => '',               // z.B. 'https://dashboard.etaf-dvi.org'
+  // Basis-URL des Backends (ohne Slash am Ende). Wird für die Magic-Link-Buttons
+  // in den E-Mails gebraucht. Leer lassen = automatisch aus dem Request.
+  'base_url' => 'https://training.dvi-systems.com/backend',
 
   // ---- E-Mail-Versand ---------------------------------------------
   // 'mail'  = PHP mail() (auf artfiles meist ok für die eigene Domain)
@@ -43,7 +44,7 @@ return [
     'host' => 'smtp.artfiles.de',
     'port' => 587,                // 587 = STARTTLS, 465 = SSL
     'secure' => 'tls',            // 'tls' | 'ssl'
-    'user' => 'trainer@etaf-dvi.org',
+    'user' => 'training@dvi-systems.com',
     'pass' => '',
   ],
 
