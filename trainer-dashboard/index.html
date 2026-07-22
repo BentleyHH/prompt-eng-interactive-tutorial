@@ -365,7 +365,7 @@
 <div id="lock">
   <div class="lock-card">
     <div class="lg-top"><span class="langsw" id="lgLang"></span></div>
-    <div class="etaf" style="font-size:46px">ETAF<span class="rd"></span></div>
+    <div id="lockLogo" style="color:var(--ink);display:flex;justify-content:center"></div>
     <div class="wm-sub" id="lgSub">Trainer-Koordination</div>
     <h1 id="lgWelcome" style="margin-top:22px">Willkommen zurück</h1>
     <p id="lgEnter">Bitte 6-stelligen PIN eingeben</p>
@@ -380,7 +380,7 @@
 <!-- ===================== APP ===================== -->
 <div id="app">
   <aside class="side">
-    <div class="brand"><span class="etaf" style="font-size:26px">ETAF<span class="rd"></span></span></div>
+    <div class="brand"><span id="brandLogo" style="color:var(--ink)"></span></div>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot">
       <div class="langrow"><span id="langLbl">Sprache</span><span class="langsw" id="sideLang"></span></div>
@@ -475,6 +475,15 @@ const IC={
   log:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+/* ETAF-Wortmarke als Vektor (Buchstaben = currentColor, Punkt = Akzentrot) */
+function etafLogo(h){
+  return `<svg viewBox="0 0 408 100" height="${h}" role="img" aria-label="ETAF" style="display:block;overflow:visible">`
+    +`<g fill="currentColor"><rect x="0" width="26" height="100"/><rect x="0" width="74" height="26"/><rect x="0" y="37" width="59" height="26"/><rect x="0" y="74" width="74" height="26"/>`
+    +`<rect x="86" width="82" height="26"/><rect x="114" width="26" height="100"/>`
+    +`<path fill-rule="evenodd" d="M226 0L272 100L180 100Z M226 30L244 72L208 72Z"/>`
+    +`<rect x="284" width="26" height="100"/><rect x="284" width="72" height="26"/><rect x="284" y="37" width="58" height="26"/></g>`
+    +`<circle cx="388" cy="84" r="16" fill="#D81F26"/></svg>`;
+}
 
 /* ============================================================
    LIVE-MODUS — spricht mit dem PHP-Backend (config.js gesetzt).
@@ -547,6 +556,7 @@ const L={
   noneAsked:"Noch niemand angefragt. Wähle unten aus den KI-Vorschlägen.",
   aiTitle:"KI-Vorauswahl", aiSub:"nach Fachgebiet, Region, Auslastung & Bewertung",
   aiHelp:"Vorgeschlagene Trainer — in Reihenfolge anfragen, Nachrücker rutschen automatisch nach",
+  suggReset:"↺ Zurücksetzen", suggEmpty:"Keine Vorschläge — unten Trainer hinzufügen.",
   topMatch:"Top-Match", uaeExp:"UAE-erfahren", fit:n=>`${n}% Fit`, ask:"Anfragen",
   travelData:"Reisedaten", nextInLine:"Nachrücker anfragen",
   simReply:"Antwort simulieren", simReplyT:"Antwort des Trainers simulieren",
@@ -674,6 +684,7 @@ const L={
   noneAsked:"Nobody requested yet. Pick from the AI suggestions below.",
   aiTitle:"AI shortlist", aiSub:"by specialty, region, workload & rating",
   aiHelp:"Suggested trainers — request in order, the next in line moves up automatically",
+  suggReset:"↺ Reset", suggEmpty:"No suggestions — add a trainer below.",
   topMatch:"Top match", uaeExp:"UAE-experienced", fit:n=>`${n}% fit`, ask:"Request",
   travelData:"Travel details", nextInLine:"Request next in line",
   simReply:"Simulate reply", simReplyT:"Simulate the trainer's reply",
@@ -1017,6 +1028,7 @@ function setLang(l){
   if($("#app").style.display==="grid")render();
 }
 function applyStatic(){
+  { const ll=$("#lockLogo"); if(ll)ll.innerHTML=etafLogo(34); const bl=$("#brandLogo"); if(bl)bl.innerHTML=etafLogo(21); }
   $("#lgSub").textContent=t("subTitle");
   $("#lgWelcome").textContent=t("welcome");
   $("#lgEnter").textContent=t("enterPin");
@@ -1231,12 +1243,28 @@ let curTg=null;
 function openDetail(id){
   curTg=S.trainings.find(t=>t.id===id);route="detail";render();
 }
+/* Sitzungs-Anpassung der KI-Vorauswahl je Training: Vorschläge ausblenden / manuell ergänzen */
+let suggEdit={};
+function suggState(tgId){ return suggEdit[tgId] || (suggEdit[tgId]={hidden:[],add:[]}); }
+function suggHide(tgId,trId){ const s=suggState(tgId); if(!s.hidden.includes(trId))s.hidden.push(trId); s.add=s.add.filter(x=>x!==trId); renderDetail(); }
+function suggAddPick(tgId,trId){ if(!trId)return; const s=suggState(tgId); if(!s.add.includes(trId))s.add.push(trId); s.hidden=s.hidden.filter(x=>x!==trId); renderDetail(); }
+function suggReset(tgId){ suggEdit[tgId]={hidden:[],add:[]}; renderDetail(); }
 function renderDetail(){
   if(!curTg)return;
   const tg=curTg;const st=statusOf(tg);const r=rosterStats(tg);
   const rk=ranked(tg);
-  const suggested=rk.filter(x=>!x.status).slice(0,6);
   const inRoster=rk.filter(x=>x.status);
+  /* KI-Vorschläge inkl. Sitzungs-Anpassung (ausgeblendete raus, manuell ergänzte rein) */
+  const se=suggState(tg.id);
+  const availRk=rk.filter(x=>!x.status);
+  const hiddenSet=new Set(se.hidden);
+  const base=availRk.filter(x=>!hiddenSet.has(x.tr.id)).slice(0,6);
+  const baseIds=new Set(base.map(x=>x.tr.id));
+  const addedRows=availRk.filter(x=>se.add.includes(x.tr.id) && !baseIds.has(x.tr.id));
+  const suggested=[...base,...addedRows].sort((a,b)=>b.fit-a.fit);
+  const shownSet=new Set(suggested.map(x=>x.tr.id));
+  const addable=availRk.filter(x=>!shownSet.has(x.tr.id)).sort((a,b)=>b.fit-a.fit);
+  const suggEdited=(se.hidden.length||se.add.length);
 
   const info=`<div class="panel">
     <div class="panel-h"><h3>${t("dTraining")}</h3><div class="spacer"></div><span class="pill ${st.cls}">${t(st.key)}</span></div>
@@ -1277,7 +1305,8 @@ function renderDetail(){
   </div>`;
 
   const sugg=`<div class="panel">
-    <div class="panel-h"><h3>${t("aiTitle")}</h3><div class="sub">${t("aiSub")}</div></div>
+    <div class="panel-h"><h3>${t("aiTitle")}</h3><div class="sub">${t("aiSub")}</div>
+      ${suggEdited?`<div class="spacer"></div><button class="btn sm" onclick="suggReset('${tg.id}')">${t("suggReset")}</button>`:''}</div>
     <div class="panel-b">
       <div class="slot-head"><span class="c">${t("aiHelp")}</span></div>
       ${suggested.map((x,i)=>`
@@ -1289,7 +1318,13 @@ function renderDetail(){
         </div>
         <span class="fit">${t("fit",x.fit)}</span>
         <button class="btn sm primary" onclick="composeFor('${tg.id}','${x.tr.id}','t1')">${t("ask")}</button>
-      </div>`).join("")}
+        <button class="btn sm" onclick="suggHide('${tg.id}','${x.tr.id}')" title="${t("remove")}">✕</button>
+      </div>`).join("")||`<div class="empty">${t("suggEmpty")}</div>`}
+      <label class="fld">${t("quickAdd")}</label>
+      <select onchange="suggAddPick('${tg.id}',this.value);this.value='';">
+        <option value="">${t("quickAddPh")}</option>
+        ${addable.map(x=>`<option value="${x.tr.id}">${esc(x.tr.name)} · ${esc(x.tr.region)} · ${x.fit}%</option>`).join("")}
+      </select>
     </div>
   </div>`;
 
@@ -1699,7 +1734,7 @@ function buildAgendaHTML(tg,tr,fl){
       <div><div class="ag-eyebrow">${t("travelAgenda")}</div>
         <div class="ag-h1">${esc(tg.topic)}</div>
         <div class="meta">${esc(tg.city+", "+tg.country+" · "+tg.kw+" · "+tg.month)}</div></div>
-      <span class="etaf" style="font-size:26px">ETAF<span class="rd"></span></span>
+      <span style="color:var(--brand);display:inline-flex">${etafLogo(24)}</span>
     </div>
     <div class="ag-bar"></div>
     <div class="ag-kv">${row(t("agFor"),tr?tr.name:"")}${row(t("tvVenue"),v.venue)}</div>
@@ -1869,7 +1904,7 @@ function openCalendar(){
     <div class="ag-top"><div><div class="ag-eyebrow">${t("calTitle")}</div>
       <div class="ag-h1">${activeClient()?esc(activeClient().name):t("clientAll")}</div>
       <div class="meta">${t("calSub")}</div></div>
-      <span class="etaf" style="font-size:26px">ETAF<span class="rd"></span></span></div>
+      <span style="color:var(--brand);display:inline-flex">${etafLogo(24)}</span></div>
     <div class="ag-bar"></div>
     <div class="cal-legend">${legend}</div>${body}
     <div class="meta" style="text-align:center;margin-top:22px">ETAF · Trainer-Koordination</div></div>`;
@@ -2099,7 +2134,7 @@ function printMaterials(tgId){
     <div class="ag-top"><div><div class="ag-eyebrow">${t("matPrintTitle")}</div>
       <div class="ag-h1">${esc(tg.topic)}</div>
       <div class="meta">${esc(tg.city+", "+tg.country+" · "+whenLabel(tg))}${cl?" · "+esc(cl.name):""}</div></div>
-      <span class="etaf" style="font-size:26px">ETAF<span class="rd"></span></span></div>
+      <span style="color:var(--brand);display:inline-flex">${etafLogo(24)}</span></div>
     <div class="ag-bar"></div>
     ${rows?`<table class="ag-table"><thead><tr><th style="text-align:left">${t("matColHead")}</th><th style="text-align:right;width:70px">${t("matColQty")}</th><th style="text-align:left;width:80px">${t("matColUnit")}</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="empty">${t("matNone")}</div>`}
     <div class="meta" style="text-align:center;margin-top:22px">ETAF · Trainer-Koordination</div></div>`;

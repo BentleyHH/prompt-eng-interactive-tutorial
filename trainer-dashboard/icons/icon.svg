@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ETAF">
   <rect width="512" height="512" rx="112" fill="#3E4852"/>
-  <text x="248" y="312" text-anchor="middle"
-        font-family="Arial, Helvetica, sans-serif" font-weight="800"
-        font-size="150" letter-spacing="-8" fill="#ffffff">ETAF<tspan fill="#D81F26">.</tspan></text>
+  <g transform="translate(76 200) scale(0.882)">
+    <g fill="#ffffff"><rect x="0" y="0" width="26" height="100"/><rect x="0" y="0" width="74" height="26"/><rect x="0" y="37" width="59" height="26"/><rect x="0" y="74" width="74" height="26"/><rect x="86" y="0" width="82" height="26"/><rect x="114" y="0" width="26" height="100"/><path fill-rule="evenodd" d="M226 0L272 100L180 100Z M226 30L244 72L208 72Z"/><rect x="284" y="0" width="26" height="100"/><rect x="284" y="0" width="72" height="26"/><rect x="284" y="37" width="58" height="26"/></g>
+    <circle cx="388" cy="84" r="16" fill="#D81F26"/>
+  </g>
 </svg>
