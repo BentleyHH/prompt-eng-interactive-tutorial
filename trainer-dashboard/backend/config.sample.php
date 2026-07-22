@@ -29,7 +29,7 @@ return [
   // ---- Organisation / Absender ------------------------------------
   'org_name' => 'ETAF',
   // Absender der Trainer-Anfragen. Mailbox muss existieren (SPF/DKIM sauber setzen).
-  'from_email' => 'training@dvi-systems.com',
+  'from_email' => 'trainer@dvi-systems.com',
   'from_name' => 'ETAF Koordination',
   // Basis-URL des Backends (ohne Slash am Ende). Wird für die Magic-Link-Buttons
   // in den E-Mails gebraucht. Leer lassen = automatisch aus dem Request.
@@ -44,7 +44,7 @@ return [
     'host' => 'smtp.artfiles.de',
     'port' => 587,                // 587 = STARTTLS, 465 = SSL
     'secure' => 'tls',            // 'tls' | 'ssl'
-    'user' => 'training@dvi-systems.com',
+    'user' => 'trainer@dvi-systems.com',
     'pass' => '',
   ],
 

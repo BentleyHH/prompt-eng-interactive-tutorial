@@ -44,7 +44,7 @@ der Subdomain **`training.dvi-systems.com`**, sodass `index.html` direkt unter
 'db_user'  => 'DEIN_DB_USER',
 'db_pass'  => 'DEIN_DB_PASSWORT',
 'default_pin' => '481509',          // dein Wunsch-PIN (wird gehasht gespeichert)
-'from_email'  => 'training@dvi-systems.com',
+'from_email'  => 'trainer@dvi-systems.com',
 'base_url'    => 'https://training.dvi-systems.com/backend',
 'mail_mode'   => 'mail',            // erst 'log' zum Testen, dann 'mail' oder 'smtp'
 'anthropic_key' => '',              // Claude-API-Key für KI-Import (leer = aus)
@@ -75,7 +75,7 @@ Ohne diese Datei läuft das Dashboard weiter als lokale Demo — praktisch zum Z
   ```php
   'mail_mode' => 'smtp',
   'smtp' => ['host'=>'smtp.artfiles.de','port'=>587,'secure'=>'tls',
-             'user'=>'training@dvi-systems.com','pass'=>'DEIN_MAIL_PASSWORT'],
+             'user'=>'trainer@dvi-systems.com','pass'=>'DEIN_MAIL_PASSWORT'],
   ```
 
 ## Wie der Verfügbarkeits-Rückkanal funktioniert

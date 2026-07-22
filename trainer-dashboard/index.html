@@ -579,7 +579,7 @@ const L={
   boldT:"Fett", italicT:"Kursiv", listT:"Liste", btnsT:"Antwort-Buttons",
   composerHint:"💡 Platzhalter sind bereits gefüllt. Bei Sammelanfragen wird {{firstName}} pro Empfänger personalisiert.",
   discard:"Verwerfen", sendCheck:"Senden & Verfügbarkeit abfragen",
-  sentToast:n=>`${n} ${n>1?'Anfragen':'Anfrage'} über training@dvi-systems.com versendet`,
+  sentToast:n=>`${n} ${n>1?'Anfragen':'Anfrage'} über trainer@dvi-systems.com versendet`,
   quickTitle:"⚡ Schnell-Ersatz",
   quickDesc:"Kurzfristig einen Ausfall ersetzen — Anfrage an die besten verfügbaren Trainer. Wer zuerst zusagt, bekommt den Platz.",
   trainingLbl:"Training", replCand:"Vorgeschlagene Ersatz-Trainer", reachable:"schnell erreichbar",
@@ -707,7 +707,7 @@ const L={
   boldT:"Bold", italicT:"Italic", listT:"List", btnsT:"Reply buttons",
   composerHint:"💡 Placeholders are already filled. For group requests, {{firstName}} is personalised per recipient.",
   discard:"Discard", sendCheck:"Send & request availability",
-  sentToast:n=>`${n} ${n>1?'requests':'request'} sent via training@dvi-systems.com`,
+  sentToast:n=>`${n} ${n>1?'requests':'request'} sent via trainer@dvi-systems.com`,
   quickTitle:"⚡ Quick replacement",
   quickDesc:"Replace a drop-out at short notice — request the best available trainers. First to accept gets the slot.",
   trainingLbl:"Training", replCand:"Suggested replacement trainers", reachable:"quickly reachable",
@@ -1484,7 +1484,7 @@ function drawComposer(){
   $("#sheetTitle").textContent=compose.recips.length>1?t("bulkTitle",compose.recips.length):t("sendReq");
   $("#sheetBody").innerHTML=`
     <label class="fld">${t("from")}</label>
-    <input class="inp" value="training@dvi-systems.com" readonly style="color:var(--muted)">
+    <input class="inp" value="trainer@dvi-systems.com" readonly style="color:var(--muted)">
     <label class="fld">${t("to",compose.recips.length)}</label>
     <div class="chips">${recipChips||`<span class="meta">${t("noRecip")}</span>`}</div>
     <div class="fldrow">
