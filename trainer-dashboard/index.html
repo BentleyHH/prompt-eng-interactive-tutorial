@@ -569,6 +569,8 @@ const L={
   quickTitle:"⚡ Schnell-Ersatz",
   quickDesc:"Kurzfristig einen Ausfall ersetzen — Anfrage an die besten verfügbaren Trainer. Wer zuerst zusagt, bekommt den Platz.",
   trainingLbl:"Training", replCand:"Vorgeschlagene Ersatz-Trainer", reachable:"schnell erreichbar",
+  remove:"Entfernen", quickAdd:"Weiteren Trainer hinzufügen", quickAddPh:"— Trainer wählen —",
+  quickEmpty:"Keine Trainer ausgewählt — bitte mindestens einen hinzufügen.",
   sendBlitz:"Blitz-Anfrage senden", blitzToast:n=>`Blitz-Anfrage an ${n} Trainer raus ⚡`,
   importTitle:"Import", importDesc:"In der Vollversion importierst du hier Trainings & Trainer.",
   source:"Quelle", srcExcel:"Excel / CSV", srcOffer:"Angebot (PDF)", srcAI:"KI aus Lebenslauf",
@@ -694,6 +696,8 @@ const L={
   quickTitle:"⚡ Quick replacement",
   quickDesc:"Replace a drop-out at short notice — request the best available trainers. First to accept gets the slot.",
   trainingLbl:"Training", replCand:"Suggested replacement trainers", reachable:"quickly reachable",
+  remove:"Remove", quickAdd:"Add another trainer", quickAddPh:"— select trainer —",
+  quickEmpty:"No trainers selected — please add at least one.",
   sendBlitz:"Send instant request", blitzToast:n=>`Instant request sent to ${n} trainers ⚡`,
   importTitle:"Import", importDesc:"In the full version you import trainings & trainers here.",
   source:"Source", srcExcel:"Excel / CSV", srcOffer:"Offer (PDF)", srcAI:"AI from CV",
@@ -1515,42 +1519,68 @@ async function sendCompose(){
 /* ============================================================
    QUICK REPLACEMENT
    ============================================================ */
+let quick={tgId:null,recips:[]};
+function quickDefaultPool(tg){return ranked(tg).filter(x=>!x.status||x.status==="no").slice(0,5).map(x=>x.tr.id);}
 function openQuick(tgId){
   const tg=tgId?S.trainings.find(t=>t.id===tgId):S.trainings.find(t=>statusOf(t).cls!=="good")||S.trainings[0];
-  const pool=ranked(tg).filter(x=>!x.status||x.status==="no").slice(0,5);
+  quick={tgId:tg.id, recips:quickDefaultPool(tg)};
+  drawQuick(); openSheet();
+}
+function quickPickTraining(id){
+  const tg=S.trainings.find(t=>t.id===id); if(!tg)return;
+  quick={tgId:id, recips:quickDefaultPool(tg)};   // neues Training → passende Vorschläge
+  drawQuick();
+}
+function quickRm(id){ quick.recips=quick.recips.filter(x=>x!==id); drawQuick(); }
+function quickAdd(id){ if(id&&!quick.recips.includes(id))quick.recips.push(id); drawQuick(); }
+function drawQuick(){
+  const tg=S.trainings.find(t=>t.id===quick.tgId);
+  const rows=quick.recips.map(id=>{
+    const tr=S.trainers.find(t=>t.id===id); if(!tr)return "";
+    return `<div class="row">
+      <div class="av" style="background:${tr.color}">${initials(tr.name)}</div>
+      <div class="rowgrow"><div class="nm">${esc(tr.name)}</div>
+        <div class="meta">${esc(tr.region)} · ${esc(tr.spec[0]||"")} · ⚡ ${t("reachable")}</div></div>
+      <span class="fit">${scoreTrainer(tr,tg)}%</span>
+      <button class="btn sm" onclick="quickRm('${id}')" title="${t("remove")}">✕</button></div>`;
+  }).join("");
+  const avail=S.trainers.filter(tr=>!quick.recips.includes(tr.id))
+    .map(tr=>({tr,fit:scoreTrainer(tr,tg)})).sort((a,b)=>b.fit-a.fit);
   $("#sheetTitle").textContent=t("quickTitle");
   $("#sheetBody").innerHTML=`
     <div class="meta" style="margin-bottom:12px">${t("quickDesc")}</div>
     <label class="fld">${t("trainingLbl")}</label>
-    <select id="qTg">${S.trainings.map(x=>`<option value="${x.id}" ${x.id===tg.id?'selected':''}>${x.topic} — ${x.city} (${x.kw})</option>`).join("")}</select>
-    <label class="fld">${t("replCand")}</label>
-    ${pool.map(x=>`<div class="row">
-      <div class="av" style="background:${x.tr.color}">${initials(x.tr.name)}</div>
-      <div class="rowgrow"><div class="nm">${x.tr.name}</div><div class="meta">${x.tr.region} · ${x.tr.spec[0]} · ⚡ ${t("reachable")}</div></div>
-      <span class="fit">${x.fit}%</span></div>`).join("")}`;
+    <select id="qTg" onchange="quickPickTraining(this.value)">${S.trainings.map(x=>`<option value="${x.id}" ${x.id===quick.tgId?'selected':''}>${esc(x.topic)} — ${esc(x.city)} (${esc(x.kw)})</option>`).join("")}</select>
+    <label class="fld">${t("replCand")} (${quick.recips.length})</label>
+    <div id="quickRows">${rows||`<div class="meta">${t("quickEmpty")}</div>`}</div>
+    <label class="fld">${t("quickAdd")}</label>
+    <select id="quickAddSel" onchange="quickAdd(this.value);this.value='';">
+      <option value="">${t("quickAddPh")}</option>
+      ${avail.map(x=>`<option value="${x.tr.id}">${esc(x.tr.name)} · ${esc(x.tr.region)} · ${x.fit}%</option>`).join("")}
+    </select>`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
-    <button class="btn amber" onclick="sendQuick()">${t("sendBlitz")}</button>`;
-  openSheet();
+    <button class="btn amber" onclick="sendQuick()" ${quick.recips.length?"":"disabled style=\"opacity:.5;cursor:not-allowed\""}>${t("sendBlitz")}</button>`;
 }
 async function sendQuick(){
-  const tgId=$("#qTg").value;const tg=S.trainings.find(t=>t.id===tgId);
-  const pool=ranked(tg).filter(x=>!x.status||x.status==="no").slice(0,5);
+  const tgId=quick.tgId; const tg=S.trainings.find(t=>t.id===tgId);
+  const recips=quick.recips.slice();
+  if(!recips.length){ toast(t("quickEmpty"),"warn"); return; }
   if(LIVE){
     const lang=S.emailLang||"en"; const tpl=S.templates.find(t=>t.id==="t3")||S.templates[0];
     closeSheet();
     try{
-      const d=await apiCall("request.create",{training:tgId,recipients:pool.map(x=>x.tr.id),lang,
+      const d=await apiCall("request.create",{training:tgId,recipients:recips,lang,
         subject:tpl[lang].subject, body:tpl[lang].body});
       await pull(); buildNav();
       if(route==="detail"){curTg=S.trainings.find(t=>t.id===tgId);renderDetail();}
       if(route==="dash")renderDash();
-      toast(t("blitzToast",d.sent!=null?d.sent:pool.length),"good");
+      toast(t("blitzToast",d.sent!=null?d.sent:recips.length),"good");
     }catch(e){ toast("Fehler: "+e.message,"crit"); }
     return;
   }
-  pool.forEach(x=>setStatus(tgId,x.tr.id,"asked"));
-  pool.forEach(x=>demoLog(x.tr.email,(S.lang==='de'?'Kurzfristig: Einspringen? — ':'Short notice: step in? — ')+tg.topic,S.emailLang,"logged"));
-  closeSheet();toast(t("blitzToast",pool.length),"good");
+  recips.forEach(id=>setStatus(tgId,id,"asked"));
+  recips.forEach(id=>{const tr=S.trainers.find(t=>t.id===id); if(tr)demoLog(tr.email,(S.lang==='de'?'Kurzfristig: Einspringen? — ':'Short notice: step in? — ')+tg.topic,S.emailLang,"logged");});
+  closeSheet();toast(t("blitzToast",recips.length),"good");
   buildNav();if(route==="detail"){curTg=tg;renderDetail();}if(route==="dash")renderDash();
 }
 
