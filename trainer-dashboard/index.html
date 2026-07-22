@@ -475,14 +475,17 @@ const IC={
   log:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-/* ETAF-Wortmarke als Vektor (Buchstaben = currentColor, Punkt = Akzentrot) */
+/* ETAF-Wortmarke als Vektor — pixelgenau aus der Original-Logodatei vermessen.
+   Buchstaben = currentColor (passt sich an Hell/Dunkel an), Punkt = Akzentrot.
+   viewBox 0 0 1751 656 (Buchstaben 0..1529 breit, Höhe 429; Punkt unten rechts). */
 function etafLogo(h){
-  return `<svg viewBox="0 0 408 100" height="${h}" role="img" aria-label="ETAF" style="display:block;overflow:visible">`
-    +`<g fill="currentColor"><rect x="0" width="26" height="100"/><rect x="0" width="74" height="26"/><rect x="0" y="37" width="59" height="26"/><rect x="0" y="74" width="74" height="26"/>`
-    +`<rect x="86" width="82" height="26"/><rect x="114" width="26" height="100"/>`
-    +`<path fill-rule="evenodd" d="M226 0L272 100L180 100Z M226 30L244 72L208 72Z"/>`
-    +`<rect x="284" width="26" height="100"/><rect x="284" width="72" height="26"/><rect x="284" y="37" width="58" height="26"/></g>`
-    +`<circle cx="388" cy="84" r="16" fill="#D81F26"/></svg>`;
+  return `<svg viewBox="0 0 1751 656" height="${h}" role="img" aria-label="ETAF" style="display:block;overflow:visible">`
+    +`<g fill="currentColor">`
+    +`<rect x="0" y="0" width="143" height="429"/><rect x="0" y="0" width="348" height="110"/><rect x="0" y="159" width="323" height="110"/><rect x="0" y="318" width="356" height="110"/>`
+    +`<rect x="361" y="0" width="396" height="110"/><rect x="487" y="0" width="144" height="429"/>`
+    +`<path fill-rule="evenodd" d="M832 0L978 0L1161 428L1012 428L908 353L795 428L649 428Z M905 146L943 246L870 246Z"/>`
+    +`<rect x="1181" y="0" width="144" height="429"/><rect x="1181" y="0" width="348" height="110"/><rect x="1181" y="159" width="323" height="110"/>`
+    +`</g><circle cx="1647" cy="552" r="104" fill="#D81F26"/></svg>`;
 }
 
 /* ============================================================
@@ -1028,7 +1031,7 @@ function setLang(l){
   if($("#app").style.display==="grid")render();
 }
 function applyStatic(){
-  { const ll=$("#lockLogo"); if(ll)ll.innerHTML=etafLogo(34); const bl=$("#brandLogo"); if(bl)bl.innerHTML=etafLogo(21); }
+  { const ll=$("#lockLogo"); if(ll)ll.innerHTML=etafLogo(48); const bl=$("#brandLogo"); if(bl)bl.innerHTML=etafLogo(30); }
   $("#lgSub").textContent=t("subTitle");
   $("#lgWelcome").textContent=t("welcome");
   $("#lgEnter").textContent=t("enterPin");
@@ -1734,7 +1737,7 @@ function buildAgendaHTML(tg,tr,fl){
       <div><div class="ag-eyebrow">${t("travelAgenda")}</div>
         <div class="ag-h1">${esc(tg.topic)}</div>
         <div class="meta">${esc(tg.city+", "+tg.country+" · "+tg.kw+" · "+tg.month)}</div></div>
-      <span style="color:var(--brand);display:inline-flex">${etafLogo(24)}</span>
+      <span style="color:var(--brand);display:inline-flex">${etafLogo(34)}</span>
     </div>
     <div class="ag-bar"></div>
     <div class="ag-kv">${row(t("agFor"),tr?tr.name:"")}${row(t("tvVenue"),v.venue)}</div>
@@ -1904,7 +1907,7 @@ function openCalendar(){
     <div class="ag-top"><div><div class="ag-eyebrow">${t("calTitle")}</div>
       <div class="ag-h1">${activeClient()?esc(activeClient().name):t("clientAll")}</div>
       <div class="meta">${t("calSub")}</div></div>
-      <span style="color:var(--brand);display:inline-flex">${etafLogo(24)}</span></div>
+      <span style="color:var(--brand);display:inline-flex">${etafLogo(34)}</span></div>
     <div class="ag-bar"></div>
     <div class="cal-legend">${legend}</div>${body}
     <div class="meta" style="text-align:center;margin-top:22px">ETAF · Trainer-Koordination</div></div>`;
@@ -2134,7 +2137,7 @@ function printMaterials(tgId){
     <div class="ag-top"><div><div class="ag-eyebrow">${t("matPrintTitle")}</div>
       <div class="ag-h1">${esc(tg.topic)}</div>
       <div class="meta">${esc(tg.city+", "+tg.country+" · "+whenLabel(tg))}${cl?" · "+esc(cl.name):""}</div></div>
-      <span style="color:var(--brand);display:inline-flex">${etafLogo(24)}</span></div>
+      <span style="color:var(--brand);display:inline-flex">${etafLogo(34)}</span></div>
     <div class="ag-bar"></div>
     ${rows?`<table class="ag-table"><thead><tr><th style="text-align:left">${t("matColHead")}</th><th style="text-align:right;width:70px">${t("matColQty")}</th><th style="text-align:left;width:80px">${t("matColUnit")}</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="empty">${t("matNone")}</div>`}
     <div class="meta" style="text-align:center;margin-top:22px">ETAF · Trainer-Koordination</div></div>`;
