@@ -3,18 +3,23 @@
 
 require_once __DIR__.'/lib.php';
 
-/** Baut die drei Antwort-Buttons (Magic-Links) als HTML. */
+/** Baut die drei Antwort-Buttons (Magic-Links) als HTML — tabellenbasiert,
+ *  gestapelt und mit voller Breite, damit sie in jedem Mail-Client (inkl.
+ *  Apple Mail, Outlook, Gmail) sauber und gut tippbar dargestellt werden. */
 function response_buttons(string $tok, string $lang): string {
   $base=base_url().'/respond.php?token='.$tok.'&answer=';
   $L = $lang==='de'
-    ? ['yes'=>'✅ Ja, verfügbar','maybe'=>'🤔 Vielleicht','no'=>'❌ Nein']
-    : ['yes'=>'✅ Yes, available','maybe'=>'🤔 Maybe','no'=>'❌ No'];
-  $btn=function($url,$label,$bg) {
-    return '<a href="'.$url.'" style="display:inline-block;margin:4px;padding:11px 18px;'
-      .'border-radius:8px;font:600 14px system-ui,Arial,sans-serif;color:#fff;'
-      .'text-decoration:none;background:'.$bg.'">'.$label.'</a>';
+    ? ['yes'=>'✅&nbsp; Ja, verfügbar','maybe'=>'🤔&nbsp; Vielleicht','no'=>'❌&nbsp; Nein']
+    : ['yes'=>'✅&nbsp; Yes, available','maybe'=>'🤔&nbsp; Maybe','no'=>'❌&nbsp; No'];
+  $btn=function($url,$label,$bg){
+    return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 10px">'
+      .'<tr><td align="center" bgcolor="'.$bg.'" style="border-radius:8px">'
+      .'<a href="'.$url.'" target="_blank" style="display:block;padding:14px 20px;color:#ffffff;'
+      .'font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;line-height:20px;'
+      .'text-decoration:none;border-radius:8px">'.$label.'</a>'
+      .'</td></tr></table>';
   };
-  return '<div style="margin:22px 0">'
+  return '<div style="margin:22px 0;max-width:340px">'
     .$btn($base.'yes',$L['yes'],'#2E9E6B')
     .$btn($base.'maybe',$L['maybe'],'#C77E1E')
     .$btn($base.'no',$L['no'],'#D81F26')
