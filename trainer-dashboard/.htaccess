@@ -1,0 +1,8 @@
+# ETAF Trainer-Koordination — statische Auslieferung
+# UTF-8 erzwingen (verhindert Umlaut-Probleme, falls der Server sonst Latin-1 sendet)
+AddDefaultCharset UTF-8
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType image/svg+xml .svg
+  AddCharset UTF-8 .html
+</IfModule>
