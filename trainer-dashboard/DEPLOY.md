@@ -78,6 +78,22 @@ Ohne diese Datei läuft das Dashboard weiter als lokale Demo — praktisch zum Z
              'user'=>'trainer@dvi-systems.com','pass'=>'DEIN_MAIL_PASSWORT'],
   ```
 
+### Kommen keine Mails an? → Diagnose-Seite
+Rufe auf:
+```
+https://trainer.dvi-systems.com/backend/mailtest.php?key=DEIN_CRON_KEY&to=deine@mail.de
+```
+(`key` = `cron_key` aus `config.php`.) Die Seite zeigt die aktive Konfiguration,
+verschickt eine Test-Mail und protokolliert den **kompletten SMTP-Dialog** — so
+sieht man sofort, ob es an Verbindung, Login (Passwort!), Empfänger oder erst an
+der Zustellung (Spam / fehlendes SPF/DKIM) liegt. Das Passwort wird nie angezeigt.
+
+Häufigste Ursachen:
+- `mail_mode` steht auf `'log'` → es wird nichts versendet. Auf `'smtp'` stellen.
+- SMTP-`pass` ist leer oder falsch → „Login abgelehnt (kein 235)".
+- Mail wird angenommen, kommt aber nicht an → **Spam-Ordner** prüfen und
+  **SPF/DKIM** für `dvi-systems.com` im DNS setzen (siehe unten).
+
 ## Wie der Verfügbarkeits-Rückkanal funktioniert
 Jede Anfrage-E-Mail enthält drei Buttons **✅ Ja / 🤔 Vielleicht / ❌ Nein**.
 Dahinter steckt ein persönlicher Magic-Link (`respond.php?token=…`). Klickt der

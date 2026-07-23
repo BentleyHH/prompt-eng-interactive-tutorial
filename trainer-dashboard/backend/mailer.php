@@ -48,49 +48,65 @@ function email_html(string $bodyText, string $buttons): string {
 function send_email(string $toEmail, string $toName, string $subject, string $html): bool {
   $c=cfg();
   $mode=$c['mail_mode']??'mail';
-  if($mode==='log') return true; // nur protokollieren (Aufrufer schreibt email_log)
+  $GLOBALS['__mail_err']='';
+  if($mode==='log'){ $GLOBALS['__mail_err']="mail_mode='log' — es wird NICHTS versendet, nur protokolliert. Für echten Versand in config.php auf 'smtp' (empfohlen) oder 'mail' umstellen."; return true; }
 
   $from=$c['from_email']; $fromName=$c['from_name']??'ETAF';
-  if($mode==='smtp') return smtp_send($toEmail,$subject,$html,$c['smtp'],$from,$fromName);
+  if($mode==='smtp') return smtp_send($toEmail,$subject,$html,$c['smtp']??[],$from,$fromName);
 
   // PHP mail()
   $headers = 'MIME-Version: 1.0'."\r\n"
     .'Content-Type: text/html; charset=UTF-8'."\r\n"
     .'From: '.mb_encode_mimeheader($fromName).' <'.$from.'>'."\r\n"
     .'Reply-To: '.$from."\r\n";
-  return @mail($toEmail, mb_encode_mimeheader($subject), $html, $headers);
+  $ok=@mail($toEmail, mb_encode_mimeheader($subject), $html, $headers);
+  if(!$ok) $GLOBALS['__mail_err']="PHP mail() hat false zurückgegeben. Auf artfiles ist für die eigene Domain oft mail_mode='smtp' zuverlässiger.";
+  return $ok;
 }
 
-/** Minimaler SMTP-Client (AUTH LOGIN, STARTTLS/SSL). Ohne externe Libs. */
+/** Letzter Versand-Fehler / SMTP-Mitschnitt (für backend/mailtest.php). */
+$GLOBALS['__mail_err'] = '';
+$GLOBALS['__smtp_trace'] = [];
+
+/** Minimaler SMTP-Client (AUTH LOGIN, STARTTLS/SSL). Ohne externe Libs.
+ *  Protokolliert jeden Schritt in $GLOBALS['__smtp_trace'] und setzt bei
+ *  Fehlern $GLOBALS['__mail_err] mit Klartext-Grund. */
 function smtp_send(string $to, string $subject, string $html, array $s, string $from, string $fromName): bool {
-  $host=$s['host']; $port=(int)$s['port']; $secure=$s['secure']??'tls';
+  $GLOBALS['__smtp_trace']=[]; $GLOBALS['__mail_err']='';
+  $log=function($line) { $GLOBALS['__smtp_trace'][]=rtrim($line); };
+  $host=$s['host']??''; $port=(int)($s['port']??587); $secure=$s['secure']??'tls';
   $remote=($secure==='ssl'?'ssl://':'').$host.':'.$port;
+  $log('>> connect '.$remote);
   $fp=@stream_socket_client($remote,$en,$es,15);
-  if(!$fp) return false;
-  $read=function() use($fp){ $d=''; while($line=fgets($fp,515)){ $d.=$line; if(substr($line,3,1)===' ') break; } return $d; };
-  $cmd=function($c) use($fp,$read){ fwrite($fp,$c."\r\n"); return $read(); };
+  if(!$fp){ $GLOBALS['__mail_err']="Verbindung zu $remote fehlgeschlagen ($es $en). Host/Port/Firewall prüfen."; $log('!! '.$GLOBALS['__mail_err']); return false; }
+  $read=function() use($fp,$log){ $d=''; while($line=fgets($fp,515)){ $d.=$line; if(substr($line,3,1)===' ') break; } $log('<< '.trim($d)); return $d; };
+  $cmd=function($c,$hide=false) use($fp,$read,$log){ $log('>> '.($hide?'[…base64…]':$c)); fwrite($fp,$c."\r\n"); return $read(); };
   $read();
   $cmd('EHLO '.($_SERVER['HTTP_HOST']??'localhost'));
   if($secure==='tls'){
     $cmd('STARTTLS');
-    if(!stream_socket_enable_crypto($fp,true,STREAM_CRYPTO_METHOD_TLS_CLIENT)) { fclose($fp); return false; }
+    if(!stream_socket_enable_crypto($fp,true,STREAM_CRYPTO_METHOD_TLS_CLIENT)) { $GLOBALS['__mail_err']='STARTTLS (Verschlüsselung) fehlgeschlagen.'; $log('!! '.$GLOBALS['__mail_err']); fclose($fp); return false; }
     $cmd('EHLO '.($_SERVER['HTTP_HOST']??'localhost'));
   }
   $cmd('AUTH LOGIN');
-  $cmd(base64_encode($s['user']));
-  $r=$cmd(base64_encode($s['pass']));
-  if(strpos($r,'235')===false){ fclose($fp); return false; }
+  $cmd(base64_encode($s['user']??''),true);
+  $r=$cmd(base64_encode($s['pass']??''),true);
+  if(strpos($r,'235')===false){ $GLOBALS['__mail_err']='Login abgelehnt (kein 235). Benutzer/Passwort in config.php prüfen — user muss die volle E-Mail-Adresse sein.'; fclose($fp); return false; }
   $cmd('MAIL FROM:<'.$from.'>');
-  $cmd('RCPT TO:<'.$to.'>');
+  $r=$cmd('RCPT TO:<'.$to.'>');
+  if(strpos($r,'250')===false && strpos($r,'251')===false){ $GLOBALS['__mail_err']='Empfänger abgelehnt: '.trim($r); fclose($fp); return false; }
   $r=$cmd('DATA');
-  if(strpos($r,'354')===false){ fclose($fp); return false; }
+  if(strpos($r,'354')===false){ $GLOBALS['__mail_err']='DATA abgelehnt (kein 354): '.trim($r); fclose($fp); return false; }
   $data='From: '.mb_encode_mimeheader($fromName).' <'.$from.'>'."\r\n"
     .'To: <'.$to.'>'."\r\n"
     .'Subject: '.mb_encode_mimeheader($subject)."\r\n"
     .'MIME-Version: 1.0'."\r\n"
     .'Content-Type: text/html; charset=UTF-8'."\r\n\r\n"
     .$html."\r\n.";
-  $r=$cmd($data);
+  $log('>> [Nachricht … '.strlen($html).' Bytes]');
+  fwrite($fp,$data."\r\n"); $r=$read();
+  $ok=strpos($r,'250')!==false;
+  if(!$ok) $GLOBALS['__mail_err']='Server hat die Nachricht nicht angenommen: '.trim($r);
   $cmd('QUIT'); fclose($fp);
-  return strpos($r,'250')!==false;
+  return $ok;
 }
