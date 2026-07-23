@@ -1035,7 +1035,7 @@ function applyStatic(){
   $("#lgSub").textContent=t("subTitle");
   $("#lgWelcome").textContent=t("welcome");
   $("#lgEnter").textContent=t("enterPin");
-  $("#lgHint").innerHTML=t("demoPin");
+  $("#lgHint").innerHTML=LIVE?"":t("demoPin");  /* Live: keinen PIN-Hinweis zeigen (Sicherheit) */
   $("#lgLang").innerHTML=langSwitch();
   $("#sideLang").innerHTML=langSwitch();
   $("#langLbl").textContent=t("langLabel");
