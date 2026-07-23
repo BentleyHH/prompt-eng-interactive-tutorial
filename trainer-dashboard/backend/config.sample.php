@@ -33,7 +33,7 @@ return [
   'from_name' => 'ETAF Koordination',
   // Basis-URL des Backends (ohne Slash am Ende). Wird für die Magic-Link-Buttons
   // in den E-Mails gebraucht. Leer lassen = automatisch aus dem Request.
-  'base_url' => 'https://training.dvi-systems.com/backend',
+  'base_url' => 'https://trainer.dvi-systems.com/backend',
 
   // ---- E-Mail-Versand ---------------------------------------------
   // 'mail'  = PHP mail() (auf artfiles meist ok für die eigene Domain)
