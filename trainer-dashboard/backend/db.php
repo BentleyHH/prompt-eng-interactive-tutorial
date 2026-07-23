@@ -196,6 +196,11 @@ function seed_templates(): void {
     "Hallo {{firstName}},\n\nbei „{{topic}}“ in {{city}} ({{kw}}) ist kurzfristig ein Trainer ausgefallen. Könntest du eventuell einspringen?\n\nWer zuerst zusagt, bekommt den Platz. Jede Rückmeldung hilft uns enorm.\n\nDanke dir!\nETAF-Koordination",
     'Short-notice replacement','Short notice: able to step in? — {{topic}} ({{city}})',
     "Hi {{firstName}},\n\na trainer has dropped out of \"{{topic}}\" in {{city}} ({{kw}}) at short notice. Could you possibly step in?\n\nWhoever accepts first gets the slot. Every reply helps us enormously.\n\nThank you!\nETAF Coordination"],
+   ['t4',
+    'Absage / Planänderung','Planänderung — {{topic}} in {{city}} ({{kw}})',
+    "Hallo {{firstName}},\n\nvielen Dank für deine Zusage zu „{{topic}}“ in {{city}} ({{kw}}). Leider müssen wir kurzfristig umplanen und können dich für diesen Einsatz doch nicht einsetzen — die Voraussetzungen haben sich geändert.\n\nDas hat nichts mit dir persönlich zu tun. Wir kommen bei der nächsten passenden Gelegenheit sehr gern wieder auf dich zu. Danke für dein Verständnis!\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam",
+    'Cancellation / change of plan','Change of plan — {{topic}} in {{city}} ({{kw}})',
+    "Hi {{firstName}},\n\nthank you for accepting \"{{topic}}\" in {{city}} ({{kw}}). Unfortunately we have to reschedule at short notice and won't be able to assign you to this session after all — the requirements have changed.\n\nThis is not related to you personally. We'll gladly get back in touch for the next suitable opportunity. Thank you for your understanding!\n\nBest regards\nYour ETAF coordination team"],
   ];
   foreach($T as $r){
     q("INSERT INTO templates(id,de_name,de_subject,de_body,en_name,en_subject,en_body) VALUES(?,?,?,?,?,?,?)",$r);

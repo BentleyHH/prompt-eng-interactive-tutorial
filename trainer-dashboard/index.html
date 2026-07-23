@@ -208,6 +208,9 @@
   .pill.crit{background:var(--crit-bg);color:var(--crit)}
   .pill.info{background:var(--info-bg);color:var(--info)}
   .pill.neutral{background:var(--panel-2);color:var(--muted)}
+  .rstat{margin-left:2px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);
+    border-radius:7px;padding:4px 6px;font-size:12.5px;cursor:pointer;-webkit-appearance:none;appearance:none}
+  .rstat:hover{border-color:var(--brand);color:var(--brand)}
 
   /* ============ 20-WEEK HEATMAP ============ */
   .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
@@ -580,6 +583,9 @@ const L={
   composerHint:"💡 Platzhalter sind bereits gefüllt. Bei Sammelanfragen wird {{firstName}} pro Empfänger personalisiert.",
   discard:"Verwerfen", sendCheck:"Senden & Verfügbarkeit abfragen",
   sentToast:n=>`${n} ${n>1?'Anfragen':'Anfrage'} über trainer@dvi-systems.com versendet`,
+  rosterEdit:"Bearbeiten / absagen", setStatus:"Status setzen", cancelSend:"Absage per E-Mail senden",
+  statusChanged:s=>`Status geändert: ${s}`,
+  cancelSent:n=>`Absage an ${n} Trainer per E-Mail verschickt`,
   quickTitle:"⚡ Schnell-Ersatz",
   quickDesc:"Kurzfristig einen Ausfall ersetzen — Anfrage an die besten verfügbaren Trainer. Wer zuerst zusagt, bekommt den Platz.",
   trainingLbl:"Training", replCand:"Vorgeschlagene Ersatz-Trainer", reachable:"schnell erreichbar",
@@ -708,6 +714,9 @@ const L={
   composerHint:"💡 Placeholders are already filled. For group requests, {{firstName}} is personalised per recipient.",
   discard:"Discard", sendCheck:"Send & request availability",
   sentToast:n=>`${n} ${n>1?'requests':'request'} sent via trainer@dvi-systems.com`,
+  rosterEdit:"Edit / cancel", setStatus:"Set status", cancelSend:"Send cancellation e-mail",
+  statusChanged:s=>`Status changed: ${s}`,
+  cancelSent:n=>`Cancellation e-mailed to ${n} trainer${n>1?'s':''}`,
   quickTitle:"⚡ Quick replacement",
   quickDesc:"Replace a drop-out at short notice — request the best available trainers. First to accept gets the slot.",
   trainingLbl:"Training", replCand:"Suggested replacement trainers", reachable:"quickly reachable",
@@ -930,7 +939,12 @@ const TEMPLATES=[
    de:{name:"Kurzfristiger Ersatz", subject:"Kurzfristig: Einspringen möglich? — {{topic}} ({{city}})",
      body:`Hallo {{firstName}},\n\nbei „{{topic}}“ in {{city}} ({{kw}}) ist kurzfristig ein Trainer ausgefallen. Könntest du eventuell einspringen?\n\nWer zuerst über „✅ Ja“ zusagt, bekommt den Platz. Jede Rückmeldung hilft uns enorm.\n\n[ ✅ Ich springe ein ]   [ ❌ Diesmal nicht ]\n\nDanke dir!\nETAF-Koordination`},
    en:{name:"Short-notice replacement", subject:"Short notice: able to step in? — {{topic}} ({{city}})",
-     body:`Hi {{firstName}},\n\na trainer has dropped out of "{{topic}}" in {{city}} ({{kw}}) at short notice. Could you possibly step in?\n\nWhoever accepts first via "✅ Yes" gets the slot. Every reply helps us enormously.\n\n[ ✅ I'll step in ]   [ ❌ Not this time ]\n\nThank you!\nETAF Coordination`}}
+     body:`Hi {{firstName}},\n\na trainer has dropped out of "{{topic}}" in {{city}} ({{kw}}) at short notice. Could you possibly step in?\n\nWhoever accepts first via "✅ Yes" gets the slot. Every reply helps us enormously.\n\n[ ✅ I'll step in ]   [ ❌ Not this time ]\n\nThank you!\nETAF Coordination`}},
+  {id:"t4",
+   de:{name:"Absage / Planänderung", subject:"Planänderung — {{topic}} in {{city}} ({{kw}})",
+     body:`Hallo {{firstName}},\n\nvielen Dank für deine Zusage zu „{{topic}}“ in {{city}} ({{kw}}). Leider müssen wir kurzfristig umplanen und können dich für diesen Einsatz doch nicht einsetzen — die Voraussetzungen haben sich geändert.\n\nDas hat nichts mit dir persönlich zu tun. Wir kommen bei der nächsten passenden Gelegenheit sehr gern wieder auf dich zu. Danke für dein Verständnis!\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam`},
+   en:{name:"Cancellation / change of plan", subject:"Change of plan — {{topic}} in {{city}} ({{kw}})",
+     body:`Hi {{firstName}},\n\nthank you for accepting "{{topic}}" in {{city}} ({{kw}}). Unfortunately we have to reschedule at short notice and won't be able to assign you to this session after all — the requirements have changed.\n\nThis is not related to you personally. We'll gladly get back in touch for the next suitable opportunity. Thank you for your understanding!\n\nBest regards\nYour ETAF coordination team`}}
 ];
 
 /* ---------- STATE ---------- */
@@ -1344,14 +1358,40 @@ function rosterRow(x,tg){
     : x.status==="no"
     ? `<button class="btn sm" onclick="requestNext('${tg.id}')">${t("nextInLine")}</button>`
     : "";
+  const meta=[(x.tr.spec&&x.tr.spec[0])||"", x.tr.region||""].filter(Boolean).join(" · ");
+  const edit=`<select class="rstat" title="${t("rosterEdit")}" onchange="rosterAction('${tg.id}','${x.tr.id}',this.value);this.selectedIndex=0">
+      <option value="">⚙</option>
+      <optgroup label="${t("setStatus")}">
+        ${["asked","yes","maybe","no"].map(s=>`<option value="s:${s}">${spLabel(s)}</option>`).join("")}
+      </optgroup>
+      <option value="mail:cancel">✉ ${t("cancelSend")}</option>
+    </select>`;
   return `<div class="row">
     <div class="av" style="background:${x.tr.color}">${initials(x.tr.name)}</div>
     <div class="rowgrow"><div class="nm">${x.tr.name}</div>
-      <div class="meta">${x.tr.spec[0]} · ${x.tr.region}</div></div>
+      <div class="meta">${esc(meta)}</div></div>
     ${x.reminded?`<span class="tag" style="border-color:var(--warn);color:var(--warn)">${t("reminded")}</span>`:''}
     ${(needsVisa(tg.country)&&(x.status==='yes'||x.status==='confirmed'))?visaChip(x):''}
-    <span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${acts}
+    <span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${edit}${acts}
   </div>`;
+}
+function rosterAction(tgId,trId,val){
+  if(!val)return;
+  if(val.slice(0,2)==="s:") rosterSetStatus(tgId,trId,val.slice(2));
+  else if(val==="mail:cancel") composeCancel(tgId,trId);
+}
+async function rosterSetStatus(tgId,trId,status){
+  if(LIVE){
+    try{ await apiCall("request.setStatus",{training:tgId,trainer:trId,status}); await pull(); }
+    catch(e){ toast("Fehler: "+e.message,"crit"); return; }
+  } else setStatus(tgId,trId,status);
+  if(route==="detail"){curTg=S.trainings.find(x=>x.id===tgId);renderDetail();}
+  buildNav(); if(route==="dash")renderDash();
+  toast(t("statusChanged",spLabel(status)),"good");
+}
+function composeCancel(tgId,trId){
+  compose={tgId,recips:[trId],tplId:"t4",lang:S.emailLang||"en",purpose:"cancel"};
+  drawComposer(); openSheet();
 }
 function visaChip(x){
   const vs=(x.flight&&x.flight.visaStatus)||'none';
@@ -1469,7 +1509,7 @@ function fillTpl(str,tg,tr){
 function composeFor(tgId,trId,tplId){
   const tg=S.trainings.find(t=>t.id===tgId);
   compose={tgId,recips:trId?[trId]:ranked(tg).filter(x=>!x.status).slice(0,tg.need).map(x=>x.tr.id),
-    tplId:tplId||"t1", lang:S.emailLang||"en"};
+    tplId:tplId||"t1", lang:S.emailLang||"en", purpose:"ask"};
   drawComposer();openSheet();
 }
 function setComposeLang(l){compose.lang=l;S.emailLang=l;save();drawComposer();}
@@ -1523,23 +1563,28 @@ async function sendCompose(){
   const subject=$("#cSubj")?$("#cSubj").value:"";
   const bodyText=$("#cBody")?$("#cBody").value:"";
   const n=compose.recips.length;
+  const cancel=compose.purpose==="cancel";
   if(LIVE){
     const tgId=compose.tgId, recips=compose.recips.slice(), lang=compose.lang;
     closeSheet();
     try{
-      const d=await apiCall("request.create",{training:tgId,recipients:recips,lang,subject,body:bodyText});
+      const args={training:tgId,recipients:recips,lang,subject,body:bodyText};
+      if(cancel)args.status="no";
+      const d=await apiCall("request.create",args);
       await pull(); buildNav();
       if(route==="detail")renderDetail(); if(route==="dash")renderDash();
-      toast(t("sentToast",d.sent!=null?d.sent:n),"good");
+      toast(cancel?t("cancelSent",d.sent!=null?d.sent:n):t("sentToast",d.sent!=null?d.sent:n),cancel?"warn":"good");
     }catch(e){ toast("Fehler: "+e.message,"crit"); }
     return;
   }
-  compose.recips.forEach(id=>setStatus(compose.tgId,id,"asked"));
+  compose.recips.forEach(id=>setStatus(compose.tgId,id,cancel?"no":"asked"));
   compose.recips.forEach(id=>{const trx=S.trainers.find(t=>t.id===id); if(trx)demoLog(trx.email,subject,compose.lang,"logged");});
   closeSheet();
-  toast(t("sentToast",n),"good");
+  toast(cancel?t("cancelSent",n):t("sentToast",n),cancel?"warn":"good");
   if(route==="detail")renderDetail();
+  if(route==="dash")renderDash();
   buildNav();
+  if(cancel)return;   // Absage: keine simulierten Rückläufer
   compose.recips.forEach((id,i)=>{
     setTimeout(()=>{
       if(Math.random()<0.7){

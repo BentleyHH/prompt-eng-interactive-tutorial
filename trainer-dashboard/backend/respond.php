@@ -5,19 +5,43 @@
  * Aufruf: respond.php?token=<tok>&answer=yes|maybe|no
  */
 require_once __DIR__.'/lib.php';
+require_once __DIR__.'/mailer.php';
 ensure_schema();
 
 $tok=$_GET['token']??'';
 $ans=$_GET['answer']??'';
 $map=['yes'=>'yes','maybe'=>'maybe','no'=>'no'];
 
-$req = $tok ? q("SELECT r.*, t.topic, t.city, t.kw FROM requests r
+$req = $tok ? q("SELECT r.*, t.topic, t.city, t.country, t.kw, t.month, t.need_cnt FROM requests r
   JOIN trainings t ON t.id=r.training_id WHERE r.tok=?",[$tok])->fetch() : null;
 
-$lang = $req['lang'] ?? 'de';
+$lang = ($req['lang'] ?? 'de')==='en' ? 'en' : 'de';
 $ok = $req && isset($map[$ans]);
 if($ok){
   q("UPDATE requests SET status=?, responded_at=? WHERE id=?",[$map[$ans], now(), $req['id']]);
+
+  /* Bestätigungs-E-Mail an den Trainer — mit Möglichkeit, die Antwort zu ändern */
+  $tr = q("SELECT * FROM trainers WHERE id=?",[$req['trainer_id']])->fetch();
+  if($tr && !empty($tr['email'])){
+    $tg=['topic'=>$req['topic'],'city'=>$req['city'],'country'=>$req['country']??'',
+         'kw'=>$req['kw'],'month'=>$req['month']??'','need_cnt'=>$req['need_cnt']??''];
+    $word = $lang==='de'
+      ? ['yes'=>'<b>zugesagt</b> (verfügbar)','maybe'=>'mit <b>„vielleicht"</b> geantwortet','no'=>'<b>abgesagt</b>']
+      : ['yes'=>'<b>confirmed</b> (available)','maybe'=>'answered <b>"maybe"</b>','no'=>'<b>declined</b>'];
+    $subj = fill_tpl($lang==='de'
+      ? 'Bestätigung deiner Antwort — {{topic}} ({{city}})'
+      : 'Confirmation of your reply — {{topic}} ({{city}})', $tg, $tr);
+    $intro = fill_tpl($lang==='de'
+      ? "Hallo {{firstName}},\n\nvielen Dank! Für „{{topic}}“ in {{city}} ({{kw}}) haben wir notiert, dass du ".$word[$map[$ans]].".\n\nFalls sich etwas ändert oder etwas dazwischenkommt, kannst du deine Antwort jederzeit über die Buttons unten anpassen — die neue Antwort ersetzt automatisch die alte."
+      : "Hi {{firstName}},\n\nthank you! For \"{{topic}}\" in {{city}} ({{kw}}) we noted that you ".$word[$map[$ans]].".\n\nIf anything changes, you can update your answer any time via the buttons below — the new answer automatically replaces the old one.",
+      $tg, $tr);
+    $html = email_html($intro, response_buttons($tok, $lang));
+    $sent = send_email($tr['email'], $tr['name'], $subj, $html);
+    $st = (cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($sent?'sent':'failed');
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",
+      [$req['training_id'],$req['trainer_id'],$tr['email'],$subj,$intro,$lang,$st,now()]);
+  }
 }
 
 $L = $lang==='de' ? [

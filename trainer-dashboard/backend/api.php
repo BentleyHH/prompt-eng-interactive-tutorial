@@ -180,6 +180,9 @@ switch($action){
     require_auth();
     $tgId=$in['training']; $recips=$in['recipients']??[]; $lang=($in['lang']??'en')==='de'?'de':'en';
     $subjTpl=$in['subject']??null; $bodyTpl=$in['body']??null;
+    // Optionaler Zielstatus: 'asked' (Standard, normale Anfrage) oder z.B. 'no' (Absage per Mail)
+    $forceStatus=in_array(($in['status']??''),['asked','yes','maybe','no'],true)?$in['status']:'asked';
+    $respondedAt=$forceStatus==='asked'?null:now();
     $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
     if(!$tg) fail('Training nicht gefunden.',404);
     $c=cfg(); $sent=0;
@@ -189,14 +192,15 @@ switch($action){
       $tok=token(40);
       // Request-Zeile anlegen/aktualisieren
       $ex=q("SELECT id FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
-      if($ex) q("UPDATE requests SET status='asked', lang=?, tok=?, created_at=?, responded_at=NULL WHERE id=?",
-        [$lang,$tok,now(),$ex['id']]);
-      else q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?, 'asked',?,?,?)",
-        [$tgId,$trId,$lang,$tok,now()]);
+      if($ex) q("UPDATE requests SET status=?, lang=?, tok=?, created_at=?, responded_at=? WHERE id=?",
+        [$forceStatus,$lang,$tok,now(),$respondedAt,$ex['id']]);
+      else q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at,responded_at) VALUES(?,?,?,?,?,?,?)",
+        [$tgId,$trId,$forceStatus,$lang,$tok,now(),$respondedAt]);
       // Text füllen
       $subject=fill_tpl($subjTpl ?? 'Anfrage — {{topic}}', $tg, $tr);
       $bodyText=fill_tpl($bodyTpl ?? '', $tg, $tr);
-      $html=email_html($bodyText, response_buttons($tok,$lang));
+      // Bei einer Absage/Planänderung keine Verfügbarkeits-Buttons anhängen.
+      $html=email_html($bodyText, $forceStatus==='asked' ? response_buttons($tok,$lang) : '');
       $ok=send_email($tr['email'],$tr['name'],$subject,$html);
       q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
          VALUES(?,?,?,?,?,?,?,?)",[$tgId,$trId,$tr['email'],$subject,$bodyText,$lang,$ok?($c['mail_mode']==='log'?'logged':'sent'):'failed',now()]);
