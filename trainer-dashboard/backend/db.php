@@ -152,10 +152,8 @@ function ensure_schema(): void {
   if((cfg()['seed_demo']??false) && (int)q("SELECT COUNT(*) c FROM trainers")->fetch()['c']===0){
     seed_demo();
   }
-  // Vorlagen sicherstellen
-  if((int)q("SELECT COUNT(*) c FROM templates")->fetch()['c']===0){
-    seed_templates();
-  }
+  // Vorlagen sicherstellen (fügt auch bei bestehenden Installationen fehlende Vorlagen wie t4 nach)
+  seed_templates();
   // Kunden sicherstellen (auch für bestehende Installationen) + bestehende Trainings zuordnen
   if((int)q("SELECT COUNT(*) c FROM clients")->fetch()['c']===0){
     seed_clients();
@@ -203,7 +201,10 @@ function seed_templates(): void {
     "Hi {{firstName}},\n\nthank you for accepting \"{{topic}}\" in {{city}} ({{kw}}). Unfortunately we have to reschedule at short notice and won't be able to assign you to this session after all — the requirements have changed.\n\nThis is not related to you personally. We'll gladly get back in touch for the next suitable opportunity. Thank you for your understanding!\n\nBest regards\nYour ETAF coordination team"],
   ];
   foreach($T as $r){
-    q("INSERT INTO templates(id,de_name,de_subject,de_body,en_name,en_subject,en_body) VALUES(?,?,?,?,?,?,?)",$r);
+    // Nur fehlende Vorlagen anlegen — bestehende (evtl. angepasste) Texte nicht überschreiben.
+    if((int)q("SELECT COUNT(*) c FROM templates WHERE id=?",[$r[0]])->fetch()['c']===0){
+      q("INSERT INTO templates(id,de_name,de_subject,de_body,en_name,en_subject,en_body) VALUES(?,?,?,?,?,?,?)",$r);
+    }
   }
 }
 

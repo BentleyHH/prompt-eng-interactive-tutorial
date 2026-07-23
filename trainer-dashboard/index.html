@@ -1390,6 +1390,8 @@ async function rosterSetStatus(tgId,trId,status){
   toast(t("statusChanged",spLabel(status)),"good");
 }
 function composeCancel(tgId,trId){
+  // Falls die Absage-Vorlage (t4) im geladenen Zustand fehlt (ältere DB), aus den Defaults ergänzen.
+  if(!S.templates.some(t=>t.id==="t4")){const t4=TEMPLATES.find(t=>t.id==="t4");if(t4)S.templates.push(t4);}
   compose={tgId,recips:[trId],tplId:"t4",lang:S.emailLang||"en",purpose:"cancel"};
   drawComposer(); openSheet();
 }
