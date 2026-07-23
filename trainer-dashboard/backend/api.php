@@ -185,10 +185,15 @@ switch($action){
     $respondedAt=$forceStatus==='asked'?null:now();
     $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
     if(!$tg) fail('Training nicht gefunden.',404);
-    $c=cfg(); $sent=0;
+    $c=cfg(); $sent=0; $seenEmail=[];
     foreach($recips as $trId){
       $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
       if(!$tr) continue;
+      // Dubletten-Schutz: pro E-Mail-Adresse nur EINE Anfrage senden
+      // (verhindert Mehrfach-Mails, wenn ein Trainer doppelt angelegt wurde).
+      $emKey=strtolower(trim((string)($tr['email']??'')));
+      if($emKey!=='' && isset($seenEmail[$emKey])) continue;
+      if($emKey!=='') $seenEmail[$emKey]=true;
       $tok=token(40);
       // Request-Zeile anlegen/aktualisieren
       $ex=q("SELECT id FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();

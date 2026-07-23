@@ -18,10 +18,14 @@ $req = $tok ? q("SELECT r.*, t.topic, t.city, t.country, t.kw, t.month, t.need_c
 $lang = ($req['lang'] ?? 'de')==='en' ? 'en' : 'de';
 $ok = $req && isset($map[$ans]);
 if($ok){
+  // Ändert sich die Antwort überhaupt? Nur dann eine Bestätigungs-Mail schicken.
+  // Das verhindert doppelte Bestätigungen durch mehrfaches Klicken und durch
+  // E-Mail-Scanner/Vorschau, die Links automatisch aufrufen (Link-Prefetch).
+  $changed = ($req['status'] ?? '') !== $map[$ans];
   q("UPDATE requests SET status=?, responded_at=? WHERE id=?",[$map[$ans], now(), $req['id']]);
 
-  /* Bestätigungs-E-Mail an den Trainer — mit Möglichkeit, die Antwort zu ändern */
-  $tr = q("SELECT * FROM trainers WHERE id=?",[$req['trainer_id']])->fetch();
+  /* Bestätigungs-E-Mail an den Trainer — nur bei tatsächlicher Änderung */
+  $tr = $changed ? q("SELECT * FROM trainers WHERE id=?",[$req['trainer_id']])->fetch() : null;
   if($tr && !empty($tr['email'])){
     $tg=['topic'=>$req['topic'],'city'=>$req['city'],'country'=>$req['country']??'',
          'kw'=>$req['kw'],'month'=>$req['month']??'','need_cnt'=>$req['need_cnt']??''];

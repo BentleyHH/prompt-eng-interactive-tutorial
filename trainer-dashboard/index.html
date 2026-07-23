@@ -1570,8 +1570,11 @@ function fillTpl(str,tg,tr){
 }
 function composeFor(tgId,trId,tplId){
   const tg=S.trainings.find(t=>t.id===tgId);
-  compose={tgId,recips:trId?[trId]:ranked(tg).filter(x=>!x.status).slice(0,tg.need).map(x=>x.tr.id),
-    tplId:tplId||"t1", lang:S.emailLang||"en", purpose:"ask"};
+  let auto=trId?[trId]:ranked(tg).filter(x=>!x.status);
+  if(!trId){ const seen=new Set();   // pro E-Mail nur einmal vorschlagen (Dubletten-Schutz)
+    auto=auto.filter(x=>{const e=(x.tr.email||"").toLowerCase(); if(!e)return true; if(seen.has(e))return false; seen.add(e); return true;})
+      .slice(0,tg.need).map(x=>x.tr.id); }
+  compose={tgId,recips:auto, tplId:tplId||"t1", lang:S.emailLang||"en", purpose:"ask"};
   drawComposer();openSheet();
 }
 function setComposeLang(l){compose.lang=l;S.emailLang=l;save();drawComposer();}
