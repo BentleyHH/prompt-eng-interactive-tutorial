@@ -11,18 +11,21 @@ function response_buttons(string $tok, string $lang): string {
   $L = $lang==='de'
     ? ['yes'=>'✅&nbsp; Ja, verfügbar','maybe'=>'🤔&nbsp; Vielleicht','no'=>'❌&nbsp; Nein']
     : ['yes'=>'✅&nbsp; Yes, available','maybe'=>'🤔&nbsp; Maybe','no'=>'❌&nbsp; No'];
-  $btn=function($url,$label,$bg){
-    return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 10px">'
-      .'<tr><td align="center" bgcolor="'.$bg.'" style="border-radius:8px">'
-      .'<a href="'.$url.'" target="_blank" style="display:block;padding:14px 20px;color:#ffffff;'
+  // Dunkle Schrift auf hellem Grund + farbiger Rahmen: bleibt in JEDEM Mail-Client
+  // lesbar — auch wenn Hintergrundfarben entfernt werden (dann steht die Beschriftung
+  // farbig auf Weiß statt weiß auf Weiß / unsichtbar).
+  $btn=function($url,$label,$text,$bg,$border){
+    return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 10px;border-collapse:separate">'
+      .'<tr><td align="center" bgcolor="'.$bg.'" style="border:2px solid '.$border.';border-radius:8px">'
+      .'<a href="'.$url.'" target="_blank" style="display:block;padding:13px 18px;color:'.$text.';'
       .'font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;line-height:20px;'
-      .'text-decoration:none;border-radius:8px">'.$label.'</a>'
+      .'text-decoration:none">'.$label.'</a>'
       .'</td></tr></table>';
   };
-  return '<div style="margin:22px 0;max-width:340px">'
-    .$btn($base.'yes',$L['yes'],'#2E9E6B')
-    .$btn($base.'maybe',$L['maybe'],'#C77E1E')
-    .$btn($base.'no',$L['no'],'#D81F26')
+  return '<div style="margin:22px 0;max-width:360px">'
+    .$btn($base.'yes',  $L['yes'],  '#1E7A4D','#E9F6EF','#2E9E6B')
+    .$btn($base.'maybe',$L['maybe'],'#8A5410','#FBF2DF','#C77E1E')
+    .$btn($base.'no',   $L['no'],   '#B21620','#FDEBEB','#D81F26')
     .'</div>';
 }
 

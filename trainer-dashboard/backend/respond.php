@@ -26,8 +26,8 @@ if($ok){
     $tg=['topic'=>$req['topic'],'city'=>$req['city'],'country'=>$req['country']??'',
          'kw'=>$req['kw'],'month'=>$req['month']??'','need_cnt'=>$req['need_cnt']??''];
     $word = $lang==='de'
-      ? ['yes'=>'<b>zugesagt</b> (verfügbar)','maybe'=>'mit <b>„vielleicht"</b> geantwortet','no'=>'<b>abgesagt</b>']
-      : ['yes'=>'<b>confirmed</b> (available)','maybe'=>'answered <b>"maybe"</b>','no'=>'<b>declined</b>'];
+      ? ['yes'=>'zugesagt (verfügbar)','maybe'=>'mit „vielleicht“ geantwortet','no'=>'abgesagt']
+      : ['yes'=>'confirmed (available)','maybe'=>'answered “maybe”','no'=>'declined'];
     $subj = fill_tpl($lang==='de'
       ? 'Bestätigung deiner Antwort — {{topic}} ({{city}})'
       : 'Confirmation of your reply — {{topic}} ({{city}})', $tg, $tr);
