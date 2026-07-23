@@ -208,9 +208,12 @@
   .pill.crit{background:var(--crit-bg);color:var(--crit)}
   .pill.info{background:var(--info-bg);color:var(--info)}
   .pill.neutral{background:var(--panel-2);color:var(--muted)}
-  .rstat{margin-left:2px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);
-    border-radius:7px;padding:4px 6px;font-size:12.5px;cursor:pointer;-webkit-appearance:none;appearance:none}
-  .rstat:hover{border-color:var(--brand);color:var(--brand)}
+  .rstat{width:34px;box-sizing:border-box;border:1px solid var(--line);background:var(--panel);
+    color:var(--muted);border-radius:7px;padding:5px 0;font-size:14px;line-height:1.2;
+    text-align:center;text-align-last:center;cursor:pointer;
+    -webkit-appearance:none;appearance:none;transition:.12s}
+  .rstat:hover{border-color:var(--brand);color:var(--brand);background:var(--panel-2)}
+  .rstat option{font-size:13px}
 
   /* ============ 20-WEEK HEATMAP ============ */
   .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
@@ -233,7 +236,12 @@
     font-weight:700;font-size:13px;color:#fff;letter-spacing:.02em}
   .row .nm{font-weight:640;font-size:14px}
   .row .meta{font-size:12.5px;color:var(--muted)}
-  .rowgrow{flex:1;min-width:0}
+  .rowgrow{flex:1;min-width:148px}
+  .rowacts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end}
+  @media(max-width:560px){
+    .row{flex-wrap:wrap}
+    .rowacts{width:100%;justify-content:flex-start;padding-left:48px}
+  }
   .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
   .tag{font-size:11px;background:var(--panel-2);border:1px solid var(--line);color:var(--muted);
     padding:1px 8px;border-radius:6px;font-weight:600}
@@ -1370,9 +1378,11 @@ function rosterRow(x,tg){
     <div class="av" style="background:${x.tr.color}">${initials(x.tr.name)}</div>
     <div class="rowgrow"><div class="nm">${x.tr.name}</div>
       <div class="meta">${esc(meta)}</div></div>
-    ${x.reminded?`<span class="tag" style="border-color:var(--warn);color:var(--warn)">${t("reminded")}</span>`:''}
-    ${(needsVisa(tg.country)&&(x.status==='yes'||x.status==='confirmed'))?visaChip(x):''}
-    <span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${edit}${acts}
+    <div class="rowacts">
+      ${x.reminded?`<span class="tag" style="border-color:var(--warn);color:var(--warn)">${t("reminded")}</span>`:''}
+      ${(needsVisa(tg.country)&&(x.status==='yes'||x.status==='confirmed'))?visaChip(x):''}
+      <span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${edit}${acts}
+    </div>
   </div>`;
 }
 function rosterAction(tgId,trId,val){
