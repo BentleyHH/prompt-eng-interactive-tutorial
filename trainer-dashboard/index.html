@@ -261,6 +261,26 @@
   .grouprow td{background:var(--panel-2);font-weight:700;font-size:12.5px;color:var(--muted);
     padding:9px 10px;border-top:2px solid var(--line)}
   .bktable .pill.crit{margin-left:6px}
+  .segbtn{display:inline-flex;gap:4px}
+  /* ===== Kalender-Gitter ===== */
+  .calgrid{border-collapse:separate;border-spacing:0;font-size:12px}
+  .calgrid th,.calgrid td{border:1px solid var(--line)}
+  .calcorner{position:sticky;left:0;z-index:3;background:var(--panel);min-width:150px;text-align:left;padding:8px 10px}
+  .calh{padding:5px 8px;text-align:center;background:var(--panel-2);white-space:nowrap;font-size:11px;font-weight:700}
+  .calhd{color:var(--muted);font-weight:400;font-size:10px}
+  .calname{position:sticky;left:0;z-index:2;background:var(--panel);text-align:left;padding:6px 10px;white-space:nowrap;font-weight:600}
+  .calname .av{vertical-align:middle;margin-right:7px}
+  .calcell{padding:3px;vertical-align:top;min-width:90px;height:34px}
+  .calcell.clash{outline:2px solid var(--crit);outline-offset:-2px}
+  .calchip{display:block;font-size:10.5px;font-weight:600;padding:3px 6px;border-radius:5px;margin:2px 0;
+    cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;border:1px solid transparent}
+  .calchip.s-yes{background:var(--cc);color:#fff}
+  .calchip.s-maybe{background:var(--cc);color:#fff;opacity:.55}
+  .calchip.s-asked{background:transparent;color:var(--cc);border-color:var(--cc)}
+  .callegend{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted)}
+  .callegend .lg{display:inline-flex;align-items:center;gap:6px}
+  .callegend .calchip{margin:0}
+  .clashdot{display:inline-block;width:16px;height:16px;border-radius:4px;outline:2px solid var(--crit);outline-offset:-2px}
 
   /* ============ 20-WEEK HEATMAP ============ */
   .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
@@ -656,6 +676,10 @@ const L={
   planPrint:"Als PDF / Drucken", planSend:"Per E-Mail senden",
   planNoMail:"Für diesen Trainer ist keine E-Mail-Adresse hinterlegt.",
   planSentToast:n=>`Einsatzübersicht an ${n} gesendet`, planSubject:"Deine Einsatzübersicht — bitte bestätigen",
+  travelWin:"Reisezeitraum inkl. An-/Abreise",
+  bkViewList:"Liste", bkViewCal:"Kalender", bkCalTrainer:"Trainer",
+  bkCalEmpty:"Keine Buchungen für diese Auswahl.",
+  bkLegend:"Legende:", bkLegYes:"Zugesagt", bkLegMaybe:"Vielleicht", bkLegAsked:"Angefragt", bkLegClash:"Doppelbuchung",
   tp_dash:"Übersicht", tp_dashSub:"Leitstand über alle Kunden · Trainings & Besetzung",
   tp_trn:"Trainings", tp_trnSub:"Alle geplanten Einsätze und ihr Besetzungsstand",
   tp_pool:"Trainerpool", tp_poolSub:"Profile, Kontaktdaten und Spezialisierungen",
@@ -810,6 +834,10 @@ const L={
   planPrint:"Save as PDF / Print", planSend:"Send by e-mail",
   planNoMail:"No e-mail address on file for this trainer.",
   planSentToast:n=>`Assignment overview sent to ${n}`, planSubject:"Your assignment overview — please confirm",
+  travelWin:"Travel window incl. arrival/departure",
+  bkViewList:"List", bkViewCal:"Calendar", bkCalTrainer:"Trainer",
+  bkCalEmpty:"No bookings for this selection.",
+  bkLegend:"Legend:", bkLegYes:"Confirmed", bkLegMaybe:"Maybe", bkLegAsked:"Requested", bkLegClash:"Double booking",
   tp_dash:"Overview", tp_dashSub:"Control centre across all clients · trainings & staffing",
   tp_trn:"Trainings", tp_trnSub:"All planned sessions and their staffing",
   tp_pool:"Trainer pool", tp_poolSub:"Profiles, contacts and specialisations",
@@ -1610,7 +1638,7 @@ function renderTrainers(){
    Monat/Suche), Gruppierung, Doppelbuchungs-Warnung, CSV-Export
    ============================================================ */
 let bookingTr="all", bookingStatus="all", bookingClient="all", bookingMonth="all",
-    bookingSearch="", bookingGroup="none";
+    bookingSearch="", bookingGroup="none", bookingView="list";
 function clientOf(tg){ return (S.clients||[]).find(c=>c.id===tg.clientId)||null; }
 function bookingMonthKey(tg){ return tg.month || (tg.date?String(tg.date).slice(0,7):"") || tg.kw || ""; }
 function allBookings(){
@@ -1647,14 +1675,15 @@ function filteredBookings(){
 }
 function bkRow(x,conf){
   const tg=x.tg, cl=clientOf(tg);
-  const when=[tg.date||"",tg.kw||""].filter(Boolean).join(" · ");
+  const when=whenText(tg);
+  const kwSub=(tg.kw && fmtDateRange(tg.date,tg.dateEnd))?tg.kw:"";
   const trav=travelLine(x.flight,tg);
   const dbl=conf.has(bkKey(x))?`<span class="pill crit" title="${t("bkConflictHint")}">⚠ ${t("bkConflict")}</span>`:"";
   const clientChip=cl?`<span class="cchip" style="--cc:${cl.color}">${esc(cl.short||cl.name)}</span>`:"";
   return `<tr>
     <td><div class="bktr"><span class="av xs" style="background:${x.tr.color}">${initials(x.tr.name)}</span><b>${esc(x.tr.name)}</b></div></td>
     <td class="nowrap"><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${dbl}</td>
-    <td class="nowrap">${esc(when||"—")}</td>
+    <td class="nowrap">${esc(when||"—")}${kwSub?`<div class="meta">${esc(kwSub)}</div>`:""}</td>
     <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
     <td>${clientChip}<b>${esc(tg.topic)}</b>${trav?`<div class="meta travrow">🧳 ${trav}</div>`:""}</td>
     <td class="nowrap"><button class="btn sm" title="${t("planView")}" onclick="openPlan('${x.tr.id}')">📋</button></td>
@@ -1692,6 +1721,13 @@ function renderBookings(){
     const head = label ? `<tr class="grouprow"><td colspan="${cols}">${esc(label)} · ${items.length}</td></tr>` : "";
     return head+items.map(x=>bkRow(x,conf)).join("");
   }).join("") : `<tr><td colspan="${cols}" class="meta" style="padding:16px 8px">${t("bkEmpty")}</td></tr>`;
+  const listPanel=`<div class="panel"><div class="panel-b" style="overflow-x:auto">
+      <table class="plantable bktable">
+        <tr><th>${t("bkTrainer")}</th><th>${t("planColStatus")}</th><th>${t("planColWhen")}</th><th>${t("planColWhere")}</th><th>${t("planColWhat")}</th><th></th></tr>
+        ${body}
+      </table></div></div>`;
+  const second = bookingView==="calendar" ? renderCalendar(list) : listPanel;
+  const vbtn=(v,l)=>`<button class="btn sm ${bookingView===v?'primary':''}" onclick="bookingView='${v}';renderBookings()">${l}</button>`;
 
   $("#v-bookings").innerHTML=`
     <div class="panel"><div class="panel-b">
@@ -1700,6 +1736,7 @@ function renderBookings(){
           <b>${t("bkCount",list.length)}</b>
           <div class="meta">${t("bkStats",uTr,uTg)}${confN?` · <span style="color:var(--crit)">⚠ ${t("bkConflictN",confN)}</span>`:""}</div>
         </div>
+        <span class="segbtn">${vbtn("list","☰ "+t("bkViewList"))}${vbtn("calendar","▦ "+t("bkViewCal"))}</span>
         <button class="btn sm" onclick="exportBookingsCSV()">⬇ CSV</button>
       </div>
       <div class="bkfilter">
@@ -1713,18 +1750,13 @@ function renderBookings(){
           <select class="rstat bksel" onchange="bookingMonth=this.value;renderBookings()">${moOpts}</select></span>
         <span class="bkf"><span class="fld">${t("planColStatus")}</span>
           <select class="rstat bksel" onchange="bookingStatus=this.value;renderBookings()">${stOpts}</select></span>
-        <span class="bkf"><span class="fld">${t("bkGroup")}</span>
-          <select class="rstat bksel" onchange="bookingGroup=this.value;renderBookings()">${grOpts}</select></span>
+        ${bookingView==="list"?`<span class="bkf"><span class="fld">${t("bkGroup")}</span>
+          <select class="rstat bksel" onchange="bookingGroup=this.value;renderBookings()">${grOpts}</select></span>`:""}
         ${(bookingTr!=="all"||bookingClient!=="all"||bookingStatus!=="all"||bookingMonth!=="all"||bookingSearch||bookingGroup!=="none")
           ?`<button class="btn sm" onclick="resetBookings()">✕ ${t("bkReset")}</button>`:""}
       </div>
     </div></div>
-    <div class="panel"><div class="panel-b" style="overflow-x:auto">
-      <table class="plantable bktable">
-        <tr><th>${t("bkTrainer")}</th><th>${t("planColStatus")}</th><th>${t("planColWhen")}</th><th>${t("planColWhere")}</th><th>${t("planColWhat")}</th><th></th></tr>
-        ${body}
-      </table>
-    </div></div>`;
+    ${second}`;
 }
 function focusBkSearch(){ const el=$(".bksearch"); if(el){const v=el.value;el.focus();el.setSelectionRange(v.length,v.length);} }
 function resetBookings(){ bookingTr="all";bookingClient="all";bookingStatus="all";bookingMonth="all";bookingSearch="";bookingGroup="none";renderBookings(); }
@@ -1743,6 +1775,38 @@ function exportBookingsCSV(){
   a.download="ETAF-Belegung.csv"; document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
   toast(t("bkCsvToast",list.length),"good");
+}
+function kwNum(k){ const m=/(\d+)/.exec(k||""); return m?+m[1]:9999; }
+function renderCalendar(list){
+  if(!list.length) return `<div class="panel"><div class="panel-b"><div class="meta" style="padding:12px">${t("bkCalEmpty")}</div></div></div>`;
+  // Wochen-Spalten (KW) mit frühestem Datum als Sortier-/Anzeigehilfe
+  const wk={};
+  list.forEach(x=>{ const k=x.tg.kw||"—"; if(!wk[k])wk[k]={kw:k,minDate:x.tg.date||""};
+    if(x.tg.date && (!wk[k].minDate || x.tg.date<wk[k].minDate)) wk[k].minDate=x.tg.date; });
+  const weeks=Object.values(wk).sort((a,b)=>
+    (a.minDate&&b.minDate) ? a.minDate.localeCompare(b.minDate) : kwNum(a.kw)-kwNum(b.kw));
+  const trs=[...new Map(list.map(x=>[x.tr.id,x.tr])).values()].sort((a,b)=>a.name.localeCompare(b.name));
+  const cell={};
+  list.forEach(x=>{ const k=x.tr.id+"|"+(x.tg.kw||"—"); (cell[k]=cell[k]||[]).push(x); });
+  const head=`<tr><th class="calcorner">${t("bkCalTrainer")}</th>`+
+    weeks.map(w=>`<th class="calh"><div>${esc(w.kw)}</div>${w.minDate?`<div class="calhd">${esc(shortDay(w.minDate))}</div>`:""}</th>`).join("")+`</tr>`;
+  const rows=trs.map(tr=>{
+    const tds=weeks.map(w=>{
+      const items=cell[tr.id+"|"+w.kw]||[]; const clash=items.length>1;
+      const chips=items.map(x=>{ const cl=clientOf(x.tg); const st=x.status==='confirmed'?'yes':x.status;
+        return `<span class="calchip s-${st}" style="--cc:${cl?cl.color:'#888'}" title="${esc(x.tg.topic+' · '+(x.tg.city||'')+' · '+spLabel(x.status))}" onclick="openDetail('${x.tg.id}')">${esc(x.tg.city||x.tg.topic)}</span>`;
+      }).join("");
+      return `<td class="calcell${clash?' clash':''}">${chips}</td>`;
+    }).join("");
+    return `<tr><th class="calname"><span class="av xs" style="background:${tr.color}">${initials(tr.name)}</span>${esc(tr.name)}</th>${tds}</tr>`;
+  }).join("");
+  const legend=`<div class="callegend"><b>${t("bkLegend")}</b>
+    <span class="lg"><span class="calchip s-yes" style="--cc:#3E4852">${t("bkLegYes")}</span></span>
+    <span class="lg"><span class="calchip s-maybe" style="--cc:#3E4852">${t("bkLegMaybe")}</span></span>
+    <span class="lg"><span class="calchip s-asked" style="--cc:#3E4852">${t("bkLegAsked")}</span></span>
+    <span class="lg"><span class="clashdot"></span>${t("bkLegClash")}</span></div>`;
+  return `<div class="panel"><div class="panel-b" style="overflow-x:auto">
+    <table class="calgrid">${head}${rows}</table>${legend}</div></div>`;
 }
 function planBadge(tr){
   const p=tr.plan; if(!p)return "";
@@ -1781,6 +1845,31 @@ function travelParts(fl,tg){
   return p;
 }
 function travelLine(fl,tg){ return travelParts(fl,tg).map(esc).join(" · "); }
+
+/* ---- Datum: echte Zeiträume statt nur KW ---- */
+const MONTHS={de:["","Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],
+              en:["","January","February","March","April","May","June","July","August","September","October","November","December"]};
+function pad2(n){return String(n).padStart(2,"0");}
+function pdate(s){ if(!s)return null; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s)); return m?{y:+m[1],mo:+m[2],d:+m[3]}:null; }
+function shiftD(x,delta){ const dt=new Date(x.y,x.mo-1,x.d+delta); return {y:dt.getFullYear(),mo:dt.getMonth()+1,d:dt.getDate()}; }
+function fmtDateRange(s,e,lang){
+  lang=lang||S.lang; const mon=MONTHS[lang==='en'?'en':'de'];
+  const P=pdate(s); if(!P)return "";
+  const Q=pdate(e);
+  const dm=x=> lang==='de' ? `${x.d}. ${mon[x.mo]}` : `${x.d} ${mon[x.mo]}`;
+  if(!Q || (P.y===Q.y&&P.mo===Q.mo&&P.d===Q.d)) return `${dm(P)} ${P.y}`;
+  if(P.y===Q.y&&P.mo===Q.mo) return lang==='de' ? `${P.d}.–${Q.d}. ${mon[P.mo]} ${P.y}` : `${P.d}–${Q.d} ${mon[P.mo]} ${P.y}`;
+  return `${dm(P)} – ${dm(Q)} ${Q.y}`;
+}
+/* Reisefenster: ein Tag vor Beginn bis ein Tag nach Ende (An-/Abreise-Puffer). */
+function fmtTravelWindow(s,e,lang){
+  const P=pdate(s); if(!P)return ""; const Q=pdate(e)||P;
+  const a=shiftD(P,-1), b=shiftD(Q,1);
+  return fmtDateRange(`${a.y}-${pad2(a.mo)}-${pad2(a.d)}`,`${b.y}-${pad2(b.mo)}-${pad2(b.d)}`,lang);
+}
+function shortDay(s){ const P=pdate(s); return P?`${pad2(P.d)}.${pad2(P.mo)}`:""; }
+/* Zeitraum-Anzeige: echtes Datum wenn vorhanden, sonst KW/Monat. */
+function whenText(tg){ return fmtDateRange(tg.date,tg.dateEnd) || tg.kw || tg.month || ""; }
 function openPlan(trId){ curPlanTr=S.trainers.find(t=>t.id===trId)||null; route="plan"; render(); }
 function renderPlan(){
   const tr=curPlanTr; if(!tr){go("trainers");return;}
@@ -1796,14 +1885,16 @@ function renderPlan(){
 
   const rows=sched.length ? sched.map(x=>{
     const tg=x.tg, cl=(S.clients||[]).find(c=>c.id===tg.clientId);
-    const when=[tg.date||"", tg.kw||""].filter(Boolean).join(" · ");
+    const when=whenText(tg);
+    const kwSub=(tg.kw && fmtDateRange(tg.date,tg.dateEnd))?tg.kw:"";
     const sub=[tg.spec||"", cl?cl.name:""].filter(Boolean).join(" · ");
     const trav=travelLine(x.flight,tg);
+    const twin=fmtTravelWindow(tg.date,tg.dateEnd);
     return `<tr>
       <td><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span></td>
-      <td class="nowrap">${esc(when||"—")}</td>
+      <td class="nowrap">${esc(when||"—")}${kwSub?`<div class="meta">${esc(kwSub)}</div>`:""}</td>
       <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
-      <td><b>${esc(tg.topic)}</b>${sub?`<div class="meta">${esc(sub)}</div>`:""}${trav?`<div class="meta travrow">🧳 ${trav}</div>`:""}</td>
+      <td><b>${esc(tg.topic)}</b>${sub?`<div class="meta">${esc(sub)}</div>`:""}${twin?`<div class="meta">✈ ${t("travelWin")}: ${esc(twin)}</div>`:""}${trav?`<div class="meta travrow">🧳 ${trav}</div>`:""}</td>
     </tr>`;
   }).join("") : `<tr><td colspan="4" class="meta" style="padding:16px 8px">${t("planEmpty")}</td></tr>`;
 

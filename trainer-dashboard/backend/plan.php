@@ -79,13 +79,15 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
           <tr><th>Status</th><th>Zeitraum</th><th>Ort</th><th>Training</th></tr>
           <?php foreach($sched as $t): $st=$t['rstatus'];
             $col=($st==='yes'||$st==='confirmed')?'#2E9E6B':($st==='maybe'?'#C77E1E':'#5c666e'); ?>
+            <?php $range=fmt_date_range($t['start_date']??null,$t['end_date']??null,'de'); $tw=travel_window($t['start_date']??null,$t['end_date']??null,'de'); ?>
             <tr>
               <td><span class="pill" style="background:<?=$col?>"><?=esc(status_word($st,'de'))?></span></td>
-              <td style="white-space:nowrap"><?=esc(trim(($t['start_date']??'').($t['kw']?'  ('.$t['kw'].')':'')))?></td>
+              <td style="white-space:nowrap"><?=esc($range ?: ($t['kw']??''))?><?php if($range && !empty($t['kw'])): ?><br><span class="sub" style="font-size:12px"><?=esc($t['kw'])?></span><?php endif; ?></td>
               <td><?=esc(trim(($t['city']??'').(($t['country']??'')?', '.$t['country']:'')))?></td>
               <td><b><?=esc($t['topic'])?></b>
                 <?php if(!empty($t['spec'])): ?><br><span class="sub"><?=esc($t['spec'])?></span><?php endif; ?>
-                <?php $tl=travel_line($t,'de'); if($tl): ?><br><span class="sub" style="font-size:12px"><?=$tl?></span><?php endif; ?>
+                <?php if($tw): ?><br><span class="sub" style="font-size:12px">✈ Reisezeitraum inkl. An-/Abreise: <?=esc($tw)?></span><?php endif; ?>
+                <?php $tl=travel_line($t,'de'); if($tl): ?><br><span class="sub" style="font-size:12px">🧳 <?=$tl?></span><?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>

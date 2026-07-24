@@ -207,6 +207,28 @@ function trainer_schedule(int $trId): array {
     WHERE r.trainer_id=? AND r.status IN ('yes','confirmed','maybe','asked')
     ORDER BY (t.start_date IS NULL), t.start_date, t.id", [$trId])->fetchAll();
 }
+/** Datum "YYYY-MM-DD" in Teile zerlegen. */
+function fmt_parse(?string $s){ if($s && preg_match('/^(\d{4})-(\d{2})-(\d{2})/',$s,$m)) return ['y'=>(int)$m[1],'mo'=>(int)$m[2],'d'=>(int)$m[3]]; return null; }
+/** Zeitraum als echtes Datum: "13.–20. März 2026" (de) / "13–20 March 2026" (en). */
+function fmt_date_range(?string $s, ?string $e, string $lang): string {
+  $mon = $lang==='de'
+    ? ['','Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
+    : ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+  $P=fmt_parse($s); if(!$P) return '';
+  $Q=fmt_parse($e);
+  $dm=function($x) use($mon,$lang){ return $lang==='de' ? $x['d'].'. '.$mon[$x['mo']] : $x['d'].' '.$mon[$x['mo']]; };
+  if(!$Q || ($P['y']==$Q['y']&&$P['mo']==$Q['mo']&&$P['d']==$Q['d'])) return $dm($P).' '.$P['y'];
+  if($P['y']==$Q['y']&&$P['mo']==$Q['mo']) return $lang==='de' ? $P['d'].'.–'.$Q['d'].'. '.$mon[$P['mo']].' '.$P['y'] : $P['d'].'–'.$Q['d'].' '.$mon[$P['mo']].' '.$P['y'];
+  return $dm($P).' – '.$dm($Q).' '.$Q['y'];
+}
+/** Reisefenster (ein Tag vor Beginn bis ein Tag nach Ende) als Datumsbereich. */
+function travel_window(?string $s, ?string $e, string $lang): string {
+  if(!$s) return '';
+  try{ $a=new DateTime($s); $a->modify('-1 day'); $b=new DateTime($e?:$s); $b->modify('+1 day'); }
+  catch(Throwable $x){ return ''; }
+  return fmt_date_range($a->format('Y-m-d'), $b->format('Y-m-d'), $lang);
+}
+
 /** Kurze Reise-Zeile aus einem Schedule-Datensatz (nur vorhandene Felder). */
 function travel_line(array $r, string $lang): string {
   $L = $lang==='de'
