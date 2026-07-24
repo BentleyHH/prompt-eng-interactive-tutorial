@@ -213,6 +213,34 @@ switch($action){
     }
     out(['ok'=>true,'sent'=>$sent,'total'=>count($recips)]);
 
+  /* ---- Einsatzübersicht an den Trainer mailen (mit Gesamtbestätigung) ---- */
+  case 'plan.send':
+    require_auth();
+    $trId=(int)($in['trainer']??0);
+    $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
+    if(!$tr) fail('Trainer nicht gefunden.',404);
+    if(empty($tr['email'])) fail('Für diesen Trainer ist keine E-Mail-Adresse hinterlegt.');
+    $lang=($in['lang']??'de')==='en'?'en':'de';
+    $sched=trainer_schedule($trId);
+    // Token anlegen/erneuern (setzt eine evtl. frühere Bestätigung zurück)
+    $tok=token(40);
+    $ex=q("SELECT trainer_id FROM plan_tokens WHERE trainer_id=?",[$trId])->fetch();
+    if($ex) q("UPDATE plan_tokens SET tok=?, sent_at=?, confirmed_at=NULL, confirm_status=NULL, note=NULL WHERE trainer_id=?",[$tok,now(),$trId]);
+    else    q("INSERT INTO plan_tokens(trainer_id,tok,created_at,sent_at) VALUES(?,?,?,?)",[$trId,$tok,now(),now()]);
+    $first=explode(' ', preg_replace('/^Dr\.\s*/','',$tr['name']))[0];
+    $intro=$lang==='de'
+      ? "Hallo $first,\n\nhier ist deine persönliche Einsatzübersicht. Bitte prüfe kurz, ob alles stimmt, und bestätige den Plan über den Button unten — oder melde uns, falls etwas nicht passt."
+      : "Hi $first,\n\nhere is your personal assignment overview. Please check that everything is correct and confirm the plan via the button below — or let us know if something doesn't fit.";
+    $cta=$lang==='de' ? 'Einsatzplan ansehen & bestätigen' : 'View & confirm your plan';
+    $url=base_url().'/plan.php?token='.$tok;
+    $subject=$lang==='de' ? 'Deine Einsatzübersicht — bitte bestätigen' : 'Your assignment overview — please confirm';
+    $html=email_html($intro, plan_table_html($sched,$lang).cta_button($url,$cta));
+    $ok=send_email($tr['email'],$tr['name'],$subject,$html);
+    $st=$ok ? ((cfg()['mail_mode']??'mail')==='log'?'logged':'sent') : 'failed';
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[null,$trId,$tr['email'],$subject,$intro,$lang,$st,now()]);
+    out(['ok'=>true,'sent'=>$ok?1:0,'count'=>count($sched)]);
+
   /* ---- E-Mail-Protokoll (Nachweis / Debug) ---- */
   case 'emails':
     require_auth();

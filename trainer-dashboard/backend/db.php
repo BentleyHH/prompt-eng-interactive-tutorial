@@ -120,6 +120,13 @@ function ensure_schema(): void {
   $d->exec("CREATE TABLE IF NOT EXISTS material_presets (
     id $pk, spec VARCHAR(96), material_id VARCHAR(24), qty INT DEFAULT 0)$eng");
 
+  // Einsatzübersicht je Trainer: Magic-Token + Gesamtbestätigung des Plans
+  $d->exec("CREATE TABLE IF NOT EXISTS plan_tokens (
+    trainer_id INT PRIMARY KEY,
+    tok VARCHAR(64),
+    created_at VARCHAR(20), sent_at VARCHAR(20),
+    confirmed_at VARCHAR(20), confirm_status VARCHAR(16), note TEXT)$eng");
+
   // PIN einmalig setzen
   if(!config_get('pin_hash')){
     config_set('pin_hash', password_hash(cfg()['default_pin'], PASSWORD_DEFAULT));

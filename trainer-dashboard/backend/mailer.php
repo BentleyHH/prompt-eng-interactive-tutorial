@@ -52,6 +52,43 @@ function email_html(string $bodyText, string $buttons): string {
     .'</div></body></html>';
 }
 
+/** Einsatz-Tabelle (für E-Mail und Bestätigungsseite). $sched aus trainer_schedule(). */
+function plan_table_html(array $sched, string $lang): string {
+  $h = $lang==='de'
+    ? ['status'=>'Status','when'=>'Zeitraum','where'=>'Ort','what'=>'Training','empty'=>'Aktuell keine Einsätze hinterlegt.']
+    : ['status'=>'Status','when'=>'Period','where'=>'Location','what'=>'Training','empty'=>'No assignments on record yet.'];
+  $pill=['yes'=>'#2E9E6B','confirmed'=>'#2E9E6B','maybe'=>'#C77E1E','asked'=>'#5c666e'];
+  if(!$sched) return '<p style="color:#8a939a;font-family:Arial,sans-serif;font-size:14px">'.$h['empty'].'</p>';
+  $rows='';
+  foreach($sched as $t){
+    $st=$t['rstatus']; $col=$pill[$st] ?? '#5c666e';
+    $when=trim(($t['start_date']?htmlspecialchars($t['start_date']):'').($t['kw']?'  ('.htmlspecialchars($t['kw']).')':''));
+    $loc=htmlspecialchars(trim(($t['city']??'').(($t['country']??'')?', '.$t['country']:'')));
+    $rows.='<tr>'
+      .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;white-space:nowrap">'
+      .'<span style="display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;background:'.$col.'">'.status_word($st,$lang).'</span></td>'
+      .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px;white-space:nowrap">'.$when.'</td>'
+      .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px">'.$loc.'</td>'
+      .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px"><b>'.htmlspecialchars($t['topic']).'</b></td>'
+      .'</tr>';
+  }
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+    .'style="border-collapse:collapse;margin:6px 0 4px;font-family:Arial,Helvetica,sans-serif;color:#242b31">'
+    .'<tr style="text-align:left;color:#8a939a;font-size:12px">'
+    .'<th style="padding:0 10px 6px">'.$h['status'].'</th><th style="padding:0 10px 6px">'.$h['when'].'</th>'
+    .'<th style="padding:0 10px 6px">'.$h['where'].'</th><th style="padding:0 10px 6px">'.$h['what'].'</th></tr>'
+    .$rows.'</table>';
+}
+
+/** Ein einzelner CTA-Button (z.B. „Einsatzplan ansehen & bestätigen“). */
+function cta_button(string $url, string $label, string $bg='#3E4852'): string {
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 4px;max-width:360px">'
+    .'<tr><td align="center" bgcolor="'.$bg.'" style="border-radius:8px">'
+    .'<a href="'.$url.'" target="_blank" style="display:block;padding:14px 20px;color:#ffffff;'
+    .'font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;text-decoration:none">'.$label.'</a>'
+    .'</td></tr></table>';
+}
+
 /**
  * Versendet eine Anfrage-Mail. Gibt true/false zurück.
  * $mode: 'mail' | 'smtp' | 'log'

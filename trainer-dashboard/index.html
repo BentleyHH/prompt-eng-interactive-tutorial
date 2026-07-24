@@ -220,6 +220,31 @@
   .rstat:hover{border-color:var(--brand);color:var(--brand);background:var(--panel-2)}
   .rstat option{font-size:13px}
 
+  /* ===== Einsatzübersicht (Plan) ===== */
+  .plandoc .panel-b{padding:22px 24px}
+  .planhead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .planlogo{font-weight:800;font-size:24px;letter-spacing:-.05em;color:var(--ink)}
+  .planlogo span{color:var(--accent)}
+  .plansum{display:flex;gap:6px;flex-wrap:wrap}
+  .plantable{border-collapse:collapse;width:100%;margin:14px 0 4px}
+  .plantable th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:0 10px 8px}
+  .plantable td{padding:11px 10px;border-top:1px solid var(--line);font-size:14px;vertical-align:top}
+  .plantable .nowrap{white-space:nowrap}
+  .planconf{margin:14px 0 4px;padding:11px 14px;border-radius:10px;font-size:14px}
+  .planconf.ok{background:var(--good-bg);color:var(--good)}
+  .planconf.bad{background:var(--crit-bg);color:var(--crit)}
+  .planconf.sent{background:var(--panel-2);color:var(--muted)}
+  .planfoot{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+  .planactions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  @media print{
+    .side,.topbar,.mob-nav,.noprint{display:none!important}
+    #app{display:block!important}.wrap{padding:0;max-width:100%}
+    .view:not(#v-plan){display:none!important}
+    #v-plan{display:block!important}
+    .plandoc{border:none;box-shadow:none}
+    body{background:#fff}
+  }
+
   /* ============ 20-WEEK HEATMAP ============ */
   .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
   .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
@@ -429,6 +454,7 @@
       <section class="view" id="v-trainings"></section>
       <section class="view" id="v-detail"></section>
       <section class="view" id="v-trainers"></section>
+      <section class="view" id="v-plan"></section>
       <section class="view" id="v-templates"></section>
       <section class="view" id="v-automation"></section>
       <section class="view" id="v-emails"></section>
@@ -590,6 +616,16 @@ const L={
   quickReplace:"Schnell-Ersatz", import:"Import",
   sync:"Aktualisieren", synced:"Aktualisiert — auf dem neuesten Stand", syncFail:"Aktualisierung fehlgeschlagen",
   syncDemo:"Im Demo-Modus gibt es keinen Server zum Abgleichen.", lastSync:z=>`aktualisiert ${z}`,
+  planView:"Einsatzübersicht", planTitle:"Einsatzübersicht",
+  planOk:"Plan bestätigt", planIssue:"Rückmeldung offen", planSent:"Übersicht gesendet",
+  planOkMsg:"Trainer hat den Einsatzplan als korrekt bestätigt.",
+  planIssueMsg:"Trainer hat eine Rückmeldung hinterlassen", planSentMsg:"Übersicht per E-Mail gesendet — Bestätigung ausstehend.",
+  planColStatus:"Status", planColWhen:"Zeitraum", planColWhere:"Ort", planColWhat:"Training",
+  planEmpty:"Für diesen Trainer sind aktuell keine Einsätze hinterlegt.",
+  planFoot:"Erstellt mit dem ETAF Trainer-Koordinationssystem · Bitte Angaben vor Buchung prüfen.",
+  planPrint:"Als PDF / Drucken", planSend:"Per E-Mail senden",
+  planNoMail:"Für diesen Trainer ist keine E-Mail-Adresse hinterlegt.",
+  planSentToast:n=>`Einsatzübersicht an ${n} gesendet`, planSubject:"Deine Einsatzübersicht — bitte bestätigen",
   tp_dash:"Übersicht", tp_dashSub:"Leitstand über alle Kunden · Trainings & Besetzung",
   tp_trn:"Trainings", tp_trnSub:"Alle geplanten Einsätze und ihr Besetzungsstand",
   tp_pool:"Trainerpool", tp_poolSub:"Profile, Kontaktdaten und Spezialisierungen",
@@ -723,6 +759,16 @@ const L={
   quickReplace:"Quick replacement", import:"Import",
   sync:"Refresh", synced:"Refreshed — up to date", syncFail:"Refresh failed",
   syncDemo:"Demo mode has no server to sync with.", lastSync:z=>`updated ${z}`,
+  planView:"Assignments", planTitle:"Assignment overview",
+  planOk:"Plan confirmed", planIssue:"Reply pending", planSent:"Overview sent",
+  planOkMsg:"Trainer confirmed the assignment plan as correct.",
+  planIssueMsg:"Trainer left a note", planSentMsg:"Overview e-mailed — confirmation pending.",
+  planColStatus:"Status", planColWhen:"Period", planColWhere:"Location", planColWhat:"Training",
+  planEmpty:"No assignments on record for this trainer yet.",
+  planFoot:"Generated with the ETAF trainer coordination system · Please verify details before booking.",
+  planPrint:"Save as PDF / Print", planSend:"Send by e-mail",
+  planNoMail:"No e-mail address on file for this trainer.",
+  planSentToast:n=>`Assignment overview sent to ${n}`, planSubject:"Your assignment overview — please confirm",
   tp_dash:"Overview", tp_dashSub:"Control centre across all clients · trainings & staffing",
   tp_trn:"Trainings", tp_trnSub:"All planned sessions and their staffing",
   tp_pool:"Trainer pool", tp_poolSub:"Profiles, contacts and specialisations",
@@ -1190,10 +1236,12 @@ function render(){
   else if(route==="trainings"){renderTrainings();$("#v-trainings").classList.add("on");}
   else if(route==="detail"){renderDetail();$("#v-detail").classList.add("on");}
   else if(route==="trainers"){renderTrainers();$("#v-trainers").classList.add("on");}
+  else if(route==="plan"){renderPlan();$("#v-plan").classList.add("on");}
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
   else if(route==="emails"){renderEmails();$("#v-emails").classList.add("on");}
   if(route==="detail"&&curTg){$("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+whenLabel(curTg);}
+  else if(route==="plan"&&curPlanTr){$("#tt").textContent=t("planTitle");$("#ts").textContent=curPlanTr.name;}
   else{const ti=titleFor(route);$("#tt").textContent=ti[0];$("#ts").textContent=ti[1];}
   save();saveView();
 }
@@ -1499,6 +1547,11 @@ function renderTrainers(){
           <span>✉︎ ${tr.email}</span><span>☎ ${tr.phone}</span>
           <span>🗣 ${tr.langs.join(" · ")} · ${t("workload")} ${t("load"+tr.load)}</span>
         </div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${planBadge(tr)}<div class="spacer"></div>
+          <button class="btn sm" onclick="openPlan('${tr.id}')">📋 ${t("planView")}</button>
+        </div>
       </div>
     </div>`).join("");
   $("#v-trainers").innerHTML=`
@@ -1508,6 +1561,91 @@ function renderTrainers(){
       <button class="btn" onclick="openImport()">＋ ${t("importProfiles")}</button>
     </div></div>
     <div class="grid2">${cards}</div>`;
+}
+function planBadge(tr){
+  const p=tr.plan; if(!p)return "";
+  if(p.confirmedAt&&p.status==="ok")   return `<span class="pill good">${t("planOk")}</span>`;
+  if(p.confirmedAt&&p.status==="issue")return `<span class="pill crit">${t("planIssue")}</span>`;
+  if(p.sentAt)                         return `<span class="pill neutral">${t("planSent")}</span>`;
+  return "";
+}
+
+/* ============================================================
+   EINSATZÜBERSICHT je Trainer (Ansicht · PDF · Mail · Bestätigung)
+   ============================================================ */
+let curPlanTr=null;
+function trainerSchedule(trId){
+  const relevant=["yes","confirmed","maybe","asked"];
+  return S.trainings
+    .map(tg=>{const r=(tg.roster||[]).find(x=>x.trainerId===trId); return r&&relevant.includes(r.status)?{tg,status:r.status,flight:r.flight}:null;})
+    .filter(Boolean)
+    .sort((a,b)=>String(a.tg.date||a.tg.kw||"zzz").localeCompare(String(b.tg.date||b.tg.kw||"zzz")));
+}
+function openPlan(trId){ curPlanTr=S.trainers.find(t=>t.id===trId)||null; route="plan"; render(); }
+function renderPlan(){
+  const tr=curPlanTr; if(!tr){go("trainers");return;}
+  const sched=trainerSchedule(tr.id);
+  const cnt={yes:0,maybe:0,asked:0};
+  sched.forEach(x=>{ if(x.status==="yes"||x.status==="confirmed")cnt.yes++; else if(x.status==="maybe")cnt.maybe++; else cnt.asked++; });
+  const p=tr.plan;
+  const confirmLine = p&&p.confirmedAt
+    ? `<div class="planconf ${p.status==="issue"?"bad":"ok"}">${p.status==="issue"
+        ? `✋ ${t("planIssueMsg")}${p.note?`: „${esc(p.note)}“`:""}`
+        : `✅ ${t("planOkMsg")}`} <span class="meta">(${esc((p.confirmedAt||"").slice(0,16).replace("T"," "))})</span></div>`
+    : (p&&p.sentAt ? `<div class="planconf sent">✉ ${t("planSentMsg")} <span class="meta">(${esc((p.sentAt||"").slice(0,16).replace("T"," "))})</span></div>` : "");
+
+  const rows=sched.length ? sched.map(x=>{
+    const tg=x.tg, cl=(S.clients||[]).find(c=>c.id===tg.clientId);
+    const when=[tg.date||"", tg.kw||""].filter(Boolean).join(" · ");
+    const visa=(x.flight&&x.flight.visaStatus&&x.flight.visaStatus!=="none")?` · ${t("visaLbl")}: ${t("visa_"+x.flight.visaStatus)}`:"";
+    return `<tr>
+      <td><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span></td>
+      <td class="nowrap">${esc(when||"—")}</td>
+      <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
+      <td><b>${esc(tg.topic)}</b>${tg.spec?`<div class="meta">${esc(tg.spec)}${cl?" · "+esc(cl.name):""}${visa}</div>`:""}</td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="4" class="meta" style="padding:16px 8px">${t("planEmpty")}</td></tr>`;
+
+  $("#v-plan").innerHTML=`
+    <button class="btn sm noprint" onclick="go('trainers')" style="margin-bottom:14px">← ${t("back")}</button>
+    <div class="panel plandoc"><div class="panel-b">
+      <div class="planhead">
+        <div>
+          <div class="planlogo">ETAF<span>.</span></div>
+          <h2 style="margin:6px 0 2px">${t("planTitle")}</h2>
+          <div class="meta">${esc(tr.name)} · ✉︎ ${esc(tr.email||"—")}${tr.phone?" · ☎ "+esc(tr.phone):""}</div>
+        </div>
+        <div class="plansum">
+          <span class="pill good">${t("sp_yes")}: ${cnt.yes}</span>
+          <span class="pill warn">${t("sp_maybe")}: ${cnt.maybe}</span>
+          <span class="pill neutral">${t("sp_asked")}: ${cnt.asked}</span>
+        </div>
+      </div>
+      ${confirmLine}
+      <table class="plantable">
+        <tr><th>${t("planColStatus")}</th><th>${t("planColWhen")}</th><th>${t("planColWhere")}</th><th>${t("planColWhat")}</th></tr>
+        ${rows}
+      </table>
+      <div class="meta planfoot">${t("planFoot")}</div>
+    </div></div>
+    <div class="planactions noprint">
+      <button class="btn" onclick="printPlan()">🖨 ${t("planPrint")}</button>
+      <button class="btn primary" onclick="sendPlan('${tr.id}')">✉ ${t("planSend")}</button>
+    </div>`;
+}
+function printPlan(){ document.body.classList.add("printing-plan"); window.print(); setTimeout(()=>document.body.classList.remove("printing-plan"),400); }
+async function sendPlan(trId){
+  const tr=S.trainers.find(t=>t.id===trId); if(!tr)return;
+  if(!tr.email){ toast(t("planNoMail"),"crit"); return; }
+  if(LIVE){
+    try{ const d=await apiCall("plan.send",{trainer:trId,lang:S.emailLang||"de"});
+      await pull(); curPlanTr=S.trainers.find(t=>t.id===trId)||curPlanTr; renderPlan();
+      toast(t("planSentToast",tr.name.split(" ").slice(-1)),"good");
+    }catch(e){ toast("Fehler: "+e.message,"crit"); }
+  } else {
+    demoLog(tr.email, t("planSubject"), S.emailLang||"de", "logged");
+    toast(t("planSentToast",tr.name.split(" ").slice(-1)),"good");
+  }
 }
 
 /* ============================================================

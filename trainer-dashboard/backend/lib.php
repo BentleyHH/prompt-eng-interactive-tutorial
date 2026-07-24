@@ -70,13 +70,21 @@ function require_auth(): void {
 
 /** Vollständiger State im Frontend-Format */
 function get_state(): array {
-  $trainers=array_map(function($r){
+  // Plan-Bestätigungen je Trainer (Einsatzübersicht)
+  $planBy=[];
+  foreach(q("SELECT * FROM plan_tokens")->fetchAll() as $p){
+    $planBy[(string)$p['trainer_id']]=[
+      'sentAt'=>$p['sent_at'], 'confirmedAt'=>$p['confirmed_at'],
+      'status'=>$p['confirm_status'], 'note'=>$p['note'] ];
+  }
+  $trainers=array_map(function($r) use ($planBy){
     return [
       'id'=>(string)$r['id'], 'name'=>$r['name'], 'email'=>$r['email'], 'phone'=>$r['phone'],
       'spec'=>json_decode($r['spec']?:'[]',true), 'region'=>$r['region'],
       'langs'=>json_decode($r['langs']?:'[]',true),
       'uae'=>(bool)$r['uae'], 'load'=>(int)$r['load_lvl'],
       'color'=>$r['color'], 'rating'=>$r['rating'],
+      'plan'=>$planBy[(string)$r['id']] ?? null,
     ];
   }, q("SELECT * FROM trainers ORDER BY id")->fetchAll());
 
@@ -187,6 +195,20 @@ function next_candidate(int $tgId): ?array {
     if($sc>$bestScore){ $bestScore=$sc; $best=$tr; }
   }
   return $best;
+}
+
+/** Alle Einsätze eines Trainers (zugesagt/vielleicht/angefragt), nach Datum. */
+function trainer_schedule(int $trId): array {
+  return q("SELECT t.*, r.status AS rstatus
+    FROM requests r JOIN trainings t ON t.id=r.training_id
+    WHERE r.trainer_id=? AND r.status IN ('yes','confirmed','maybe','asked')
+    ORDER BY (t.start_date IS NULL), t.start_date, t.id", [$trId])->fetchAll();
+}
+/** Klartext-Label für einen Status (de/en). */
+function status_word(string $st, string $lang): string {
+  $de=['yes'=>'Zugesagt','confirmed'=>'Bestätigt','maybe'=>'Vielleicht','asked'=>'Angefragt'];
+  $en=['yes'=>'Confirmed','confirmed'=>'Confirmed','maybe'=>'Maybe','asked'=>'Requested'];
+  $m=$lang==='de'?$de:$en; return $m[$st] ?? $st;
 }
 
 function base_url(): string {
