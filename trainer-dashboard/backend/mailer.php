@@ -22,7 +22,15 @@ function response_buttons(string $tok, string $lang): string {
       .'text-decoration:none">'.$label.'</a>'
       .'</td></tr></table>';
   };
-  return '<div style="margin:22px 0;max-width:360px">'
+  // Kurze Schritt-für-Schritt-Erklärung (zweistufig, damit nichts unklar ist).
+  $steps = $lang==='de'
+    ? '<b>So antwortest du:</b><br>1. Unten auf deine Antwort tippen &nbsp;·&nbsp; 2. Auf der nächsten Seite mit einem Klick <b>bestätigen</b> &nbsp;·&nbsp; 3. Du erhältst eine kurze Bestätigungs-E-Mail.'
+    : '<b>How to reply:</b><br>1. Tap your answer below &nbsp;·&nbsp; 2. <b>Confirm</b> with one click on the next page &nbsp;·&nbsp; 3. You\'ll receive a short confirmation e-mail.';
+  $note = '<div style="margin:18px 0 12px;padding:11px 14px;background:#f4f6f8;border:1px solid #e2e5e8;'
+    .'border-radius:10px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.55;color:#5c666e">'
+    .$steps.'</div>';
+  return '<div style="margin:6px 0 0;max-width:360px">'
+    .$note
     .$btn($base.'yes',  $L['yes'],  '#1E7A4D','#E9F6EF','#2E9E6B')
     .$btn($base.'maybe',$L['maybe'],'#8A5410','#FBF2DF','#C77E1E')
     .$btn($base.'no',   $L['no'],   '#B21620','#FDEBEB','#D81F26')
