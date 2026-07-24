@@ -531,7 +531,7 @@
 <!-- Druckbare Reise-Agenda (Overlay) -->
 <div id="agendaPrint" class="printable">
   <div class="ag-toolbar">
-    <button class="btn primary" onclick="window.print()">🖨 <span id="agPrintLbl">Drucken</span></button>
+    <button class="btn primary" onclick="window.print()">${ic("printer")}<span id="agPrintLbl">Drucken</span></button>
     <button class="btn" onclick="closeAgenda()">✕</button>
   </div>
   <div id="agendaBody"></div>
@@ -540,7 +540,7 @@
 <!-- Druckbarer Wandkalender (Overlay), farbcodiert nach Kunde -->
 <div id="calPrint" class="printable">
   <div class="ag-toolbar">
-    <button class="btn primary" onclick="window.print()">🖨 <span id="agPrintLbl2">Drucken</span></button>
+    <button class="btn primary" onclick="window.print()">${ic("printer")}<span id="agPrintLbl2">Drucken</span></button>
     <button class="btn" onclick="closeCalendar()">✕</button>
   </div>
   <div id="calBody"></div>
@@ -570,9 +570,25 @@ const IC={
   auto:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   log:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   sync:'<path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 4v4h-4M3 20v-4h4"/>',
-  book:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13h5M8 17h8"/>'
+  book:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13h5M8 17h8"/>',
+  printer:'<path d="M6 9V2h12v7"/><rect x="5" y="13" width="14" height="8" rx="1"/><path d="M6 17H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  plane:'<path d="M17.8 19.2 16 11l3.5-3.5a2.12 2.12 0 0 0-3-3L13 8 4.8 6.2a.5.5 0 0 0-.5.83L8 10l-2.5 2.5-2-.5a.5.5 0 0 0-.4.85L6 15.5 8.15 18l.85-.4a.5.5 0 0 0 .3-.46l.7-4L14 16l-.2 3.7a.5.5 0 0 0 .85.4z"/>',
+  clip:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><path d="M9 12h6M9 16h4"/>',
+  down:'<path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  back:'<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  reply:'<path d="M9 17 4 12l5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>',
+  bag:'<rect x="6" y="8" width="12" height="12" rx="2"/><path d="M9 8V6a3 3 0 0 1 6 0v2M10 12v4M14 12v4"/>',
+  theme:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/>',
+  lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+/* Inline-Strichicon in Textgröße (für Buttons/Labels). */
+function ic(name,size){const s=size||16;return `<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px;flex:none">${IC[name]||""}</svg>`;}
 /* ETAF-Wortmarke als Vektor — pixelgenau aus der Original-Logodatei vermessen.
    Buchstaben = currentColor (passt sich an Hell/Dunkel an), Punkt = Akzentrot.
    viewBox 0 0 1751 656 (Buchstaben 0..1529 breit, Höhe 429; Punkt unten rechts). */
@@ -778,7 +794,7 @@ const L={
   autoRan:(r,a)=>`${r} Erinnerung(en), ${a} Nachrücker versendet`,
   autoDesc:"Läuft automatisch per Cron (siehe DEPLOY.md) — hier kannst du es auch manuell auslösen.",
   reminded:"erinnert",
-  travelAgenda:"Reise & Agenda", trTravel:"✈ Reise", agendaView:"🖨 Agenda", agendaSend:"✉ Agenda senden",
+  travelAgenda:"Reise & Agenda", trTravel:"Reise", agendaView:"Agenda", agendaSend:"Agenda senden",
   agendaSent:"Reise-Agenda versendet", travelSaved:"Reisedaten gespeichert",
   tvLogistics:"Reise & Logistik (für alle im Team)", tvVenue:"Veranstaltungsort", tvHotel:"Hotel",
   tvHotelAddr:"Hotel-Adresse", tvMeet:"Treffpunkt", tvContact:"Ansprechpartner vor Ort",
@@ -789,7 +805,7 @@ const L={
   tvFlightHead:"Deine Reisedaten", tvLogHead:"Reise & Logistik", agFor:"Für",
   visaLbl:"Visum", passportLbl:"Reisepass gültig bis", visaNotesLbl:"Visum-Notizen",
   visa_none:"—", visa_needed:"benötigt", visa_applied:"beantragt", visa_approved:"genehmigt", visa_rejected:"abgelehnt",
-  flSuggest:"✈ Flug-Vorschläge", flSuggestHint:"Automatische Vorschläge nach Route (Region → Ziel). Zum Übernehmen anklicken.", flUse:"Übernehmen",
+  flSuggest:"Flug-Vorschläge", flSuggestHint:"Automatische Vorschläge nach Route (Region → Ziel). Zum Übernehmen anklicken.", flUse:"Übernehmen",
   nav_emails:"Protokoll", tp_emails:"E-Mail-Protokoll", tp_emailsSub:"Alle versendeten Anfragen, Erinnerungen und Agenden",
   emNone:"Noch keine E-Mails versendet.", em_sent:"gesendet", em_logged:"protokolliert", em_failed:"fehlgeschlagen",
   agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
@@ -802,7 +818,7 @@ const L={
   clientName:"Name", clientShort:"Kürzel", clientColor:"Farbe", clientCountry:"Land (Code)",
   clientSaved:"Kunde gespeichert", clientDeleted:"Kunde entfernt", clientDelConfirm:"Kunde wirklich entfernen? Trainings bleiben erhalten.",
   clientAssign:"Kunde zuordnen", clientNoDel:"Der letzte Kunde kann nicht entfernt werden.",
-  exportTitle:"Export", exportCal:"📅 Wandkalender", exportIcs:"⤓ iCal (.ics)",
+  exportTitle:"Export", exportCal:"Wandkalender", exportIcs:"⤓ iCal (.ics)",
   exportHint:"Kalender & Export beziehen sich auf die aktuelle Kunden-Auswahl.",
   calTitle:"Trainings-Kalender", calSub:"Alle Einsätze chronologisch · Farbe = Kunde",
   calPrint:"Drucken", calEmpty:"Keine Trainings für diese Auswahl.",
@@ -833,7 +849,7 @@ const L={
   catTitle:"Material-Katalog", catSub:"Materialien zentral pflegen — Kits, Protokolle, Verbrauchsmaterial",
   matName:"Bezeichnung", matUnit:"Einheit", matCat:"Kategorie", catAdd:"+ Material im Katalog",
   catSaved:"Katalog gespeichert", matDelCat:"Material aus dem Katalog entfernen?",
-  matPrint:"🖨 Materialliste", matPrintTitle:"Materialliste / Packliste", matPositions:n=>`${n} Positionen`,
+  matPrint:"Materialliste", matPrintTitle:"Materialliste / Packliste", matPositions:n=>`${n} Positionen`,
   matSummary:(n,q)=>`${n} Positionen · ${q} Einheiten`, matColHead:"Material", matColQty:"Anzahl", matColUnit:"Einheit"
  },
  en:{
@@ -957,7 +973,7 @@ const L={
   autoRan:(r,a)=>`${r} reminder(s), ${a} backfill request(s) sent`,
   autoDesc:"Runs automatically via cron (see DEPLOY.md) — you can also trigger it manually here.",
   reminded:"reminded",
-  travelAgenda:"Travel & agenda", trTravel:"✈ Travel", agendaView:"🖨 Agenda", agendaSend:"✉ Send agenda",
+  travelAgenda:"Travel & agenda", trTravel:"Travel", agendaView:"Agenda", agendaSend:"Send agenda",
   agendaSent:"Travel agenda sent", travelSaved:"Travel details saved",
   tvLogistics:"Travel & logistics (for the whole team)", tvVenue:"Venue", tvHotel:"Hotel",
   tvHotelAddr:"Hotel address", tvMeet:"Meeting point", tvContact:"On-site contact",
@@ -968,7 +984,7 @@ const L={
   tvFlightHead:"Your travel details", tvLogHead:"Travel & logistics", agFor:"For",
   visaLbl:"Visa", passportLbl:"Passport valid until", visaNotesLbl:"Visa notes",
   visa_none:"—", visa_needed:"needed", visa_applied:"applied", visa_approved:"approved", visa_rejected:"rejected",
-  flSuggest:"✈ Flight suggestions", flSuggestHint:"Auto suggestions by route (region → destination). Click to use.", flUse:"Use",
+  flSuggest:"Flight suggestions", flSuggestHint:"Auto suggestions by route (region → destination). Click to use.", flUse:"Use",
   nav_emails:"Log", tp_emails:"Email log", tp_emailsSub:"All sent requests, reminders and agendas",
   emNone:"No emails sent yet.", em_sent:"sent", em_logged:"logged", em_failed:"failed",
   agendaHint:"The trainer receives this overview by email (print link) and can print it.",
@@ -981,7 +997,7 @@ const L={
   clientName:"Name", clientShort:"Short", clientColor:"Colour", clientCountry:"Country (code)",
   clientSaved:"Client saved", clientDeleted:"Client removed", clientDelConfirm:"Really remove this client? Trainings are kept.",
   clientAssign:"Assign client", clientNoDel:"The last client cannot be removed.",
-  exportTitle:"Export", exportCal:"📅 Wall calendar", exportIcs:"⤓ iCal (.ics)",
+  exportTitle:"Export", exportCal:"Wall calendar", exportIcs:"⤓ iCal (.ics)",
   exportHint:"Calendar & export refer to the current client selection.",
   calTitle:"Trainings calendar", calSub:"All assignments chronologically · colour = client",
   calPrint:"Print", calEmpty:"No trainings for this selection.",
@@ -1012,7 +1028,7 @@ const L={
   catTitle:"Material catalog", catSub:"Maintain materials centrally — kits, protocols, consumables",
   matName:"Name", matUnit:"Unit", matCat:"Category", catAdd:"+ Material in catalog",
   catSaved:"Catalog saved", matDelCat:"Remove material from the catalog?",
-  matPrint:"🖨 Material list", matPrintTitle:"Material / packing list", matPositions:n=>`${n} items`,
+  matPrint:"Material list", matPrintTitle:"Material / packing list", matPositions:n=>`${n} items`,
   matSummary:(n,q)=>`${n} items · ${q} units`, matColHead:"Material", matColQty:"Qty", matColUnit:"Unit"
  }
 };
@@ -1273,10 +1289,10 @@ function applyStatic(){
   $("#lgLang").innerHTML=langSwitch();
   $("#sideLang").innerHTML=langSwitch();
   $("#langLbl").textContent=t("langLabel");
-  $("#themeBtn").textContent="◐ "+t("theme");
-  $("#lockBtn").textContent="⎋ "+t("lock");
+  $("#themeBtn").innerHTML=ic("theme")+t("theme");
+  $("#lockBtn").innerHTML=ic("lock")+t("lock");
   $("#qrLabel").textContent=t("quickReplace");
-  $("#impBtn").textContent="＋ "+t("import");
+  $("#impBtn").innerHTML=ic("plus")+t("import");
   { const si=$("#syncIcon"); if(si)si.innerHTML=svg(IC.sync);
     const sl=$("#syncLbl"); if(sl)sl.textContent=t("sync");
     const sb=$("#syncBtn"); if(sb)sb.title=t("sync");
@@ -1426,8 +1442,8 @@ function renderDash(){
       const pct=cs.total?Math.round((cs.good/cs.total)*100):0;
       const ch=clientHealth(c.id);
       const trf=c.transfer;
-      const trfChip = trf&&trf.confirmedAt ? `<span class="tchip good">✈ ${t("trfCardOk")}</span>`
-        : trf&&trf.sentAt ? `<span class="tchip warn" onclick="event.stopPropagation();openTransfer('${c.id}')" title="${t("trfCardOpenHint")}">✈ ${t("trfCardOpen")}</span>` : "";
+      const trfChip = trf&&trf.confirmedAt ? `<span class="tchip good">${ic("plane")}${t("trfCardOk")}</span>`
+        : trf&&trf.sentAt ? `<span class="tchip warn" onclick="event.stopPropagation();openTransfer('${c.id}')" title="${t("trfCardOpenHint")}">${ic("plane")}${t("trfCardOpen")}</span>` : "";
       return `<div class="pf" onclick="setClientFilter('${c.id}')">
         <span class="pf-rail" style="background:${c.color}"></span>
         <div class="pf-top"><span class="hlamp h-${ch.level}" title="${esc([ch.conflicts?t("bkConflictN",ch.conflicts):"",ch.under?t("ampelUnder",ch.under):"",ch.open?t("ampelOpen",ch.open):""].filter(Boolean).join(" · ")||t("ampelAllGood"))}"></span>
@@ -1461,7 +1477,7 @@ function renderDash(){
   const timeline=`<div class="panel">
     <div class="panel-h"><h3>${t("tlTitle")}</h3><div class="sub">${t("tlSub")}</div>
       <div class="spacer"></div>
-      <button class="btn sm" onclick="openCalendar()">${t("exportCal")}</button>
+      <button class="btn sm" onclick="openCalendar()">${ic("cal")}${t("exportCal")}</button>
       <button class="btn sm" onclick="exportIcs()">${t("exportIcs")}</button>
     </div>
     <div class="panel-b">
@@ -1515,7 +1531,7 @@ function renderTrainings(){
       <button class="btn sm primary" onclick="openTrainingEditor()">${t("newTraining")}</button>
       <button class="btn sm" onclick="openMaterialCatalog()">${t("matManage")}</button>
       <button class="btn sm" onclick="openClients()">⚙ ${t("manageClients")}</button>
-      <button class="btn sm" onclick="openCalendar()">${t("exportCal")}</button>
+      <button class="btn sm" onclick="openCalendar()">${ic("cal")}${t("exportCal")}</button>
       <button class="btn sm" onclick="exportIcs()">${t("exportIcs")}</button>
     </div></div>
     <div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">${t("calEmpty")}</div>`}</div></div>`;
@@ -1567,7 +1583,7 @@ function renderDetail(){
     </div>
     <div class="panel-b" style="border-top:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn primary" onclick="composeFor('${tg.id}',null,'t1')">${svg(IC.mail)} ${t("btnBulk")}</button>
-      <button class="btn" onclick="openTravel('${tg.id}')">✈ ${t("travelAgenda")}</button>
+      <button class="btn" onclick="openTravel('${tg.id}')">${ic("plane")}${t("travelAgenda")}</button>
       <button class="btn amber" onclick="openQuick('${tg.id}')">⚡ ${t("btnFindRep")}</button>
       <button class="btn" onclick="openTrainingEditor('${tg.id}')">✎ ${t("editBtn")}</button>
     </div>
@@ -1581,7 +1597,7 @@ function renderDetail(){
       <div class="row" style="padding:8px 2px"><div class="rowgrow"><div class="nm">${esc(matName(l.matId))}</div>
         ${matById(l.matId)&&matById(l.matId).cat?`<div class="meta">${esc(matById(l.matId).cat)}</div>`:''}</div>
         <span class="fit">${+l.qty||0} ${esc(matUnit(l.matId))}</span></div>`).join("")
-      +`<button class="btn sm" onclick="printMaterials('${tg.id}')" style="margin-top:12px">${t("matPrint")}</button>`):`<div class="empty">${t("matNone")}</div>`}</div>
+      +`<button class="btn sm" onclick="printMaterials('${tg.id}')" style="margin-top:12px">${ic("printer")}${t("matPrint")}</button>`):`<div class="empty">${t("matNone")}</div>`}</div>
   </div>`;
 
   const roster=`<div class="panel">
@@ -1613,16 +1629,16 @@ function renderDetail(){
     </div>
   </div>`;
 
-  $("#v-detail").innerHTML=`<button class="btn sm" onclick="go('trainings')" style="margin-bottom:14px">← ${t("back")}</button>
+  $("#v-detail").innerHTML=`<button class="btn sm" onclick="go('trainings')" style="margin-bottom:14px">${ic("back")}${t("back")}</button>
     <div class="split"><div>${info}${roster}${matPanel}</div><div>${sugg}</div></div>`;
 }
 function rosterRow(x,tg){
   const acts=x.status==="asked"
-    ? (LIVE ? "" : `<button class="btn sm" onclick="simReply('${tg.id}','${x.tr.id}')" title="${t("simReplyT")}">↩ ${t("simReply")}</button>`)
+    ? (LIVE ? "" : `<button class="btn sm" onclick="simReply('${tg.id}','${x.tr.id}')" title="${t("simReplyT")}">${ic("reply")}${t("simReply")}</button>`)
     : (x.status==="yes"||x.status==="confirmed")
-    ? `<button class="btn sm" onclick="openTrainerTravel('${tg.id}','${x.tr.id}')">${t("trTravel")}</button>`
-      +`<button class="btn sm" onclick="openAgenda('${tg.id}','${x.tr.id}')">${t("agendaView")}</button>`
-      +`<button class="btn sm primary" onclick="sendAgenda('${tg.id}','${x.tr.id}')">${t("agendaSend")}</button>`
+    ? `<button class="btn sm" onclick="openTrainerTravel('${tg.id}','${x.tr.id}')">${ic("plane")}${t("trTravel")}</button>`
+      +`<button class="btn sm" onclick="openAgenda('${tg.id}','${x.tr.id}')">${ic("printer")}${t("agendaView")}</button>`
+      +`<button class="btn sm primary" onclick="sendAgenda('${tg.id}','${x.tr.id}')">${ic("send")}${t("agendaSend")}</button>`
     : x.status==="no"
     ? `<button class="btn sm" onclick="requestNext('${tg.id}')">${t("nextInLine")}</button>`
     : "";
@@ -1712,7 +1728,7 @@ function renderTrainers(){
         <div class="divider"></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           ${planBadge(tr)}<div class="spacer"></div>
-          <button class="btn sm" onclick="openPlan('${tr.id}')">📋 ${t("planView")}</button>
+          <button class="btn sm" onclick="openPlan('${tr.id}')">${ic("clip")}${t("planView")}</button>
         </div>
       </div>
     </div>`).join("");
@@ -1720,7 +1736,7 @@ function renderTrainers(){
     <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px">
       <div class="rowgrow"><b>${t("poolCount",S.trainers.length)}</b>
       <div class="meta">${t("poolHint")}</div></div>
-      <button class="btn" onclick="openImport()">＋ ${t("importProfiles")}</button>
+      <button class="btn" onclick="openImport()">${ic("plus")}${t("importProfiles")}</button>
     </div></div>
     <div class="grid2">${cards}</div>`;
 }
@@ -1776,7 +1792,7 @@ function bkRow(x,conf){
     <td class="nowrap"><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${dbl}</td>
     <td class="nowrap">${esc(when||"—")}${kwSub?`<div class="meta">${esc(kwSub)}</div>`:""}</td>
     <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
-    <td>${clientChip}<b>${esc(tg.topic)}</b>${trav?`<div class="meta travrow">🧳 ${trav}</div>`:""}</td>
+    <td>${clientChip}<b>${esc(tg.topic)}</b>${trav?`<div class="meta travrow">${ic("bag")}${trav}</div>`:""}</td>
     <td class="nowrap"><button class="btn sm" title="${t("planView")}" onclick="openPlan('${x.tr.id}')">📋</button></td>
   </tr>`;
 }
@@ -1827,9 +1843,9 @@ function renderBookings(){
           <b>${t("bkCount",list.length)}</b>
           <div class="meta">${t("bkStats",uTr,uTg)}${confN?` · <span style="color:var(--crit)">⚠ ${t("bkConflictN",confN)}</span>`:""}</div>
         </div>
-        <span class="segbtn">${vbtn("list","☰ "+t("bkViewList"))}${vbtn("calendar","▦ "+t("bkViewCal"))}</span>
-        ${bookingClient!=="all"?`<button class="btn sm" onclick="openTransfer('${bookingClient}')">✈ ${t("trfBtn")}</button>`:""}
-        <button class="btn sm" onclick="exportBookingsCSV()">⬇ CSV</button>
+        <span class="segbtn">${vbtn("list",ic("list")+t("bkViewList"))}${vbtn("calendar",ic("grid")+t("bkViewCal"))}</span>
+        ${bookingClient!=="all"?`<button class="btn sm" onclick="openTransfer('${bookingClient}')">${ic("plane")}${t("trfBtn")}</button>`:""}
+        <button class="btn sm" onclick="exportBookingsCSV()">${ic("down")}CSV</button>
       </div>
       <div class="bkfilter">
         <input class="inp bksearch" placeholder="${t("bkSearch")}" value="${esc(bookingSearch)}"
@@ -1971,9 +1987,9 @@ function renderPlan(){
   const p=tr.plan;
   const confirmLine = p&&p.confirmedAt
     ? `<div class="planconf ${p.status==="issue"?"bad":"ok"}">${p.status==="issue"
-        ? `✋ ${t("planIssueMsg")}${p.note?`: „${esc(p.note)}“`:""}`
-        : `✅ ${t("planOkMsg")}`} <span class="meta">(${esc((p.confirmedAt||"").slice(0,16).replace("T"," "))})</span></div>`
-    : (p&&p.sentAt ? `<div class="planconf sent">✉ ${t("planSentMsg")} <span class="meta">(${esc((p.sentAt||"").slice(0,16).replace("T"," "))})</span></div>` : "");
+        ? `${ic("alert")}${t("planIssueMsg")}${p.note?`: „${esc(p.note)}“`:""}`
+        : `${ic("check")}${t("planOkMsg")}`} <span class="meta">(${esc((p.confirmedAt||"").slice(0,16).replace("T"," "))})</span></div>`
+    : (p&&p.sentAt ? `<div class="planconf sent">${ic("send")}${t("planSentMsg")} <span class="meta">(${esc((p.sentAt||"").slice(0,16).replace("T"," "))})</span></div>` : "");
 
   const rows=sched.length ? sched.map(x=>{
     const tg=x.tg, cl=(S.clients||[]).find(c=>c.id===tg.clientId);
@@ -1986,12 +2002,12 @@ function renderPlan(){
       <td><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span></td>
       <td class="nowrap">${esc(when||"—")}${kwSub?`<div class="meta">${esc(kwSub)}</div>`:""}</td>
       <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
-      <td><b>${esc(tg.topic)}</b>${sub?`<div class="meta">${esc(sub)}</div>`:""}${twin?`<div class="meta">✈ ${t("travelWin")}: ${esc(twin)}</div>`:""}${trav?`<div class="meta travrow">🧳 ${trav}</div>`:""}</td>
+      <td><b>${esc(tg.topic)}</b>${sub?`<div class="meta">${esc(sub)}</div>`:""}${twin?`<div class="meta">${ic("plane")}${t("travelWin")}: ${esc(twin)}</div>`:""}${trav?`<div class="meta travrow">${ic("bag")}${trav}</div>`:""}</td>
     </tr>`;
   }).join("") : `<tr><td colspan="4" class="meta" style="padding:16px 8px">${t("planEmpty")}</td></tr>`;
 
   $("#v-plan").innerHTML=`
-    <button class="btn sm noprint" onclick="go('trainers')" style="margin-bottom:14px">← ${t("back")}</button>
+    <button class="btn sm noprint" onclick="go('trainers')" style="margin-bottom:14px">${ic("back")}${t("back")}</button>
     <div class="panel plandoc"><div class="panel-b">
       <div class="planhead">
         <div>
@@ -2013,8 +2029,8 @@ function renderPlan(){
       <div class="meta planfoot">${t("planFoot")}</div>
     </div></div>
     <div class="planactions noprint">
-      <button class="btn" onclick="printPlan()">🖨 ${t("planPrint")}</button>
-      <button class="btn primary" onclick="sendPlan('${tr.id}')">✉ ${t("planSend")}</button>
+      <button class="btn" onclick="printPlan()">${ic("printer")}${t("planPrint")}</button>
+      <button class="btn primary" onclick="sendPlan('${tr.id}')">${ic("send")}${t("planSend")}</button>
     </div>`;
 }
 function printPlan(){ document.body.classList.add("printing-plan"); window.print(); setTimeout(()=>document.body.classList.remove("printing-plan"),400); }
@@ -2050,8 +2066,8 @@ function renderTransfer(){
   const cl=curTransferCl; if(!cl){go("bookings");return;}
   const rows=clientTransferRows(cl.id); const tr=cl.transfer;
   const conf = tr&&tr.confirmedAt
-    ? `<div class="planconf ok">✅ ${t("trfConfirmed")} <span class="meta">(${esc((tr.confirmedAt||"").slice(0,16).replace("T"," "))})</span>${tr.note?` — „${esc(tr.note)}“`:""}</div>`
-    : (tr&&tr.sentAt ? `<div class="planconf sent">✉ ${t("trfSent")} <span class="meta">(${esc((tr.sentAt||"").slice(0,16).replace("T"," "))})</span></div>` : "");
+    ? `<div class="planconf ok">${ic("check")}${t("trfConfirmed")} <span class="meta">(${esc((tr.confirmedAt||"").slice(0,16).replace("T"," "))})</span>${tr.note?` — „${esc(tr.note)}“`:""}</div>`
+    : (tr&&tr.sentAt ? `<div class="planconf sent">${ic("send")}${t("trfSent")} <span class="meta">(${esc((tr.sentAt||"").slice(0,16).replace("T"," "))})</span></div>` : "");
   const body=rows.length?rows.map(x=>{
     const fl=x.flight||{}, tg=x.tg;
     const arr=[fl.arrival||"",fl.flightOut||""].filter(Boolean).join(" · ");
@@ -2064,7 +2080,7 @@ function renderTransfer(){
     </tr>`;
   }).join(""):`<tr><td colspan="5" class="meta" style="padding:16px 8px">${t("trfEmpty")}</td></tr>`;
   $("#v-transfer").innerHTML=`
-    <button class="btn sm noprint" onclick="go('bookings')" style="margin-bottom:14px">← ${t("back")}</button>
+    <button class="btn sm noprint" onclick="go('bookings')" style="margin-bottom:14px">${ic("back")}${t("back")}</button>
     <div class="panel plandoc"><div class="panel-b">
       <div class="planhead"><div>
         <div class="planlogo">ETAF<span>.</span></div>
@@ -2079,9 +2095,9 @@ function renderTransfer(){
       <div class="meta planfoot">${t("trfFoot")}</div>
     </div></div>
     <div class="planactions noprint">
-      <button class="btn" onclick="printPlan()">🖨 ${t("planPrint")}</button>
-      <button class="btn primary" onclick="sendTransfer('${cl.id}')">✉ ${t("trfSend")}</button>
-      ${(tr&&tr.sentAt&&!tr.confirmedAt)?`<button class="btn" onclick="remindTransfer('${cl.id}')">🔔 ${t("trfRemind")}</button>`:""}
+      <button class="btn" onclick="printPlan()">${ic("printer")}${t("planPrint")}</button>
+      <button class="btn primary" onclick="sendTransfer('${cl.id}')">${ic("send")}${t("trfSend")}</button>
+      ${(tr&&tr.sentAt&&!tr.confirmedAt)?`<button class="btn" onclick="remindTransfer('${cl.id}')">${ic("bell")}${t("trfRemind")}</button>`:""}
     </div>`;
 }
 async function remindTransfer(cid){
@@ -2390,7 +2406,7 @@ function openTrainerTravel(tgId,trId){
     ${tvField("flArr",t("tvArrival"),fl.arrival)}
     ${tvField("flDep",t("tvDeparture"),fl.departure)}
     <div class="fldrow" style="margin-top:14px"><label class="fld" style="margin:0">${t("tvFlightOut")} / ${t("tvFlightReturn")}</label>
-      <button class="btn sm" onclick="showFlightSuggestions('${tgId}','${trId}')">${t("flSuggest")}</button></div>
+      <button class="btn sm" onclick="showFlightSuggestions('${tgId}','${trId}')">${ic("plane")}${t("flSuggest")}</button></div>
     <div id="flSug"></div>
     <input class="inp" id="flOut" value="${esc(fl.flightOut||"")}" placeholder="${t("tvFlightOut")}" style="margin-top:6px">
     <input class="inp" id="flRet" value="${esc(fl.flightReturn||"")}" placeholder="${t("tvFlightReturn")}" style="margin-top:6px">
@@ -2401,7 +2417,7 @@ function openTrainerTravel(tgId,trId){
     ${tvField("flVisaNotes",t("visaNotesLbl"),fl.visaNotes)}
     ${tvField("flNotes",t("tvNotes"),fl.notes)}`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
-    <button class="btn" onclick="openAgenda('${tgId}','${trId}')">${t("agendaView")}</button>
+    <button class="btn" onclick="openAgenda('${tgId}','${trId}')">${ic("printer")}${t("agendaView")}</button>
     <button class="btn primary" onclick="saveTrainerTravel('${tgId}','${trId}')">${t("save")}</button>`;
   openSheet();
 }
@@ -2483,8 +2499,8 @@ function showFlightSuggestions(tgId,trId){
   const sug=flightSuggestions(tr,tg); window._flSug=sug;
   $("#flSug").innerHTML=`<div class="meta" style="margin:8px 0 4px">${t("flSuggestHint")}</div>`+
     sug.map((s,i)=>`<div class="row" style="padding:8px 4px">
-      <div class="rowgrow"><div class="nm" style="font-size:13px">✈ ${esc(s.out)}</div>
-        <div class="meta">↩ ${esc(s.ret)}</div></div>
+      <div class="rowgrow"><div class="nm" style="font-size:13px">${ic("plane")}${esc(s.out)}</div>
+        <div class="meta">${ic("reply")}${esc(s.ret)}</div></div>
       <button class="btn sm primary" onclick="useFlight(${i})">${t("flUse")}</button></div>`).join("");
 }
 function useFlight(i){const s=window._flSug[i]; if($("#flOut"))$("#flOut").value=s.out; if($("#flRet"))$("#flRet").value=s.ret;}
@@ -2767,8 +2783,8 @@ function promptShiftNotify(tgId, oldTxt, n){
   $("#sheetFoot").innerHTML=`
     <button class="btn" onclick="closeSheet()">${t("shiftSkip")}</button>
     <div class="spacer"></div>
-    <button class="btn" onclick="doShiftNotify('${tgId}','info')">✉ ${t("shiftInfo")}</button>
-    <button class="btn primary" onclick="doShiftNotify('${tgId}','reask')">🔄 ${t("shiftReask")}</button>`;
+    <button class="btn" onclick="doShiftNotify('${tgId}','info')">${ic("send")}${t("shiftInfo")}</button>
+    <button class="btn primary" onclick="doShiftNotify('${tgId}','reask')">${ic("sync")}${t("shiftReask")}</button>`;
   openSheet();
 }
 async function doShiftNotify(tgId, mode){
@@ -2810,7 +2826,7 @@ function openMaterials(tgId){
     </div>
     <div class="meta" style="margin-top:8px">${t("matPresetHint")}</div>`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
-    <button class="btn" onclick="printMaterials('${tgId}')">${t("matPrint")}</button>
+    <button class="btn" onclick="printMaterials('${tgId}')">${ic("printer")}${t("matPrint")}</button>
     <div class="spacer"></div>
     <button class="btn primary" onclick="saveMaterials('${tgId}')">${t("save")}</button>`;
   drawMatLines(); openSheet();
