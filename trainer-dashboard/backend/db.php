@@ -156,6 +156,7 @@ function ensure_schema(): void {
   db()->exec("CREATE TABLE IF NOT EXISTS transfer_tokens (
     client_id VARCHAR(24) PRIMARY KEY,
     tok VARCHAR(64), sent_at VARCHAR(20), confirmed_at VARCHAR(20), note TEXT)".(is_sqlite()?'':' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'));
+  try{ db()->exec("ALTER TABLE transfer_tokens ADD COLUMN reminded_at VARCHAR(20)"); }catch(Throwable $e){}
 
   // Automatik-Standardwerte
   $ac=cfg();

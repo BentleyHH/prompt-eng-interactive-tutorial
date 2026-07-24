@@ -114,6 +114,46 @@ function transfer_table_html(array $rows, string $lang): string {
     .'<th style="padding:0 10px 6px">'.$h['ctx'].'</th></tr>'.$body.'</table>';
 }
 
+/** Transfer-/Abholliste an den Kunden senden (Erst-Versand oder Erinnerung).
+ *  Bei $reminder=true bleibt der Token/Bestätigungsstand erhalten. */
+function transfer_send(string $clientId, string $lang, bool $reminder=false): array {
+  $lang = $lang==='de' ? 'de' : 'en';
+  $cl=q("SELECT * FROM clients WHERE id=?",[$clientId])->fetch();
+  if(!$cl) return ['ok'=>false,'error'=>'Kunde nicht gefunden.'];
+  $to=trim((string)($cl['contact_email']??''));
+  if($to==='') return ['ok'=>false,'error'=>'Für diesen Kunden ist keine Kontakt-E-Mail hinterlegt.'];
+  $rows=client_transfer_list($clientId);
+  $ex=q("SELECT * FROM transfer_tokens WHERE client_id=?",[$clientId])->fetch();
+  if($reminder && $ex && !empty($ex['tok'])){
+    $tok=$ex['tok']; q("UPDATE transfer_tokens SET reminded_at=? WHERE client_id=?",[now(),$clientId]);
+  } else {
+    $tok=token(40);
+    if($ex) q("UPDATE transfer_tokens SET tok=?, sent_at=?, confirmed_at=NULL, note=NULL, reminded_at=NULL WHERE client_id=?",[$tok,now(),$clientId]);
+    else    q("INSERT INTO transfer_tokens(client_id,tok,sent_at) VALUES(?,?,?)",[$clientId,$tok,now()]);
+  }
+  $cname=trim((string)($cl['contact_name']??''));
+  $hi = $cname!=='' ? explode(' ',$cname)[0] : 'Team';
+  if($reminder){
+    $intro = $lang==='de'
+      ? "Hallo $hi,\n\nkurze Erinnerung: Wir hatten dir die Transfer-Übersicht unserer Trainer für {$cl['name']} geschickt. Bitte bestätige uns kurz den Erhalt über den Button unten — danke!"
+      : "Hello $hi,\n\na quick reminder: we sent you the transfer overview of our trainers for {$cl['name']}. Please confirm receipt via the button below — thank you!";
+  } else {
+    $intro = $lang==='de'
+      ? "Hallo $hi,\n\nanbei die Übersicht unserer bestätigten Trainer für {$cl['name']} mit An-/Abreise und Hotel — bitte die Abholung/den Transfer entsprechend organisieren.\n\nBitte kurz den Erhalt bestätigen (Button unten)."
+      : "Hello $hi,\n\nplease find below our confirmed trainers for {$cl['name']} with arrival/departure and hotel details — kindly arrange pickup/transfer accordingly.\n\nPlease confirm receipt via the button below.";
+  }
+  $cta = $lang==='de' ? 'Erhalt bestätigen' : 'Confirm receipt';
+  $url = base_url().'/transfer.php?token='.$tok;
+  $pre = $reminder ? ($lang==='de'?'Erinnerung: ':'Reminder: ') : '';
+  $subject = $pre.($lang==='de' ? 'Trainer-Anreise & Transfer — ' : 'Trainer arrivals & transfer — ').$cl['name'];
+  $html = email_html($intro, transfer_table_html($rows,$lang).cta_button($url,$cta));
+  $ok = send_email($to, $cname ?: $cl['name'], $subject, $html);
+  $st = $ok ? ((cfg()['mail_mode']??'mail')==='log'?'logged':'sent') : 'failed';
+  q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+     VALUES(?,?,?,?,?,?,?,?)",[null,null,$to,$subject,$intro,$lang,$st,now()]);
+  return ['ok'=>true,'sent'=>$ok?1:0,'count'=>count($rows)];
+}
+
 /** Ein einzelner CTA-Button (z.B. „Einsatzplan ansehen & bestätigen“). */
 function cta_button(string $url, string $label, string $bg='#3E4852'): string {
   return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 4px;max-width:360px">'

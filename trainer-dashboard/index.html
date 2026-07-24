@@ -183,6 +183,11 @@
   .ampel.a-red{background:var(--crit-bg)}.ampel.a-red .lamp{background:var(--crit);animation:pulse 1.4s infinite}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(216,31,38,.5)}50%{box-shadow:0 0 0 6px rgba(216,31,38,0)}}
   .ampel b{font-size:15px}
+  .hlamp{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:7px;flex:none}
+  .hlamp.h-green{background:var(--good)}.hlamp.h-amber{background:var(--warn)}.hlamp.h-red{background:var(--crit)}
+  .tchip{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:20px}
+  .tchip.good{background:var(--good-bg);color:var(--good)}
+  .tchip.warn{background:var(--warn-bg);color:var(--warn);cursor:pointer}
   .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
     padding:16px 16px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
   .kpi .lab{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
@@ -695,6 +700,8 @@ const L={
   trfSent:"An Kunde gesendet — Empfangsbestätigung ausstehend.", trfConfirmed:"Kunde hat den Erhalt bestätigt.",
   trfNoMail:"Für diesen Kunden ist keine Kontakt-E-Mail hinterlegt (unter „Kunden verwalten“).",
   trfSentToast:n=>`Transferliste an ${n} gesendet`,
+  trfRemind:"Erinnerung senden", trfRemindToast:n=>`Erinnerung an ${n} gesendet`,
+  trfCardOk:"Transfer bestätigt", trfCardOpen:"Transfer offen", trfCardOpenHint:"Transferliste gesendet — Bestätigung ausstehend. Klicken zum Öffnen.",
   bkViewList:"Liste", bkViewCal:"Kalender", bkCalTrainer:"Trainer",
   bkCalEmpty:"Keine Buchungen für diese Auswahl.",
   bkLegend:"Legende:", bkLegYes:"Zugesagt", bkLegMaybe:"Vielleicht", bkLegAsked:"Angefragt", bkLegClash:"Doppelbuchung",
@@ -872,6 +879,8 @@ const L={
   trfSent:"Sent to client — receipt confirmation pending.", trfConfirmed:"Client confirmed receipt.",
   trfNoMail:"No contact e-mail on file for this client (see “Manage clients”).",
   trfSentToast:n=>`Transfer list sent to ${n}`,
+  trfRemind:"Send reminder", trfRemindToast:n=>`Reminder sent to ${n}`,
+  trfCardOk:"Transfer confirmed", trfCardOpen:"Transfer pending", trfCardOpenHint:"Transfer list sent — confirmation pending. Click to open.",
   bkViewList:"List", bkViewCal:"Calendar", bkCalTrainer:"Trainer",
   bkCalEmpty:"No bookings for this selection.",
   bkLegend:"Legend:", bkLegYes:"Confirmed", bkLegMaybe:"Maybe", bkLegAsked:"Requested", bkLegClash:"Double booking",
@@ -1375,6 +1384,20 @@ function healthStatus(){
   const level = conflicts>0 ? "red" : (under>0||open>0) ? "amber" : "green";
   return {level,conflicts,under,open};
 }
+function clientHealth(cid){
+  const tgs=S.trainings.filter(t=>t.clientId===cid);
+  const seen={}; let conflicts=0;
+  tgs.forEach(tg=>(tg.roster||[]).forEach(r=>{
+    if(!["yes","confirmed","maybe","asked"].includes(r.status))return;
+    if(!(tg.kw||tg.date))return;
+    const k=r.trainerId+"|"+(tg.kw||tg.date); seen[k]=(seen[k]||0)+1;
+  }));
+  for(const k in seen) if(seen[k]>1) conflicts++;
+  const under=tgs.filter(tg=>rosterStats(tg).yes<(tg.need||0)).length;
+  const open=tgs.reduce((a,tg)=>a+rosterStats(tg).asked,0);
+  const level=conflicts>0?"red":(under>0||open>0)?"amber":"green";
+  return {level,conflicts,under,open};
+}
 function renderDash(){
   const T=curTrainings();
   const full=T.filter(t=>statusOf(t).cls==="good").length;
@@ -1401,13 +1424,18 @@ function renderDash(){
   if(!S.clientFilter && (S.clients||[]).length){
     const cards=(S.clients||[]).map(c=>{const cs=clientStats(c.id);
       const pct=cs.total?Math.round((cs.good/cs.total)*100):0;
+      const ch=clientHealth(c.id);
+      const trf=c.transfer;
+      const trfChip = trf&&trf.confirmedAt ? `<span class="tchip good">✈ ${t("trfCardOk")}</span>`
+        : trf&&trf.sentAt ? `<span class="tchip warn" onclick="event.stopPropagation();openTransfer('${c.id}')" title="${t("trfCardOpenHint")}">✈ ${t("trfCardOpen")}</span>` : "";
       return `<div class="pf" onclick="setClientFilter('${c.id}')">
         <span class="pf-rail" style="background:${c.color}"></span>
-        <div class="pf-top"><span class="pf-dot" style="background:${c.color}"></span>
+        <div class="pf-top"><span class="hlamp h-${ch.level}" title="${esc([ch.conflicts?t("bkConflictN",ch.conflicts):"",ch.under?t("ampelUnder",ch.under):"",ch.open?t("ampelOpen",ch.open):""].filter(Boolean).join(" · ")||t("ampelAllGood"))}"></span>
           <b>${esc(c.name)}</b><span class="spacer"></span><span class="pill ${cs.cls}">${t(cs.key)}</span></div>
         <div class="meta" style="margin:2px 0 8px">${t("pfTrainings",cs.total)}${c.country?" · "+esc(c.country):""}</div>
         <div class="bar"><i style="width:${pct}%;background:${c.color}"></i></div>
         <div class="pf-kv"><span>✅ ${cs.good} ${t("pf_done")}</span><span>… ${cs.open} ${t("kpiOpen").toLowerCase()}</span><span style="color:var(--crit)">! ${cs.crit} ${t("pf_crit")}</span></div>
+        ${trfChip?`<div style="margin-top:8px">${trfChip}</div>`:""}
       </div>`;}).join("");
     portfolio=`<div class="panel">
       <div class="panel-h"><h3>${t("pfTitle")}</h3><div class="sub">${t("pfSub")}</div>
@@ -2053,7 +2081,17 @@ function renderTransfer(){
     <div class="planactions noprint">
       <button class="btn" onclick="printPlan()">🖨 ${t("planPrint")}</button>
       <button class="btn primary" onclick="sendTransfer('${cl.id}')">✉ ${t("trfSend")}</button>
+      ${(tr&&tr.sentAt&&!tr.confirmedAt)?`<button class="btn" onclick="remindTransfer('${cl.id}')">🔔 ${t("trfRemind")}</button>`:""}
     </div>`;
+}
+async function remindTransfer(cid){
+  const cl=(S.clients||[]).find(c=>c.id===cid); if(!cl)return;
+  if(LIVE){
+    try{ await apiCall("transfer.remind",{client:cid,lang:S.emailLang||"en"});
+      await pull(); curTransferCl=(S.clients||[]).find(c=>c.id===cid)||curTransferCl; renderTransfer();
+      toast(t("trfRemindToast",cl.name),"good");
+    }catch(e){ toast("Fehler: "+e.message,"crit"); }
+  } else { toast(t("trfRemindToast",cl.name),"good"); }
 }
 async function sendTransfer(cid){
   const cl=(S.clients||[]).find(c=>c.id===cid); if(!cl)return;

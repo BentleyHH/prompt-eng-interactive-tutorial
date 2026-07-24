@@ -74,6 +74,16 @@ function run_automation(): array {
     if($ok)$visa++;
   }
 
+  /* 2b) Transfer-Erinnerung: Kunden, die den Erhalt noch nicht bestätigt haben */
+  $transfer=0;
+  foreach(q("SELECT * FROM transfer_tokens WHERE confirmed_at IS NULL AND sent_at IS NOT NULL")->fetchAll() as $tt){
+    if(!$tt['sent_at']) continue;
+    if(($now-strtotime($tt['sent_at']))/3600 < $reminderH) continue;      // noch zu frisch
+    if(!empty($tt['reminded_at']) && ($now-strtotime($tt['reminded_at']))/3600 < $reminderH) continue; // schon erinnert
+    $res=transfer_send((string)$tt['client_id'], 'en', true);
+    if(!empty($res['ok']) && !empty($res['sent'])) $transfer++;
+  }
+
   /* 2) Nachrücken (optional): pro unterbesetztem Training den nächstbesten Trainer anfragen */
   if($autoAdv){
     foreach(q("SELECT * FROM trainings")->fetchAll() as $tg){
@@ -111,5 +121,5 @@ function run_automation(): array {
       }
     }
   }
-  return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'auto_advance'=>$autoAdv];
+  return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,'auto_advance'=>$autoAdv];
 }

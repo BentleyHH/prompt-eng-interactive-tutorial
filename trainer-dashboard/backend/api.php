@@ -279,31 +279,16 @@ switch($action){
   /* ---- Transfer-/Abholliste an den Kunden mailen (mit Empfangsbestätigung) ---- */
   case 'transfer.send':
     require_auth();
-    $cid=$in['client']??'';
-    $cl=q("SELECT * FROM clients WHERE id=?",[$cid])->fetch();
-    if(!$cl) fail('Kunde nicht gefunden.',404);
-    $to=trim((string)($cl['contact_email']??''));
-    if($to==='') fail('Für diesen Kunden ist keine Kontakt-E-Mail hinterlegt.');
-    $lang=($in['lang']??'en')==='de'?'de':'en';
-    $rows=client_transfer_list($cid);
-    $tok=token(40);
-    $ex=q("SELECT client_id FROM transfer_tokens WHERE client_id=?",[$cid])->fetch();
-    if($ex) q("UPDATE transfer_tokens SET tok=?, sent_at=?, confirmed_at=NULL, note=NULL WHERE client_id=?",[$tok,now(),$cid]);
-    else    q("INSERT INTO transfer_tokens(client_id,tok,sent_at) VALUES(?,?,?)",[$cid,$tok,now()]);
-    $cname=trim((string)($cl['contact_name']??''));
-    $hi = $cname!=='' ? explode(' ',$cname)[0] : ($lang==='de'?'Team':'Team');
-    $intro = $lang==='de'
-      ? "Hallo $hi,\n\nanbei die Übersicht unserer bestätigten Trainer für {$cl['name']} mit An-/Abreise und Hotel — bitte die Abholung/den Transfer entsprechend organisieren.\n\nBitte kurz den Erhalt bestätigen (Button unten)."
-      : "Hello $hi,\n\nplease find below our confirmed trainers for {$cl['name']} with arrival/departure and hotel details — kindly arrange pickup/transfer accordingly.\n\nPlease confirm receipt via the button below.";
-    $cta = $lang==='de' ? 'Erhalt bestätigen' : 'Confirm receipt';
-    $url = base_url().'/transfer.php?token='.$tok;
-    $subject = ($lang==='de' ? 'Trainer-Anreise & Transfer — ' : 'Trainer arrivals & transfer — ').$cl['name'];
-    $html = email_html($intro, transfer_table_html($rows,$lang).cta_button($url,$cta));
-    $ok = send_email($to, $cname ?: $cl['name'], $subject, $html);
-    $st = $ok ? ((cfg()['mail_mode']??'mail')==='log'?'logged':'sent') : 'failed';
-    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
-       VALUES(?,?,?,?,?,?,?,?)",[null,null,$to,$subject,$intro,$lang,$st,now()]);
-    out(['ok'=>true,'sent'=>$ok?1:0,'count'=>count($rows)]);
+    $r=transfer_send($in['client']??'', ($in['lang']??'en'), false);
+    if(!$r['ok']) fail($r['error'],400);
+    out($r);
+
+  /* ---- Erinnerung an den Kunden (Empfangsbestätigung ausstehend) ---- */
+  case 'transfer.remind':
+    require_auth();
+    $r=transfer_send($in['client']??'', ($in['lang']??'en'), true);
+    if(!$r['ok']) fail($r['error'],400);
+    out($r);
 
   /* ---- E-Mail-Protokoll (Nachweis / Debug) ---- */
   case 'emails':
