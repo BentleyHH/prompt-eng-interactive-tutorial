@@ -18,10 +18,16 @@ $isCommit = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
 $tok = $_POST['token']  ?? $_GET['token']  ?? '';
 $ans = $_POST['answer'] ?? $_GET['answer'] ?? '';
 
-$req = $tok ? q("SELECT r.*, t.topic, t.city, t.country, t.kw, t.month, t.need_cnt FROM requests r
+$req = $tok ? q("SELECT r.*, t.topic, t.city, t.country, t.kw, t.month, t.need_cnt, t.start_date, t.end_date FROM requests r
   JOIN trainings t ON t.id=r.training_id WHERE r.tok=?",[$tok])->fetch() : null;
 
 $lang = ($req['lang'] ?? 'de')==='en' ? 'en' : 'de';
+/* Kontext-Zeile: Ort · echtes Datum (falls vorhanden) · KW */
+$whenLine = '';
+if($req){
+  $range = fmt_date_range($req['start_date']??null, $req['end_date']??null, $lang);
+  $whenLine = htmlspecialchars(trim(implode(' · ', array_filter([$req['city'], $range, $req['kw']]))));
+}
 $validAns = isset($map[$ans]);
 
 /* ---- Nur bei echtem POST wird gespeichert + Mail geschickt ---- */
@@ -124,11 +130,11 @@ function opt($action,$etok,$key,$label,$text,$strong,$primary){
     <?php if($committed): ?>
       <h1><?=$L['thanks']?></h1>
       <p><?=$L[$map[$ans]]?></p>
-      <?php if($req): ?><div class="ctx"><?=$L['re']?>: <b><?=htmlspecialchars($req['topic'])?></b><br><?=htmlspecialchars($req['city'].' · '.$req['kw'])?></div><?php endif; ?>
+      <?php if($req): ?><div class="ctx"><?=$L['re']?>: <b><?=htmlspecialchars($req['topic'])?></b><br><?=$whenLine?></div><?php endif; ?>
       <p class="foot"><?=$L['change']?></p>
     <?php elseif($req): ?>
       <h1><?=$L['confirmTitle']?></h1>
-      <div class="ctx"><?=$L['re']?>: <b><?=htmlspecialchars($req['topic'])?></b><br><?=htmlspecialchars($req['city'].' · '.$req['kw'])?></div>
+      <div class="ctx"><?=$L['re']?>: <b><?=htmlspecialchars($req['topic'])?></b><br><?=$whenLine?></div>
       <p><?=$L['confirmLead']?></p>
       <div style="margin-top:18px">
         <?php
