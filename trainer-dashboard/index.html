@@ -254,6 +254,13 @@
   .bktr{display:flex;align-items:center;gap:8px}
   .bktable td:first-child{min-width:150px}
   .travrow{margin-top:2px}
+  .bktop{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .bksearch{flex:0 0 auto;width:min(300px,100%);margin:0}
+  .cchip{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:6px;
+    margin-right:7px;color:#fff;background:var(--cc,#888);vertical-align:1px;white-space:nowrap}
+  .grouprow td{background:var(--panel-2);font-weight:700;font-size:12.5px;color:var(--muted);
+    padding:9px 10px;border-top:2px solid var(--line)}
+  .bktable .pill.crit{margin-left:6px}
 
   /* ============ 20-WEEK HEATMAP ============ */
   .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
@@ -626,8 +633,14 @@ const L={
   theme:"Design wechseln", lock:"Sperren",
   nav_dash:"Übersicht", nav_trainings:"Trainings", nav_bookings:"Belegung", nav_trainers:"Trainer", nav_templates:"Vorlagen",
   tp_book:"Belegung", tp_bookSub:"Wer ist wann wo gebucht — filterbar nach Trainer",
-  bkAllTrainers:"Alle Trainer", bkAllStatus:"Alle Status", bkTrainer:"Trainer",
+  bkAllTrainers:"Alle Trainer", bkAllStatus:"Alle Status", bkTrainer:"Trainer", bkClient:"Kunde", bkMonth:"Zeitraum",
+  bkAllClients:"Alle Kunden", bkAllMonths:"Alle Zeiträume", bkGroup:"Gruppieren", bkGrpNone:"Keine Gruppierung",
+  bkNoClient:"Ohne Kunde", bkReset:"Filter zurücksetzen", bkSearch:"🔎 Suche (Training, Ort, Trainer …)",
   bkCount:n=>`${n} ${n===1?"Buchung":"Buchungen"}`,
+  bkStats:(tr,tg)=>`${tr} ${tr===1?"Trainer":"Trainer"} · ${tg} ${tg===1?"Training":"Trainings"}`,
+  bkConflict:"Doppelt", bkConflictHint:"Dieser Trainer ist in dieser KW mehrfach gebucht.",
+  bkConflictN:n=>`${n} Doppelbuchung${n===1?"":"en"}`,
+  bkCsvToast:n=>`${n} Buchungen als CSV exportiert`,
   bkHint:"Alle Einsätze über alle Trainings — nach Trainer oder Status filtern.",
   bkEmpty:"Keine Buchungen für diese Auswahl.",
   quickReplace:"Schnell-Ersatz", import:"Import",
@@ -774,8 +787,14 @@ const L={
   theme:"Switch theme", lock:"Lock",
   nav_dash:"Overview", nav_trainings:"Trainings", nav_bookings:"Bookings", nav_trainers:"Trainers", nav_templates:"Templates",
   tp_book:"Bookings", tp_bookSub:"Who is booked when and where — filter by trainer",
-  bkAllTrainers:"All trainers", bkAllStatus:"All statuses", bkTrainer:"Trainer",
+  bkAllTrainers:"All trainers", bkAllStatus:"All statuses", bkTrainer:"Trainer", bkClient:"Client", bkMonth:"Period",
+  bkAllClients:"All clients", bkAllMonths:"All periods", bkGroup:"Group by", bkGrpNone:"No grouping",
+  bkNoClient:"No client", bkReset:"Reset filters", bkSearch:"🔎 Search (training, city, trainer …)",
   bkCount:n=>`${n} ${n===1?"booking":"bookings"}`,
+  bkStats:(tr,tg)=>`${tr} ${tr===1?"trainer":"trainers"} · ${tg} ${tg===1?"training":"trainings"}`,
+  bkConflict:"Clash", bkConflictHint:"This trainer is booked more than once in this calendar week.",
+  bkConflictN:n=>`${n} double booking${n===1?"":"s"}`,
+  bkCsvToast:n=>`${n} bookings exported as CSV`,
   bkHint:"Every assignment across all trainings — filter by trainer or status.",
   bkEmpty:"No bookings for this selection.",
   quickReplace:"Quick replacement", import:"Import",
@@ -1587,9 +1606,13 @@ function renderTrainers(){
     <div class="grid2">${cards}</div>`;
 }
 /* ============================================================
-   BELEGUNG / BUCHUNGEN — wer ist wann wo, filterbar nach Trainer
+   BELEGUNG / BUCHUNGEN — Steuerzentrale: Filter (Trainer/Kunde/Status/
+   Monat/Suche), Gruppierung, Doppelbuchungs-Warnung, CSV-Export
    ============================================================ */
-let bookingTr="all", bookingStatus="all";
+let bookingTr="all", bookingStatus="all", bookingClient="all", bookingMonth="all",
+    bookingSearch="", bookingGroup="none";
+function clientOf(tg){ return (S.clients||[]).find(c=>c.id===tg.clientId)||null; }
+function bookingMonthKey(tg){ return tg.month || (tg.date?String(tg.date).slice(0,7):"") || tg.kw || ""; }
 function allBookings(){
   const rel=["yes","confirmed","maybe","asked"]; const out=[];
   S.trainings.forEach(tg=>(tg.roster||[]).forEach(r=>{
@@ -1601,42 +1624,125 @@ function allBookings(){
     String(a.tg.date||a.tg.kw||"zzz").localeCompare(String(b.tg.date||b.tg.kw||"zzz"))
     || a.tr.name.localeCompare(b.tr.name));
 }
-function renderBookings(){
+/* Schlüssel Trainer+KW; Konflikt = Trainer mehrfach in derselben KW gebucht. */
+function bkKey(x){ return x.tr.id+"|"+(x.tg.kw||x.tg.date||""); }
+function conflictKeys(){
+  const seen={}, conf=new Set();
+  allBookings().forEach(x=>{ if(!(x.tg.kw||x.tg.date))return; const k=bkKey(x); seen[k]=(seen[k]||0)+1; });
+  for(const k in seen) if(seen[k]>1) conf.add(k);
+  return conf;
+}
+function filteredBookings(){
   let list=allBookings();
-  if(bookingTr!=="all") list=list.filter(x=>x.tr.id===bookingTr);
+  if(bookingTr!=="all")     list=list.filter(x=>x.tr.id===bookingTr);
+  if(bookingClient!=="all") list=list.filter(x=>(x.tg.clientId||"")===bookingClient);
   if(bookingStatus!=="all") list=list.filter(x=> bookingStatus==="yes"
     ? (x.status==="yes"||x.status==="confirmed") : x.status===bookingStatus);
-  const trOpts=`<option value="all">${t("bkAllTrainers")}</option>`+
-    S.trainers.slice().sort((a,b)=>a.name.localeCompare(b.name))
-      .map(tr=>`<option value="${tr.id}" ${bookingTr===tr.id?"selected":""}>${esc(tr.name)}</option>`).join("");
+  if(bookingMonth!=="all")  list=list.filter(x=>bookingMonthKey(x.tg)===bookingMonth);
+  const q=bookingSearch.trim().toLowerCase();
+  if(q) list=list.filter(x=>{ const cl=clientOf(x.tg);
+    return [x.tr.name,x.tg.topic,x.tg.city,x.tg.country,x.tg.kw,x.tg.spec,cl?cl.name:""]
+      .filter(Boolean).join(" ").toLowerCase().includes(q); });
+  return list;
+}
+function bkRow(x,conf){
+  const tg=x.tg, cl=clientOf(tg);
+  const when=[tg.date||"",tg.kw||""].filter(Boolean).join(" · ");
+  const trav=travelLine(x.flight,tg);
+  const dbl=conf.has(bkKey(x))?`<span class="pill crit" title="${t("bkConflictHint")}">⚠ ${t("bkConflict")}</span>`:"";
+  const clientChip=cl?`<span class="cchip" style="--cc:${cl.color}">${esc(cl.short||cl.name)}</span>`:"";
+  return `<tr>
+    <td><div class="bktr"><span class="av xs" style="background:${x.tr.color}">${initials(x.tr.name)}</span><b>${esc(x.tr.name)}</b></div></td>
+    <td class="nowrap"><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${dbl}</td>
+    <td class="nowrap">${esc(when||"—")}</td>
+    <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
+    <td>${clientChip}<b>${esc(tg.topic)}</b>${trav?`<div class="meta travrow">🧳 ${trav}</div>`:""}</td>
+    <td class="nowrap"><button class="btn sm" title="${t("planView")}" onclick="openPlan('${x.tr.id}')">📋</button></td>
+  </tr>`;
+}
+function groupBookings(list){
+  if(bookingGroup==="none") return [["",list]];
+  const keyFn = bookingGroup==="trainer" ? x=>x.tr.name
+    : bookingGroup==="client" ? x=>{const c=clientOf(x.tg);return c?c.name:t("bkNoClient");}
+    : x=>bookingMonthKey(x.tg)||"—";
+  const g={}, order=[];
+  list.forEach(x=>{const k=keyFn(x); if(!(k in g)){g[k]=[];order.push(k);} g[k].push(x);});
+  if(bookingGroup!=="month") order.sort((a,b)=>a.localeCompare(b));
+  return order.map(k=>[k,g[k]]);
+}
+function renderBookings(){
+  const list=filteredBookings(), conf=conflictKeys();
+  const uTr=new Set(list.map(x=>x.tr.id)).size, uTg=new Set(list.map(x=>x.tg.id)).size;
+  const confN=list.filter(x=>conf.has(bkKey(x))).length;
+  const opt=(v,l,sel)=>`<option value="${v}" ${sel?"selected":""}>${l}</option>`;
+  const trOpts=opt("all",t("bkAllTrainers"),bookingTr==="all")+
+    S.trainers.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(tr=>opt(tr.id,esc(tr.name),bookingTr===tr.id)).join("");
+  const clOpts=opt("all",t("bkAllClients"),bookingClient==="all")+
+    (S.clients||[]).map(c=>opt(c.id,esc(c.name),bookingClient===c.id)).join("");
   const stOpts=[["all",t("bkAllStatus")],["yes",spLabel("yes")],["maybe",spLabel("maybe")],["asked",spLabel("asked")]]
-    .map(([v,l])=>`<option value="${v}" ${bookingStatus===v?"selected":""}>${l}</option>`).join("");
-  const rows=list.length ? list.map(x=>{
-    const tg=x.tg; const when=[tg.date||"",tg.kw||""].filter(Boolean).join(" · ");
-    const trav=travelLine(x.flight,tg);
-    return `<tr>
-      <td><div class="bktr"><span class="av xs" style="background:${x.tr.color}">${initials(x.tr.name)}</span><b>${esc(x.tr.name)}</b></div></td>
-      <td><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span></td>
-      <td class="nowrap">${esc(when||"—")}</td>
-      <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
-      <td><b>${esc(tg.topic)}</b>${trav?`<div class="meta travrow">🧳 ${trav}</div>`:""}</td>
-      <td class="nowrap"><button class="btn sm" title="${t("planView")}" onclick="openPlan('${x.tr.id}')">📋</button></td>
-    </tr>`;
-  }).join("") : `<tr><td colspan="6" class="meta" style="padding:16px 8px">${t("bkEmpty")}</td></tr>`;
+    .map(([v,l])=>opt(v,l,bookingStatus===v)).join("");
+  const months=[...new Set(allBookings().map(x=>bookingMonthKey(x.tg)).filter(Boolean))];
+  const moOpts=opt("all",t("bkAllMonths"),bookingMonth==="all")+months.map(m=>opt(m,esc(m),bookingMonth===m)).join("");
+  const grOpts=[["none",t("bkGrpNone")],["trainer",t("bkTrainer")],["client",t("bkClient")],["month",t("bkMonth")]]
+    .map(([v,l])=>opt(v,l,bookingGroup===v)).join("");
+
+  const groups=groupBookings(list);
+  const cols=6;
+  const body = list.length ? groups.map(([label,items])=>{
+    const head = label ? `<tr class="grouprow"><td colspan="${cols}">${esc(label)} · ${items.length}</td></tr>` : "";
+    return head+items.map(x=>bkRow(x,conf)).join("");
+  }).join("") : `<tr><td colspan="${cols}" class="meta" style="padding:16px 8px">${t("bkEmpty")}</td></tr>`;
+
   $("#v-bookings").innerHTML=`
-    <div class="panel"><div class="panel-b bkfilter">
-      <div class="rowgrow"><b>${t("bkCount",list.length)}</b><div class="meta">${t("bkHint")}</div></div>
-      <span class="bkf"><span class="fld">${t("bkTrainer")}</span>
-        <select class="rstat bksel" onchange="bookingTr=this.value;renderBookings()">${trOpts}</select></span>
-      <span class="bkf"><span class="fld">${t("planColStatus")}</span>
-        <select class="rstat bksel" onchange="bookingStatus=this.value;renderBookings()">${stOpts}</select></span>
+    <div class="panel"><div class="panel-b">
+      <div class="bktop">
+        <div class="rowgrow">
+          <b>${t("bkCount",list.length)}</b>
+          <div class="meta">${t("bkStats",uTr,uTg)}${confN?` · <span style="color:var(--crit)">⚠ ${t("bkConflictN",confN)}</span>`:""}</div>
+        </div>
+        <button class="btn sm" onclick="exportBookingsCSV()">⬇ CSV</button>
+      </div>
+      <div class="bkfilter">
+        <input class="inp bksearch" placeholder="${t("bkSearch")}" value="${esc(bookingSearch)}"
+          oninput="bookingSearch=this.value;renderBookings();focusBkSearch()">
+        <span class="bkf"><span class="fld">${t("bkClient")}</span>
+          <select class="rstat bksel" onchange="bookingClient=this.value;renderBookings()">${clOpts}</select></span>
+        <span class="bkf"><span class="fld">${t("bkTrainer")}</span>
+          <select class="rstat bksel" onchange="bookingTr=this.value;renderBookings()">${trOpts}</select></span>
+        <span class="bkf"><span class="fld">${t("bkMonth")}</span>
+          <select class="rstat bksel" onchange="bookingMonth=this.value;renderBookings()">${moOpts}</select></span>
+        <span class="bkf"><span class="fld">${t("planColStatus")}</span>
+          <select class="rstat bksel" onchange="bookingStatus=this.value;renderBookings()">${stOpts}</select></span>
+        <span class="bkf"><span class="fld">${t("bkGroup")}</span>
+          <select class="rstat bksel" onchange="bookingGroup=this.value;renderBookings()">${grOpts}</select></span>
+        ${(bookingTr!=="all"||bookingClient!=="all"||bookingStatus!=="all"||bookingMonth!=="all"||bookingSearch||bookingGroup!=="none")
+          ?`<button class="btn sm" onclick="resetBookings()">✕ ${t("bkReset")}</button>`:""}
+      </div>
     </div></div>
     <div class="panel"><div class="panel-b" style="overflow-x:auto">
       <table class="plantable bktable">
         <tr><th>${t("bkTrainer")}</th><th>${t("planColStatus")}</th><th>${t("planColWhen")}</th><th>${t("planColWhere")}</th><th>${t("planColWhat")}</th><th></th></tr>
-        ${rows}
+        ${body}
       </table>
     </div></div>`;
+}
+function focusBkSearch(){ const el=$(".bksearch"); if(el){const v=el.value;el.focus();el.setSelectionRange(v.length,v.length);} }
+function resetBookings(){ bookingTr="all";bookingClient="all";bookingStatus="all";bookingMonth="all";bookingSearch="";bookingGroup="none";renderBookings(); }
+function exportBookingsCSV(){
+  const list=filteredBookings();
+  const esc=s=>`"${String(s==null?"":s).replace(/"/g,'""')}"`;
+  const head=["Trainer",t("planColStatus"),t("planColWhen"),t("bkClient"),t("planColWhere"),t("planColWhat"),"Reise"];
+  const lines=[head.map(esc).join(";")];
+  list.forEach(x=>{const tg=x.tg,cl=clientOf(tg);
+    lines.push([x.tr.name, spLabel(x.status), [tg.date,tg.kw].filter(Boolean).join(" "),
+      cl?cl.name:"", [tg.city,tg.country].filter(Boolean).join(", "), tg.topic,
+      travelParts(x.flight,tg).join(" · ")].map(esc).join(";"));
+  });
+  const blob=new Blob(["﻿"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="ETAF-Belegung.csv"; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+  toast(t("bkCsvToast",list.length),"good");
 }
 function planBadge(tr){
   const p=tr.plan; if(!p)return "";
@@ -1657,7 +1763,7 @@ function trainerSchedule(trId){
     .filter(Boolean)
     .sort((a,b)=>String(a.tg.date||a.tg.kw||"zzz").localeCompare(String(b.tg.date||b.tg.kw||"zzz")));
 }
-function travelLine(fl,tg){
+function travelParts(fl,tg){
   const L=S.lang==='de'
     ?{arr:'Anreise',dep:'Abreise',out:'Hinflug',ret:'Rückflug',hotel:'Hotel',room:'Zimmer',visa:'Visum',pass:'Pass gültig bis'}
     :{arr:'Arrival',dep:'Departure',out:'Outbound',ret:'Return',hotel:'Hotel',room:'Room',visa:'Visa',pass:'Passport until'};
@@ -1672,8 +1778,9 @@ function travelLine(fl,tg){
   if(fl&&fl.room)p.push(`${L.room} ${fl.room}`);
   if(fl&&fl.visaStatus&&fl.visaStatus!=='none')p.push(`${L.visa}: ${t("visa_"+fl.visaStatus)}`);
   if(fl&&fl.passportExpiry)p.push(`${L.pass} ${fl.passportExpiry}`);
-  return p.map(esc).join(" · ");
+  return p;
 }
+function travelLine(fl,tg){ return travelParts(fl,tg).map(esc).join(" · "); }
 function openPlan(trId){ curPlanTr=S.trainers.find(t=>t.id===trId)||null; route="plan"; render(); }
 function renderPlan(){
   const tr=curPlanTr; if(!tr){go("trainers");return;}
