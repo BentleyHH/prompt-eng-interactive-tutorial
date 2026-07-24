@@ -176,6 +176,13 @@
   /* ============ CARDS / KPI ============ */
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
   @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .ampel{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:12px;margin-bottom:16px;border:1px solid var(--line)}
+  .ampel .lamp{width:16px;height:16px;border-radius:50%;flex:none;box-shadow:0 0 0 4px rgba(0,0,0,.04)}
+  .ampel.a-green{background:var(--good-bg)}.ampel.a-green .lamp{background:var(--good)}
+  .ampel.a-amber{background:var(--warn-bg)}.ampel.a-amber .lamp{background:var(--warn)}
+  .ampel.a-red{background:var(--crit-bg)}.ampel.a-red .lamp{background:var(--crit);animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(216,31,38,.5)}50%{box-shadow:0 0 0 6px rgba(216,31,38,0)}}
+  .ampel b{font-size:15px}
   .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
     padding:16px 16px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
   .kpi .lab{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
@@ -239,8 +246,7 @@
   @media print{
     .side,.topbar,.mob-nav,.noprint{display:none!important}
     #app{display:block!important}.wrap{padding:0;max-width:100%}
-    .view:not(#v-plan){display:none!important}
-    #v-plan{display:block!important}
+    .view:not(.on){display:none!important}
     .plandoc{border:none;box-shadow:none}
     body{background:#fff}
   }
@@ -493,6 +499,7 @@
       <section class="view" id="v-detail"></section>
       <section class="view" id="v-trainers"></section>
       <section class="view" id="v-plan"></section>
+      <section class="view" id="v-transfer"></section>
       <section class="view" id="v-templates"></section>
       <section class="view" id="v-automation"></section>
       <section class="view" id="v-emails"></section>
@@ -660,6 +667,9 @@ const L={
   bkStats:(tr,tg)=>`${tr} ${tr===1?"Trainer":"Trainer"} · ${tg} ${tg===1?"Training":"Trainings"}`,
   bkConflict:"Doppelt", bkConflictHint:"Dieser Trainer ist in dieser KW mehrfach gebucht.",
   bkConflictN:n=>`${n} Doppelbuchung${n===1?"":"en"}`,
+  ampel_green:"Alles im grünen Bereich", ampel_amber:"Läuft — mit Handlungsbedarf", ampel_red:"Achtung: Konflikte",
+  ampelUnder:n=>`${n} unterbesetzte${n===1?"s":""} Training${n===1?"":"s"}`, ampelOpen:n=>`${n} offene Anfrage${n===1?"":"n"}`,
+  ampelAllGood:"Keine Konflikte, alle Trainings besetzt.", ampelShow:"Konflikte ansehen",
   bkCsvToast:n=>`${n} Buchungen als CSV exportiert`,
   bkHint:"Alle Einsätze über alle Trainings — nach Trainer oder Status filtern.",
   bkEmpty:"Keine Buchungen für diese Auswahl.",
@@ -677,6 +687,14 @@ const L={
   planNoMail:"Für diesen Trainer ist keine E-Mail-Adresse hinterlegt.",
   planSentToast:n=>`Einsatzübersicht an ${n} gesendet`, planSubject:"Deine Einsatzübersicht — bitte bestätigen",
   travelWin:"Reisezeitraum inkl. An-/Abreise",
+  clientContact:"Ansprechpartner", clientEmail:"Kontakt-E-Mail",
+  trfTitle:"Transfer-/Abholliste", trfBtn:"Transferliste", trfSend:"An Kunde senden",
+  trfArr:"Anreise", trfDep:"Abreise", trfHotel:"Hotel",
+  trfEmpty:"Noch keine bestätigten Trainer für diesen Kunden.",
+  trfFoot:"An-/Abreise & Hotel — bitte Abholung/Transfer organisieren. Angaben können sich noch ändern.",
+  trfSent:"An Kunde gesendet — Empfangsbestätigung ausstehend.", trfConfirmed:"Kunde hat den Erhalt bestätigt.",
+  trfNoMail:"Für diesen Kunden ist keine Kontakt-E-Mail hinterlegt (unter „Kunden verwalten“).",
+  trfSentToast:n=>`Transferliste an ${n} gesendet`,
   bkViewList:"Liste", bkViewCal:"Kalender", bkCalTrainer:"Trainer",
   bkCalEmpty:"Keine Buchungen für diese Auswahl.",
   bkLegend:"Legende:", bkLegYes:"Zugesagt", bkLegMaybe:"Vielleicht", bkLegAsked:"Angefragt", bkLegClash:"Doppelbuchung",
@@ -785,8 +803,16 @@ const L={
   icsSubHint:"Live-Abo-Link (aktualisiert sich automatisch): backend/ics.php",
   newTraining:"+ Neues Training", editTraining:"Training bearbeiten", createTraining:"Training anlegen",
   fCity:"Stadt", fCountry:"Land (Code, z. B. UAE)", fKw:"Kalenderwoche", fMonth:"Monat / Jahr",
-  fStart:"Beginn (JJJJ-MM-TT)", fEnd:"Ende (JJJJ-MM-TT)",
+  fStart:"Beginn", fEnd:"Ende", fDateHint:"Datum wählen → KW wird automatisch gesetzt",
   trainingSaved:"Training gespeichert", trainingDeleted:"Training gelöscht",
+  shiftTitle:"Termin verschoben — Trainer benachrichtigen?",
+  shiftLead:n=>`Der Zeitraum hat sich geändert. ${n} betroffene${n===1?"r":""} Trainer ${n===1?"ist":"sind"} bereits im Prozess.`,
+  shiftOld:"Bisher", shiftNew:"Neu",
+  shiftHint:"„Nur informieren“ behält den Status. „Neu anfragen“ setzt die Trainer zurück auf „angefragt“ und lässt sie den neuen Termin bestätigen.",
+  shiftSkip:"Nicht senden", shiftInfo:"Nur informieren", shiftReask:"Neu anfragen",
+  shiftInfoToast:n=>`${n} Trainer über die Änderung informiert`,
+  shiftReaskToast:n=>`Neue Verfügbarkeits-Anfrage an ${n} Trainer gesendet`,
+  shiftSentDemo:"Demo: Benachrichtigung würde jetzt gesendet",
   deleteTraining:"Löschen", delTrainingConfirm:"Dieses Training wirklich löschen? Anfragen & Reisedaten gehen verloren.",
   editBtn:"Bearbeiten", fieldReq:"Bitte mindestens Thema und Ort angeben.",
   materials:"Material", materialList:"Materialliste", matEdit:"Material bearbeiten",
@@ -818,6 +844,9 @@ const L={
   bkStats:(tr,tg)=>`${tr} ${tr===1?"trainer":"trainers"} · ${tg} ${tg===1?"training":"trainings"}`,
   bkConflict:"Clash", bkConflictHint:"This trainer is booked more than once in this calendar week.",
   bkConflictN:n=>`${n} double booking${n===1?"":"s"}`,
+  ampel_green:"All clear", ampel_amber:"Running — needs attention", ampel_red:"Attention: conflicts",
+  ampelUnder:n=>`${n} understaffed training${n===1?"":"s"}`, ampelOpen:n=>`${n} open request${n===1?"":"s"}`,
+  ampelAllGood:"No conflicts, all trainings staffed.", ampelShow:"View conflicts",
   bkCsvToast:n=>`${n} bookings exported as CSV`,
   bkHint:"Every assignment across all trainings — filter by trainer or status.",
   bkEmpty:"No bookings for this selection.",
@@ -835,6 +864,14 @@ const L={
   planNoMail:"No e-mail address on file for this trainer.",
   planSentToast:n=>`Assignment overview sent to ${n}`, planSubject:"Your assignment overview — please confirm",
   travelWin:"Travel window incl. arrival/departure",
+  clientContact:"Contact person", clientEmail:"Contact e-mail",
+  trfTitle:"Transfer / pickup list", trfBtn:"Transfer list", trfSend:"Send to client",
+  trfArr:"Arrival", trfDep:"Departure", trfHotel:"Hotel",
+  trfEmpty:"No confirmed trainers for this client yet.",
+  trfFoot:"Arrival/departure & hotel — please arrange pickup/transfer. Details may still change.",
+  trfSent:"Sent to client — receipt confirmation pending.", trfConfirmed:"Client confirmed receipt.",
+  trfNoMail:"No contact e-mail on file for this client (see “Manage clients”).",
+  trfSentToast:n=>`Transfer list sent to ${n}`,
   bkViewList:"List", bkViewCal:"Calendar", bkCalTrainer:"Trainer",
   bkCalEmpty:"No bookings for this selection.",
   bkLegend:"Legend:", bkLegYes:"Confirmed", bkLegMaybe:"Maybe", bkLegAsked:"Requested", bkLegClash:"Double booking",
@@ -943,8 +980,16 @@ const L={
   icsSubHint:"Live subscription link (auto-updating): backend/ics.php",
   newTraining:"+ New training", editTraining:"Edit training", createTraining:"Create training",
   fCity:"City", fCountry:"Country (code, e.g. UAE)", fKw:"Calendar week", fMonth:"Month / year",
-  fStart:"Start (YYYY-MM-DD)", fEnd:"End (YYYY-MM-DD)",
+  fStart:"Start", fEnd:"End", fDateHint:"Pick a date → calendar week is set automatically",
   trainingSaved:"Training saved", trainingDeleted:"Training deleted",
+  shiftTitle:"Date changed — notify trainers?",
+  shiftLead:n=>`The period changed. ${n} affected trainer${n===1?" is":"s are"} already in the process.`,
+  shiftOld:"Was", shiftNew:"Now",
+  shiftHint:"“Info only” keeps their status. “Re-request” resets trainers to “requested” and asks them to confirm the new date.",
+  shiftSkip:"Don't send", shiftInfo:"Info only", shiftReask:"Re-request",
+  shiftInfoToast:n=>`${n} trainer(s) informed of the change`,
+  shiftReaskToast:n=>`New availability request sent to ${n} trainer(s)`,
+  shiftSentDemo:"Demo: notification would be sent now",
   deleteTraining:"Delete", delTrainingConfirm:"Really delete this training? Requests & travel data will be lost.",
   editBtn:"Edit", fieldReq:"Please provide at least topic and location.",
   materials:"Material", materialList:"Material list", matEdit:"Edit material",
@@ -1308,11 +1353,13 @@ function render(){
   else if(route==="detail"){renderDetail();$("#v-detail").classList.add("on");}
   else if(route==="trainers"){renderTrainers();$("#v-trainers").classList.add("on");}
   else if(route==="plan"){renderPlan();$("#v-plan").classList.add("on");}
+  else if(route==="transfer"){renderTransfer();$("#v-transfer").classList.add("on");}
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
   else if(route==="emails"){renderEmails();$("#v-emails").classList.add("on");}
   if(route==="detail"&&curTg){$("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+whenLabel(curTg);}
   else if(route==="plan"&&curPlanTr){$("#tt").textContent=t("planTitle");$("#ts").textContent=curPlanTr.name;}
+  else if(route==="transfer"&&curTransferCl){$("#tt").textContent=t("trfTitle");$("#ts").textContent=curTransferCl.name;}
   else{const ti=titleFor(route);$("#tt").textContent=ti[0];$("#ts").textContent=ti[1];}
   save();saveView();
 }
@@ -1320,13 +1367,29 @@ function render(){
 /* ============================================================
    DASHBOARD
    ============================================================ */
+function healthStatus(){
+  const conf=(typeof conflictKeys==="function")?conflictKeys():new Set();
+  const under=S.trainings.filter(tg=>rosterStats(tg).yes<(tg.need||0)).length;
+  const open=S.trainings.reduce((a,tg)=>a+rosterStats(tg).asked,0);
+  const conflicts=conf.size;
+  const level = conflicts>0 ? "red" : (under>0||open>0) ? "amber" : "green";
+  return {level,conflicts,under,open};
+}
 function renderDash(){
   const T=curTrainings();
   const full=T.filter(t=>statusOf(t).cls==="good").length;
   const crit=T.filter(t=>statusOf(t).cls==="crit").length;
   const openReq=T.reduce((a,t)=>a+rosterStats(t).asked,0);
 
-  const kpis=`<div class="kpis">
+  const h=healthStatus();
+  const hDetail=[ h.conflicts?`⚠ ${t("bkConflictN",h.conflicts)}`:"", h.under?t("ampelUnder",h.under):"", h.open?t("ampelOpen",h.open):"" ].filter(Boolean).join(" · ")||t("ampelAllGood");
+  const ampel=`<div class="ampel a-${h.level}">
+    <span class="lamp"></span>
+    <div class="rowgrow"><b>${t("ampel_"+h.level)}</b><div class="meta">${hDetail}</div></div>
+    ${h.conflicts?`<button class="btn sm" onclick="bookingView='calendar';bookingStatus='all';go('bookings')">${t("ampelShow")}</button>`:""}
+  </div>`;
+
+  const kpis=`${ampel}<div class="kpis">
     <div class="kpi i"><span class="rail"></span><div class="lab">${t("kpiTotal")}</div><div class="val tnum">${T.length}</div></div>
     <div class="kpi g"><span class="rail"></span><div class="lab">${t("kpiFull")}</div><div class="val tnum">${full}</div></div>
     <div class="kpi w"><span class="rail"></span><div class="lab">${t("kpiOpen")}</div><div class="val tnum">${openReq}</div></div>
@@ -1737,6 +1800,7 @@ function renderBookings(){
           <div class="meta">${t("bkStats",uTr,uTg)}${confN?` · <span style="color:var(--crit)">⚠ ${t("bkConflictN",confN)}</span>`:""}</div>
         </div>
         <span class="segbtn">${vbtn("list","☰ "+t("bkViewList"))}${vbtn("calendar","▦ "+t("bkViewCal"))}</span>
+        ${bookingClient!=="all"?`<button class="btn sm" onclick="openTransfer('${bookingClient}')">✈ ${t("trfBtn")}</button>`:""}
         <button class="btn sm" onclick="exportBookingsCSV()">⬇ CSV</button>
       </div>
       <div class="bkfilter">
@@ -1938,6 +2002,68 @@ async function sendPlan(trId){
     demoLog(tr.email, t("planSubject"), S.emailLang||"de", "logged");
     toast(t("planSentToast",tr.name.split(" ").slice(-1)),"good");
   }
+}
+
+/* ============================================================
+   TRANSFER-/ABHOLLISTE für den Kunden
+   ============================================================ */
+let curTransferCl=null;
+function clientTransferRows(clientId){
+  const out=[];
+  S.trainings.filter(tg=>tg.clientId===clientId).forEach(tg=>(tg.roster||[]).forEach(r=>{
+    if(r.status!=="yes"&&r.status!=="confirmed")return;
+    const tr=S.trainers.find(t=>t.id===r.trainerId); if(!tr)return;
+    out.push({tg,tr,flight:r.flight});
+  }));
+  return out.sort((a,b)=>String(a.tg.date||"zzz").localeCompare(String(b.tg.date||"zzz"))||a.tr.name.localeCompare(b.tr.name));
+}
+function openTransfer(clientId){ curTransferCl=(S.clients||[]).find(c=>c.id===clientId)||null; route="transfer"; render(); }
+function renderTransfer(){
+  const cl=curTransferCl; if(!cl){go("bookings");return;}
+  const rows=clientTransferRows(cl.id); const tr=cl.transfer;
+  const conf = tr&&tr.confirmedAt
+    ? `<div class="planconf ok">✅ ${t("trfConfirmed")} <span class="meta">(${esc((tr.confirmedAt||"").slice(0,16).replace("T"," "))})</span>${tr.note?` — „${esc(tr.note)}“`:""}</div>`
+    : (tr&&tr.sentAt ? `<div class="planconf sent">✉ ${t("trfSent")} <span class="meta">(${esc((tr.sentAt||"").slice(0,16).replace("T"," "))})</span></div>` : "");
+  const body=rows.length?rows.map(x=>{
+    const fl=x.flight||{}, tg=x.tg;
+    const arr=[fl.arrival||"",fl.flightOut||""].filter(Boolean).join(" · ");
+    const dep=[fl.departure||"",fl.flightReturn||""].filter(Boolean).join(" · ");
+    const hotel=[(tg.travel&&tg.travel.hotel)||"",fl.room||""].filter(Boolean).join(" · ");
+    return `<tr>
+      <td><div class="bktr"><span class="av xs" style="background:${x.tr.color}">${initials(x.tr.name)}</span><b>${esc(x.tr.name)}</b></div>${x.tr.phone?`<div class="meta">☎ ${esc(x.tr.phone)}</div>`:""}</td>
+      <td>${esc(arr||"—")}</td><td>${esc(dep||"—")}</td><td>${esc(hotel||"—")}</td>
+      <td><b>${esc(tg.topic)}</b><div class="meta">${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}${tg.date?" · "+esc(fmtDateRange(tg.date,tg.dateEnd)):""}</div></td>
+    </tr>`;
+  }).join(""):`<tr><td colspan="5" class="meta" style="padding:16px 8px">${t("trfEmpty")}</td></tr>`;
+  $("#v-transfer").innerHTML=`
+    <button class="btn sm noprint" onclick="go('bookings')" style="margin-bottom:14px">← ${t("back")}</button>
+    <div class="panel plandoc"><div class="panel-b">
+      <div class="planhead"><div>
+        <div class="planlogo">ETAF<span>.</span></div>
+        <h2 style="margin:6px 0 2px">${t("trfTitle")}</h2>
+        <div class="meta">${esc(cl.name)}${cl.contactName?" · "+esc(cl.contactName):""}${cl.contactEmail?" · ✉︎ "+esc(cl.contactEmail):""}</div>
+      </div></div>
+      ${conf}
+      <table class="plantable">
+        <tr><th>${t("bkTrainer")}</th><th>${t("trfArr")}</th><th>${t("trfDep")}</th><th>${t("trfHotel")}</th><th>${t("planColWhat")}</th></tr>
+        ${body}
+      </table>
+      <div class="meta planfoot">${t("trfFoot")}</div>
+    </div></div>
+    <div class="planactions noprint">
+      <button class="btn" onclick="printPlan()">🖨 ${t("planPrint")}</button>
+      <button class="btn primary" onclick="sendTransfer('${cl.id}')">✉ ${t("trfSend")}</button>
+    </div>`;
+}
+async function sendTransfer(cid){
+  const cl=(S.clients||[]).find(c=>c.id===cid); if(!cl)return;
+  if(!cl.contactEmail){ toast(t("trfNoMail"),"crit"); return; }
+  if(LIVE){
+    try{ const d=await apiCall("transfer.send",{client:cid,lang:S.emailLang||"en"});
+      await pull(); curTransferCl=(S.clients||[]).find(c=>c.id===cid)||curTransferCl; renderTransfer();
+      toast(t("trfSentToast",cl.name),"good");
+    }catch(e){ toast("Fehler: "+e.message,"crit"); }
+  } else { demoLog(cl.contactEmail,t("trfTitle"),S.emailLang||"en","logged"); toast(t("trfSentToast",cl.name),"good"); }
 }
 
 /* ============================================================
@@ -2468,12 +2594,18 @@ function drawClientManager(){
     <button class="btn primary" onclick="saveClients()">${t("save")}</button>`;
 }
 function clientEditRow(c){
-  return `<div class="row" style="gap:8px;padding:8px 2px">
-    <input type="color" value="${esc(c.color||'#3E4852')}" oninput="clSet('${c.id}','color',this.value)" style="width:32px;height:32px;padding:0;border:1px solid var(--line);border-radius:8px;background:none;flex:none">
-    <input class="inp" value="${esc(c.name||'')}" placeholder="${t("clientName")}" oninput="clSet('${c.id}','name',this.value)" style="flex:1;min-width:0">
-    <input class="inp" value="${esc(c.short||'')}" placeholder="${t("clientShort")}" oninput="clSet('${c.id}','short',this.value)" style="width:64px">
-    <input class="inp" value="${esc(c.country||'')}" placeholder="${t("clientCountry")}" oninput="clSet('${c.id}','country',this.value)" style="width:72px">
-    <button class="btn sm" onclick="delClient('${c.id}')" title="✕">✕</button>
+  return `<div style="padding:8px 2px;border-bottom:1px solid var(--line)">
+    <div class="row" style="gap:8px;padding:0">
+      <input type="color" value="${esc(c.color||'#3E4852')}" oninput="clSet('${c.id}','color',this.value)" style="width:32px;height:32px;padding:0;border:1px solid var(--line);border-radius:8px;background:none;flex:none">
+      <input class="inp" value="${esc(c.name||'')}" placeholder="${t("clientName")}" oninput="clSet('${c.id}','name',this.value)" style="flex:1;min-width:0">
+      <input class="inp" value="${esc(c.short||'')}" placeholder="${t("clientShort")}" oninput="clSet('${c.id}','short',this.value)" style="width:64px">
+      <input class="inp" value="${esc(c.country||'')}" placeholder="${t("clientCountry")}" oninput="clSet('${c.id}','country',this.value)" style="width:72px">
+      <button class="btn sm" onclick="delClient('${c.id}')" title="✕">✕</button>
+    </div>
+    <div class="row" style="gap:8px;padding:6px 0 0 40px">
+      <input class="inp" value="${esc(c.contactName||'')}" placeholder="${t("clientContact")}" oninput="clSet('${c.id}','contactName',this.value)" style="flex:1;min-width:0">
+      <input class="inp" value="${esc(c.contactEmail||'')}" placeholder="${t("clientEmail")}" oninput="clSet('${c.id}','contactEmail',this.value)" style="flex:1;min-width:0">
+    </div>
   </div>`;
 }
 function clSet(id,k,v){const c=S.clients.find(x=>x.id===id);if(c)c[k]=v;}
@@ -2518,9 +2650,10 @@ function openTrainingEditor(id){
     </div>
     <datalist id="ctryList">${["UAE","KSA","DE","AT","CH","UK"].map(c=>`<option value="${c}">`).join("")}</datalist>
     <div style="display:flex;gap:10px">
-      <div style="flex:1"><label class="fld">${t("fStart")}</label><input class="inp" id="edStart" value="${esc(tg.date||"")}" placeholder="2027-05-10"></div>
-      <div style="flex:1"><label class="fld">${t("fEnd")}</label><input class="inp" id="edEnd" value="${esc(tg.dateEnd||"")}" placeholder="2027-05-14"></div>
+      <div style="flex:1"><label class="fld">${t("fStart")}</label><input class="inp" id="edStart" type="date" value="${esc(tg.date||"")}" oninput="updateEdWhen()"></div>
+      <div style="flex:1"><label class="fld">${t("fEnd")}</label><input class="inp" id="edEnd" type="date" value="${esc(tg.dateEnd||"")}" oninput="updateEdWhen()"></div>
     </div>
+    <div class="meta" id="edWhen" style="margin:-4px 0 6px">${tg.date?"→ "+fmtDateRange(tg.date,tg.dateEnd)+(tg.kw?" · "+tg.kw:""):t("fDateHint")}</div>
     <label class="fld">${t("kSchwer")}</label>
     <select id="edSpec">${SPEC.map(s=>`<option ${s===tg.spec?'selected':''}>${esc(s)}</option>`).join("")}</select>
     <div style="display:flex;gap:10px">
@@ -2539,11 +2672,19 @@ function deriveWhen(startISO){
   const sd=new Date(startISO+"T00:00:00Z");
   return {kw:"KW "+isoWeekNum(sd), month:MON[sd.getUTCMonth()]+" ’"+String(sd.getUTCFullYear()).slice(2)};
 }
+function updateEdWhen(){
+  const s=$("#edStart").value, e=$("#edEnd").value, el=$("#edWhen"); if(!el)return;
+  if(!s){el.textContent=t("fDateHint");return;}
+  const w=deriveWhen(s);
+  el.textContent="→ "+fmtDateRange(s,e)+(w.kw?" · "+w.kw:"");
+}
 async function saveTrainingEditor(){
   const topic=$("#edTopic").value.trim(), city=$("#edCity").value.trim();
   if(!topic||!city){toast(t("fieldReq"),"warn");return;}
   const start=$("#edStart").value.trim(), end=$("#edEnd").value.trim();
   const w=deriveWhen(start);
+  // Alten Zeitraum merken (für „Termin verschoben“-Benachrichtigung)
+  const oldStart=edTraining?edTraining.date:null, oldKw=edTraining?edTraining.kw:null, oldEnd=edTraining?edTraining.dateEnd:null;
   const data={clientId:$("#edClient").value,topic,city,country:$("#edCountry").value.trim().toUpperCase(),
     date:start||null,dateEnd:end||null,kw:w.kw,month:w.month,spec:$("#edSpec").value,
     need:parseInt($("#edNeed").value)||1,participants:parseInt($("#edPart").value)||0};
@@ -2566,6 +2707,40 @@ async function saveTrainingEditor(){
   if(newId){ curTg=S.trainings.find(x=>x.id===newId); route="detail"; render(); }
   else go("trainings");
   buildNav();
+  // Termin verschoben? → Trainer informieren / neu anfragen anbieten
+  const shifted = edTraining && ((oldStart||"")!==(data.date||"") || (oldKw||"")!==(data.kw||"") || (oldEnd||"")!==(data.dateEnd||""));
+  if(shifted && newId){
+    const tg=S.trainings.find(x=>x.id===newId);
+    const affected=(tg&&tg.roster||[]).filter(r=>["yes","confirmed","maybe","asked"].includes(r.status));
+    if(affected.length){
+      const oldTxt=(oldStart?fmtDateRange(oldStart,oldEnd):oldKw)||"—";
+      setTimeout(()=>promptShiftNotify(newId, oldTxt, affected.length), 500);
+    }
+  }
+}
+function promptShiftNotify(tgId, oldTxt, n){
+  const tg=S.trainings.find(x=>x.id===tgId); if(!tg)return;
+  const newTxt=fmtDateRange(tg.date,tg.dateEnd)||tg.kw||"—";
+  $("#sheetTitle").textContent=t("shiftTitle");
+  $("#sheetBody").innerHTML=`
+    <p>${t("shiftLead",n)}</p>
+    <div class="planconf sent" style="margin:6px 0 14px">${t("shiftOld")}: <b>${esc(oldTxt)}</b> → ${t("shiftNew")}: <b>${esc(newTxt)}</b></div>
+    <div class="meta">${t("shiftHint")}</div>`;
+  $("#sheetFoot").innerHTML=`
+    <button class="btn" onclick="closeSheet()">${t("shiftSkip")}</button>
+    <div class="spacer"></div>
+    <button class="btn" onclick="doShiftNotify('${tgId}','info')">✉ ${t("shiftInfo")}</button>
+    <button class="btn primary" onclick="doShiftNotify('${tgId}','reask')">🔄 ${t("shiftReask")}</button>`;
+  openSheet();
+}
+async function doShiftNotify(tgId, mode){
+  if(!LIVE){ closeSheet(); toast(t("shiftSentDemo"),"good"); return; }
+  try{
+    const d=await apiCall("training.notifyShift",{training:tgId,mode,lang:S.emailLang||"de"});
+    await pull(); if(route==="detail"){curTg=S.trainings.find(x=>x.id===tgId);renderDetail();} buildNav();
+    closeSheet();
+    toast(mode==="reask"?t("shiftReaskToast",d.sent):t("shiftInfoToast",d.sent),"good");
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
 }
 async function deleteTraining(id){
   if(!confirm(t("delTrainingConfirm")))return;

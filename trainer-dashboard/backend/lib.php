@@ -110,9 +110,15 @@ function get_state(): array {
     unset($e);
   }
 
-  $clients=array_map(function($r){
+  $transByC=[];
+  foreach(q("SELECT * FROM transfer_tokens")->fetchAll() as $tt){
+    $transByC[(string)$tt['client_id']]=['sentAt'=>$tt['sent_at'],'confirmedAt'=>$tt['confirmed_at'],'note'=>$tt['note']];
+  }
+  $clients=array_map(function($r) use ($transByC){
     return ['id'=>$r['id'],'name'=>$r['name'],'short'=>$r['short'],
-      'color'=>$r['color'],'cal'=>$r['cal'],'country'=>$r['country']];
+      'color'=>$r['color'],'cal'=>$r['cal'],'country'=>$r['country'],
+      'contactName'=>$r['contact_name']??'','contactEmail'=>$r['contact_email']??'',
+      'transfer'=>$transByC[(string)$r['id']] ?? null];
   }, q("SELECT * FROM clients ORDER BY sort_order,id")->fetchAll());
 
   // Material-Katalog
@@ -248,6 +254,19 @@ function travel_line(array $r, string $lang): string {
   if(!empty($r['passport_expiry']))$p[]=$L['pass'].' '.$r['passport_expiry'];
   return implode(' · ', array_map(fn($x)=>htmlspecialchars($x, ENT_QUOTES, 'UTF-8'), $p));
 }
+/** Transfer-/Abholliste eines Kunden: bestätigte Trainer mit Reisedaten. */
+function client_transfer_list(string $clientId): array {
+  return q("SELECT t.topic, t.city, t.country, t.kw, t.start_date, t.end_date, t.hotel,
+      tr.name AS trainer, tr.phone,
+      tv.arrival, tv.departure, tv.flight_out, tv.flight_return, tv.room
+    FROM requests r
+    JOIN trainings t ON t.id=r.training_id
+    JOIN trainers tr ON tr.id=r.trainer_id
+    LEFT JOIN travel tv ON tv.training_id=t.id AND tv.trainer_id=r.trainer_id
+    WHERE t.client_id=? AND r.status IN ('yes','confirmed')
+    ORDER BY (t.start_date IS NULL), t.start_date, tr.name", [$clientId])->fetchAll();
+}
+
 /** Klartext-Label für einen Status (de/en). */
 function status_word(string $st, string $lang): string {
   $de=['yes'=>'Zugesagt','confirmed'=>'Bestätigt','maybe'=>'Vielleicht','asked'=>'Angefragt'];

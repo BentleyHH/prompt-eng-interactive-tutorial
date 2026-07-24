@@ -61,10 +61,11 @@ switch($action){
   case 'client.save':
     require_auth();
     $cid=$in['id']??''; if($cid==='') fail('Keine Kunden-ID.');
-    $f=[$in['name']??'', $in['short']??'', $in['color']??'#3E4852', $in['cal']??'slategray', $in['country']??''];
+    $f=[$in['name']??'', $in['short']??'', $in['color']??'#3E4852', $in['cal']??'slategray', $in['country']??'',
+        $in['contactName']??'', $in['contactEmail']??''];
     $ex=q("SELECT id FROM clients WHERE id=?",[$cid])->fetch();
-    if($ex) q("UPDATE clients SET name=?,short=?,color=?,cal=?,country=? WHERE id=?", array_merge($f,[$cid]));
-    else    q("INSERT INTO clients(id,name,short,color,cal,country,sort_order) VALUES(?,?,?,?,?,?, (SELECT COALESCE(MAX(sort_order),0)+1 FROM clients c))",
+    if($ex) q("UPDATE clients SET name=?,short=?,color=?,cal=?,country=?,contact_name=?,contact_email=? WHERE id=?", array_merge($f,[$cid]));
+    else    q("INSERT INTO clients(id,name,short,color,cal,country,contact_name,contact_email,sort_order) VALUES(?,?,?,?,?,?,?,?, (SELECT COALESCE(MAX(sort_order),0)+1 FROM clients c))",
               array_merge([$cid],$f));
     out(['ok'=>true,'id'=>$cid]);
 
@@ -116,6 +117,40 @@ switch($action){
     q("DELETE FROM travel WHERE training_id=?",[$tid]);
     q("DELETE FROM training_materials WHERE training_id=?",[$tid]);
     out(['ok'=>true]);
+
+  /* ---- Termin verschoben: betroffene Trainer informieren / neu anfragen ---- */
+  case 'training.notifyShift':
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $mode=($in['mode']??'info')==='reask'?'reask':'info';
+    $lang=($in['lang']??'de')==='en'?'en':'de';
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $newWhen=fmt_date_range($tg['start_date']??null,$tg['end_date']??null,$lang) ?: ($tg['kw']??'');
+    $reqs=q("SELECT r.id AS rid, r.status, tr.email, tr.name, tr.id AS tr_id
+             FROM requests r JOIN trainers tr ON tr.id=r.trainer_id
+             WHERE r.training_id=? AND r.status IN ('yes','confirmed','maybe','asked')",[$tgId])->fetchAll();
+    $c=cfg(); $sent=0; $seen=[];
+    foreach($reqs as $r){
+      $email=strtolower(trim((string)($r['email']??''))); if($email===''||isset($seen[$email]))continue; $seen[$email]=true;
+      $tok=token(40);
+      if($mode==='reask') q("UPDATE requests SET status='asked', lang=?, tok=?, created_at=?, responded_at=NULL WHERE id=?",[$lang,$tok,now(),$r['rid']]);
+      else                q("UPDATE requests SET tok=? WHERE id=?",[$tok,$r['rid']]);
+      $first=explode(' ', preg_replace('/^Dr\.\s*/','',$r['name']))[0];
+      $subj = $lang==='de' ? 'Terminänderung — '.$tg['topic'].' ('.$tg['city'].')' : 'Schedule change — '.$tg['topic'].' ('.$tg['city'].')';
+      $intro = $lang==='de'
+        ? "Hallo $first,\n\nkurze Info: Der Termin für „{$tg['topic']}“ in {$tg['city']} hat sich geändert.\nNeuer Zeitraum: $newWhen.\n\n"
+          .($mode==='reask' ? "Bitte bestätige über die Buttons unten, ob du zum neuen Termin verfügbar bist." : "Deine Zusage bleibt bestehen — falls der neue Termin nicht passt, melde dich bitte kurz.")
+        : "Hi $first,\n\nquick note: the schedule for \"{$tg['topic']}\" in {$tg['city']} has changed.\nNew period: $newWhen.\n\n"
+          .($mode==='reask' ? "Please confirm your availability for the new date via the buttons below." : "Your commitment stands — if the new date doesn't work, please let us know.");
+      $html=email_html($intro, $mode==='reask' ? response_buttons($tok,$lang) : '');
+      $ok=send_email($r['email'],$r['name'],$subj,$html);
+      $st=$ok ? (($c['mail_mode']??'mail')==='log'?'logged':'sent') : 'failed';
+      q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+         VALUES(?,?,?,?,?,?,?,?)",[$tgId,$r['tr_id'],$r['email'],$subj,$intro,$lang,$st,now()]);
+      if($ok) $sent++;
+    }
+    out(['ok'=>true,'sent'=>$sent,'mode'=>$mode]);
 
   /* ---- Material-Katalog + Materiallisten ---- */
   case 'material.save':
@@ -240,6 +275,35 @@ switch($action){
     q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
        VALUES(?,?,?,?,?,?,?,?)",[null,$trId,$tr['email'],$subject,$intro,$lang,$st,now()]);
     out(['ok'=>true,'sent'=>$ok?1:0,'count'=>count($sched)]);
+
+  /* ---- Transfer-/Abholliste an den Kunden mailen (mit Empfangsbestätigung) ---- */
+  case 'transfer.send':
+    require_auth();
+    $cid=$in['client']??'';
+    $cl=q("SELECT * FROM clients WHERE id=?",[$cid])->fetch();
+    if(!$cl) fail('Kunde nicht gefunden.',404);
+    $to=trim((string)($cl['contact_email']??''));
+    if($to==='') fail('Für diesen Kunden ist keine Kontakt-E-Mail hinterlegt.');
+    $lang=($in['lang']??'en')==='de'?'de':'en';
+    $rows=client_transfer_list($cid);
+    $tok=token(40);
+    $ex=q("SELECT client_id FROM transfer_tokens WHERE client_id=?",[$cid])->fetch();
+    if($ex) q("UPDATE transfer_tokens SET tok=?, sent_at=?, confirmed_at=NULL, note=NULL WHERE client_id=?",[$tok,now(),$cid]);
+    else    q("INSERT INTO transfer_tokens(client_id,tok,sent_at) VALUES(?,?,?)",[$cid,$tok,now()]);
+    $cname=trim((string)($cl['contact_name']??''));
+    $hi = $cname!=='' ? explode(' ',$cname)[0] : ($lang==='de'?'Team':'Team');
+    $intro = $lang==='de'
+      ? "Hallo $hi,\n\nanbei die Übersicht unserer bestätigten Trainer für {$cl['name']} mit An-/Abreise und Hotel — bitte die Abholung/den Transfer entsprechend organisieren.\n\nBitte kurz den Erhalt bestätigen (Button unten)."
+      : "Hello $hi,\n\nplease find below our confirmed trainers for {$cl['name']} with arrival/departure and hotel details — kindly arrange pickup/transfer accordingly.\n\nPlease confirm receipt via the button below.";
+    $cta = $lang==='de' ? 'Erhalt bestätigen' : 'Confirm receipt';
+    $url = base_url().'/transfer.php?token='.$tok;
+    $subject = ($lang==='de' ? 'Trainer-Anreise & Transfer — ' : 'Trainer arrivals & transfer — ').$cl['name'];
+    $html = email_html($intro, transfer_table_html($rows,$lang).cta_button($url,$cta));
+    $ok = send_email($to, $cname ?: $cl['name'], $subject, $html);
+    $st = $ok ? ((cfg()['mail_mode']??'mail')==='log'?'logged':'sent') : 'failed';
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[null,null,$to,$subject,$intro,$lang,$st,now()]);
+    out(['ok'=>true,'sent'=>$ok?1:0,'count'=>count($rows)]);
 
   /* ---- E-Mail-Protokoll (Nachweis / Debug) ---- */
   case 'emails':

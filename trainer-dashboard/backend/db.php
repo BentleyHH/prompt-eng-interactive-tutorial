@@ -148,6 +148,14 @@ function ensure_schema(): void {
     "visa_status VARCHAR(16) DEFAULT 'none'","passport_expiry VARCHAR(20)",
     "visa_notes TEXT","visa_reminded INT DEFAULT 0"
   ] as $col){ try{ db()->exec("ALTER TABLE travel ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Migrationen (idempotent): Kontakt-Spalten für clients (Transferliste)
+  foreach(["contact_name VARCHAR(160)","contact_email VARCHAR(190)"] as $col){
+    try{ db()->exec("ALTER TABLE clients ADD COLUMN $col"); }catch(Throwable $e){}
+  }
+  // Transferliste je Kunde: Magic-Token + Empfangsbestätigung
+  db()->exec("CREATE TABLE IF NOT EXISTS transfer_tokens (
+    client_id VARCHAR(24) PRIMARY KEY,
+    tok VARCHAR(64), sent_at VARCHAR(20), confirmed_at VARCHAR(20), note TEXT)".(is_sqlite()?'':' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'));
 
   // Automatik-Standardwerte
   $ac=cfg();

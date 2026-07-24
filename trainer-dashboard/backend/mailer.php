@@ -86,6 +86,34 @@ function plan_table_html(array $sched, string $lang): string {
     .$rows.'</table>';
 }
 
+/** Transfer-/Abholtabelle (für Kunden-E-Mail und Bestätigungsseite). */
+function transfer_table_html(array $rows, string $lang): string {
+  $h = $lang==='de'
+    ? ['tr'=>'Trainer','arr'=>'Anreise','dep'=>'Abreise','hotel'=>'Hotel','ctx'=>'Training / Ort','empty'=>'Noch keine bestätigten Trainer.']
+    : ['tr'=>'Trainer','arr'=>'Arrival','dep'=>'Departure','hotel'=>'Hotel','ctx'=>'Training / Location','empty'=>'No confirmed trainers yet.'];
+  if(!$rows) return '<p style="color:#8a939a;font-family:Arial,sans-serif;font-size:14px">'.$h['empty'].'</p>';
+  $cell='padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px;vertical-align:top';
+  $body='';
+  foreach($rows as $r){
+    $arr=trim(($r['arrival']?htmlspecialchars($r['arrival']):'').($r['flight_out']?' · '.htmlspecialchars($r['flight_out']):''));
+    $dep=trim(($r['departure']?htmlspecialchars($r['departure']):'').($r['flight_return']?' · '.htmlspecialchars($r['flight_return']):''));
+    $hotel=trim(($r['hotel']?htmlspecialchars($r['hotel']):'').($r['room']?' · '.htmlspecialchars($r['room']):''));
+    $ctx=htmlspecialchars($r['topic']).' · '.htmlspecialchars(trim(($r['city']??'').(($r['country']??'')?', '.$r['country']:'')));
+    $body.='<tr>'
+      .'<td style="'.$cell.'"><b>'.htmlspecialchars($r['trainer']).'</b>'.($r['phone']?'<div style="color:#8a939a;font-size:12px">☎ '.htmlspecialchars($r['phone']).'</div>':'').'</td>'
+      .'<td style="'.$cell.'">'.($arr?:'—').'</td>'
+      .'<td style="'.$cell.'">'.($dep?:'—').'</td>'
+      .'<td style="'.$cell.'">'.($hotel?:'—').'</td>'
+      .'<td style="'.$cell.'">'.$ctx.'</td></tr>';
+  }
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+    .'style="border-collapse:collapse;margin:6px 0 4px;font-family:Arial,Helvetica,sans-serif;color:#242b31">'
+    .'<tr style="text-align:left;color:#8a939a;font-size:12px">'
+    .'<th style="padding:0 10px 6px">'.$h['tr'].'</th><th style="padding:0 10px 6px">'.$h['arr'].'</th>'
+    .'<th style="padding:0 10px 6px">'.$h['dep'].'</th><th style="padding:0 10px 6px">'.$h['hotel'].'</th>'
+    .'<th style="padding:0 10px 6px">'.$h['ctx'].'</th></tr>'.$body.'</table>';
+}
+
 /** Ein einzelner CTA-Button (z.B. „Einsatzplan ansehen & bestätigen“). */
 function cta_button(string $url, string $label, string $bg='#3E4852'): string {
   return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 4px;max-width:360px">'
