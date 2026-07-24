@@ -126,7 +126,7 @@ switch($action){
     $lang=($in['lang']??'de')==='en'?'en':'de';
     $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
     if(!$tg) fail('Training nicht gefunden.',404);
-    $newWhen=fmt_date_range($tg['start_date']??null,$tg['end_date']??null,$lang) ?: ($tg['kw']??'');
+    $newWhen=fmt_date_range($tg['start_date']??null,$tg['end_date']??null,$lang) ?: kw_label($tg['kw']??'',$lang);
     $reqs=q("SELECT r.id AS rid, r.status, tr.email, tr.name, tr.id AS tr_id
              FROM requests r JOIN trainers tr ON tr.id=r.trainer_id
              WHERE r.training_id=? AND r.status IN ('yes','confirmed','maybe','asked')",[$tgId])->fetchAll();
@@ -220,6 +220,7 @@ switch($action){
     $respondedAt=$forceStatus==='asked'?null:now();
     $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
     if(!$tg) fail('Training nicht gefunden.',404);
+    $tg['kw']=kw_label($tg['kw']??'',$lang);
     $c=cfg(); $sent=0; $seenEmail=[];
     foreach($recips as $trId){
       $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();

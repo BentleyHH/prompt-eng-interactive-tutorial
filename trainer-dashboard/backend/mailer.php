@@ -78,8 +78,8 @@ function plan_table_html(array $sched, string $lang): string {
   foreach($sched as $t){
     $st=$t['rstatus']; $col=$pill[$st] ?? '#5c666e';
     $range=fmt_date_range($t['start_date']??null,$t['end_date']??null,$lang);
-    $when = $range ? htmlspecialchars($range) : htmlspecialchars($t['kw']??'');
-    $whenSub = ($range && !empty($t['kw'])) ? '<div style="color:#8a939a;font-size:11px">'.htmlspecialchars($t['kw']).'</div>' : '';
+    $when = $range ? htmlspecialchars($range) : htmlspecialchars(kw_label($t['kw']??'',$lang));
+    $whenSub = ($range && !empty($t['kw'])) ? '<div style="color:#8a939a;font-size:11px">'.htmlspecialchars(kw_label($t['kw'],$lang)).'</div>' : '';
     $loc=htmlspecialchars(trim(($t['city']??'').(($t['country']??'')?', '.$t['country']:'')));
     $tw=travel_window($t['start_date']??null,$t['end_date']??null,$lang);
     $twLbl=$lang==='de'?'Reisezeitraum inkl. An-/Abreise':'Travel window incl. arrival/departure';

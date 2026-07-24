@@ -26,7 +26,7 @@ function run_automation(): array {
     if($ageH>=$reminderH && (int)($r['reminder_count']??0)<1){
       $lang=($r['lang']==='de')?'de':'en';
       $tg=['topic'=>$r['topic'],'city'=>$r['city'],'country'=>$r['country'],
-           'kw'=>$r['kw'],'month'=>$r['month'],'need_cnt'=>$r['need_cnt']];
+           'kw'=>kw_label($r['kw'],$lang),'month'=>$r['month'],'need_cnt'=>$r['need_cnt']];
       $tr=['name'=>$r['tname']];
       $subj=fill_tpl($lang==='de'
         ? 'Erinnerung: Verfügbarkeit — {{topic}} ({{city}})'
@@ -59,7 +59,7 @@ function run_automation(): array {
     if(($r['visa_status']??'none')==='approved') continue;
     if((int)($r['visa_reminded']??0)===1) continue;
     $lang=($r['lang']==='de')?'de':'en';
-    $tg=['topic'=>$r['topic'],'city'=>$r['city'],'country'=>$r['country'],'kw'=>$r['kw'],'month'=>$r['month'],'need_cnt'=>$r['need_cnt']];
+    $tg=['topic'=>$r['topic'],'city'=>$r['city'],'country'=>$r['country'],'kw'=>kw_label($r['kw'],$lang),'month'=>$r['month'],'need_cnt'=>$r['need_cnt']];
     $tr=['name'=>$r['tname']];
     $subj=fill_tpl($lang==='de'?'Visum & Reisepass — {{topic}} in {{city}}':'Visa & passport — {{topic}} in {{city}}',$tg,$tr);
     $bodyText=fill_tpl($lang==='de'
@@ -105,6 +105,7 @@ function run_automation(): array {
         $cand=next_candidate($tgId);
         if(!$cand) break;
         $lang='en';
+        $tg['kw']=kw_label($tg['kw']??'','en');
         $tok=token(40);
         q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?, 'asked',?,?,?)",
           [$tgId,$cand['id'],$lang,$tok,now()]);

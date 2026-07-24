@@ -1496,7 +1496,7 @@ function renderDash(){
         <div class="ic ${x.s.cls==='crit'?'c':'w'}">${x.s.cls==='crit'?'!':'…'}</div>
         <div class="rowgrow">
           <div class="nm">${x.tg.topic}${x.c?` <span class="tag" style="border-color:${x.c.color};color:${x.c.color}">${esc(x.c.short||x.c.name)}</span>`:''}</div>
-          <div class="meta">${x.tg.city} · ${x.tg.kw} · ${x.r.yes}/${x.r.need} ${t("confirmedShort")}${x.r.asked?` · ${x.r.asked} ${t("askedShort")}`:''}</div>
+          <div class="meta">${x.tg.city} · ${kwLabel(x.tg.kw)} · ${x.r.yes}/${x.r.need} ${t("confirmedShort")}${x.r.asked?` · ${x.r.asked} ${t("askedShort")}`:''}</div>
         </div>
         <span class="pill ${x.s.cls}">${t(x.s.key)}</span>
         <button class="btn sm primary" onclick="openDetail('${x.tg.id}')">${t("open")}</button>
@@ -1783,7 +1783,7 @@ function filteredBookings(){
 function bkRow(x,conf){
   const tg=x.tg, cl=clientOf(tg);
   const when=whenText(tg);
-  const kwSub=(tg.kw && fmtDateRange(tg.date,tg.dateEnd))?tg.kw:"";
+  const kwSub=(tg.kw && fmtDateRange(tg.date,tg.dateEnd))?kwLabel(tg.kw):"";
   const trav=travelLine(x.flight,tg);
   const dbl=conf.has(bkKey(x))?`<span class="pill crit" title="${t("bkConflictHint")}">⚠ ${t("bkConflict")}</span>`:"";
   const clientChip=cl?`<span class="cchip" style="--cc:${cl.color}">${esc(cl.short||cl.name)}</span>`:"";
@@ -1897,7 +1897,7 @@ function renderCalendar(list){
   const cell={};
   list.forEach(x=>{ const k=x.tr.id+"|"+(x.tg.kw||"—"); (cell[k]=cell[k]||[]).push(x); });
   const head=`<tr><th class="calcorner">${t("bkCalTrainer")}</th>`+
-    weeks.map(w=>`<th class="calh"><div>${esc(w.kw)}</div>${w.minDate?`<div class="calhd">${esc(shortDay(w.minDate))}</div>`:""}</th>`).join("")+`</tr>`;
+    weeks.map(w=>`<th class="calh"><div>${esc(kwLabel(w.kw))}</div>${w.minDate?`<div class="calhd">${esc(shortDay(w.minDate))}</div>`:""}</th>`).join("")+`</tr>`;
   const rows=trs.map(tr=>{
     const tds=weeks.map(w=>{
       const items=cell[tr.id+"|"+w.kw]||[]; const clash=items.length>1;
@@ -1976,8 +1976,10 @@ function fmtTravelWindow(s,e,lang){
   return fmtDateRange(`${a.y}-${pad2(a.mo)}-${pad2(a.d)}`,`${b.y}-${pad2(b.mo)}-${pad2(b.d)}`,lang);
 }
 function shortDay(s){ const P=pdate(s); return P?`${pad2(P.d)}.${pad2(P.mo)}`:""; }
+/* Kalenderwoche sprachabhängig: "KW 20" (de) → "Week 20" (en). */
+function kwLabel(kw,lang){ lang=lang||S.lang; return (lang==='en') ? String(kw||"").replace(/^\s*KW\s*/,"Week ") : (kw||""); }
 /* Zeitraum-Anzeige: echtes Datum wenn vorhanden, sonst KW/Monat. */
-function whenText(tg){ return fmtDateRange(tg.date,tg.dateEnd) || tg.kw || tg.month || ""; }
+function whenText(tg){ return fmtDateRange(tg.date,tg.dateEnd) || kwLabel(tg.kw) || tg.month || ""; }
 function openPlan(trId){ curPlanTr=S.trainers.find(t=>t.id===trId)||null; route="plan"; render(); }
 function renderPlan(){
   const tr=curPlanTr; if(!tr){go("trainers");return;}
@@ -1994,7 +1996,7 @@ function renderPlan(){
   const rows=sched.length ? sched.map(x=>{
     const tg=x.tg, cl=(S.clients||[]).find(c=>c.id===tg.clientId);
     const when=whenText(tg);
-    const kwSub=(tg.kw && fmtDateRange(tg.date,tg.dateEnd))?tg.kw:"";
+    const kwSub=(tg.kw && fmtDateRange(tg.date,tg.dateEnd))?kwLabel(tg.kw):"";
     const sub=[tg.spec||"", cl?cl.name:""].filter(Boolean).join(" · ");
     const trav=travelLine(x.flight,tg);
     const twin=fmtTravelWindow(tg.date,tg.dateEnd);
@@ -2172,10 +2174,11 @@ async function saveTpl(){
    ============================================================ */
 let compose={tgId:null,recips:[],tplId:"t1",lang:"en"};
 function fillTpl(str,tg,tr){
+  const lang=(typeof compose!=="undefined"&&compose&&compose.lang)?compose.lang:(S.emailLang||S.lang);
   return str
     .replace(/{{firstName}}/g,tr?tr.name.replace(/^Dr\.\s*/,"").split(" ")[0]:"{{firstName}}")
     .replace(/{{topic}}/g,tg.topic).replace(/{{city}}/g,tg.city)
-    .replace(/{{country}}/g,tg.country).replace(/{{kw}}/g,tg.kw)
+    .replace(/{{country}}/g,tg.country).replace(/{{kw}}/g,kwLabel(tg.kw,lang))
     .replace(/{{month}}/g,tg.month).replace(/{{teamSize}}/g,tg.need);
 }
 function composeFor(tgId,trId,tplId){
@@ -2566,7 +2569,7 @@ function whenLabel(tg){
       return s.getUTCDate()+".–"+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear();
     return s.getUTCDate()+". "+M[s.getUTCMonth()]+" – "+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear();
   }
-  return (tg.kw||"")+(tg.month?" · "+tg.month:"");
+  return kwLabel(tg.kw)+(tg.month?" · "+tg.month:"");
 }
 function pad2(n){return String(n).padStart(2,"0");}
 function icsDate(d){return d.getUTCFullYear()+pad2(d.getUTCMonth()+1)+pad2(d.getUTCDate());}

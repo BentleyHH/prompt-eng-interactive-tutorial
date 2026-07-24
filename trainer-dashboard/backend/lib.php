@@ -267,6 +267,12 @@ function client_transfer_list(string $clientId): array {
     ORDER BY (t.start_date IS NULL), t.start_date, tr.name", [$clientId])->fetchAll();
 }
 
+/** Kalenderwoche sprachabhängig: "KW 20" (de) → "Week 20" (en). */
+function kw_label(?string $kw, string $lang): string {
+  $kw=(string)$kw;
+  return $lang==='en' ? preg_replace('/^\s*KW\s*/u','Week ',$kw) : $kw;
+}
+
 /** Klartext-Label für einen Status (de/en). */
 function status_word(string $st, string $lang): string {
   $de=['yes'=>'Zugesagt','confirmed'=>'Bestätigt','maybe'=>'Vielleicht','asked'=>'Angefragt'];

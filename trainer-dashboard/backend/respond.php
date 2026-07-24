@@ -26,7 +26,7 @@ $lang = ($req['lang'] ?? 'de')==='en' ? 'en' : 'de';
 $whenLine = '';
 if($req){
   $range = fmt_date_range($req['start_date']??null, $req['end_date']??null, $lang);
-  $whenLine = htmlspecialchars(trim(implode(' · ', array_filter([$req['city'], $range, $req['kw']]))));
+  $whenLine = htmlspecialchars(trim(implode(' · ', array_filter([$req['city'], $range, kw_label($req['kw'],$lang)]))));
 }
 $validAns = isset($map[$ans]);
 
@@ -41,7 +41,7 @@ if($isCommit && $req && $validAns){
   $tr = $changed ? q("SELECT * FROM trainers WHERE id=?",[$req['trainer_id']])->fetch() : null;
   if($tr && !empty($tr['email'])){
     $tg=['topic'=>$req['topic'],'city'=>$req['city'],'country'=>$req['country']??'',
-         'kw'=>$req['kw'],'month'=>$req['month']??'','need_cnt'=>$req['need_cnt']??''];
+         'kw'=>kw_label($req['kw'],$lang),'month'=>$req['month']??'','need_cnt'=>$req['need_cnt']??''];
     $word = $lang==='de'
       ? ['yes'=>'zugesagt (verfügbar)','maybe'=>'mit „vielleicht“ geantwortet','no'=>'abgesagt']
       : ['yes'=>'confirmed (available)','maybe'=>'answered “maybe”','no'=>'declined'];
