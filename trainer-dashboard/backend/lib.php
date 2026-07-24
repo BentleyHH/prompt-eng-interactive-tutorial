@@ -197,12 +197,34 @@ function next_candidate(int $tgId): ?array {
   return $best;
 }
 
-/** Alle Einsätze eines Trainers (zugesagt/vielleicht/angefragt), nach Datum. */
+/** Alle Einsätze eines Trainers (zugesagt/vielleicht/angefragt), inkl. Reisedaten, nach Datum. */
 function trainer_schedule(int $trId): array {
-  return q("SELECT t.*, r.status AS rstatus
+  return q("SELECT t.*, r.status AS rstatus,
+      tv.arrival, tv.departure, tv.flight_out, tv.flight_return, tv.room,
+      tv.visa_status, tv.passport_expiry
     FROM requests r JOIN trainings t ON t.id=r.training_id
+    LEFT JOIN travel tv ON tv.training_id=t.id AND tv.trainer_id=r.trainer_id
     WHERE r.trainer_id=? AND r.status IN ('yes','confirmed','maybe','asked')
     ORDER BY (t.start_date IS NULL), t.start_date, t.id", [$trId])->fetchAll();
+}
+/** Kurze Reise-Zeile aus einem Schedule-Datensatz (nur vorhandene Felder). */
+function travel_line(array $r, string $lang): string {
+  $L = $lang==='de'
+    ? ['arr'=>'Anreise','dep'=>'Abreise','out'=>'Hinflug','ret'=>'Rückflug','hotel'=>'Hotel','room'=>'Zimmer','visa'=>'Visum','pass'=>'Pass gültig bis']
+    : ['arr'=>'Arrival','dep'=>'Departure','out'=>'Outbound','ret'=>'Return','hotel'=>'Hotel','room'=>'Room','visa'=>'Visa','pass'=>'Passport until'];
+  $vL = $lang==='de'
+    ? ['needed'=>'nötig','applied'=>'beantragt','approved'=>'genehmigt','rejected'=>'abgelehnt']
+    : ['needed'=>'needed','applied'=>'applied','approved'=>'approved','rejected'=>'rejected'];
+  $p=[];
+  if(!empty($r['arrival']))        $p[]=$L['arr'].' '.$r['arrival'];
+  if(!empty($r['departure']))      $p[]=$L['dep'].' '.$r['departure'];
+  if(!empty($r['flight_out']))     $p[]=$L['out'].' '.$r['flight_out'];
+  if(!empty($r['flight_return']))  $p[]=$L['ret'].' '.$r['flight_return'];
+  if(!empty($r['hotel']))          $p[]=$L['hotel'].' '.$r['hotel'];
+  if(!empty($r['room']))           $p[]=$L['room'].' '.$r['room'];
+  $vs=$r['visa_status']??'none';   if($vs && $vs!=='none') $p[]=$L['visa'].': '.($vL[$vs]??$vs);
+  if(!empty($r['passport_expiry']))$p[]=$L['pass'].' '.$r['passport_expiry'];
+  return implode(' · ', array_map(fn($x)=>htmlspecialchars($x, ENT_QUOTES, 'UTF-8'), $p));
 }
 /** Klartext-Label für einen Status (de/en). */
 function status_word(string $st, string $lang): string {

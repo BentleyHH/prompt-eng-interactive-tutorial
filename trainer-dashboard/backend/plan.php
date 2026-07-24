@@ -83,7 +83,10 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
               <td><span class="pill" style="background:<?=$col?>"><?=esc(status_word($st,'de'))?></span></td>
               <td style="white-space:nowrap"><?=esc(trim(($t['start_date']??'').($t['kw']?'  ('.$t['kw'].')':'')))?></td>
               <td><?=esc(trim(($t['city']??'').(($t['country']??'')?', '.$t['country']:'')))?></td>
-              <td><b><?=esc($t['topic'])?></b><?php if(!empty($t['spec'])): ?><br><span class="sub"><?=esc($t['spec'])?></span><?php endif; ?></td>
+              <td><b><?=esc($t['topic'])?></b>
+                <?php if(!empty($t['spec'])): ?><br><span class="sub"><?=esc($t['spec'])?></span><?php endif; ?>
+                <?php $tl=travel_line($t,'de'); if($tl): ?><br><span class="sub" style="font-size:12px"><?=$tl?></span><?php endif; ?>
+              </td>
             </tr>
           <?php endforeach; ?>
         </table>

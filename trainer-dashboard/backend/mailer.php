@@ -69,8 +69,9 @@ function plan_table_html(array $sched, string $lang): string {
       .'<span style="display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;background:'.$col.'">'.status_word($st,$lang).'</span></td>'
       .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px;white-space:nowrap">'.$when.'</td>'
       .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px">'.$loc.'</td>'
-      .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px"><b>'.htmlspecialchars($t['topic']).'</b></td>'
-      .'</tr>';
+      .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px"><b>'.htmlspecialchars($t['topic']).'</b>'
+      .(($tl=travel_line($t,$lang))?'<div style="color:#8a939a;font-size:12px;margin-top:2px">'.$tl.'</div>':'')
+      .'</td></tr>';
   }
   return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
     .'style="border-collapse:collapse;margin:6px 0 4px;font-family:Arial,Helvetica,sans-serif;color:#242b31">'

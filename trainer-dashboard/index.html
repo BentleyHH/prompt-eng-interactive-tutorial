@@ -245,6 +245,16 @@
     body{background:#fff}
   }
 
+  /* ===== Belegung / Buchungen ===== */
+  .bkfilter{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .bkf{display:flex;align-items:center;gap:7px}
+  .bkf .fld{margin:0;font-weight:500;font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .bksel{width:auto;min-width:160px;text-align:left;text-align-last:left;padding:8px 12px;font-size:14px}
+  .av.xs{width:24px;height:24px;font-size:10px}
+  .bktr{display:flex;align-items:center;gap:8px}
+  .bktable td:first-child{min-width:150px}
+  .travrow{margin-top:2px}
+
   /* ============ 20-WEEK HEATMAP ============ */
   .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
   .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
@@ -452,6 +462,7 @@
     <div class="wrap">
       <section class="view on" id="v-dash"></section>
       <section class="view" id="v-trainings"></section>
+      <section class="view" id="v-bookings"></section>
       <section class="view" id="v-detail"></section>
       <section class="view" id="v-trainers"></section>
       <section class="view" id="v-plan"></section>
@@ -519,7 +530,8 @@ const IC={
   mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/>',
   auto:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   log:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
-  sync:'<path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 4v4h-4M3 20v-4h4"/>'
+  sync:'<path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 4v4h-4M3 20v-4h4"/>',
+  book:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13h5M8 17h8"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 /* ETAF-Wortmarke als Vektor — pixelgenau aus der Original-Logodatei vermessen.
@@ -612,7 +624,12 @@ const L={
   demoPin:'Demo-PIN: <b>481509</b> · (jede 6-stellige Zahl entsperrt)',
   keyClear:"Löschen", langLabel:"Sprache",
   theme:"Design wechseln", lock:"Sperren",
-  nav_dash:"Übersicht", nav_trainings:"Trainings", nav_trainers:"Trainer", nav_templates:"Vorlagen",
+  nav_dash:"Übersicht", nav_trainings:"Trainings", nav_bookings:"Belegung", nav_trainers:"Trainer", nav_templates:"Vorlagen",
+  tp_book:"Belegung", tp_bookSub:"Wer ist wann wo gebucht — filterbar nach Trainer",
+  bkAllTrainers:"Alle Trainer", bkAllStatus:"Alle Status", bkTrainer:"Trainer",
+  bkCount:n=>`${n} ${n===1?"Buchung":"Buchungen"}`,
+  bkHint:"Alle Einsätze über alle Trainings — nach Trainer oder Status filtern.",
+  bkEmpty:"Keine Buchungen für diese Auswahl.",
   quickReplace:"Schnell-Ersatz", import:"Import",
   sync:"Aktualisieren", synced:"Aktualisiert — auf dem neuesten Stand", syncFail:"Aktualisierung fehlgeschlagen",
   syncDemo:"Im Demo-Modus gibt es keinen Server zum Abgleichen.", lastSync:z=>`aktualisiert ${z}`,
@@ -755,7 +772,12 @@ const L={
   demoPin:'Demo PIN: <b>481509</b> · (any 6-digit number unlocks)',
   keyClear:"Clear", langLabel:"Language",
   theme:"Switch theme", lock:"Lock",
-  nav_dash:"Overview", nav_trainings:"Trainings", nav_trainers:"Trainers", nav_templates:"Templates",
+  nav_dash:"Overview", nav_trainings:"Trainings", nav_bookings:"Bookings", nav_trainers:"Trainers", nav_templates:"Templates",
+  tp_book:"Bookings", tp_bookSub:"Who is booked when and where — filter by trainer",
+  bkAllTrainers:"All trainers", bkAllStatus:"All statuses", bkTrainer:"Trainer",
+  bkCount:n=>`${n} ${n===1?"booking":"bookings"}`,
+  bkHint:"Every assignment across all trainings — filter by trainer or status.",
+  bkEmpty:"No bookings for this selection.",
   quickReplace:"Quick replacement", import:"Import",
   sync:"Refresh", synced:"Refreshed — up to date", syncFail:"Refresh failed",
   syncDemo:"Demo mode has no server to sync with.", lastSync:z=>`updated ${z}`,
@@ -1209,7 +1231,7 @@ document.addEventListener("keydown",e=>{
 /* ============================================================
    NAV / ROUTER
    ============================================================ */
-const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"trainers",ic:IC.users},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
+const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
 let route="dash";
 function buildNav(){
   const crit=S.trainings.filter(t=>statusOf(t).cls==="crit").length;
@@ -1224,6 +1246,7 @@ function buildNav(){
 }
 function titleFor(r){
   const m={dash:["tp_dash","tp_dashSub"],trainings:["tp_trn","tp_trnSub"],
+    bookings:["tp_book","tp_bookSub"],
     trainers:["tp_pool","tp_poolSub"],templates:["tp_tpl","tp_tplSub"],
     automation:["tp_auto","tp_autoSub"],emails:["tp_emails","tp_emailsSub"]};
   const k=m[r]||m.dash; return [t(k[0]),t(k[1])];
@@ -1234,6 +1257,7 @@ function render(){
   $$(".view").forEach(v=>v.classList.remove("on"));
   if(route==="dash"){renderDash();$("#v-dash").classList.add("on");}
   else if(route==="trainings"){renderTrainings();$("#v-trainings").classList.add("on");}
+  else if(route==="bookings"){renderBookings();$("#v-bookings").classList.add("on");}
   else if(route==="detail"){renderDetail();$("#v-detail").classList.add("on");}
   else if(route==="trainers"){renderTrainers();$("#v-trainers").classList.add("on");}
   else if(route==="plan"){renderPlan();$("#v-plan").classList.add("on");}
@@ -1562,6 +1586,58 @@ function renderTrainers(){
     </div></div>
     <div class="grid2">${cards}</div>`;
 }
+/* ============================================================
+   BELEGUNG / BUCHUNGEN — wer ist wann wo, filterbar nach Trainer
+   ============================================================ */
+let bookingTr="all", bookingStatus="all";
+function allBookings(){
+  const rel=["yes","confirmed","maybe","asked"]; const out=[];
+  S.trainings.forEach(tg=>(tg.roster||[]).forEach(r=>{
+    if(!rel.includes(r.status))return;
+    const tr=S.trainers.find(t=>t.id===r.trainerId); if(!tr)return;
+    out.push({tr,tg,status:r.status,flight:r.flight});
+  }));
+  return out.sort((a,b)=>
+    String(a.tg.date||a.tg.kw||"zzz").localeCompare(String(b.tg.date||b.tg.kw||"zzz"))
+    || a.tr.name.localeCompare(b.tr.name));
+}
+function renderBookings(){
+  let list=allBookings();
+  if(bookingTr!=="all") list=list.filter(x=>x.tr.id===bookingTr);
+  if(bookingStatus!=="all") list=list.filter(x=> bookingStatus==="yes"
+    ? (x.status==="yes"||x.status==="confirmed") : x.status===bookingStatus);
+  const trOpts=`<option value="all">${t("bkAllTrainers")}</option>`+
+    S.trainers.slice().sort((a,b)=>a.name.localeCompare(b.name))
+      .map(tr=>`<option value="${tr.id}" ${bookingTr===tr.id?"selected":""}>${esc(tr.name)}</option>`).join("");
+  const stOpts=[["all",t("bkAllStatus")],["yes",spLabel("yes")],["maybe",spLabel("maybe")],["asked",spLabel("asked")]]
+    .map(([v,l])=>`<option value="${v}" ${bookingStatus===v?"selected":""}>${l}</option>`).join("");
+  const rows=list.length ? list.map(x=>{
+    const tg=x.tg; const when=[tg.date||"",tg.kw||""].filter(Boolean).join(" · ");
+    const trav=travelLine(x.flight,tg);
+    return `<tr>
+      <td><div class="bktr"><span class="av xs" style="background:${x.tr.color}">${initials(x.tr.name)}</span><b>${esc(x.tr.name)}</b></div></td>
+      <td><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span></td>
+      <td class="nowrap">${esc(when||"—")}</td>
+      <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
+      <td><b>${esc(tg.topic)}</b>${trav?`<div class="meta travrow">🧳 ${trav}</div>`:""}</td>
+      <td class="nowrap"><button class="btn sm" title="${t("planView")}" onclick="openPlan('${x.tr.id}')">📋</button></td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="6" class="meta" style="padding:16px 8px">${t("bkEmpty")}</td></tr>`;
+  $("#v-bookings").innerHTML=`
+    <div class="panel"><div class="panel-b bkfilter">
+      <div class="rowgrow"><b>${t("bkCount",list.length)}</b><div class="meta">${t("bkHint")}</div></div>
+      <span class="bkf"><span class="fld">${t("bkTrainer")}</span>
+        <select class="rstat bksel" onchange="bookingTr=this.value;renderBookings()">${trOpts}</select></span>
+      <span class="bkf"><span class="fld">${t("planColStatus")}</span>
+        <select class="rstat bksel" onchange="bookingStatus=this.value;renderBookings()">${stOpts}</select></span>
+    </div></div>
+    <div class="panel"><div class="panel-b" style="overflow-x:auto">
+      <table class="plantable bktable">
+        <tr><th>${t("bkTrainer")}</th><th>${t("planColStatus")}</th><th>${t("planColWhen")}</th><th>${t("planColWhere")}</th><th>${t("planColWhat")}</th><th></th></tr>
+        ${rows}
+      </table>
+    </div></div>`;
+}
 function planBadge(tr){
   const p=tr.plan; if(!p)return "";
   if(p.confirmedAt&&p.status==="ok")   return `<span class="pill good">${t("planOk")}</span>`;
@@ -1581,6 +1657,23 @@ function trainerSchedule(trId){
     .filter(Boolean)
     .sort((a,b)=>String(a.tg.date||a.tg.kw||"zzz").localeCompare(String(b.tg.date||b.tg.kw||"zzz")));
 }
+function travelLine(fl,tg){
+  const L=S.lang==='de'
+    ?{arr:'Anreise',dep:'Abreise',out:'Hinflug',ret:'Rückflug',hotel:'Hotel',room:'Zimmer',visa:'Visum',pass:'Pass gültig bis'}
+    :{arr:'Arrival',dep:'Departure',out:'Outbound',ret:'Return',hotel:'Hotel',room:'Room',visa:'Visa',pass:'Passport until'};
+  const p=[]; const hotel=tg&&tg.travel&&tg.travel.hotel;
+  if(fl){
+    if(fl.arrival)p.push(`${L.arr} ${fl.arrival}`);
+    if(fl.departure)p.push(`${L.dep} ${fl.departure}`);
+    if(fl.flightOut)p.push(`${L.out} ${fl.flightOut}`);
+    if(fl.flightReturn)p.push(`${L.ret} ${fl.flightReturn}`);
+  }
+  if(hotel)p.push(`${L.hotel} ${hotel}`);
+  if(fl&&fl.room)p.push(`${L.room} ${fl.room}`);
+  if(fl&&fl.visaStatus&&fl.visaStatus!=='none')p.push(`${L.visa}: ${t("visa_"+fl.visaStatus)}`);
+  if(fl&&fl.passportExpiry)p.push(`${L.pass} ${fl.passportExpiry}`);
+  return p.map(esc).join(" · ");
+}
 function openPlan(trId){ curPlanTr=S.trainers.find(t=>t.id===trId)||null; route="plan"; render(); }
 function renderPlan(){
   const tr=curPlanTr; if(!tr){go("trainers");return;}
@@ -1597,12 +1690,13 @@ function renderPlan(){
   const rows=sched.length ? sched.map(x=>{
     const tg=x.tg, cl=(S.clients||[]).find(c=>c.id===tg.clientId);
     const when=[tg.date||"", tg.kw||""].filter(Boolean).join(" · ");
-    const visa=(x.flight&&x.flight.visaStatus&&x.flight.visaStatus!=="none")?` · ${t("visaLbl")}: ${t("visa_"+x.flight.visaStatus)}`:"";
+    const sub=[tg.spec||"", cl?cl.name:""].filter(Boolean).join(" · ");
+    const trav=travelLine(x.flight,tg);
     return `<tr>
       <td><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span></td>
       <td class="nowrap">${esc(when||"—")}</td>
       <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
-      <td><b>${esc(tg.topic)}</b>${tg.spec?`<div class="meta">${esc(tg.spec)}${cl?" · "+esc(cl.name):""}${visa}</div>`:""}</td>
+      <td><b>${esc(tg.topic)}</b>${sub?`<div class="meta">${esc(sub)}</div>`:""}${trav?`<div class="meta travrow">🧳 ${trav}</div>`:""}</td>
     </tr>`;
   }).join("") : `<tr><td colspan="4" class="meta" style="padding:16px 8px">${t("planEmpty")}</td></tr>`;
 
