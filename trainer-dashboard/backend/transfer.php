@@ -80,12 +80,12 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       <?php endif; ?>
 
       <?php if($committed): ?>
-        <div class="done">✅ <b>Thank you!</b> Receipt confirmed — we have noted that your team will handle the transfers.</div>
+        <div class="done"><?=stroke_icon('check',18)?><b>Thank you!</b> Receipt confirmed — we have noted that your team will handle the transfers.</div>
       <?php else: ?>
         <form method="post" action="<?=$action?>">
           <input type="hidden" name="token" value="<?=$etok?>">
           <input class="note" name="note" placeholder="Optional note (e.g. contact person / questions)">
-          <button type="submit">✅ Received &amp; confirmed</button>
+          <button type="submit"><?=stroke_icon('check')?>Received &amp; confirmed</button>
         </form>
       <?php endif; ?>
       <div class="foot">ETAF · Trainer Coordination</div>

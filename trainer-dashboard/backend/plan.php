@@ -97,9 +97,9 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       <?php if($committed): ?>
         <div class="done <?=$result==='issue'?'bad':''?>">
           <?php if($result==='ok'): ?>
-            ✅ <b>Danke!</b> Du hast deinen Einsatzplan als korrekt bestätigt.
+            <?=stroke_icon('check',18)?><b>Danke!</b> Du hast deinen Einsatzplan als korrekt bestätigt.
           <?php else: ?>
-            ✋ <b>Notiert.</b> Du hast eine Rückmeldung hinterlassen — wir kümmern uns darum.
+            <?=stroke_icon('alert',18)?><b>Notiert.</b> Du hast eine Rückmeldung hinterlassen — wir kümmern uns darum.
           <?php endif; ?>
         </div>
       <?php else: ?>
@@ -107,13 +107,13 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
           <form method="post" action="<?=$action?>">
             <input type="hidden" name="token" value="<?=$etok?>">
             <input type="hidden" name="act" value="ok">
-            <button type="submit" class="ok">✅ Alles korrekt — bestätigen</button>
+            <button type="submit" class="ok"><?=stroke_icon('check')?>Alles korrekt — bestätigen</button>
           </form>
           <form method="post" action="<?=$action?>">
             <input type="hidden" name="token" value="<?=$etok?>">
             <input type="hidden" name="act" value="issue">
             <input class="note" name="note" placeholder="Optional: Was stimmt nicht? (kurz beschreiben)">
-            <button type="submit" class="issue">✋ Da stimmt etwas nicht</button>
+            <button type="submit" class="issue"><?=stroke_icon('alert')?>Da stimmt etwas nicht</button>
           </form>
         </div>
       <?php endif; ?>

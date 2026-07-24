@@ -6,11 +6,26 @@ require_once __DIR__.'/lib.php';
 /** Baut die drei Antwort-Buttons (Magic-Links) als HTML — tabellenbasiert,
  *  gestapelt und mit voller Breite, damit sie in jedem Mail-Client (inkl.
  *  Apple Mail, Outlook, Gmail) sauber und gut tippbar dargestellt werden. */
+/** Minimalistisches Strich-Icon als Inline-SVG (für die Web-Bestätigungsseiten).
+ *  stroke=currentColor → erbt automatisch die Textfarbe des Buttons. */
+function stroke_icon(string $name, int $size=20): string {
+  $p = [
+    'check' => '<path d="M20 6 9 17l-5-5"/>',
+    'x'     => '<path d="M18 6 6 18M6 6l12 12"/>',
+    'maybe' => '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.4 2.4 0 1 1 3 2.3c-.8.3-1.4.9-1.4 1.9"/><path d="M12 16.7h.01"/>',
+    'alert' => '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    'inbox' => '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.5 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.5A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.5z"/>',
+  ];
+  $d=$p[$name] ?? '';
+  return '<svg width="'.$size.'" height="'.$size.'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;margin-right:9px">'.$d.'</svg>';
+}
+
 function response_buttons(string $tok, string $lang): string {
   $base=base_url().'/respond.php?token='.$tok.'&answer=';
+  // Schlanke, monochrome Strich-Zeichen (kommen in jedem Mail-Client an).
   $L = $lang==='de'
-    ? ['yes'=>'✅&nbsp; Ja, verfügbar','maybe'=>'🤔&nbsp; Vielleicht','no'=>'❌&nbsp; Nein']
-    : ['yes'=>'✅&nbsp; Yes, available','maybe'=>'🤔&nbsp; Maybe','no'=>'❌&nbsp; No'];
+    ? ['yes'=>'✓&nbsp;&nbsp;Ja, verfügbar','maybe'=>'○&nbsp;&nbsp;Vielleicht','no'=>'✕&nbsp;&nbsp;Nein']
+    : ['yes'=>'✓&nbsp;&nbsp;Yes, available','maybe'=>'○&nbsp;&nbsp;Maybe','no'=>'✕&nbsp;&nbsp;No'];
   // Dunkle Schrift auf hellem Grund + farbiger Rahmen: bleibt in JEDEM Mail-Client
   // lesbar — auch wenn Hintergrundfarben entfernt werden (dann steht die Beschriftung
   // farbig auf Weiß statt weiß auf Weiß / unsichtbar).
@@ -74,8 +89,8 @@ function plan_table_html(array $sched, string $lang): string {
       .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px;white-space:nowrap;vertical-align:top">'.$when.$whenSub.'</td>'
       .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px;vertical-align:top">'.$loc.'</td>'
       .'<td style="padding:9px 10px;border-bottom:1px solid #eef0f2;font-size:13px;vertical-align:top"><b>'.htmlspecialchars($t['topic']).'</b>'
-      .($tw?'<div style="color:#8a939a;font-size:12px;margin-top:2px">✈ '.$twLbl.': '.htmlspecialchars($tw).'</div>':'')
-      .(($tl=travel_line($t,$lang))?'<div style="color:#8a939a;font-size:12px;margin-top:2px">🧳 '.$tl.'</div>':'')
+      .($tw?'<div style="color:#8a939a;font-size:12px;margin-top:2px">'.$twLbl.': '.htmlspecialchars($tw).'</div>':'')
+      .(($tl=travel_line($t,$lang))?'<div style="color:#8a939a;font-size:12px;margin-top:2px">'.$tl.'</div>':'')
       .'</td></tr>';
   }
   return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '

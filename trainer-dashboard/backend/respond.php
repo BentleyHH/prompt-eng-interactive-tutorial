@@ -58,7 +58,7 @@ if($isCommit && $req && $validAns){
 $L = $lang==='de' ? [
   'confirmTitle'=>'Kurz bestätigen',
   'confirmLead'=>'Bitte tippe auf deine Antwort — erst dann wird sie gespeichert.',
-  'yesBtn'=>'✅ Ja, verfügbar','maybeBtn'=>'🤔 Vielleicht','noBtn'=>'❌ Nein',
+  'yesBtn'=>'Ja, verfügbar','maybeBtn'=>'Vielleicht','noBtn'=>'Nein',
   'thanks'=>'Danke für deine Rückmeldung!',
   'yes'=>'Klasse — wir haben notiert, dass du <b>verfügbar</b> bist.',
   'maybe'=>'Notiert: <b>vielleicht</b>. Wir melden uns.',
@@ -69,7 +69,7 @@ $L = $lang==='de' ? [
 ] : [
   'confirmTitle'=>'Please confirm',
   'confirmLead'=>'Tap your answer — it is only saved after you confirm.',
-  'yesBtn'=>'✅ Yes, available','maybeBtn'=>'🤔 Maybe','noBtn'=>'❌ No',
+  'yesBtn'=>'Yes, available','maybeBtn'=>'Maybe','noBtn'=>'No',
   'thanks'=>'Thanks for your reply!',
   'yes'=>'Great — we noted that you are <b>available</b>.',
   'maybe'=>'Noted: <b>maybe</b>. We\'ll be in touch.',
@@ -87,11 +87,12 @@ function opt($action,$etok,$key,$label,$text,$strong,$primary){
   $style = $primary
     ? "background:$strong;color:#fff;border:2px solid $strong"
     : "background:#fff;color:$text;border:2px solid $strong";
+  $icon = stroke_icon($key==='yes'?'check':($key==='no'?'x':'maybe'));
   return '<form method="post" action="'.$action.'" style="margin:0 0 12px">'
     .'<input type="hidden" name="token" value="'.$etok.'">'
     .'<input type="hidden" name="answer" value="'.$key.'">'
-    .'<button type="submit" style="display:block;width:100%;padding:15px 18px;border-radius:10px;'
-    .'font:600 16px system-ui,Arial,sans-serif;cursor:pointer;'.$style.'">'.$label.'</button>'
+    .'<button type="submit" style="display:flex;align-items:center;justify-content:center;width:100%;padding:15px 18px;border-radius:10px;'
+    .'font:600 16px system-ui,Arial,sans-serif;cursor:pointer;'.$style.'">'.$icon.$label.'</button>'
     .'</form>';
 }
 ?>
