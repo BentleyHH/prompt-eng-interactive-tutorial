@@ -38,16 +38,17 @@ switch($action){
   case 'trainer.save':
     require_auth();
     $id=$in['id']??null;
+    $pl=in_array($in['prefLang']??'',['de','en'],true) ? $in['prefLang'] : '';
     $fields=[$in['name']??'', $in['email']??'', $in['phone']??'',
       json_encode($in['spec']??[],JSON_UNESCAPED_UNICODE), $in['region']??'',
       json_encode($in['langs']??[]), !empty($in['uae'])?1:0, (int)($in['load']??0),
-      $in['color']??'#3E4852', (string)($in['rating']??'4.5'), (string)($in['notes']??'')];
+      $in['color']??'#3E4852', (string)($in['rating']??'4.5'), (string)($in['notes']??''), $pl];
     if($id){
-      q("UPDATE trainers SET name=?,email=?,phone=?,spec=?,region=?,langs=?,uae=?,load_lvl=?,color=?,rating=?,notes=? WHERE id=?",
+      q("UPDATE trainers SET name=?,email=?,phone=?,spec=?,region=?,langs=?,uae=?,load_lvl=?,color=?,rating=?,notes=?,pref_lang=? WHERE id=?",
         array_merge($fields,[$id]));
     } else {
-      q("INSERT INTO trainers(name,email,phone,spec,region,langs,uae,load_lvl,color,rating,notes,created_at)
-         VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", array_merge($fields,[now()]));
+      q("INSERT INTO trainers(name,email,phone,spec,region,langs,uae,load_lvl,color,rating,notes,pref_lang,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", array_merge($fields,[now()]));
       $id=db()->lastInsertId();
     }
     out(['ok'=>true,'id'=>(string)$id]);

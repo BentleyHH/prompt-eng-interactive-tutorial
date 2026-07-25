@@ -110,6 +110,7 @@ function get_state(): array {
       'plan'=>$planBy[(string)$r['id']] ?? null,
       'passport'=>$pp,
       'notes'=>$r['notes']??'',
+      'prefLang'=>$r['pref_lang']??'',
       'reviews'=>$revBy[(string)$r['id']] ?? [],
     ];
   }, q("SELECT * FROM trainers ORDER BY id")->fetchAll());

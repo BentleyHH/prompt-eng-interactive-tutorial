@@ -98,20 +98,35 @@ function run_automation(): array {
     if(!empty($tr['passport_reminded_at']) && ($now-strtotime($tr['passport_reminded_at']))/86400 < 30) continue; // schon erinnert
     if(empty($tr['email'])) continue;
     $fn=explode(' ', preg_replace('/^Dr\.\s*/','',trim((string)$tr['name'])))[0];
-    $expNice=date('d.m.Y',$exp);
-    if($daysLeft<0){
-      $subj='Reisepass abgelaufen — bitte erneuern';
-      $lead1="dein Reisepass ist am $expNice abgelaufen.";
-      $lead2="Bitte beantrage zeitnah einen neuen Pass und schick uns anschließend ein Foto der Datenseite — wir hinterlegen es dann in deinem Profil.";
+    $lang=(($tr['pref_lang']??'')==='en')?'en':'de';
+    if($lang==='de'){
+      $expNice=date('d.m.Y',$exp);
+      if($daysLeft<0){
+        $subj='Reisepass abgelaufen — bitte erneuern';
+        $lead1="dein Reisepass ist am $expNice abgelaufen.";
+        $lead2="Bitte beantrage zeitnah einen neuen Pass und schick uns anschließend ein Foto der Datenseite — wir hinterlegen es dann in deinem Profil.";
+      } else {
+        $subj='Reisepass läuft bald ab — rechtzeitig erneuern';
+        $lead1="dein Reisepass läuft am $expNice ab (in $daysLeft Tagen).";
+        $lead2="Für Einsätze im Ausland (z.B. UAE) sollte der Pass bei der Einreise noch mindestens 6 Monate gültig sein. Bitte beantrage rechtzeitig einen neuen Pass und schick uns danach ein Foto der Datenseite — wir hinterlegen es dann in deinem Profil.";
+      }
+      $bodyText="Hallo $fn,\n\n$lead1\n\n$lead2\n\nVielen Dank!\nETAF-Koordination";
     } else {
-      $subj='Reisepass läuft bald ab — rechtzeitig erneuern';
-      $lead1="dein Reisepass läuft am $expNice ab (in $daysLeft Tagen).";
-      $lead2="Für Einsätze im Ausland (z.B. UAE) sollte der Pass bei der Einreise noch mindestens 6 Monate gültig sein. Bitte beantrage rechtzeitig einen neuen Pass und schick uns danach ein Foto der Datenseite — wir hinterlegen es dann in deinem Profil.";
+      $expNice=date('d M Y',$exp);
+      if($daysLeft<0){
+        $subj='Passport expired — please renew';
+        $lead1="your passport expired on $expNice.";
+        $lead2="Please apply for a new passport soon and send us a photo of the data page afterwards — we'll store it in your profile.";
+      } else {
+        $subj='Passport expiring soon — please renew in time';
+        $lead1="your passport expires on $expNice (in $daysLeft days).";
+        $lead2="For assignments abroad (e.g. UAE) the passport should be valid for at least 6 more months on entry. Please apply for a new passport in time and send us a photo of the data page afterwards — we'll store it in your profile.";
+      }
+      $bodyText="Hi $fn,\n\n$lead1\n\n$lead2\n\nThank you!\nETAF Coordination";
     }
-    $bodyText="Hallo $fn,\n\n$lead1\n\n$lead2\n\nVielen Dank!\nETAF-Koordination";
     $ok=send_email($tr['email'],$tr['name'],$subj,email_html($bodyText,''));
     q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
-       VALUES(?,?,?,?,?,?,?,?)",[0,$tr['id'],$tr['email'],$subj,$bodyText,'de',$ok?'sent':'failed',now()]);
+       VALUES(?,?,?,?,?,?,?,?)",[0,$tr['id'],$tr['email'],$subj,$bodyText,$lang,$ok?'sent':'failed',now()]);
     q("UPDATE trainers SET passport_reminded_at=? WHERE id=?",[now(),$tr['id']]);
     if($ok)$passport++;
   }

@@ -169,6 +169,8 @@ function ensure_schema(): void {
   try{ db()->exec("ALTER TABLE plan_tokens ADD COLUMN resolved_at VARCHAR(20)"); }catch(Throwable $e){}
   // Interne Notizen je Trainer (frei fortschreibbar)
   try{ db()->exec("ALTER TABLE trainers ADD COLUMN notes TEXT"); }catch(Throwable $e){}
+  // Bevorzugte Ansprache-Sprache je Trainer ('de' | 'en', leer = globale Einstellung)
+  try{ db()->exec("ALTER TABLE trainers ADD COLUMN pref_lang VARCHAR(4)"); }catch(Throwable $e){}
   // Interne Bewertungen je Trainer & Training (5 Sterne + Notiz, nur fürs Team)
   $d->exec("CREATE TABLE IF NOT EXISTS trainer_reviews (
     id $pk, trainer_id INT, training_id INT, label VARCHAR(190),
