@@ -584,7 +584,10 @@ const IC={
   reply:'<path d="M9 17 4 12l5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>',
   bag:'<rect x="6" y="8" width="12" height="12" rx="2"/><path d="M9 8V6a3 3 0 0 1 6 0v2M10 12v4M14 12v4"/>',
   theme:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/>',
-  lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'
+  lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  id:'<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5 16c.5-1.5 1.7-2 3-2s2.5.5 3 2M14 9h4M14 13h4"/>',
+  camera:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 /* Inline-Strichicon in Textgröße (für Buttons/Labels). */
@@ -801,6 +804,23 @@ const L={
   secPinFormat:"Der neue PIN muss aus 4–8 Ziffern bestehen.",
   secDemoNote:"PIN-Änderung ist nur in der Live-Version (mit Server) aktiv.",
   reminded:"erinnert",
+  // Reisepass je Trainer
+  ppTitle:t=>`Reisepass — ${t}`, ppSection:"Reisepass", ppView:"Reisepass",
+  ppNone:"Kein Pass hinterlegt", ppNoneHint:"Foto hochladen oder Daten eintragen — einmal pro Trainer.",
+  ppUpload:"Passfoto hochladen", ppScan:"Mit KI auslesen", ppScanning:"KI liest das Foto …",
+  ppScanDemo:"KI-Auslesen ist nur in der Live-Version (mit Claude-API-Key) aktiv. Du kannst die Felder manuell ausfüllen.",
+  ppScanErr:"Auslesen fehlgeschlagen", ppScanOk:"Daten erkannt — bitte prüfen.",
+  ppNumber:"Passnummer", ppName:"Name (wie im Pass)", ppNat:"Nationalität",
+  ppBirth:"Geburtsdatum", ppExpiry:"Gültig bis", ppNotes:"Notiz (optional)",
+  ppSaved:"Reisepass gespeichert", ppRemoved:"Reisepass gelöscht",
+  ppRemove:"Pass löschen", ppRemoveImg:"Foto entfernen", ppReplaceImg:"Foto ersetzen",
+  ppPhoto:"Passfoto", ppUpdated:d=>`aktualisiert ${d}`,
+  ppLeadLbl:"Reisepass-Erinnerung: Vorlauf (Tage)",
+  ppLeadHint:"So viele Tage vor Ablauf geht automatisch eine Erinnerung an den Trainer (Standard 180 = 6 Monate).",
+  ppExpired:"abgelaufen", ppExpDays:d=>`läuft in ${d} Tg. ab`, ppExpValid:"gültig",
+  ppExpSoon:d=>`noch ${d} Tage`, ppNoExpiry:"ohne Ablaufdatum",
+  ppHealthExpired:n=>`${n} Pass/Pässe abgelaufen`, ppHealthSoon:n=>`${n} Pass/Pässe laufen bald ab`,
+  ppBig:"Bild zu groß (max. 8 MB).",
   travelAgenda:"Reise & Agenda", trTravel:"Reise", agendaView:"Agenda", agendaSend:"Agenda senden",
   agendaSent:"Reise-Agenda versendet", travelSaved:"Reisedaten gespeichert",
   tvLogistics:"Reise & Logistik (für alle im Team)", tvVenue:"Veranstaltungsort", tvHotel:"Hotel",
@@ -987,6 +1007,23 @@ const L={
   secPinFormat:"The new PIN must be 4–8 digits.",
   secDemoNote:"Changing the PIN is only active in the live version (with a server).",
   reminded:"reminded",
+  // Passport per trainer
+  ppTitle:t=>`Passport — ${t}`, ppSection:"Passport", ppView:"Passport",
+  ppNone:"No passport on file", ppNoneHint:"Upload a photo or enter the data — once per trainer.",
+  ppUpload:"Upload passport photo", ppScan:"Read with AI", ppScanning:"AI is reading the photo …",
+  ppScanDemo:"AI reading is only active in the live version (with a Claude API key). You can fill in the fields manually.",
+  ppScanErr:"Reading failed", ppScanOk:"Data detected — please review.",
+  ppNumber:"Passport no.", ppName:"Name (as in passport)", ppNat:"Nationality",
+  ppBirth:"Date of birth", ppExpiry:"Valid until", ppNotes:"Note (optional)",
+  ppSaved:"Passport saved", ppRemoved:"Passport removed",
+  ppRemove:"Delete passport", ppRemoveImg:"Remove photo", ppReplaceImg:"Replace photo",
+  ppPhoto:"Passport photo", ppUpdated:d=>`updated ${d}`,
+  ppLeadLbl:"Passport reminder: lead time (days)",
+  ppLeadHint:"A reminder is sent to the trainer automatically this many days before expiry (default 180 = 6 months).",
+  ppExpired:"expired", ppExpDays:d=>`expires in ${d} d`, ppExpValid:"valid",
+  ppExpSoon:d=>`${d} days left`, ppNoExpiry:"no expiry date",
+  ppHealthExpired:n=>`${n} passport(s) expired`, ppHealthSoon:n=>`${n} passport(s) expiring soon`,
+  ppBig:"Image too large (max. 8 MB).",
   travelAgenda:"Travel & agenda", trTravel:"Travel", agendaView:"Agenda", agendaSend:"Send agenda",
   agendaSent:"Travel agenda sent", travelSaved:"Travel details saved",
   tvLogistics:"Travel & logistics (for the whole team)", tvVenue:"Venue", tvHotel:"Hotel",
@@ -1204,7 +1241,7 @@ function load(){
     const r=JSON.parse(localStorage.getItem("etaf_demo"));
     if(r&&r.trainers){
       r.lang=r.lang||"de"; r.emailLang=r.emailLang||"en";
-      r.settings=r.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false};
+      r.settings=r.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180};
       r.emails=r.emails||[];
       if(!r.templates||!r.templates[0]||!r.templates[0].de)r.templates=TEMPLATES;
       if(!r.clients||!r.clients.length)r.clients=seedClients();
@@ -1227,7 +1264,7 @@ function load(){
   return {lang:"de", emailLang:"en", seedVersion:SEED_VERSION, clients:seedClients(), clientFilter:null,
     materials:seedMaterials(), matPresets:seedMatPresets(),
     trainers:seedTrainers(), trainings:seedTrainings(),
-    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false}, emails:[]};
+    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180}, emails:[]};
 }
 function save(){localStorage.setItem("etaf_demo",JSON.stringify(S));}
 function resetDemo(){localStorage.removeItem("etaf_demo");S=load();applyStatic();render();toast(t("resetToast"));}
@@ -1411,8 +1448,13 @@ function healthStatus(){
   const under=S.trainings.filter(tg=>rosterStats(tg).yes<(tg.need||0)).length;
   const open=S.trainings.reduce((a,tg)=>a+rosterStats(tg).asked,0);
   const conflicts=conf.size;
-  const level = conflicts>0 ? "red" : (under>0||open>0) ? "amber" : "green";
-  return {level,conflicts,under,open};
+  // Reisepass-Ablauf
+  let ppExpired=0, ppSoon=0;
+  (S.trainers||[]).forEach(tr=>{ const h=passportHealth(tr.passport);
+    if(h.level==="crit"&&h.days!=null&&h.days<0) ppExpired++;
+    else if(h.level==="crit"||h.level==="warn") ppSoon++; });
+  const level = (conflicts>0||ppExpired>0) ? "red" : (under>0||open>0||ppSoon>0) ? "amber" : "green";
+  return {level,conflicts,under,open,ppExpired,ppSoon};
 }
 function clientHealth(cid){
   const tgs=S.trainings.filter(t=>t.clientId===cid);
@@ -1435,7 +1477,8 @@ function renderDash(){
   const openReq=T.reduce((a,t)=>a+rosterStats(t).asked,0);
 
   const h=healthStatus();
-  const hDetail=[ h.conflicts?`⚠ ${t("bkConflictN",h.conflicts)}`:"", h.under?t("ampelUnder",h.under):"", h.open?t("ampelOpen",h.open):"" ].filter(Boolean).join(" · ")||t("ampelAllGood");
+  const hDetail=[ h.conflicts?`⚠ ${t("bkConflictN",h.conflicts)}`:"", h.under?t("ampelUnder",h.under):"", h.open?t("ampelOpen",h.open):"",
+    h.ppExpired?t("ppHealthExpired",h.ppExpired):"", h.ppSoon?t("ppHealthSoon",h.ppSoon):"" ].filter(Boolean).join(" · ")||t("ampelAllGood");
   const ampel=`<div class="ampel a-${h.level}">
     <span class="lamp"></span>
     <div class="rowgrow"><b>${t("ampel_"+h.level)}</b><div class="meta">${hDetail}</div></div>
@@ -1740,8 +1783,10 @@ function renderTrainers(){
           <span>🗣 ${tr.langs.join(" · ")} · ${t("workload")} ${t("load"+tr.load)}</span>
         </div>
         <div class="divider"></div>
+        <div style="margin-bottom:10px">${passportChip(tr)}</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           ${planBadge(tr)}<div class="spacer"></div>
+          <button class="btn sm" onclick="openPassport('${tr.id}')">${ic("id")}${t("ppView")}</button>
           <button class="btn sm" onclick="openPlan('${tr.id}')">${ic("clip")}${t("planView")}</button>
         </div>
       </div>
@@ -1754,6 +1799,154 @@ function renderTrainers(){
     </div></div>
     <div class="grid2">${cards}</div>`;
 }
+
+/* ============================================================
+   REISEPASS je Trainer — einmal hinterlegt, mit Verfallsdatum, Ampel,
+   Foto-Upload + KI-Auslesen. Erinnerung läuft über die Automatik.
+   ============================================================ */
+function ppLeadDays(){ return (S.settings&&S.settings.passport_lead_days)||180; }
+/* Ampel-Status eines Passes: crit=abgelaufen/sehr knapp, warn=läuft bald ab, ok=gültig, none=nicht hinterlegt */
+function passportHealth(pp){
+  if(!pp || !pp.expiry) return {level:pp?"nodate":"none", days:null};
+  const exp=new Date(pp.expiry+"T00:00:00"); if(isNaN(exp)) return {level:"nodate",days:null};
+  const days=Math.floor((exp-new Date(new Date().toDateString()))/86400000);
+  const lead=ppLeadDays();
+  const level = days<0 ? "crit" : days<=Math.min(60,lead) ? "crit" : days<=lead ? "warn" : "ok";
+  return {level,days};
+}
+const PP_DOT={ok:"var(--good)",warn:"var(--warn)",crit:"var(--crit)",nodate:"var(--muted)",none:"var(--line)"};
+function passportChip(tr){
+  const pp=tr.passport, h=passportHealth(pp);
+  const dot=`<span style="width:9px;height:9px;border-radius:50%;background:${PP_DOT[h.level]||'var(--line)'};flex:none;display:inline-block"></span>`;
+  let label;
+  if(h.level==="none") label=`<span class="meta">${t("ppNone")}</span>`;
+  else if(h.level==="nodate") label=`<span class="meta">${t("ppNoExpiry")}</span>`;
+  else if(h.days<0) label=`<b style="color:var(--crit)">${t("ppExpired")}</b> <span class="meta">${fmtDate(pp.expiry)}</span>`;
+  else if(h.level!=="ok") label=`<b style="color:${h.level==='crit'?'var(--crit)':'var(--warn)'}">${t("ppExpSoon",h.days)}</b> <span class="meta">${fmtDate(pp.expiry)}</span>`;
+  else label=`<span class="meta">${t("ppExpValid")} · ${fmtDate(pp.expiry)}</span>`;
+  return `<div style="display:flex;gap:8px;align-items:center">${ic("id",15)}${dot}${label}</div>`;
+}
+/* Datum hübsch: YYYY-MM-DD → DD.MM.YYYY (de) / DD Mon YYYY (en) */
+function fmtDate(iso){
+  if(!iso) return ""; const d=new Date(iso+"T00:00:00"); if(isNaN(d)) return iso;
+  return S.lang==="de" ? d.toLocaleDateString("de-DE") : d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+}
+let ppEditId=null, ppEditImg=undefined; // ppEditImg: undefined=unverändert, null=löschen, string=neues Bild
+function openPassport(trId){
+  const tr=S.trainers.find(x=>x.id===trId); if(!tr) return;
+  ppEditId=trId;
+  // Demo: gespeichertes Foto direkt anzeigen (Live lädt es lazy nach)
+  ppEditImg=(!LIVE && tr.passport && tr.passport._img) ? tr.passport._img : undefined;
+  $("#sheetTitle").textContent=t("ppTitle",tr.name);
+  drawPassport(tr.passport||{});
+  openSheet();
+}
+function drawPassport(pp){
+  const h=passportHealth(pp);
+  const badge = pp&&pp.expiry ? `<div class="ampel a-${h.level==='ok'?'green':h.level==='warn'?'amber':'red'}" style="margin:0 0 14px">
+      <span class="lamp"></span><div class="rowgrow"><b>${h.days<0?t("ppExpired"):h.days<=ppLeadDays()?t("ppExpSoon",h.days):t("ppExpValid")}</b>
+      <div class="meta">${t("ppExpiry")}: ${fmtDate(pp.expiry)}${pp.updatedAt?" · "+t("ppUpdated",fmtDate((pp.updatedAt||'').slice(0,10))):""}</div></div></div>` : "";
+  const hasImg = (ppEditImg!==undefined) ? (ppEditImg!==null) : !!(pp&&pp.hasFile);
+  const imgBox = `<div id="ppImgBox" style="margin:4px 0 14px">${
+    hasImg ? `<div class="meta" style="margin-bottom:6px">${t("ppPhoto")}</div>
+      <img id="ppThumb" src="${ppEditImg||''}" alt="" style="max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--line);${ppEditImg?'':'display:none'}">
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" onclick="ppPickFile()">${ic("camera",15)}${t("ppReplaceImg")}</button>
+        <button class="btn sm" onclick="ppRemoveImg()" style="border-color:var(--crit);color:var(--crit)">${ic("trash",15)}${t("ppRemoveImg")}</button>
+      </div>`
+    : `<button class="btn" onclick="ppPickFile()">${ic("camera")}${t("ppUpload")}</button>
+       <div class="meta" style="margin-top:6px">${LIVE?"":t("ppScanDemo")}</div>` }
+    <input type="file" id="ppFile" accept="image/*" style="display:none" onchange="ppFileChosen(event)">
+    <div id="ppScanMsg" class="meta" style="margin-top:8px"></div></div>`;
+  // Wenn ein neues Bild als DataURL vorliegt, zeige es (falls hasFile aus DB, laden wir lazy)
+  $("#sheetBody").innerHTML=`
+    ${badge}${imgBox}
+    <label class="fld">${t("ppNumber")}</label><input class="inp" id="ppNo" value="${esc(pp.number||'')}">
+    <label class="fld">${t("ppName")}</label><input class="inp" id="ppNm" value="${esc(pp.name||'')}">
+    <div class="fldrow"><div style="flex:1"><label class="fld">${t("ppNat")}</label><input class="inp" id="ppNat" value="${esc(pp.nationality||'')}"></div>
+      <div style="flex:1"><label class="fld">${t("ppBirth")}</label><input class="inp" id="ppBd" type="date" value="${esc(pp.birthdate||'')}"></div></div>
+    <label class="fld">${t("ppExpiry")}</label><input class="inp" id="ppExp" type="date" value="${esc(pp.expiry||'')}">
+    <label class="fld">${t("ppNotes")}</label><input class="inp" id="ppNt" value="${esc(pp.notes||'')}">`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    ${(pp&&(pp.expiry||pp.number||pp.hasFile))?`<button class="btn" onclick="removePassport()" style="border-color:var(--crit);color:var(--crit)">${ic("trash",15)}${t("ppRemove")}</button>`:""}
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="savePassport()">${t("save")}</button>`;
+  // Falls Foto in DB liegt, aber noch nicht geladen: lazy nachladen ins Thumbnail
+  if(LIVE && pp && pp.hasFile && ppEditImg===undefined){
+    apiCall("passport.image",{id:ppEditId}).then(d=>{
+      const im=$("#ppThumb"); if(im&&d.image){ im.src=d.image; im.style.display=""; }
+    }).catch(()=>{});
+  }
+}
+function ppPickFile(){ const f=$("#ppFile"); if(f) f.click(); }
+function ppRemoveImg(){ ppEditImg=null; const cur=collectPassport(); drawPassport(cur); }
+async function ppFileChosen(ev){
+  const file=ev.target.files&&ev.target.files[0]; if(!file) return;
+  if(file.size>8*1024*1024){ toast(t("ppBig"),"crit"); return; }
+  const dataUrl=await downscaleImage(file, 1600, 0.82);
+  ppEditImg=dataUrl;
+  // Vorschau sofort + optional KI-Auslesen
+  const cur=collectPassport(); cur.hasFile=true; drawPassport(cur);
+  const im=$("#ppThumb"); if(im){ im.src=dataUrl; im.style.display=""; }
+  if(!LIVE){ $("#ppScanMsg").textContent=t("ppScanDemo"); return; }
+  const msg=$("#ppScanMsg"); if(msg){ msg.textContent="… "+t("ppScanning"); }
+  try{
+    const d=await apiCall("passport.scan",{image:dataUrl}); const p=d.data||{};
+    if($("#ppNo")&&!$("#ppNo").value) $("#ppNo").value=p.number||"";
+    if($("#ppNm")) $("#ppNm").value=$("#ppNm").value||p.full_name||[p.given_names,p.surname].filter(Boolean).join(" ");
+    if($("#ppNat")&&!$("#ppNat").value) $("#ppNat").value=p.nationality||"";
+    if($("#ppBd")&&!$("#ppBd").value&&/^\d{4}-\d{2}-\d{2}$/.test(p.birthdate||"")) $("#ppBd").value=p.birthdate;
+    if($("#ppExp")&&!$("#ppExp").value&&/^\d{4}-\d{2}-\d{2}$/.test(p.expiry||"")) $("#ppExp").value=p.expiry;
+    if(msg) msg.textContent=t("ppScanOk");
+  }catch(e){ if(msg) msg.textContent=t("ppScanErr")+": "+e.message; }
+}
+function collectPassport(){
+  return {number:val("ppNo"),name:val("ppNm"),nationality:val("ppNat"),
+    birthdate:val("ppBd"),expiry:val("ppExp"),notes:val("ppNt"),
+    hasFile:(ppEditImg!==undefined)?(ppEditImg!==null):((S.trainers.find(x=>x.id===ppEditId)||{}).passport||{}).hasFile,
+    updatedAt:(((S.trainers.find(x=>x.id===ppEditId)||{}).passport||{}).updatedAt)||""};
+}
+function val(id){ const e=$("#"+id); return e?e.value:""; }
+async function savePassport(){
+  const tr=S.trainers.find(x=>x.id===ppEditId); if(!tr) return;
+  const pp=collectPassport();
+  if(pp.expiry && !/^\d{4}-\d{2}-\d{2}$/.test(pp.expiry)){ toast(t("ppScanErr"),"crit"); return; }
+  if(LIVE){
+    const payload={id:ppEditId,number:pp.number,name:pp.name,nationality:pp.nationality,
+      birthdate:pp.birthdate,expiry:pp.expiry,notes:pp.notes};
+    if(ppEditImg!==undefined) payload.image = ppEditImg===null ? "null" : ppEditImg;
+    try{ await apiCall("passport.save",payload); await pull(); }
+    catch(e){ toast("Fehler: "+e.message,"crit"); return; }
+  } else {
+    tr.passport=Object.assign({},pp,{updatedAt:new Date().toISOString(),
+      hasFile:(ppEditImg!==undefined)?(ppEditImg!==null):(tr.passport&&tr.passport.hasFile),
+      _img:(ppEditImg!==undefined)?ppEditImg:(tr.passport&&tr.passport._img)});
+    save();
+  }
+  closeSheet(); if(route==="trainers")renderTrainers(); if(route==="dash")renderDash();
+  toast(t("ppSaved"),"good");
+}
+async function removePassport(){
+  if(LIVE){ try{ await apiCall("passport.clear",{id:ppEditId}); await pull(); }catch(e){ toast("Fehler: "+e.message,"crit"); return; } }
+  else { const tr=S.trainers.find(x=>x.id===ppEditId); if(tr) tr.passport=null; save(); }
+  closeSheet(); if(route==="trainers")renderTrainers(); if(route==="dash")renderDash();
+  toast(t("ppRemoved"),"good");
+}
+/* Bild clientseitig verkleinern → JPEG-DataURL (spart Speicher & Upload). */
+function downscaleImage(file, maxDim, quality){
+  return new Promise((resolve,reject)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{ const img=new Image();
+      img.onload=()=>{ let{width:w,height:h}=img; const sc=Math.min(1,maxDim/Math.max(w,h));
+        w=Math.round(w*sc); h=Math.round(h*sc);
+        const c=document.createElement("canvas"); c.width=w; c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        try{ resolve(c.toDataURL("image/jpeg",quality)); }catch(e){ resolve(fr.result); } };
+      img.onerror=()=>resolve(fr.result); img.src=fr.result; };
+    fr.onerror=reject; fr.readAsDataURL(file);
+  });
+}
+
 /* ============================================================
    BELEGUNG / BUCHUNGEN — Steuerzentrale: Filter (Trainer/Kunde/Status/
    Monat/Suche), Gruppierung, Doppelbuchungs-Warnung, CSV-Export
@@ -3009,7 +3202,7 @@ function renderAutomation(){
     S._settingsLoaded=true;
     apiCall("settings.get").then(d=>{S.settings=d.settings;renderAutomation();}).catch(()=>{});
   }
-  const s=S.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false};
+  const s=S.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180};
   $("#v-automation").innerHTML=`
     <div class="panel">
       <div class="panel-h"><h3>${t("tp_auto")}</h3><div class="sub">${t("tp_autoSub")}</div></div>
@@ -3022,6 +3215,9 @@ function renderAutomation(){
         <div class="kv" style="align-items:flex-start">
           <span class="k">${t("autoAdvanceLbl")}<div class="meta" style="max-width:360px;margin-top:2px">${t("autoAdvanceHint")}</div></span>
           <label class="sw"><input type="checkbox" id="aAdv" ${s.auto_advance?'checked':''} onchange="saveAuto()"><span></span></label></div>
+        <div class="kv" style="align-items:flex-start">
+          <span class="k">${ic("id",15)}${t("ppLeadLbl")}<div class="meta" style="max-width:360px;margin-top:2px">${t("ppLeadHint")}</div></span>
+          <input class="inp" style="width:110px" type="number" min="14" step="1" id="aPpLead" value="${s.passport_lead_days||180}" onchange="saveAuto()"></div>
       </div>
       <div class="panel-b" style="border-top:1px solid var(--line)">
         <button class="btn amber" onclick="runAutoNow()">⚡ ${t("autoRunNow")}</button>
@@ -3054,7 +3250,7 @@ async function changePin(){
   }catch(e){ toast("Fehler: "+e.message,"crit"); }
 }
 function saveAuto(){
-  const s={reminder_hours:parseInt($("#aRem").value)||48,escalate_hours:parseInt($("#aEsc").value)||72,auto_advance:$("#aAdv").checked};
+  const s={reminder_hours:parseInt($("#aRem").value)||48,escalate_hours:parseInt($("#aEsc").value)||72,auto_advance:$("#aAdv").checked,passport_lead_days:Math.max(14,parseInt($("#aPpLead").value)||180)};
   S.settings=s;save();
   if(LIVE){ apiCall("settings.save",s).then(()=>toast(t("autoSaved"),"good")).catch(e=>toast("Fehler: "+e.message,"crit")); }
   else toast(t("autoSaved"),"good");

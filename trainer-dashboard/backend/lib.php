@@ -82,6 +82,17 @@ function get_state(): array {
       'status'=>$p['confirm_status'], 'note'=>$p['note'] ];
   }
   $trainers=array_map(function($r) use ($planBy){
+    // Reisepass-Metadaten (ohne das Foto selbst — das lädt passport.image bei Bedarf)
+    $pp=null;
+    if( ($r['passport_expiry']??'')!=='' || ($r['passport_number']??'')!=='' || !empty($r['passport_file']) ){
+      $pp=[
+        'number'=>$r['passport_number']??'', 'name'=>$r['passport_name']??'',
+        'nationality'=>$r['passport_nationality']??'', 'birthdate'=>$r['passport_birthdate']??'',
+        'expiry'=>$r['passport_expiry']??'', 'notes'=>$r['passport_notes']??'',
+        'updatedAt'=>$r['passport_updated_at']??'', 'remindedAt'=>$r['passport_reminded_at']??'',
+        'hasFile'=>!empty($r['passport_file']),
+      ];
+    }
     return [
       'id'=>(string)$r['id'], 'name'=>$r['name'], 'email'=>$r['email'], 'phone'=>$r['phone'],
       'spec'=>json_decode($r['spec']?:'[]',true), 'region'=>$r['region'],
@@ -89,6 +100,7 @@ function get_state(): array {
       'uae'=>(bool)$r['uae'], 'load'=>(int)$r['load_lvl'],
       'color'=>$r['color'], 'rating'=>$r['rating'],
       'plan'=>$planBy[(string)$r['id']] ?? null,
+      'passport'=>$pp,
     ];
   }, q("SELECT * FROM trainers ORDER BY id")->fetchAll());
 

@@ -152,6 +152,14 @@ function ensure_schema(): void {
   foreach(["contact_name VARCHAR(160)","contact_email VARCHAR(190)"] as $col){
     try{ db()->exec("ALTER TABLE clients ADD COLUMN $col"); }catch(Throwable $e){}
   }
+  // Migrationen (idempotent): Reisepass je Trainer (einmal hinterlegt, mit Verfallsdatum
+  // + optionalem Foto). passport_file speichert das Bild als Data-URI (deshalb LONGTEXT).
+  $longtext = is_sqlite() ? 'TEXT' : 'LONGTEXT';
+  foreach([
+    "passport_number VARCHAR(64)","passport_name VARCHAR(190)","passport_nationality VARCHAR(64)",
+    "passport_birthdate VARCHAR(20)","passport_expiry VARCHAR(20)","passport_file $longtext",
+    "passport_notes TEXT","passport_updated_at VARCHAR(20)","passport_reminded_at VARCHAR(20)"
+  ] as $col){ try{ db()->exec("ALTER TABLE trainers ADD COLUMN $col"); }catch(Throwable $e){} }
   // Transferliste je Kunde: Magic-Token + Empfangsbestätigung
   db()->exec("CREATE TABLE IF NOT EXISTS transfer_tokens (
     client_id VARCHAR(24) PRIMARY KEY,
@@ -163,6 +171,7 @@ function ensure_schema(): void {
   if(config_get('reminder_hours')===null) config_set('reminder_hours',(string)($ac['reminder_hours']??48));
   if(config_get('escalate_hours')===null) config_set('escalate_hours',(string)($ac['escalate_hours']??72));
   if(config_get('auto_advance')===null)   config_set('auto_advance', !empty($ac['auto_advance'])?'1':'0');
+  if(config_get('passport_lead_days')===null) config_set('passport_lead_days',(string)($ac['passport_lead_days']??180));
 
   // Demo-Seed
   if((cfg()['seed_demo']??false) && (int)q("SELECT COUNT(*) c FROM trainers")->fetch()['c']===0){

@@ -323,6 +323,51 @@ switch($action){
     }
     out(['ok'=>true,'created'=>$created]);
 
+  /* ---- Reisepass je Trainer: Foto per KI auslesen (noch nicht speichern) ---- */
+  case 'passport.scan':
+    require_auth();
+    $img=(string)($in['image']??'');
+    if($img==='') fail('Kein Bild übergeben.');
+    out(['ok'=>true,'data'=>ai_extract_passport($img)]);
+
+  /* ---- Reisepass je Trainer speichern (Felder + optionales Foto) ---- */
+  case 'passport.save':
+    require_auth();
+    $trId=$in['id']??0;
+    if(!$trId || !q("SELECT id FROM trainers WHERE id=?",[$trId])->fetch()) fail('Trainer nicht gefunden.');
+    $exp=trim((string)($in['expiry']??''));
+    if($exp!=='' && !preg_match('/^\d{4}-\d{2}-\d{2}$/',$exp)) fail('Ablaufdatum bitte als YYYY-MM-DD.');
+    $sets=['passport_number=?','passport_name=?','passport_nationality=?','passport_birthdate=?',
+           'passport_expiry=?','passport_notes=?','passport_updated_at=?','passport_reminded_at=NULL'];
+    $vals=[(string)($in['number']??''), (string)($in['name']??''), (string)($in['nationality']??''),
+           (string)($in['birthdate']??''), $exp, (string)($in['notes']??''), now()];
+    // Foto nur überschreiben, wenn eines mitgeschickt wurde ('' = unverändert, 'null' = löschen)
+    if(array_key_exists('image',$in)){
+      $img=$in['image'];
+      if($img===null || $img==='null'){ $sets[]='passport_file=NULL'; }
+      elseif(is_string($img) && $img!==''){
+        if(!preg_match('#^data:image/#',$img)) fail('Ungültiges Bildformat.');
+        $sets[]='passport_file=?'; $vals[]=$img;
+      }
+    }
+    $vals[]=$trId;
+    q("UPDATE trainers SET ".implode(',',$sets)." WHERE id=?", $vals);
+    out(['ok'=>true]);
+
+  /* ---- Reisepass-Foto abrufen (nicht im State, um Payload klein zu halten) ---- */
+  case 'passport.image':
+    require_auth();
+    $r=q("SELECT passport_file FROM trainers WHERE id=?",[$in['id']??0])->fetch();
+    out(['ok'=>true,'image'=>$r['passport_file']??null]);
+
+  /* ---- Reisepass löschen ---- */
+  case 'passport.clear':
+    require_auth();
+    q("UPDATE trainers SET passport_number=NULL,passport_name=NULL,passport_nationality=NULL,
+       passport_birthdate=NULL,passport_expiry=NULL,passport_file=NULL,passport_notes=NULL,
+       passport_updated_at=NULL,passport_reminded_at=NULL WHERE id=?",[$in['id']??0]);
+    out(['ok'=>true]);
+
   /* ---- Automatik-Einstellungen ---- */
   case 'settings.get':
     require_auth();
@@ -330,6 +375,7 @@ switch($action){
       'reminder_hours'=>(int)(config_get('reminder_hours')??48),
       'escalate_hours'=>(int)(config_get('escalate_hours')??72),
       'auto_advance'=>(config_get('auto_advance')==='1'),
+      'passport_lead_days'=>(int)(config_get('passport_lead_days')??180),
       'ai_enabled'=>trim(cfg()['anthropic_key']??'')!=='',
     ]]);
 
@@ -338,6 +384,7 @@ switch($action){
     if(isset($in['reminder_hours'])) config_set('reminder_hours',(string)max(1,(int)$in['reminder_hours']));
     if(isset($in['escalate_hours'])) config_set('escalate_hours',(string)max(1,(int)$in['escalate_hours']));
     if(isset($in['auto_advance']))   config_set('auto_advance', !empty($in['auto_advance'])?'1':'0');
+    if(isset($in['passport_lead_days'])) config_set('passport_lead_days',(string)max(14,(int)$in['passport_lead_days']));
     out(['ok'=>true]);
 
   /* ---- Login-PIN ändern (im Dashboard) ---- */

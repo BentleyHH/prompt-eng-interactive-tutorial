@@ -84,6 +84,38 @@ function run_automation(): array {
     if(!empty($res['ok']) && !empty($res['sent'])) $transfer++;
   }
 
+  /* 4) Reisepass-Erinnerungen: Trainer, deren Pass bald abläuft (oder abgelaufen ist).
+        Vorlauf konfigurierbar (passport_lead_days, Standard 180 Tage = 6 Monate).
+        Wiederholung höchstens alle 30 Tage, damit niemand zugespamt wird. */
+  $passport=0;
+  $lead=(int)(config_get('passport_lead_days') ?? 180);
+  $today=strtotime('today');
+  foreach(q("SELECT * FROM trainers WHERE passport_expiry IS NOT NULL AND passport_expiry<>''")->fetchAll() as $tr){
+    $exp=strtotime((string)$tr['passport_expiry']);
+    if($exp===false) continue;
+    $daysLeft=(int)floor(($exp-$today)/86400);
+    if($daysLeft>$lead) continue;                                    // noch genug Vorlauf
+    if(!empty($tr['passport_reminded_at']) && ($now-strtotime($tr['passport_reminded_at']))/86400 < 30) continue; // schon erinnert
+    if(empty($tr['email'])) continue;
+    $fn=explode(' ', preg_replace('/^Dr\.\s*/','',trim((string)$tr['name'])))[0];
+    $expNice=date('d.m.Y',$exp);
+    if($daysLeft<0){
+      $subj='Reisepass abgelaufen — bitte erneuern';
+      $lead1="dein Reisepass ist am $expNice abgelaufen.";
+      $lead2="Bitte beantrage zeitnah einen neuen Pass und schick uns anschließend ein Foto der Datenseite — wir hinterlegen es dann in deinem Profil.";
+    } else {
+      $subj='Reisepass läuft bald ab — rechtzeitig erneuern';
+      $lead1="dein Reisepass läuft am $expNice ab (in $daysLeft Tagen).";
+      $lead2="Für Einsätze im Ausland (z.B. UAE) sollte der Pass bei der Einreise noch mindestens 6 Monate gültig sein. Bitte beantrage rechtzeitig einen neuen Pass und schick uns danach ein Foto der Datenseite — wir hinterlegen es dann in deinem Profil.";
+    }
+    $bodyText="Hallo $fn,\n\n$lead1\n\n$lead2\n\nVielen Dank!\nETAF-Koordination";
+    $ok=send_email($tr['email'],$tr['name'],$subj,email_html($bodyText,''));
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[0,$tr['id'],$tr['email'],$subj,$bodyText,'de',$ok?'sent':'failed',now()]);
+    q("UPDATE trainers SET passport_reminded_at=? WHERE id=?",[now(),$tr['id']]);
+    if($ok)$passport++;
+  }
+
   /* 2) Nachrücken (optional): pro unterbesetztem Training den nächstbesten Trainer anfragen */
   if($autoAdv){
     foreach(q("SELECT * FROM trainings")->fetchAll() as $tg){
@@ -122,5 +154,5 @@ function run_automation(): array {
       }
     }
   }
-  return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,'auto_advance'=>$autoAdv];
+  return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,'passport'=>$passport,'auto_advance'=>$autoAdv];
 }
