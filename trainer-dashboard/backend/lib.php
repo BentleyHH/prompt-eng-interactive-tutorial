@@ -79,7 +79,8 @@ function get_state(): array {
   foreach(q("SELECT * FROM plan_tokens")->fetchAll() as $p){
     $planBy[(string)$p['trainer_id']]=[
       'sentAt'=>$p['sent_at'], 'confirmedAt'=>$p['confirmed_at'],
-      'status'=>$p['confirm_status'], 'note'=>$p['note'] ];
+      'status'=>$p['confirm_status'], 'note'=>$p['note'],
+      'resolvedAt'=>$p['resolved_at']??null ];
   }
   $trainers=array_map(function($r) use ($planBy){
     // Reisepass-Metadaten (ohne das Foto selbst — das lädt passport.image bei Bedarf)

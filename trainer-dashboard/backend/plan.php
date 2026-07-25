@@ -23,8 +23,23 @@ $lang = 'de';  // Trainer-Sprache: Übersicht ist bilingual erklärt, Default DE
 $committed=false; $result='';
 if($isCommit && $row && in_array($act,['ok','issue'],true)){
   $committed=true; $result=$act;
-  q("UPDATE plan_tokens SET confirmed_at=?, confirm_status=?, note=? WHERE trainer_id=?",
+  // Bei „Fehler“: resolved_at zurücksetzen → Rückmeldung erscheint im Dashboard-Posteingang.
+  q("UPDATE plan_tokens SET confirmed_at=?, confirm_status=?, note=?, resolved_at=NULL WHERE trainer_id=?",
     [now(), $act, ($act==='issue'?$note:null), $row['tid']]);
+  // Projektmanager per E-Mail informieren, damit die Rückmeldung nicht ins Leere läuft.
+  if($act==='issue'){
+    $notify = trim((string)(cfg()['notify_email'] ?? cfg()['from_email'] ?? ''));
+    if($notify!==''){
+      $subj = 'Rückmeldung zur Einsatzübersicht — '.$row['name'];
+      $body = $row['name']." hat bei der Einsatzübersicht „Da stimmt etwas nicht“ gemeldet.\n\n"
+        ."Anmerkung:\n".($note!==''?$note:'(keine Anmerkung)')."\n\n"
+        ."Diese Rückmeldung liegt jetzt im Dashboard unter „Rückmeldungen“ zur Bearbeitung bereit.";
+      $ok=send_email($notify, cfg()['from_name']??'ETAF', $subj, email_html($body,''));
+      $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+      q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+         VALUES(?,?,?,?,?,?,?,?)",[null,$row['tid'],$notify,$subj,$body,'de',$st,now()]);
+    }
+  }
 }
 
 $sched = $row ? trainer_schedule((int)$row['tid']) : [];

@@ -272,6 +272,8 @@
   .grouprow td{background:var(--panel-2);font-weight:700;font-size:12.5px;color:var(--muted);
     padding:9px 10px;border-top:2px solid var(--line)}
   .bktable .pill.crit{margin-left:6px}
+  .clickrow{cursor:pointer;transition:background .12s}
+  .clickrow:hover{background:var(--panel-2)}
   .segbtn{display:inline-flex;gap:4px}
   /* ===== Kalender-Gitter ===== */
   .calgrid{border-collapse:separate;border-spacing:0;font-size:12px}
@@ -504,6 +506,7 @@
       <section class="view" id="v-detail"></section>
       <section class="view" id="v-trainers"></section>
       <section class="view" id="v-plan"></section>
+      <section class="view" id="v-inbox"></section>
       <section class="view" id="v-transfer"></section>
       <section class="view" id="v-templates"></section>
       <section class="view" id="v-automation"></section>
@@ -587,7 +590,8 @@ const IC={
   lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   id:'<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5 16c.5-1.5 1.7-2 3-2s2.5.5 3 2M14 9h4M14 13h4"/>',
   camera:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
-  trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'
+  trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+  inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 /* Inline-Strichicon in Textgröße (für Buttons/Labels). */
@@ -690,10 +694,18 @@ const L={
   bkCount:n=>`${n} ${n===1?"Buchung":"Buchungen"}`,
   bkStats:(tr,tg)=>`${tr} ${tr===1?"Trainer":"Trainer"} · ${tg} ${tg===1?"Training":"Trainings"}`,
   bkConflict:"Doppelt", bkConflictHint:"Dieser Trainer ist in dieser KW mehrfach gebucht.",
+  bkOpenModule:"Modul öffnen — wer ist noch dabei?",
   bkConflictN:n=>`${n} Doppelbuchung${n===1?"":"en"}`,
   ampel_green:"Alles im grünen Bereich", ampel_amber:"Läuft — mit Handlungsbedarf", ampel_red:"Achtung: Konflikte",
   ampelUnder:n=>`${n} unterbesetzte${n===1?"s":""} Training${n===1?"":"s"}`, ampelOpen:n=>`${n} offene Anfrage${n===1?"":"n"}`,
   ampelAllGood:"Keine Konflikte, alle Trainings besetzt.", ampelShow:"Konflikte ansehen",
+  nav_inbox:"Rückmeldungen", tp_inbox:"Rückmeldungen", tp_inboxSub:"Trainer-Rückmeldungen zur Einsatzübersicht",
+  inboxNew:"Neu", inboxDone:"Erledigt",
+  inboxOpenN:n=>`${n} offene Rückmeldung${n===1?"":"en"}`, inboxAllClear:"Keine offenen Rückmeldungen",
+  inboxHint:"Meldet ein Trainer bei der Einsatzübersicht „stimmt nicht“, landet die Notiz direkt hier.",
+  inboxEmpty:"Noch keine Rückmeldungen eingegangen.",
+  inboxResolve:"Als erledigt markieren", inboxReopen:"Wieder öffnen", inboxOpenPlan:"Plan öffnen & korrigieren",
+  inboxResolved:"Als erledigt markiert", inboxReopened:"Wieder geöffnet",
   bkCsvToast:n=>`${n} Buchungen als CSV exportiert`,
   bkHint:"Alle Einsätze über alle Trainings — nach Trainer oder Status filtern.",
   bkEmpty:"Keine Buchungen für diese Auswahl.",
@@ -893,10 +905,18 @@ const L={
   bkCount:n=>`${n} ${n===1?"booking":"bookings"}`,
   bkStats:(tr,tg)=>`${tr} ${tr===1?"trainer":"trainers"} · ${tg} ${tg===1?"training":"trainings"}`,
   bkConflict:"Clash", bkConflictHint:"This trainer is booked more than once in this calendar week.",
+  bkOpenModule:"Open module — who else is on it?",
   bkConflictN:n=>`${n} double booking${n===1?"":"s"}`,
   ampel_green:"All clear", ampel_amber:"Running — needs attention", ampel_red:"Attention: conflicts",
   ampelUnder:n=>`${n} understaffed training${n===1?"":"s"}`, ampelOpen:n=>`${n} open request${n===1?"":"s"}`,
   ampelAllGood:"No conflicts, all trainings staffed.", ampelShow:"View conflicts",
+  nav_inbox:"Feedback", tp_inbox:"Feedback", tp_inboxSub:"Trainer feedback on the assignment overview",
+  inboxNew:"New", inboxDone:"Done",
+  inboxOpenN:n=>`${n} open item${n===1?"":"s"}`, inboxAllClear:"No open feedback",
+  inboxHint:"When a trainer flags “something's wrong” on their overview, the note lands right here.",
+  inboxEmpty:"No feedback received yet.",
+  inboxResolve:"Mark as done", inboxReopen:"Reopen", inboxOpenPlan:"Open & fix plan",
+  inboxResolved:"Marked as done", inboxReopened:"Reopened",
   bkCsvToast:n=>`${n} bookings exported as CSV`,
   bkHint:"Every assignment across all trainings — filter by trainer or status.",
   bkEmpty:"No bookings for this selection.",
@@ -1399,22 +1419,32 @@ document.addEventListener("keydown",e=>{
 /* ============================================================
    NAV / ROUTER
    ============================================================ */
-const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
+const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
+/* Offene Rückmeldungen (Trainer meldeten „stimmt nicht“, noch nicht erledigt). */
+function inboxItems(){ return (S.trainers||[]).filter(tr=>tr.plan&&tr.plan.status==="issue"&&tr.plan.note&&!tr.plan.resolvedAt)
+  .map(tr=>({tr,note:tr.plan.note,at:tr.plan.confirmedAt})); }
+function inboxAll(){ return (S.trainers||[]).filter(tr=>tr.plan&&tr.plan.status==="issue"&&tr.plan.note)
+  .map(tr=>({tr,note:tr.plan.note,at:tr.plan.confirmedAt,resolvedAt:tr.plan.resolvedAt}))
+  .sort((a,b)=>(a.resolvedAt?1:0)-(b.resolvedAt?1:0) || String(b.at||"").localeCompare(String(a.at||""))); }
+function inboxCount(){ return inboxItems().length; }
 let route="dash";
 function buildNav(){
   const crit=S.trainings.filter(t=>statusOf(t).cls==="crit").length;
+  const inb=inboxCount();
+  const badgeFor=n=> n.id==="trainings"&&crit ? `<span class="badge">${crit}</span>`
+    : n.id==="inbox"&&inb ? `<span class="badge">${inb}</span>` : "";
   $("#nav").innerHTML=NAV.map(n=>`
     <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
       ${svg(n.ic)}<span>${t("nav_"+n.id)}</span>
-      ${n.id==="trainings"&&crit?`<span class="badge">${crit}</span>`:""}
+      ${badgeFor(n)}
     </button>`).join("");
   $("#mobnav").innerHTML=NAV.map(n=>`
     <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
-      ${svg(n.ic)}<span>${t("nav_"+n.id)}</span></button>`).join("");
+      ${svg(n.ic)}<span>${t("nav_"+n.id)}</span>${badgeFor(n)}</button>`).join("");
 }
 function titleFor(r){
   const m={dash:["tp_dash","tp_dashSub"],trainings:["tp_trn","tp_trnSub"],
-    bookings:["tp_book","tp_bookSub"],
+    bookings:["tp_book","tp_bookSub"],inbox:["tp_inbox","tp_inboxSub"],
     trainers:["tp_pool","tp_poolSub"],templates:["tp_tpl","tp_tplSub"],
     automation:["tp_auto","tp_autoSub"],emails:["tp_emails","tp_emailsSub"]};
   const k=m[r]||m.dash; return [t(k[0]),t(k[1])];
@@ -1429,6 +1459,7 @@ function render(){
   else if(route==="detail"){renderDetail();$("#v-detail").classList.add("on");}
   else if(route==="trainers"){renderTrainers();$("#v-trainers").classList.add("on");}
   else if(route==="plan"){renderPlan();$("#v-plan").classList.add("on");}
+  else if(route==="inbox"){renderInbox();$("#v-inbox").classList.add("on");}
   else if(route==="transfer"){renderTransfer();$("#v-transfer").classList.add("on");}
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
@@ -1453,8 +1484,9 @@ function healthStatus(){
   (S.trainers||[]).forEach(tr=>{ const h=passportHealth(tr.passport);
     if(h.level==="crit"&&h.days!=null&&h.days<0) ppExpired++;
     else if(h.level==="crit"||h.level==="warn") ppSoon++; });
-  const level = (conflicts>0||ppExpired>0) ? "red" : (under>0||open>0||ppSoon>0) ? "amber" : "green";
-  return {level,conflicts,under,open,ppExpired,ppSoon};
+  const inbox=(typeof inboxCount==="function")?inboxCount():0;
+  const level = (conflicts>0||ppExpired>0) ? "red" : (under>0||open>0||ppSoon>0||inbox>0) ? "amber" : "green";
+  return {level,conflicts,under,open,ppExpired,ppSoon,inbox};
 }
 function clientHealth(cid){
   const tgs=S.trainings.filter(t=>t.clientId===cid);
@@ -1478,11 +1510,13 @@ function renderDash(){
 
   const h=healthStatus();
   const hDetail=[ h.conflicts?`⚠ ${t("bkConflictN",h.conflicts)}`:"", h.under?t("ampelUnder",h.under):"", h.open?t("ampelOpen",h.open):"",
-    h.ppExpired?t("ppHealthExpired",h.ppExpired):"", h.ppSoon?t("ppHealthSoon",h.ppSoon):"" ].filter(Boolean).join(" · ")||t("ampelAllGood");
+    h.ppExpired?t("ppHealthExpired",h.ppExpired):"", h.ppSoon?t("ppHealthSoon",h.ppSoon):"",
+    h.inbox?t("inboxOpenN",h.inbox):"" ].filter(Boolean).join(" · ")||t("ampelAllGood");
   const ampel=`<div class="ampel a-${h.level}">
     <span class="lamp"></span>
     <div class="rowgrow"><b>${t("ampel_"+h.level)}</b><div class="meta">${hDetail}</div></div>
-    ${h.conflicts?`<button class="btn sm" onclick="bookingView='calendar';bookingStatus='all';go('bookings')">${t("ampelShow")}</button>`:""}
+    ${h.inbox?`<button class="btn sm" onclick="go('inbox')">${t("nav_inbox")}</button>`:
+      h.conflicts?`<button class="btn sm" onclick="bookingView='calendar';bookingStatus='all';go('bookings')">${t("ampelShow")}</button>`:""}
   </div>`;
 
   const kpis=`${ampel}<div class="kpis">
@@ -1994,13 +2028,16 @@ function bkRow(x,conf){
   const trav=travelLine(x.flight,tg);
   const dbl=conf.has(bkKey(x))?`<span class="pill crit" title="${t("bkConflictHint")}">⚠ ${t("bkConflict")}</span>`:"";
   const clientChip=cl?`<span class="cchip" style="--cc:${cl.color}">${esc(cl.short||cl.name)}</span>`:"";
-  return `<tr>
+  return `<tr class="clickrow" title="${t("bkOpenModule")}" onclick="openDetail('${tg.id}')">
     <td><div class="bktr"><span class="av xs" style="background:${x.tr.color}">${initials(x.tr.name)}</span><b>${esc(x.tr.name)}</b></div></td>
     <td class="nowrap"><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${dbl}</td>
     <td class="nowrap">${esc(when||"—")}${kwSub?`<div class="meta">${esc(kwSub)}</div>`:""}</td>
     <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
     <td>${clientChip}<b>${esc(tg.topic)}</b>${trav?`<div class="meta travrow">${ic("bag")}${trav}</div>`:""}</td>
-    <td class="nowrap"><button class="btn sm" title="${t("planView")}" onclick="openPlan('${x.tr.id}')">📋</button></td>
+    <td class="nowrap"><div style="display:flex;gap:6px;justify-content:flex-end">
+      <button class="btn sm" title="${t("bkOpenModule")}" onclick="event.stopPropagation();openDetail('${tg.id}')">${ic("users",15)}</button>
+      <button class="btn sm" title="${t("planView")}" onclick="event.stopPropagation();openPlan('${x.tr.id}')">${ic("clip",15)}</button>
+    </div></td>
   </tr>`;
 }
 function groupBookings(list){
@@ -2129,6 +2166,57 @@ function planBadge(tr){
   if(p.confirmedAt&&p.status==="issue")return `<span class="pill crit">${t("planIssue")}</span>`;
   if(p.sentAt)                         return `<span class="pill neutral">${t("planSent")}</span>`;
   return "";
+}
+
+/* ============================================================
+   RÜCKMELDUNGEN — Posteingang für „Da stimmt etwas nicht“-Meldungen
+   der Trainer zur Einsatzübersicht (landen direkt hier statt im Mail-Postfach).
+   ============================================================ */
+function fmtWhen(s){
+  if(!s) return ""; const d=new Date(String(s).replace(" ","T")); if(isNaN(d)) return fmtDate((s||"").slice(0,10));
+  return fmtDate((s||"").slice(0,10))+" · "+d.toLocaleTimeString(S.lang==="de"?"de-DE":"en-GB",{hour:"2-digit",minute:"2-digit"});
+}
+function renderInbox(){
+  const items=inboxAll();
+  const openN=items.filter(x=>!x.resolvedAt).length;
+  const cards=items.map(x=>{
+    const done=!!x.resolvedAt;
+    return `<div class="panel" style="margin:0 0 12px;${done?'opacity:.7':''}">
+      <div class="panel-b">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <span class="av" style="width:40px;height:40px;background:${x.tr.color};flex:none">${initials(x.tr.name)}</span>
+          <div class="rowgrow">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <b>${esc(x.tr.name)}</b>
+              ${done?`<span class="pill good">${t("inboxDone")}</span>`:`<span class="pill crit">${t("inboxNew")}</span>`}
+              <span class="meta">${fmtWhen(x.at)}</span>
+            </div>
+            <div style="margin-top:8px;padding:12px 14px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;white-space:pre-wrap">${esc(x.note)}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:flex-end">
+          <button class="btn sm" onclick="openPlan('${x.tr.id}')">${ic("clip",15)}${t("inboxOpenPlan")}</button>
+          ${done
+            ? `<button class="btn sm" onclick="resolveMsg('${x.tr.id}',false)">${ic("reply",15)}${t("inboxReopen")}</button>`
+            : `<button class="btn sm primary" onclick="resolveMsg('${x.tr.id}',true)">${ic("check",15)}${t("inboxResolve")}</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+  $("#v-inbox").innerHTML=`
+    <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px">
+      <div class="rowgrow"><b>${openN?t("inboxOpenN",openN):t("inboxAllClear")}</b>
+      <div class="meta">${t("inboxHint")}</div></div>
+    </div></div>
+    ${items.length?cards:`<div class="panel"><div class="panel-b meta" style="padding:22px">${t("inboxEmpty")}</div></div>`}`;
+}
+async function resolveMsg(trId,resolved){
+  const tr=S.trainers.find(x=>x.id===trId);
+  if(LIVE){ try{ await apiCall("message.resolve",{trainer:trId,resolved:resolved?1:0}); await pull(); }
+    catch(e){ toast("Fehler: "+e.message,"crit"); return; } }
+  else { if(tr&&tr.plan) tr.plan.resolvedAt=resolved?new Date().toISOString():null; save(); }
+  buildNav(); renderInbox(); if(route==="dash")renderDash();
+  toast(resolved?t("inboxResolved"):t("inboxReopened"),"good");
 }
 
 /* ============================================================

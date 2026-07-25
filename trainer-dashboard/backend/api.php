@@ -261,7 +261,7 @@ switch($action){
     // Token anlegen/erneuern (setzt eine evtl. frühere Bestätigung zurück)
     $tok=token(40);
     $ex=q("SELECT trainer_id FROM plan_tokens WHERE trainer_id=?",[$trId])->fetch();
-    if($ex) q("UPDATE plan_tokens SET tok=?, sent_at=?, confirmed_at=NULL, confirm_status=NULL, note=NULL WHERE trainer_id=?",[$tok,now(),$trId]);
+    if($ex) q("UPDATE plan_tokens SET tok=?, sent_at=?, confirmed_at=NULL, confirm_status=NULL, note=NULL, resolved_at=NULL WHERE trainer_id=?",[$tok,now(),$trId]);
     else    q("INSERT INTO plan_tokens(trainer_id,tok,created_at,sent_at) VALUES(?,?,?,?)",[$trId,$tok,now(),now()]);
     $first=explode(' ', preg_replace('/^Dr\.\s*/','',$tr['name']))[0];
     $intro=$lang==='de'
@@ -276,6 +276,26 @@ switch($action){
     q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
        VALUES(?,?,?,?,?,?,?,?)",[null,$trId,$tr['email'],$subject,$intro,$lang,$st,now()]);
     out(['ok'=>true,'sent'=>$ok?1:0,'count'=>count($sched)]);
+
+  /* ---- Rückmeldungen der Trainer zur Einsatzübersicht (Dashboard-Posteingang) ---- */
+  case 'messages.list':
+    require_auth();
+    $rows=q("SELECT p.trainer_id, p.note, p.confirmed_at, p.resolved_at, t.name, t.email
+             FROM plan_tokens p JOIN trainers t ON t.id=p.trainer_id
+             WHERE p.confirm_status='issue' AND p.note IS NOT NULL AND p.note<>''
+             ORDER BY (p.resolved_at IS NULL) DESC, p.confirmed_at DESC")->fetchAll();
+    out(['ok'=>true,'messages'=>array_map(function($r){
+      return ['trainerId'=>(string)$r['trainer_id'],'trainerName'=>$r['name'],'email'=>$r['email'],
+              'note'=>$r['note'],'at'=>$r['confirmed_at'],'resolvedAt'=>$r['resolved_at']];
+    },$rows)]);
+
+  case 'message.resolve':
+    require_auth();
+    $trId=(int)($in['trainer']??0);
+    if(!$trId) fail('Kein Trainer.');
+    $resolved = array_key_exists('resolved',$in) ? !empty($in['resolved']) : true;
+    q("UPDATE plan_tokens SET resolved_at=? WHERE trainer_id=?",[$resolved?now():null,$trId]);
+    out(['ok'=>true]);
 
   /* ---- Transfer-/Abholliste an den Kunden mailen (mit Empfangsbestätigung) ---- */
   case 'transfer.send':

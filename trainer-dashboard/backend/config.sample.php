@@ -31,6 +31,9 @@ return [
   // Absender der Trainer-Anfragen. Mailbox muss existieren (SPF/DKIM sauber setzen).
   'from_email' => 'trainer@dvi-systems.com',
   'from_name' => 'ETAF Koordination',
+  // Wohin Rückmeldungen der Trainer („Da stimmt etwas nicht“) als Hinweis gehen.
+  // Leer lassen = an from_email. Zusätzlich landet jede Rückmeldung im Dashboard.
+  'notify_email' => '',
   // Basis-URL des Backends (ohne Slash am Ende). Wird für die Magic-Link-Buttons
   // in den E-Mails gebraucht. Leer lassen = automatisch aus dem Request.
   'base_url' => 'https://trainer.dvi-systems.com/backend',
