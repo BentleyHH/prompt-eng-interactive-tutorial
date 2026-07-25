@@ -719,6 +719,11 @@ const L={
   rsvMailLbl:n=>`Antwort per E-Mail an ${n} senden — mit Link zur aktualisierten Übersicht`,
   rsvBtn:"Erledigen",
   rsvDoneMail:n=>`Erledigt — Antwort an ${n} gesendet`,
+  snTitle:n=>`Trainer informieren — ${n}`,
+  snInfo:s=>`Status manuell geändert auf „${s}“. Soll der Trainer per E-Mail informiert werden? Den Text kannst du vor dem Senden anpassen — die Mail enthält wie gewohnt die Bestätigungs-Buttons.`,
+  snReplyLbl:"Nachricht an den Trainer",
+  snSkip:"Nicht informieren", snSend:"Mail senden",
+  snSent:n=>`Info an ${n} gesendet`,
   bkCsvToast:n=>`${n} Buchungen als CSV exportiert`,
   bkHint:"Alle Einsätze über alle Trainings — nach Trainer oder Status filtern.",
   bkEmpty:"Keine Buchungen für diese Auswahl.",
@@ -950,6 +955,11 @@ const L={
   rsvMailLbl:n=>`Email the reply to ${n} — with a link to the updated overview`,
   rsvBtn:"Resolve",
   rsvDoneMail:n=>`Done — reply sent to ${n}`,
+  snTitle:n=>`Notify trainer — ${n}`,
+  snInfo:s=>`Status manually changed to "${s}". Notify the trainer by email? You can adjust the text before sending — the mail includes the usual confirmation buttons.`,
+  snReplyLbl:"Message to the trainer",
+  snSkip:"Don't notify", snSend:"Send email",
+  snSent:n=>`Notification sent to ${n}`,
   bkCsvToast:n=>`${n} bookings exported as CSV`,
   bkHint:"Every assignment across all trainings — filter by trainer or status.",
   bkEmpty:"No bookings for this selection.",
@@ -1812,6 +1822,53 @@ async function rosterSetStatus(tgId,trId,status){
   if(route==="detail"){curTg=S.trainings.find(x=>x.id===tgId);renderDetail();}
   buildNav(); if(route==="dash")renderDash();
   toast(t("statusChanged",spLabel(status)),"good");
+  openStatusNotify(tgId,trId,status);   // Trainer über die manuelle Änderung informieren?
+}
+/* Nach manueller Statusänderung: Trainer per Mail informieren (Text anpassbar,
+   mit den bekannten Ja/Vielleicht/Nein-Buttons zur Bestätigung). */
+function statusNotifyTemplate(tr,tg,status,lang){
+  const first=(tr.name||"").replace(/^Dr\.\s*/,"").split(" ")[0];
+  const when=whenLabel(tg)||"";
+  const where=[tg.city,tg.country].filter(Boolean).join(", ");
+  const head=lang==="de"?`Hallo ${first},`:`Hi ${first},`;
+  const foot=lang==="de"?"Herzliche Grüße\nETAF-Koordination":"Best regards\nETAF Coordination";
+  const mid = lang==="de" ? {
+    yes:`kurze Info: Wir haben dich für „${tg.topic}“ in ${where} (${when}) fest eingeplant (Status: Zugesagt).\n\nBitte bestätige über die Buttons unten kurz, dass das für dich passt — oder gib uns Bescheid, falls nicht.`,
+    maybe:`kurze Info: Wir haben dich für „${tg.topic}“ in ${where} (${when}) auf „Vielleicht“ gesetzt.\n\nSobald du sicher weißt, ob es klappt, gib uns bitte über die Buttons unten Bescheid.`,
+    no:`kurze Info: Wir haben dich für „${tg.topic}“ in ${where} (${when}) ausgetragen (Status: Abgesagt).\n\nFalls das nicht stimmt oder du doch kannst, gib uns über die Buttons unten kurz Bescheid.`,
+    asked:`wir würden dich gern für „${tg.topic}“ in ${where} (${when}) anfragen.\n\nBist du verfügbar? Ein Klick auf die Buttons unten genügt.`,
+  } : {
+    yes:`quick update: We have scheduled you for "${tg.topic}" in ${where} (${when}) — status: Confirmed.\n\nPlease confirm via the buttons below that this works for you — or let us know if it doesn't.`,
+    maybe:`quick update: We have set you to "Maybe" for "${tg.topic}" in ${where} (${when}).\n\nOnce you know for sure, please let us know via the buttons below.`,
+    no:`quick update: We have removed you from "${tg.topic}" in ${where} (${when}) — status: Declined.\n\nIf that's not right or you can make it after all, just let us know via the buttons below.`,
+    asked:`we would like to request your availability for "${tg.topic}" in ${where} (${when}).\n\nAre you available? One click on the buttons below is enough.`,
+  };
+  return `${head}\n\n${mid[status]||mid.asked}\n\n${foot}`;
+}
+function openStatusNotify(tgId,trId,status){
+  const tr=S.trainers.find(x=>x.id===trId), tg=S.trainings.find(x=>x.id===tgId);
+  if(!tr||!tg) return;
+  const lang=S.emailLang||"de";
+  $("#sheetTitle").textContent=t("snTitle",tr.name);
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:12px">${t("snInfo",spLabel(status))}</div>
+    <label class="fld">${t("snReplyLbl")}</label>
+    <textarea id="snText" style="min-height:200px">${esc(statusNotifyTemplate(tr,tg,status,lang))}</textarea>
+    ${tr.email?"":`<div class="meta" style="margin-top:8px;color:var(--crit)">${t("planNoMail")}</div>`}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("snSkip")}</button><div class="spacer"></div>
+    <button class="btn primary" onclick="sendStatusNotify('${tgId}','${trId}')">${ic("send",15)}${t("snSend")}</button>`;
+  openSheet();
+}
+async function sendStatusNotify(tgId,trId){
+  const tr=S.trainers.find(x=>x.id===trId); if(!tr) return;
+  if(!tr.email){ toast(t("planNoMail"),"crit"); return; }
+  const text=($("#snText")?$("#snText").value:"").trim();
+  if(!text){ toast(t("snReplyLbl")+"?","crit"); return; }
+  if(LIVE){
+    try{ await apiCall("request.notifyStatus",{training:tgId,trainer:trId,text,lang:S.emailLang||"de"}); await pull(); }
+    catch(e){ toast("Fehler: "+e.message,"crit"); return; }
+  } else demoLog(tr.email, S.emailLang==="en"?"Change to your assignment":"Änderung deines Einsatzes", S.emailLang||"de","logged");
+  closeSheet(); toast(t("snSent",tr.name.split(" ").slice(-1)),"good");
 }
 function composeCancel(tgId,trId){
   // Falls die Absage-Vorlage (t4) im geladenen Zustand fehlt (ältere DB), aus den Defaults ergänzen.
@@ -1944,9 +2001,10 @@ function openTrainerEdit(trId){
     </div>
     <label class="fld">${t("teSpec")}</label><input class="inp" id="teSpec" value="${esc(tr?(tr.spec||[]).join(", "):"")}">
     <label class="fld">${t("teLangs")}</label><input class="inp" id="teLangs" value="${esc(tr?(tr.langs||[]).join(", "):"DE, EN")}">
-    <label class="sw" style="display:flex;align-items:center;gap:10px;margin-top:12px">
-      <input type="checkbox" id="teUae" ${tr&&tr.uae?"checked":""}><span></span>
-      <span style="font-size:14px">${t("teUae")}</span></label>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+      <label class="sw"><input type="checkbox" id="teUae" ${tr&&tr.uae?"checked":""}><span></span></label>
+      <span style="font-size:14px" class="rowgrow">${t("teUae")}</span>
+    </div>
     <label class="fld">${t("teNotes")}</label>
     <textarea id="teNotes" style="min-height:110px" placeholder="${t("teNotesPh")}">${esc(tr?tr.notes||"":"")}</textarea>
     ${histHtml}`;
@@ -2405,10 +2463,10 @@ function openResolve(trId){
     <div style="padding:12px 14px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;margin-bottom:14px">${esc(tr.plan.note||"")}</div>
     <label class="fld">${t("rsvReplyLbl")}</label>
     <textarea id="rsvText" style="min-height:180px">${esc(tpl)}</textarea>
-    <label class="sw" style="display:flex;align-items:center;gap:10px;margin-top:12px">
-      <input type="checkbox" id="rsvMail" checked><span></span>
-      <span style="font-size:14px">${t("rsvMailLbl",tr.name)}${tr.email?"":" — "+t("planNoMail")}</span>
-    </label>`;
+    <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+      <label class="sw"><input type="checkbox" id="rsvMail" checked><span></span></label>
+      <span style="font-size:14px" class="rowgrow">${t("rsvMailLbl",tr.name)}${tr.email?"":" — "+t("planNoMail")}</span>
+    </div>`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
     <button class="btn primary" onclick="doResolve('${tr.id}')">${ic("check",15)}${t("rsvBtn")}</button>`;
   openSheet();

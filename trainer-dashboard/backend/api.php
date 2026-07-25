@@ -232,6 +232,33 @@ switch($action){
       [$tg,$tr,$st,token(40),now()]);
     out(['ok'=>true]);
 
+  /* ---- Trainer über manuelle Statusänderung informieren (editierbarer Text,
+          mit den bekannten Bestätigungs-Buttons) ---- */
+  case 'request.notifyStatus':
+    require_auth();
+    $tgId=(int)($in['training']??0); $trId=(int)($in['trainer']??0);
+    $text=trim((string)($in['text']??''));
+    if(!$tgId||!$trId) fail('Training/Trainer fehlt.');
+    if($text==='') fail('Kein Text.');
+    $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
+    if(!$tr) fail('Trainer nicht gefunden.',404);
+    if(empty($tr['email'])) fail('Für diesen Trainer ist keine E-Mail-Adresse hinterlegt.');
+    $req=q("SELECT * FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+    if(!$req){ $tok=token(40);
+      q("INSERT INTO requests(training_id,trainer_id,status,tok,created_at) VALUES(?,?, 'asked',?,?)",[$tgId,$trId,$tok,now()]);
+    } elseif(empty($req['tok'])){ $tok=token(40); q("UPDATE requests SET tok=? WHERE id=?",[$tok,$req['id']]); }
+    else { $tok=$req['tok']; }
+    $lang=($in['lang']??'de')==='en'?'en':'de';
+    $tgRow=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    $subj=trim((string)($in['subject']??'')) ?: (($lang==='de'?'Änderung deines Einsatzes':'Change to your assignment')
+      .($tgRow?' — '.$tgRow['topic'].' ('.$tgRow['city'].')':''));
+    $html=email_html($text, response_buttons($tok,$lang));
+    $ok=send_email($tr['email'],$tr['name'],$subj,$html);
+    $st2=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[$tgId,$trId,$tr['email'],$subj,$text,$lang,$st2,now()]);
+    out(['ok'=>true,'sent'=>$ok?1:0]);
+
   /* ---- Anfrage(n) versenden: Kern des Rückkanals ---- */
   case 'request.create':
     require_auth();

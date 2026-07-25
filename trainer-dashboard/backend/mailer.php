@@ -169,12 +169,14 @@ function transfer_send(string $clientId, string $lang, bool $reminder=false): ar
   return ['ok'=>true,'sent'=>$ok?1:0,'count'=>count($rows)];
 }
 
-/** Ein einzelner CTA-Button (z.B. „Einsatzplan ansehen & bestätigen“). */
-function cta_button(string $url, string $label, string $bg='#3E4852'): string {
-  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 4px;max-width:360px">'
-    .'<tr><td align="center" bgcolor="'.$bg.'" style="border-radius:8px">'
-    .'<a href="'.$url.'" target="_blank" style="display:block;padding:14px 20px;color:#ffffff;'
-    .'font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;text-decoration:none">'.$label.'</a>'
+/** Ein einzelner CTA-Button (z.B. „Einsatzplan ansehen & bestätigen“).
+ *  Dunkle Schrift auf hellem Grund + Rahmen: bleibt in JEDEM Mail-Client lesbar —
+ *  auch wenn Hintergrundfarben entfernt werden (sonst: weiß auf weiß = unsichtbar). */
+function cta_button(string $url, string $label, string $bg='#EDF0F3'): string {
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 4px;max-width:360px;border-collapse:separate">'
+    .'<tr><td align="center" bgcolor="'.$bg.'" style="border:2px solid #3E4852;border-radius:8px">'
+    .'<a href="'.$url.'" target="_blank" style="display:block;padding:14px 20px;color:#3E4852;'
+    .'font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;text-decoration:none">'.$label.'&nbsp;&rarr;</a>'
     .'</td></tr></table>';
 }
 
