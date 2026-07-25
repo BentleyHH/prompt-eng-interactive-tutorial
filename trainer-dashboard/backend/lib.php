@@ -82,7 +82,14 @@ function get_state(): array {
       'status'=>$p['confirm_status'], 'note'=>$p['note'],
       'resolvedAt'=>$p['resolved_at']??null ];
   }
-  $trainers=array_map(function($r) use ($planBy){
+  // Interne Bewertungen je Trainer (Historie: Training → Sterne + Notiz)
+  $revBy=[];
+  foreach(q("SELECT * FROM trainer_reviews")->fetchAll() as $rv){
+    $revBy[(string)$rv['trainer_id']][]=[
+      'trainingId'=>(string)$rv['training_id'], 'label'=>$rv['label']??'',
+      'stars'=>(int)$rv['stars'], 'note'=>$rv['note']??'', 'at'=>$rv['updated_at']??'' ];
+  }
+  $trainers=array_map(function($r) use ($planBy,$revBy){
     // Reisepass-Metadaten (ohne das Foto selbst — das lädt passport.image bei Bedarf)
     $pp=null;
     if( ($r['passport_expiry']??'')!=='' || ($r['passport_number']??'')!=='' || !empty($r['passport_file']) ){
@@ -102,6 +109,8 @@ function get_state(): array {
       'color'=>$r['color'], 'rating'=>$r['rating'],
       'plan'=>$planBy[(string)$r['id']] ?? null,
       'passport'=>$pp,
+      'notes'=>$r['notes']??'',
+      'reviews'=>$revBy[(string)$r['id']] ?? [],
     ];
   }, q("SELECT * FROM trainers ORDER BY id")->fetchAll());
 

@@ -41,16 +41,38 @@ switch($action){
     $fields=[$in['name']??'', $in['email']??'', $in['phone']??'',
       json_encode($in['spec']??[],JSON_UNESCAPED_UNICODE), $in['region']??'',
       json_encode($in['langs']??[]), !empty($in['uae'])?1:0, (int)($in['load']??0),
-      $in['color']??'#3E4852', (string)($in['rating']??'4.5')];
+      $in['color']??'#3E4852', (string)($in['rating']??'4.5'), (string)($in['notes']??'')];
     if($id){
-      q("UPDATE trainers SET name=?,email=?,phone=?,spec=?,region=?,langs=?,uae=?,load_lvl=?,color=?,rating=? WHERE id=?",
+      q("UPDATE trainers SET name=?,email=?,phone=?,spec=?,region=?,langs=?,uae=?,load_lvl=?,color=?,rating=?,notes=? WHERE id=?",
         array_merge($fields,[$id]));
     } else {
-      q("INSERT INTO trainers(name,email,phone,spec,region,langs,uae,load_lvl,color,rating,created_at)
-         VALUES(?,?,?,?,?,?,?,?,?,?,?)", array_merge($fields,[now()]));
+      q("INSERT INTO trainers(name,email,phone,spec,region,langs,uae,load_lvl,color,rating,notes,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", array_merge($fields,[now()]));
       $id=db()->lastInsertId();
     }
     out(['ok'=>true,'id'=>(string)$id]);
+
+  /* ---- Interne Bewertungen je Trainer & Training (5 Sterne + Notiz) ---- */
+  case 'reviews.save':
+    require_auth();
+    $trId=(int)($in['trainer']??0);
+    if(!$trId) fail('Kein Trainer.');
+    $saved=0;
+    foreach(($in['items']??[]) as $it){
+      $tgId=(int)($it['training']??0); if(!$tgId) continue;
+      $stars=max(0,min(5,(int)($it['stars']??0)));
+      $note=trim((string)($it['note']??''));
+      $label=trim((string)($it['label']??''));
+      $ex=q("SELECT id FROM trainer_reviews WHERE trainer_id=? AND training_id=?",[$trId,$tgId])->fetch();
+      if($stars===0 && $note===''){
+        if($ex) q("DELETE FROM trainer_reviews WHERE id=?",[$ex['id']]);
+        continue;
+      }
+      if($ex) q("UPDATE trainer_reviews SET stars=?,note=?,label=?,updated_at=? WHERE id=?",[$stars,$note,$label,now(),$ex['id']]);
+      else    q("INSERT INTO trainer_reviews(trainer_id,training_id,label,stars,note,updated_at) VALUES(?,?,?,?,?,?)",[$trId,$tgId,$label,$stars,$note,now()]);
+      $saved++;
+    }
+    out(['ok'=>true,'saved'=>$saved]);
 
   case 'trainer.delete':
     require_auth();

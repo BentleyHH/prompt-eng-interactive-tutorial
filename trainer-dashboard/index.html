@@ -274,6 +274,12 @@
   .bktable .pill.crit{margin-left:6px}
   .clickrow{cursor:pointer;transition:background .12s}
   .clickrow:hover{background:var(--panel-2)}
+  /* 5-Sterne-Widget (interne Bewertung) */
+  .stars{display:inline-flex;gap:2px;cursor:pointer;user-select:none}
+  .star{font-size:20px;line-height:1;color:var(--line);transition:color .1s}
+  .star.on{color:#E4A94C}
+  .histrow{padding:12px 0;border-top:1px solid var(--line)}
+  .histrow:first-of-type{border-top:none}
   .segbtn{display:inline-flex;gap:4px}
   /* ===== Kalender-Gitter ===== */
   .calgrid{border-collapse:separate;border-spacing:0;font-size:12px}
@@ -591,7 +597,8 @@ const IC={
   id:'<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5 16c.5-1.5 1.7-2 3-2s2.5.5 3 2M14 9h4M14 13h4"/>',
   camera:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
   trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
-  inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>'
+  inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>',
+  pen:'<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 /* Inline-Strichicon in Textgröße (für Buttons/Labels). */
@@ -769,8 +776,22 @@ const L={
   simReply:"Antwort simulieren", simReplyT:"Antwort des Trainers simulieren",
   noMore:"Keine weiteren Vorschläge im Pool",
   poolCount:n=>`${n} Trainer im Pool`,
-  poolHint:"In der Vollversion: Import per Excel/CSV oder KI-Extraktion aus Lebensläufen & Angeboten.",
-  importProfiles:"Profile importieren", workload:"Auslastung",
+  poolHint:"Profile manuell anlegen & bearbeiten oder per KI aus Text importieren — mit internen Notizen & Bewertungen je Trainer.",
+  importProfiles:"KI-Import", trNew:"Neuer Trainer", trEdit:"Bearbeiten",
+  teName:"Name", teEmail:"E-Mail", tePhone:"Telefon", teRegion:"Region",
+  teSpec:"Fachgebiete (Komma-getrennt)", teLangs:"Sprachen (Komma-getrennt, z.B. DE, EN, AR)",
+  teUae:"UAE-/Auslandserfahrung", teRating:"Basis-Rating (4.0–5.0)",
+  teNotes:"Interne Notizen (nur für uns sichtbar)",
+  teNotesPh:"z.B. sehr strukturiert, kommt bei Teilnehmern gut an; braucht Vorlauf bei Visa …",
+  teHist:"Einsatz-Historie & Bewertung (intern)",
+  teHistHint:"Pro Training: Sterne vergeben und kurz notieren, wie es lief. Nur intern sichtbar.",
+  teNoHist:"Noch keine Einsätze — die Historie füllt sich, sobald der Trainer zugesagt hat.",
+  teNoteRow:"Wie lief der Einsatz? (kurz)",
+  teSaved:"Trainer gespeichert", teDeleted:"Trainer gelöscht",
+  teDelete:"Trainer löschen", teDeleteAsk:n=>`${n} wirklich löschen? Anfragen und Historie gehen verloren.`,
+  teTitleNew:"Neuen Trainer anlegen", teTitleEdit:n=>`Trainer bearbeiten — ${n}`,
+  teIntern:n=>`intern (${n})`,
+  workload:"Auslastung",
   load0:"frei", load1:"gering", load2:"mittel", load3:"hoch",
   placeholders:"Platzhalter:",
   placeholdersHint:"— werden beim Senden automatisch gefüllt.",
@@ -986,8 +1007,22 @@ const L={
   simReply:"Simulate reply", simReplyT:"Simulate the trainer's reply",
   noMore:"No more suggestions in the pool",
   poolCount:n=>`${n} trainers in the pool`,
-  poolHint:"In the full version: import via Excel/CSV or AI extraction from CVs & offers.",
-  importProfiles:"Import profiles", workload:"Workload",
+  poolHint:"Create & edit profiles manually or import via AI from text — with internal notes & ratings per trainer.",
+  importProfiles:"AI import", trNew:"New trainer", trEdit:"Edit",
+  teName:"Name", teEmail:"Email", tePhone:"Phone", teRegion:"Region",
+  teSpec:"Specialties (comma-separated)", teLangs:"Languages (comma-separated, e.g. DE, EN, AR)",
+  teUae:"UAE / international experience", teRating:"Base rating (4.0–5.0)",
+  teNotes:"Internal notes (visible to us only)",
+  teNotesPh:"e.g. very structured, well received by participants; needs lead time for visas …",
+  teHist:"Assignment history & rating (internal)",
+  teHistHint:"Per training: give stars and jot down how it went. Internal only.",
+  teNoHist:"No assignments yet — the history fills up once the trainer has confirmed.",
+  teNoteRow:"How did it go? (short)",
+  teSaved:"Trainer saved", teDeleted:"Trainer deleted",
+  teDelete:"Delete trainer", teDeleteAsk:n=>`Really delete ${n}? Requests and history will be lost.`,
+  teTitleNew:"Create new trainer", teTitleEdit:n=>`Edit trainer — ${n}`,
+  teIntern:n=>`internal (${n})`,
+  workload:"Workload",
   load0:"free", load1:"low", load2:"medium", load3:"high",
   placeholders:"Placeholders:",
   placeholdersHint:"— filled automatically when sending.",
@@ -1830,20 +1865,146 @@ function renderTrainers(){
         </div>
         <div class="divider"></div>
         <div style="margin-bottom:10px">${passportChip(tr)}</div>
+        ${internalRatingLine(tr)}
+        ${tr.notes?`<div class="meta" style="margin-bottom:10px;display:flex;gap:7px;align-items:flex-start">${ic("log",14)}<span style="white-space:pre-wrap">${esc(tr.notes.length>120?tr.notes.slice(0,120)+"…":tr.notes)}</span></div>`:""}
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           ${planBadge(tr)}<div class="spacer"></div>
+          <button class="btn sm" onclick="openTrainerEdit('${tr.id}')">${ic("pen")}${t("trEdit")}</button>
           <button class="btn sm" onclick="openPassport('${tr.id}')">${ic("id")}${t("ppView")}</button>
           <button class="btn sm" onclick="openPlan('${tr.id}')">${ic("clip")}${t("planView")}</button>
         </div>
       </div>
     </div>`).join("");
   $("#v-trainers").innerHTML=`
-    <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px">
+    <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div class="rowgrow"><b>${t("poolCount",S.trainers.length)}</b>
       <div class="meta">${t("poolHint")}</div></div>
-      <button class="btn" onclick="openImport()">${ic("plus")}${t("importProfiles")}</button>
+      <button class="btn primary" onclick="openTrainerEdit(null)">${ic("plus")}${t("trNew")}</button>
+      <button class="btn" onclick="openImport()">✨ ${t("importProfiles")}</button>
     </div></div>
     <div class="grid2">${cards}</div>`;
+}
+/* Interner Sterne-Schnitt aus der Bewertungs-Historie (nur bewertete Einsätze). */
+function internalRatingLine(tr){
+  const revs=(tr.reviews||[]).filter(r=>(r.stars||0)>0);
+  if(!revs.length) return "";
+  const avg=revs.reduce((a,r)=>a+r.stars,0)/revs.length;
+  return `<div class="meta" style="margin-bottom:10px"><span style="color:#E4A94C">${"★".repeat(Math.round(avg))}</span> ${avg.toFixed(1)} ${t("teIntern",revs.length)}</div>`;
+}
+
+/* ============================================================
+   TRAINER-EDITOR — manuell anlegen/bearbeiten (KI füllt nur vor),
+   interne Notizen + Bewertungs-Historie (5 Sterne + Notiz je Training)
+   ============================================================ */
+let trEditId=null, trEditStars={};
+/* Historie: alle Trainings, bei denen der Trainer zugesagt/bestätigt/vielleicht ist,
+   plus früher bewertete Einsätze, deren Training nicht (mehr) im Plan steht. */
+function trainerHistory(tr){
+  const rel=["yes","confirmed","maybe"]; const rows=[]; const seen=new Set();
+  S.trainings.forEach(tg=>{
+    const r=(tg.roster||[]).find(x=>x.trainerId===tr.id);
+    if(!r||!rel.includes(r.status)) return;
+    seen.add(String(tg.id));
+    rows.push({tgId:String(tg.id), label:`${tg.topic} · ${whenText(tg)||""}`.trim()});
+  });
+  (tr.reviews||[]).forEach(rv=>{
+    if(seen.has(String(rv.trainingId))) return;
+    rows.push({tgId:String(rv.trainingId), label:rv.label||("#"+rv.trainingId), orphan:true});
+  });
+  return rows.sort((a,b)=>b.label.localeCompare(a.label));
+}
+function openTrainerEdit(trId){
+  trEditId=trId; trEditStars={};
+  const tr=trId?S.trainers.find(x=>x.id===trId):null;
+  (tr&&tr.reviews||[]).forEach(rv=>{ trEditStars[String(rv.trainingId)]=rv.stars||0; });
+  const revNote={}; (tr&&tr.reviews||[]).forEach(rv=>{ revNote[String(rv.trainingId)]=rv.note||""; });
+  const hist=tr?trainerHistory(tr):[];
+  $("#sheetTitle").textContent=tr?t("teTitleEdit",tr.name):t("teTitleNew");
+  const histHtml = !tr ? "" : `
+    <div class="divider" style="margin:18px 0 10px"></div>
+    <label class="fld" style="margin-top:0">${t("teHist")}</label>
+    <div class="meta" style="margin-bottom:4px">${t("teHistHint")}</div>
+    ${hist.length?hist.map(h=>`
+      <div class="histrow" data-tg="${esc(h.tgId)}">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <b style="font-size:14px" class="rowgrow">${esc(h.label)}</b>
+          <span class="stars" id="st-${esc(h.tgId)}">${[1,2,3,4,5].map(i=>`<span class="star ${(trEditStars[h.tgId]||0)>=i?'on':''}" onclick="setStars('${esc(h.tgId)}',${i})">★</span>`).join("")}</span>
+        </div>
+        <input class="inp" id="rvnote-${esc(h.tgId)}" value="${esc(revNote[h.tgId]||"")}" placeholder="${t("teNoteRow")}" style="margin-top:8px">
+      </div>`).join(""):`<div class="meta" style="padding:8px 0">${t("teNoHist")}</div>`}`;
+  $("#sheetBody").innerHTML=`
+    <label class="fld">${t("teName")}</label><input class="inp" id="teName" value="${esc(tr?tr.name:"")}">
+    <div class="fldrow">
+      <div style="flex:1"><label class="fld">${t("teEmail")}</label><input class="inp" id="teEmail" value="${esc(tr?tr.email:"")}"></div>
+      <div style="flex:1"><label class="fld">${t("tePhone")}</label><input class="inp" id="tePhone" value="${esc(tr?tr.phone:"")}"></div>
+    </div>
+    <div class="fldrow">
+      <div style="flex:1"><label class="fld">${t("teRegion")}</label><input class="inp" id="teRegion" value="${esc(tr?tr.region:"")}" placeholder="DE-West / UAE / UK …"></div>
+      <div style="flex:1"><label class="fld">${t("teRating")}</label><input class="inp" id="teRating" value="${esc(tr?String(tr.rating||"4.5"):"4.5")}"></div>
+    </div>
+    <label class="fld">${t("teSpec")}</label><input class="inp" id="teSpec" value="${esc(tr?(tr.spec||[]).join(", "):"")}">
+    <label class="fld">${t("teLangs")}</label><input class="inp" id="teLangs" value="${esc(tr?(tr.langs||[]).join(", "):"DE, EN")}">
+    <label class="sw" style="display:flex;align-items:center;gap:10px;margin-top:12px">
+      <input type="checkbox" id="teUae" ${tr&&tr.uae?"checked":""}><span></span>
+      <span style="font-size:14px">${t("teUae")}</span></label>
+    <label class="fld">${t("teNotes")}</label>
+    <textarea id="teNotes" style="min-height:110px" placeholder="${t("teNotesPh")}">${esc(tr?tr.notes||"":"")}</textarea>
+    ${histHtml}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    ${tr?`<button class="btn" onclick="deleteTrainerEdit()" style="border-color:var(--crit);color:var(--crit)">${ic("trash",15)}${t("teDelete")}</button>`:""}
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="saveTrainerEdit()">${ic("check",15)}${t("save")}</button>`;
+  openSheet();
+}
+function setStars(tgId,n){
+  trEditStars[tgId]=(trEditStars[tgId]===n)?0:n;   // gleicher Stern nochmal = zurücksetzen
+  const el=$("#st-"+tgId); if(!el) return;
+  [...el.children].forEach((c,idx)=>c.classList.toggle("on",idx<(trEditStars[tgId]||0)));
+}
+function splitList(v){ return (v||"").split(",").map(s=>s.trim()).filter(Boolean); }
+async function saveTrainerEdit(){
+  const name=val("teName").trim();
+  if(!name){ toast(t("teName")+"?","crit"); return; }
+  const data={ name, email:val("teEmail").trim(), phone:val("tePhone").trim(),
+    region:val("teRegion").trim(), rating:val("teRating").trim()||"4.5",
+    spec:splitList(val("teSpec")), langs:splitList(val("teLangs")),
+    uae:$("#teUae")?$("#teUae").checked:false, notes:val("teNotes"),
+    load:(trEditId?(S.trainers.find(x=>x.id===trEditId)||{}).load||0:0),
+    color:(trEditId?(S.trainers.find(x=>x.id===trEditId)||{}).color:null)||"#3E4852" };
+  // Bewertungs-Zeilen einsammeln
+  const items=[...document.querySelectorAll("#sheetBody .histrow")].map(el=>{
+    const tgId=el.getAttribute("data-tg");
+    const noteEl=el.querySelector("input");
+    const tg=S.trainings.find(x=>String(x.id)===tgId);
+    return { training:tgId, stars:trEditStars[tgId]||0, note:noteEl?noteEl.value.trim():"",
+             label:tg?`${tg.topic} · ${whenText(tg)||""}`.trim():(el.querySelector("b")?.textContent||"") };
+  });
+  if(LIVE){
+    try{
+      const d=await apiCall("trainer.save", trEditId?{id:trEditId,...data}:data);
+      const id=trEditId||d.id;
+      if(items.length) await apiCall("reviews.save",{trainer:id,items});
+      await pull();
+    }catch(e){ toast("Fehler: "+e.message,"crit"); return; }
+  } else {
+    let tr=trEditId?S.trainers.find(x=>x.id===trEditId):null;
+    if(!tr){ tr={id:uid("tr"),load:0,color:"#3E4852",reviews:[]}; S.trainers.push(tr); }
+    Object.assign(tr,data);
+    tr.reviews=items.filter(i=>i.stars>0||i.note!=="").map(i=>({trainingId:i.training,label:i.label,stars:i.stars,note:i.note,at:new Date().toISOString()}));
+    save();
+  }
+  closeSheet(); if(route==="trainers")renderTrainers(); if(route==="dash")renderDash();
+  toast(t("teSaved"),"good");
+}
+async function deleteTrainerEdit(){
+  const tr=S.trainers.find(x=>x.id===trEditId); if(!tr) return;
+  if(!confirm(t("teDeleteAsk",tr.name))) return;
+  if(LIVE){ try{ await apiCall("trainer.delete",{id:trEditId}); await pull(); }
+    catch(e){ toast("Fehler: "+e.message,"crit"); return; } }
+  else { S.trainers=S.trainers.filter(x=>x.id!==trEditId);
+    S.trainings.forEach(tg=>{ tg.roster=(tg.roster||[]).filter(r=>r.trainerId!==trEditId); }); save(); }
+  closeSheet(); if(route==="trainers")renderTrainers(); buildNav();
+  toast(t("teDeleted"),"good");
 }
 
 /* ============================================================

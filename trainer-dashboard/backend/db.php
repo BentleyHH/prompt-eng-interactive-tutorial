@@ -167,6 +167,12 @@ function ensure_schema(): void {
   try{ db()->exec("ALTER TABLE transfer_tokens ADD COLUMN reminded_at VARCHAR(20)"); }catch(Throwable $e){}
   // Rückmeldungen der Trainer zur Einsatzübersicht: „erledigt“-Markierung im Dashboard
   try{ db()->exec("ALTER TABLE plan_tokens ADD COLUMN resolved_at VARCHAR(20)"); }catch(Throwable $e){}
+  // Interne Notizen je Trainer (frei fortschreibbar)
+  try{ db()->exec("ALTER TABLE trainers ADD COLUMN notes TEXT"); }catch(Throwable $e){}
+  // Interne Bewertungen je Trainer & Training (5 Sterne + Notiz, nur fürs Team)
+  $d->exec("CREATE TABLE IF NOT EXISTS trainer_reviews (
+    id $pk, trainer_id INT, training_id INT, label VARCHAR(190),
+    stars INT DEFAULT 0, note TEXT, updated_at VARCHAR(20))$eng");
 
   // Automatik-Standardwerte
   $ac=cfg();
