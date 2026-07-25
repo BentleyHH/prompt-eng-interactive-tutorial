@@ -145,8 +145,10 @@
     .topbar>div:first-child{flex:1 1 100%}          /* Titelblock volle Breite → Steuerelemente umbrechen */
     .topbar .spacer{display:none}
     .topbar h2{font-size:16px} .topbar .sub{font-size:12px}
-    #clientBar{flex:1 1 100%}
+    /* Kundenauswahl teilt sich die Zeile mit dem Aktualisieren-Knopf */
+    #clientBar{flex:1 1 180px;min-width:0}
     #clientBar select{width:100%;max-width:none}
+    #syncBtn{flex:0 0 auto}                         /* kompakt statt leerer Balken */
     .topbar .btn{flex:1 1 auto;justify-content:center;padding:9px 12px}
   }
   .topbar h2{font-size:17px;letter-spacing:-.01em}
@@ -336,6 +338,7 @@
 
   /* attention list */
   .att{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .att .attacts{display:flex;align-items:center;gap:10px;flex:none}
   .att:last-child{border:none}
   .att .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}
   .att .ic.c{background:var(--crit-bg);color:var(--crit)}
@@ -445,6 +448,90 @@
     .ag-sheet,.cal-sheet{padding:20px 16px;border-radius:12px}
     .ag-kv{grid-template-columns:118px 1fr;gap:6px 10px}
     .ag-toolbar{padding:0 4px 12px}
+  }
+
+  /* ============================================================
+     MOBILE-FIRST — nichts darf horizontal über den Rand laufen.
+     Grundregel: jede Flex-/Grid-Zelle darf schrumpfen (min-width:0),
+     breite Tabellen scrollen in ihrem eigenen Container.
+     ============================================================ */
+  /* Breite Tabellen scrollen in ihrem eigenen Container statt die Seite zu dehnen:
+     gewischt wird die Tabelle, nicht die ganze Seite. Spalten bleiben lesbar. */
+  .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;overscroll-behavior-x:contain}
+  .tscroll>.plantable{min-width:540px}
+
+  /* Kein Element darf breiter werden als sein Container */
+  #app,main,.wrap,.view,.panel,.panel-b,.sheet-b{min-width:0;max-width:100%;box-sizing:border-box}
+  .rowgrow{min-width:0}                    /* war 148px → sprengte schmale Zeilen */
+  .row .nm,.row .meta,.att .nm,.att .meta{overflow-wrap:anywhere}
+  img,svg,video,canvas{max-width:100%}
+
+  @media(max-width:820px){
+    html,body{overflow-x:hidden}           /* letzter Schutz gegen 1px-Ausreißer */
+    .wrap{padding:16px 14px}
+    .panel-b{padding:14px 14px}
+    .panel-h{padding:13px 14px}
+    .plandoc .panel-b{padding:16px 14px}
+    /* Aufmerksamkeits-Liste + Belegungs-Kopf: umbrechen statt überlaufen */
+    .att{flex-wrap:wrap}
+    .att .rowgrow{flex:1 1 100%;order:1}
+    .att .attacts{order:2;flex:1 1 100%;display:flex;align-items:center;gap:8px;padding-left:42px}
+    .att .attacts .btn{margin-left:auto}
+    .bktop{flex-wrap:wrap;gap:10px}
+    .bktop .rowgrow{flex:1 1 100%}         /* Kennzahl auf eigene Zeile, sonst auf 11px gequetscht */
+    .bktop .segbtn{flex:1 1 auto}
+    /* Ampel-Banner darf umbrechen */
+    .ampel{flex-wrap:wrap;gap:10px 14px}
+    .ampel .rowgrow{flex:1 1 200px}
+    .ampel .meta{overflow-wrap:anywhere}
+    .ampel .btn{flex:1 1 auto;justify-content:center}
+    /* Filter gestapelt: Bezeichnung über dem Feld, alle Felder gleich breit */
+    .bkfilter{gap:10px}
+    .bkf{flex:1 1 calc(50% - 5px);flex-direction:column;align-items:stretch;gap:4px}
+    .bkf .fld{font-size:11.5px}
+    .bksel{flex:none;min-width:0;width:100%}
+    .bksearch{flex:1 1 100%;width:100%}
+    /* Schlüssel/Wert-Zeilen dürfen zweizeilig werden */
+    .kv{flex-wrap:wrap;gap:2px 12px}
+    .kv .v{text-align:left}
+    /* Größere Tap-Ziele (Apple-Richtwert 44px) */
+    .btn{padding:10px 14px;font-size:14px}
+    .btn.sm{padding:8px 11px;font-size:13px}
+    .mob-nav button{min-height:48px}
+    .rstat:not(.bksel){width:40px;padding:8px 0}   /* Zahnrad-Knopf; Filterfelder bleiben breit */
+    .stars .star{font-size:24px}           /* Sterne bequem treffbar */
+    /* Eingaben mit 16px, sonst zoomt iOS beim Fokus hinein */
+    .inp,select,textarea{font-size:16px;padding:11px 12px}
+    textarea{min-height:180px}
+    /* Slide-over: volle Breite, Safe-Area unten, Buttons dürfen umbrechen */
+    .sheet{width:100%;max-width:100%}
+    .sheet-h{padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px}
+    .sheet-b{padding:16px}
+    .sheet-f{padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));flex-wrap:wrap;gap:8px}
+    .sheet-f .btn{flex:1 1 auto;justify-content:center}
+    .sheet-f .spacer{display:none}
+    /* Bottom-Nav: Beschriftung darf nie überlaufen */
+    .mob-nav button{min-width:0;position:relative}
+    .mob-nav button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+    .mob-nav .badge{position:absolute;top:2px;left:calc(50% + 6px);font-size:10px;line-height:1.5;
+      background:var(--crit);color:#fff;padding:0 5px;border-radius:20px;font-weight:700}
+    /* Zeilen im „Mehr“-Blatt */
+    .morerow{display:flex;align-items:center;gap:12px;width:100%;padding:14px 6px;border:none;
+      background:transparent;color:var(--ink);font-size:15px;font-weight:600;text-align:left;
+      border-bottom:1px solid var(--line)}
+    .morerow.on{color:var(--brand)}
+    .morerow svg{flex:none;opacity:.8}
+    /* Plan-/Agenda-Kopf gestapelt */
+    .planhead{gap:10px}
+    .planactions .btn{flex:1 1 auto;justify-content:center}
+  }
+  @media(max-width:420px){
+    .kpis{grid-template-columns:repeat(2,1fr);gap:10px}
+    .kpi{padding:13px 13px 11px}
+    .kpi .val{font-size:25px}
+    .grid2{grid-template-columns:1fr}
+    .wrap{padding:14px 12px}
+    .topbar{padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px}
   }
 
   @media print{
@@ -598,7 +685,8 @@ const IC={
   camera:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
   trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
   inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>',
-  pen:'<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>'
+  pen:'<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 /* Inline-Strichicon in Textgröße (für Buttons/Labels). */
@@ -694,6 +782,9 @@ const L={
   keyClear:"Löschen", langLabel:"Sprache",
   theme:"Design wechseln", lock:"Sperren",
   nav_dash:"Übersicht", nav_trainings:"Trainings", nav_bookings:"Belegung", nav_trainers:"Trainer", nav_templates:"Vorlagen",
+  /* Kurzformen für die Leiste am unteren Rand (Handy) */
+  nav_s_dash:"Übersicht", nav_s_trainings:"Trainings", nav_s_bookings:"Belegung",
+  nav_s_trainers:"Trainer", nav_s_inbox:"Antworten", nav_more:"Mehr",
   tp_book:"Belegung", tp_bookSub:"Wer ist wann wo gebucht — filterbar nach Trainer",
   bkAllTrainers:"Alle Trainer", bkAllStatus:"Alle Status", bkTrainer:"Trainer", bkClient:"Kunde", bkMonth:"Zeitraum",
   bkAllClients:"Alle Kunden", bkAllMonths:"Alle Zeiträume", bkGroup:"Gruppieren", bkGrpNone:"Keine Gruppierung",
@@ -932,6 +1023,9 @@ const L={
   keyClear:"Clear", langLabel:"Language",
   theme:"Switch theme", lock:"Lock",
   nav_dash:"Overview", nav_trainings:"Trainings", nav_bookings:"Bookings", nav_trainers:"Trainers", nav_templates:"Templates",
+  /* Short labels for the bottom bar (phone) */
+  nav_s_dash:"Overview", nav_s_trainings:"Trainings", nav_s_bookings:"Bookings",
+  nav_s_trainers:"Trainers", nav_s_inbox:"Feedback", nav_more:"More",
   tp_book:"Bookings", tp_bookSub:"Who is booked when and where — filter by trainer",
   bkAllTrainers:"All trainers", bkAllStatus:"All statuses", bkTrainer:"Trainer", bkClient:"Client", bkMonth:"Period",
   bkAllClients:"All clients", bkAllMonths:"All periods", bkGroup:"Group by", bkGrpNone:"No grouping",
@@ -1489,6 +1583,9 @@ function inboxAll(){ return (S.trainers||[]).filter(tr=>tr.plan&&tr.plan.status=
   .sort((a,b)=>(a.resolvedAt?1:0)-(b.resolvedAt?1:0) || String(b.at||"").localeCompare(String(a.at||""))); }
 function inboxCount(){ return inboxItems().length; }
 let route="dash";
+/* Auf dem Handy nur die wichtigsten Ziele in der Leiste — der Rest liegt hinter „Mehr“.
+   Acht Einträge nebeneinander bräuchten ~560px und würden das Layout sprengen. */
+const NAV_MOBILE=["dash","trainings","bookings","trainers","inbox"];
 function buildNav(){
   const crit=S.trainings.filter(t=>statusOf(t).cls==="crit").length;
   const inb=inboxCount();
@@ -1499,9 +1596,35 @@ function buildNav(){
       ${svg(n.ic)}<span>${t("nav_"+n.id)}</span>
       ${badgeFor(n)}
     </button>`).join("");
-  $("#mobnav").innerHTML=NAV.map(n=>`
-    <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
-      ${svg(n.ic)}<span>${t("nav_"+n.id)}</span>${badgeFor(n)}</button>`).join("");
+  const rest=NAV.filter(n=>!NAV_MOBILE.includes(n.id));
+  const restActive=rest.some(n=>n.id===route);
+  $("#mobnav").innerHTML=
+    NAV.filter(n=>NAV_MOBILE.includes(n.id)).map(n=>`
+      <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
+        ${svg(n.ic)}<span>${t("nav_s_"+n.id)}</span>${badgeFor(n)}</button>`).join("")
+    +`<button class="${restActive?'active':''}" onclick="openMoreNav()">
+        ${svg(IC.more)}<span>${t("nav_more")}</span></button>`;
+}
+/* „Mehr“-Blatt: restliche Bereiche + Einstellungen, mit großen Tap-Zielen. */
+function openMoreNav(){
+  const rest=NAV.filter(n=>!NAV_MOBILE.includes(n.id));
+  $("#sheetTitle").textContent=t("nav_more");
+  $("#sheetBody").innerHTML=rest.map(n=>`
+    <button class="morerow ${n.id===route?'on':''}" onclick="closeSheet();go('${n.id}')">
+      ${ic(navIcName(n.id),20)}<span class="rowgrow">${t("nav_"+n.id)}</span>
+    </button>`).join("")
+    +`<div class="fldrow" style="align-items:center;padding:16px 2px 10px">
+        <span style="font-size:14px;font-weight:600">${t("langLabel")}</span>
+        <span class="langsw">${langSwitch()}</span>
+      </div>
+      <button class="morerow" onclick="closeSheet();toggleTheme()">${ic("theme",20)}<span class="rowgrow">${t("theme")}</span></button>
+      <button class="morerow" onclick="closeSheet();lockNow()">${ic("lock",20)}<span class="rowgrow">${t("lock")}</span></button>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button>`;
+  openSheet();
+}
+function navIcName(id){
+  return {dash:"dash",trainings:"cal",bookings:"book",trainers:"users",
+          inbox:"inbox",templates:"mail",automation:"auto",emails:"log"}[id]||"dash";
 }
 function titleFor(r){
   const m={dash:["tp_dash","tp_dashSub"],trainings:["tp_trn","tp_trnSub"],
@@ -1650,8 +1773,10 @@ function renderDash(){
           <div class="nm">${x.tg.topic}${x.c?` <span class="tag" style="border-color:${x.c.color};color:${x.c.color}">${esc(x.c.short||x.c.name)}</span>`:''}</div>
           <div class="meta">${x.tg.city} · ${kwLabel(x.tg.kw)} · ${x.r.yes}/${x.r.need} ${t("confirmedShort")}${x.r.asked?` · ${x.r.asked} ${t("askedShort")}`:''}</div>
         </div>
-        <span class="pill ${x.s.cls}">${t(x.s.key)}</span>
-        <button class="btn sm primary" onclick="openDetail('${x.tg.id}')">${t("open")}</button>
+        <div class="attacts">
+          <span class="pill ${x.s.cls}">${t(x.s.key)}</span>
+          <button class="btn sm primary" onclick="openDetail('${x.tg.id}')">${t("open")}</button>
+        </div>
       </div>`).join(""):`<div class="empty">${t("attAll")}</div>`}</div>
   </div>`;
 
@@ -2339,11 +2464,11 @@ function renderBookings(){
     const head = label ? `<tr class="grouprow"><td colspan="${cols}">${esc(label)} · ${items.length}</td></tr>` : "";
     return head+items.map(x=>bkRow(x,conf)).join("");
   }).join("") : `<tr><td colspan="${cols}" class="meta" style="padding:16px 8px">${t("bkEmpty")}</td></tr>`;
-  const listPanel=`<div class="panel"><div class="panel-b" style="overflow-x:auto">
+  const listPanel=`<div class="panel"><div class="panel-b"><div class="tscroll">
       <table class="plantable bktable">
         <tr><th>${t("bkTrainer")}</th><th>${t("planColStatus")}</th><th>${t("planColWhen")}</th><th>${t("planColWhere")}</th><th>${t("planColWhat")}</th><th></th></tr>
         ${body}
-      </table></div></div>`;
+      </table></div></div></div>`;
   const second = bookingView==="calendar" ? renderCalendar(list) : listPanel;
   const vbtn=(v,l)=>`<button class="btn sm ${bookingView===v?'primary':''}" onclick="bookingView='${v}';renderBookings()">${l}</button>`;
 
@@ -2424,8 +2549,8 @@ function renderCalendar(list){
     <span class="lg"><span class="calchip s-maybe" style="--cc:#3E4852">${t("bkLegMaybe")}</span></span>
     <span class="lg"><span class="calchip s-asked" style="--cc:#3E4852">${t("bkLegAsked")}</span></span>
     <span class="lg"><span class="clashdot"></span>${t("bkLegClash")}</span></div>`;
-  return `<div class="panel"><div class="panel-b" style="overflow-x:auto">
-    <table class="calgrid">${head}${rows}</table>${legend}</div></div>`;
+  return `<div class="panel"><div class="panel-b">
+    <div class="tscroll"><table class="calgrid">${head}${rows}</table></div>${legend}</div></div>`;
 }
 function planBadge(tr){
   const p=tr.plan; if(!p)return "";
@@ -2638,10 +2763,10 @@ function renderPlan(){
         </div>
       </div>
       ${confirmLine}
-      <table class="plantable">
+      <div class="tscroll"><table class="plantable">
         <tr><th>${t("planColStatus")}</th><th>${t("planColWhen")}</th><th>${t("planColWhere")}</th><th>${t("planColWhat")}</th></tr>
         ${rows}
-      </table>
+      </table></div>
       <div class="meta planfoot">${t("planFoot")}</div>
     </div></div>
     <div class="planactions noprint">
@@ -2704,10 +2829,10 @@ function renderTransfer(){
         <div class="meta">${esc(cl.name)}${cl.contactName?" · "+esc(cl.contactName):""}${cl.contactEmail?" · ✉︎ "+esc(cl.contactEmail):""}</div>
       </div></div>
       ${conf}
-      <table class="plantable">
+      <div class="tscroll"><table class="plantable">
         <tr><th>${t("bkTrainer")}</th><th>${t("trfArr")}</th><th>${t("trfDep")}</th><th>${t("trfHotel")}</th><th>${t("planColWhat")}</th></tr>
         ${body}
-      </table>
+      </table></div>
       <div class="meta planfoot">${t("trfFoot")}</div>
     </div></div>
     <div class="planactions noprint">
