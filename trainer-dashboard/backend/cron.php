@@ -11,7 +11,9 @@ require_once __DIR__.'/automation.php';
 try { ensure_schema(); }
 catch(Throwable $e){ http_response_code(500); echo 'db error'; exit; }
 
-$key=$_GET['key'] ?? '';
+// Schlüssel case-insensitiv aus GET lesen (key / Key / KEY …).
+$key='';
+foreach($_GET as $k=>$v){ if(strtolower($k)==='key'){ $key=(string)$v; break; } }
 $expected=(string)(cfg()['cron_key'] ?? '');
 if($key==='' || $expected==='' || !hash_equals($expected,$key)){
   http_response_code(403); echo 'forbidden'; exit;
