@@ -704,8 +704,14 @@ const L={
   inboxOpenN:n=>`${n} offene Rückmeldung${n===1?"":"en"}`, inboxAllClear:"Keine offenen Rückmeldungen",
   inboxHint:"Meldet ein Trainer bei der Einsatzübersicht „stimmt nicht“, landet die Notiz direkt hier.",
   inboxEmpty:"Noch keine Rückmeldungen eingegangen.",
-  inboxResolve:"Als erledigt markieren", inboxReopen:"Wieder öffnen", inboxOpenPlan:"Plan öffnen & korrigieren",
+  inboxResolve:"Erledigen & antworten", inboxReopen:"Wieder öffnen", inboxOpenPlan:"Plan öffnen & korrigieren",
   inboxResolved:"Als erledigt markiert", inboxReopened:"Wieder geöffnet",
+  rsvTitle:n=>`Rückmeldung erledigen — ${n}`,
+  rsvOrig:"Rückmeldung des Trainers",
+  rsvReplyLbl:"Deine Antwort (was wurde angepasst?)",
+  rsvMailLbl:n=>`Antwort per E-Mail an ${n} senden — mit Link zur aktualisierten Übersicht`,
+  rsvBtn:"Erledigen",
+  rsvDoneMail:n=>`Erledigt — Antwort an ${n} gesendet`,
   bkCsvToast:n=>`${n} Buchungen als CSV exportiert`,
   bkHint:"Alle Einsätze über alle Trainings — nach Trainer oder Status filtern.",
   bkEmpty:"Keine Buchungen für diese Auswahl.",
@@ -915,8 +921,14 @@ const L={
   inboxOpenN:n=>`${n} open item${n===1?"":"s"}`, inboxAllClear:"No open feedback",
   inboxHint:"When a trainer flags “something's wrong” on their overview, the note lands right here.",
   inboxEmpty:"No feedback received yet.",
-  inboxResolve:"Mark as done", inboxReopen:"Reopen", inboxOpenPlan:"Open & fix plan",
+  inboxResolve:"Resolve & reply", inboxReopen:"Reopen", inboxOpenPlan:"Open & fix plan",
   inboxResolved:"Marked as done", inboxReopened:"Reopened",
+  rsvTitle:n=>`Resolve feedback — ${n}`,
+  rsvOrig:"Trainer's feedback",
+  rsvReplyLbl:"Your reply (what was changed?)",
+  rsvMailLbl:n=>`Email the reply to ${n} — with a link to the updated overview`,
+  rsvBtn:"Resolve",
+  rsvDoneMail:n=>`Done — reply sent to ${n}`,
   bkCsvToast:n=>`${n} bookings exported as CSV`,
   bkHint:"Every assignment across all trainings — filter by trainer or status.",
   bkEmpty:"No bookings for this selection.",
@@ -2198,7 +2210,7 @@ function renderInbox(){
           <button class="btn sm" onclick="openPlan('${x.tr.id}')">${ic("clip",15)}${t("inboxOpenPlan")}</button>
           ${done
             ? `<button class="btn sm" onclick="resolveMsg('${x.tr.id}',false)">${ic("reply",15)}${t("inboxReopen")}</button>`
-            : `<button class="btn sm primary" onclick="resolveMsg('${x.tr.id}',true)">${ic("check",15)}${t("inboxResolve")}</button>`}
+            : `<button class="btn sm primary" onclick="openResolve('${x.tr.id}')">${ic("check",15)}${t("inboxResolve")}</button>`}
         </div>
       </div>
     </div>`;
@@ -2217,6 +2229,44 @@ async function resolveMsg(trId,resolved){
   else { if(tr&&tr.plan) tr.plan.resolvedAt=resolved?new Date().toISOString():null; save(); }
   buildNav(); renderInbox(); if(route==="dash")renderDash();
   toast(resolved?t("inboxResolved"):t("inboxReopened"),"good");
+}
+/* Erledigen-Dialog: Antwort formulieren und (optional) direkt an den Trainer mailen. */
+function openResolve(trId){
+  const tr=S.trainers.find(x=>x.id===trId); if(!tr||!tr.plan) return;
+  const first=(tr.name||"").replace(/^Dr\.\s*/,"").split(" ")[0];
+  const lang=S.emailLang||"de";
+  const tpl=lang==="de"
+    ? `Hallo ${first},\n\ndanke für deinen Hinweis! Wir haben das geprüft und Folgendes angepasst:\n\n– …\n\nBitte wirf kurz einen Blick auf deine aktualisierte Einsatzübersicht (Button unten) und bestätige sie noch einmal.\n\nHerzliche Grüße\nETAF-Koordination`
+    : `Hi ${first},\n\nthanks for flagging this! We looked into it and made the following changes:\n\n– …\n\nPlease take a quick look at your updated assignment overview (button below) and confirm it once more.\n\nBest regards\nETAF Coordination`;
+  $("#sheetTitle").textContent=t("rsvTitle",tr.name);
+  $("#sheetBody").innerHTML=`
+    <label class="fld">${t("rsvOrig")}</label>
+    <div style="padding:12px 14px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;margin-bottom:14px">${esc(tr.plan.note||"")}</div>
+    <label class="fld">${t("rsvReplyLbl")}</label>
+    <textarea id="rsvText" style="min-height:180px">${esc(tpl)}</textarea>
+    <label class="sw" style="display:flex;align-items:center;gap:10px;margin-top:12px">
+      <input type="checkbox" id="rsvMail" checked><span></span>
+      <span style="font-size:14px">${t("rsvMailLbl",tr.name)}${tr.email?"":" — "+t("planNoMail")}</span>
+    </label>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
+    <button class="btn primary" onclick="doResolve('${tr.id}')">${ic("check",15)}${t("rsvBtn")}</button>`;
+  openSheet();
+}
+async function doResolve(trId){
+  const tr=S.trainers.find(x=>x.id===trId); if(!tr) return;
+  const reply=($("#rsvText")?$("#rsvText").value:"").trim();
+  const sendMail=$("#rsvMail")?$("#rsvMail").checked:false;
+  const wantMail=sendMail && !!tr.email && reply!=="";
+  if(LIVE){
+    try{ await apiCall("message.resolve",{trainer:trId,resolved:1,reply,sendMail:wantMail?1:0,lang:S.emailLang||"de"}); await pull(); }
+    catch(e){ toast("Fehler: "+e.message,"crit"); return; }
+  } else {
+    if(tr.plan) tr.plan.resolvedAt=new Date().toISOString();
+    if(wantMail) demoLog(tr.email, S.emailLang==="en"?"Reply to your feedback":"Antwort auf deine Rückmeldung", S.emailLang||"de","logged");
+    save();
+  }
+  closeSheet(); buildNav(); renderInbox(); if(route==="dash")renderDash();
+  toast(wantMail?t("rsvDoneMail",tr.name.split(" ").slice(-1)):t("inboxResolved"),"good");
 }
 
 /* ============================================================
@@ -2295,7 +2345,7 @@ function renderPlan(){
     const sub=[tg.spec||"", cl?cl.name:""].filter(Boolean).join(" · ");
     const trav=travelLine(x.flight,tg);
     const twin=fmtTravelWindow(tg.date,tg.dateEnd);
-    return `<tr>
+    return `<tr class="clickrow" title="${t("bkOpenModule")}" onclick="openDetail('${tg.id}')">
       <td><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span></td>
       <td class="nowrap">${esc(when||"—")}${kwSub?`<div class="meta">${esc(kwSub)}</div>`:""}</td>
       <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
@@ -2860,9 +2910,10 @@ function whenLabel(tg){
     const M=(S.lang==='de'?MONTHS_DE:MONTHS_EN);
     const s=new Date(tg.date+"T00:00:00Z");
     const e=/^\d{4}-\d{2}-\d{2}$/.test(tg.dateEnd||"")?new Date(tg.dateEnd+"T00:00:00Z"):s;
+    const kw=tg.kw?` · ${kwLabel(tg.kw)}`:"";  // KW immer mit anzeigen
     if(s.getUTCMonth()===e.getUTCMonth()&&s.getUTCFullYear()===e.getUTCFullYear())
-      return s.getUTCDate()+".–"+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear();
-    return s.getUTCDate()+". "+M[s.getUTCMonth()]+" – "+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear();
+      return s.getUTCDate()+".–"+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear()+kw;
+    return s.getUTCDate()+". "+M[s.getUTCMonth()]+" – "+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear()+kw;
   }
   return kwLabel(tg.kw)+(tg.month?" · "+tg.month:"");
 }

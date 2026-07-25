@@ -294,8 +294,30 @@ switch($action){
     $trId=(int)($in['trainer']??0);
     if(!$trId) fail('Kein Trainer.');
     $resolved = array_key_exists('resolved',$in) ? !empty($in['resolved']) : true;
+    // Optional: Antwort an den Trainer mailen (Text kommt aus dem Erledigen-Dialog).
+    $sent=0;
+    if($resolved && !empty($in['sendMail']) && trim((string)($in['reply']??''))!==''){
+      $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
+      if($tr && !empty($tr['email'])){
+        $lang=($in['lang']??'de')==='en'?'en':'de';
+        $reply=trim((string)$in['reply']);
+        // Link auf die (inzwischen korrigierte) Einsatzübersicht zum erneuten Bestätigen
+        $pt=q("SELECT tok FROM plan_tokens WHERE trainer_id=?",[$trId])->fetch();
+        $cta=($pt && $pt['tok'])
+          ? cta_button(base_url().'/plan.php?token='.$pt['tok'],
+              $lang==='de' ? 'Aktualisierte Einsatzübersicht ansehen & bestätigen' : 'View & confirm updated overview')
+          : '';
+        $subj=$lang==='de' ? 'Antwort auf deine Rückmeldung — Einsatzübersicht'
+                           : 'Reply to your feedback — assignment overview';
+        $ok=send_email($tr['email'],$tr['name'],$subj,email_html($reply,$cta));
+        $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+        q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+           VALUES(?,?,?,?,?,?,?,?)",[null,$trId,$tr['email'],$subj,$reply,$lang,$st,now()]);
+        $sent=$ok?1:0;
+      }
+    }
     q("UPDATE plan_tokens SET resolved_at=? WHERE trainer_id=?",[$resolved?now():null,$trId]);
-    out(['ok'=>true]);
+    out(['ok'=>true,'sent'=>$sent]);
 
   /* ---- Transfer-/Abholliste an den Kunden mailen (mit Empfangsbestätigung) ---- */
   case 'transfer.send':
