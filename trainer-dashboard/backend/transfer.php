@@ -48,10 +48,24 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   button{display:block;width:100%;padding:15px 18px;border-radius:10px;font:600 16px system-ui,Arial,sans-serif;cursor:pointer;background:#2E9E6B;color:#fff;border:2px solid #2E9E6B}
   .done{background:#e9f6ef;border:1px solid #bfe3cf;color:#1E7A4D;border-radius:12px;padding:16px 18px;margin-top:6px}
   .foot{margin-top:18px;font-size:12px;color:#8a939a}
+  /* --- Phone: every row becomes a card instead of scrolling sideways --- */
+  @media (max-width:560px){
+    body{padding:14px}
+    .card{padding:22px 18px;border-radius:14px}
+    h1{font-size:18px}
+    table,tbody,tr,td{display:block;width:100%}
+    tr:first-child{display:none}              /* header row: values are labelled instead */
+    tr{border:1px solid #e2e5e8;border-radius:12px;padding:12px 14px;margin:0 0 10px;box-sizing:border-box}
+    td{border:none;padding:3px 0;font-size:14px;white-space:normal!important}
+    td[data-l]::before{content:attr(data-l);display:block;font-size:11px;font-weight:700;
+      letter-spacing:.06em;text-transform:uppercase;color:#8a939a;margin-bottom:1px}
+    button{padding:16px 18px}
+  }
   @media (prefers-color-scheme:dark){
     body{background:#12171c;color:#e9edf0}.card{background:#1a2127;border-color:#28323a}
     .logo{color:#aeb9c2}.sub,.foot,th{color:#6e7a82}td{border-color:#28323a}
     .note{background:#12171c;border-color:#28323a;color:#e9edf0}
+    @media (max-width:560px){ tr{border-color:#28323a} }
   }
 </style></head><body>
   <div class="card">
@@ -71,9 +85,9 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
             $dep=trim(($r['departure']?:'').($r['flight_return']?' · '.$r['flight_return']:''));
             $hotel=trim(($r['hotel']?:'').($r['room']?' · '.$r['room']:'')); ?>
             <tr>
-              <td><b><?=esc($r['trainer'])?></b><?php if($r['phone']): ?><br><span class="sub">☎ <?=esc($r['phone'])?></span><?php endif; ?></td>
-              <td><?=esc($arr?:'—')?></td><td><?=esc($dep?:'—')?></td><td><?=esc($hotel?:'—')?></td>
-              <td><?=esc($r['topic'])?><br><span class="sub"><?=esc(trim(($r['city']??'').(($r['country']??'')?', '.$r['country']:'')))?></span></td>
+              <td data-l="Trainer"><b><?=esc($r['trainer'])?></b><?php if($r['phone']): ?><br><span class="sub">☎ <?=esc($r['phone'])?></span><?php endif; ?></td>
+              <td data-l="Arrival"><?=esc($arr?:'—')?></td><td data-l="Departure"><?=esc($dep?:'—')?></td><td data-l="Hotel"><?=esc($hotel?:'—')?></td>
+              <td data-l="Training / Location"><?=esc($r['topic'])?><br><span class="sub"><?=esc(trim(($r['city']??'').(($r['country']??'')?', '.$r['country']:'')))?></span></td>
             </tr>
           <?php endforeach; ?>
         </table>

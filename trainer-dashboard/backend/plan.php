@@ -72,10 +72,24 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   .done{background:#e9f6ef;border:1px solid #bfe3cf;color:#1E7A4D;border-radius:12px;padding:16px 18px;margin-top:6px}
   .done.bad{background:#fdeaea;border-color:#f2c2c2;color:#B21620}
   .foot{margin-top:18px;font-size:12px;color:#8a939a}
+  /* --- Handy: aus jeder Tabellenzeile wird eine Karte (statt seitlich zu scrollen) --- */
+  @media (max-width:560px){
+    body{padding:14px}
+    .card{padding:22px 18px;border-radius:14px}
+    h1{font-size:18px}
+    table,tbody,tr,td{display:block;width:100%}
+    tr:first-child{display:none}              /* Kopfzeile entfällt, Werte sind beschriftet */
+    tr{border:1px solid #e2e5e8;border-radius:12px;padding:12px 14px;margin:0 0 10px;box-sizing:border-box}
+    td{border:none;padding:3px 0;font-size:14px;white-space:normal!important}
+    td[data-l]::before{content:attr(data-l);display:block;font-size:11px;font-weight:700;
+      letter-spacing:.06em;text-transform:uppercase;color:#8a939a;margin-bottom:1px}
+    .btns button{padding:16px 18px}
+  }
   @media (prefers-color-scheme:dark){
     body{background:#12171c;color:#e9edf0}.card{background:#1a2127;border-color:#28323a}
     .logo{color:#aeb9c2}.sub,.foot,th{color:#6e7a82}td{border-color:#28323a}
     .note{background:#12171c;border-color:#28323a;color:#e9edf0}
+    @media (max-width:560px){ tr{border-color:#28323a} }
   }
 </style></head><body>
   <div class="card">
@@ -96,10 +110,10 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
             $col=($st==='yes'||$st==='confirmed')?'#2E9E6B':($st==='maybe'?'#C77E1E':'#5c666e'); ?>
             <?php $range=fmt_date_range($t['start_date']??null,$t['end_date']??null,'de'); $tw=travel_window($t['start_date']??null,$t['end_date']??null,'de'); ?>
             <tr>
-              <td><span class="pill" style="background:<?=$col?>"><?=esc(status_word($st,'de'))?></span></td>
-              <td style="white-space:nowrap"><?=esc($range ?: ($t['kw']??''))?><?php if($range && !empty($t['kw'])): ?><br><span class="sub" style="font-size:12px"><?=esc($t['kw'])?></span><?php endif; ?></td>
-              <td><?=esc(trim(($t['city']??'').(($t['country']??'')?', '.$t['country']:'')))?></td>
-              <td><b><?=esc($t['topic'])?></b>
+              <td data-l="Status"><span class="pill" style="background:<?=$col?>"><?=esc(status_word($st,'de'))?></span></td>
+              <td data-l="Zeitraum" style="white-space:nowrap"><?=esc($range ?: ($t['kw']??''))?><?php if($range && !empty($t['kw'])): ?><br><span class="sub" style="font-size:12px"><?=esc($t['kw'])?></span><?php endif; ?></td>
+              <td data-l="Ort"><?=esc(trim(($t['city']??'').(($t['country']??'')?', '.$t['country']:'')))?></td>
+              <td data-l="Training"><b><?=esc($t['topic'])?></b>
                 <?php if(!empty($t['spec'])): ?><br><span class="sub"><?=esc($t['spec'])?></span><?php endif; ?>
                 <?php if($tw): ?><br><span class="sub" style="font-size:12px">✈ Reisezeitraum inkl. An-/Abreise: <?=esc($tw)?></span><?php endif; ?>
                 <?php $tl=travel_line($t,'de'); if($tl): ?><br><span class="sub" style="font-size:12px">🧳 <?=$tl?></span><?php endif; ?>
