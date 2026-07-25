@@ -340,6 +340,17 @@ switch($action){
     if(isset($in['auto_advance']))   config_set('auto_advance', !empty($in['auto_advance'])?'1':'0');
     out(['ok'=>true]);
 
+  /* ---- Login-PIN ändern (im Dashboard) ---- */
+  case 'pin.change':
+    require_auth();
+    $cur = (string)($in['current'] ?? '');
+    $new = trim((string)($in['new'] ?? ''));
+    $hash = config_get('pin_hash');
+    if($hash && !password_verify($cur, $hash)) fail('Aktueller PIN ist nicht korrekt.',401);
+    if(!preg_match('/^\d{4,8}$/', $new)) fail('Neuer PIN muss 4–8 Ziffern haben.');
+    config_set('pin_hash', password_hash($new, PASSWORD_DEFAULT));
+    out(['ok'=>true]);
+
   /* ---- Automatik jetzt ausführen (Button) ---- */
   case 'automation.run':
     require_auth();

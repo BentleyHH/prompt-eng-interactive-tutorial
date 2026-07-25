@@ -793,6 +793,13 @@ const L={
   autoRunNow:"Jetzt prüfen & senden", autoSaved:"Einstellungen gespeichert",
   autoRan:(r,a)=>`${r} Erinnerung(en), ${a} Nachrücker versendet`,
   autoDesc:"Läuft automatisch per Cron (siehe DEPLOY.md) — hier kannst du es auch manuell auslösen.",
+  secTitle:"Sicherheit", secSub:"Login-PIN & Zugriffsschutz",
+  secLockInfo:"Nach 5 Fehlversuchen ist der Login für 5 Minuten gesperrt.",
+  secCurPin:"Aktueller PIN", secNewPin:"Neuer PIN (4–8 Ziffern)", secNewPin2:"Neuer PIN wiederholen",
+  secChangeBtn:"PIN ändern", secPinSaved:"PIN geändert — beim nächsten Login gilt der neue PIN.",
+  secPinMismatch:"Die beiden neuen PINs stimmen nicht überein.",
+  secPinFormat:"Der neue PIN muss aus 4–8 Ziffern bestehen.",
+  secDemoNote:"PIN-Änderung ist nur in der Live-Version (mit Server) aktiv.",
   reminded:"erinnert",
   travelAgenda:"Reise & Agenda", trTravel:"Reise", agendaView:"Agenda", agendaSend:"Agenda senden",
   agendaSent:"Reise-Agenda versendet", travelSaved:"Reisedaten gespeichert",
@@ -972,6 +979,13 @@ const L={
   autoRunNow:"Check & send now", autoSaved:"Settings saved",
   autoRan:(r,a)=>`${r} reminder(s), ${a} backfill request(s) sent`,
   autoDesc:"Runs automatically via cron (see DEPLOY.md) — you can also trigger it manually here.",
+  secTitle:"Security", secSub:"Login PIN & access protection",
+  secLockInfo:"After 5 failed attempts the login is locked for 5 minutes.",
+  secCurPin:"Current PIN", secNewPin:"New PIN (4–8 digits)", secNewPin2:"Repeat new PIN",
+  secChangeBtn:"Change PIN", secPinSaved:"PIN changed — the new PIN applies at your next login.",
+  secPinMismatch:"The two new PINs do not match.",
+  secPinFormat:"The new PIN must be 4–8 digits.",
+  secDemoNote:"Changing the PIN is only active in the live version (with a server).",
   reminded:"reminded",
   travelAgenda:"Travel & agenda", trTravel:"Travel", agendaView:"Agenda", agendaSend:"Send agenda",
   agendaSent:"Travel agenda sent", travelSaved:"Travel details saved",
@@ -3012,7 +3026,32 @@ function renderAutomation(){
       <div class="panel-b" style="border-top:1px solid var(--line)">
         <button class="btn amber" onclick="runAutoNow()">⚡ ${t("autoRunNow")}</button>
       </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h3>${ic("lock",18)} ${t("secTitle")}</h3><div class="sub">${t("secSub")}</div></div>
+      <div class="panel-b">
+        <div class="meta" style="margin-bottom:14px">${t("secLockInfo")}</div>
+        ${LIVE?`
+        <div class="kv"><span class="k">${t("secCurPin")}</span>
+          <input class="inp" style="width:150px" type="password" inputmode="numeric" autocomplete="off" id="pinCur"></div>
+        <div class="kv"><span class="k">${t("secNewPin")}</span>
+          <input class="inp" style="width:150px" type="password" inputmode="numeric" autocomplete="off" id="pinNew"></div>
+        <div class="kv"><span class="k">${t("secNewPin2")}</span>
+          <input class="inp" style="width:150px" type="password" inputmode="numeric" autocomplete="off" id="pinNew2"></div>
+        <div style="margin-top:12px"><button class="btn" onclick="changePin()">${ic("check",16)} ${t("secChangeBtn")}</button></div>
+        `:`<div class="meta">${t("secDemoNote")}</div>`}
+      </div>
     </div>`;
+}
+async function changePin(){
+  const cur=$("#pinCur").value, nw=$("#pinNew").value, nw2=$("#pinNew2").value;
+  if(!/^\d{4,8}$/.test(nw)){ toast(t("secPinFormat"),"crit"); return; }
+  if(nw!==nw2){ toast(t("secPinMismatch"),"crit"); return; }
+  try{
+    await apiCall("pin.change",{current:cur,new:nw});
+    $("#pinCur").value=$("#pinNew").value=$("#pinNew2").value="";
+    toast(t("secPinSaved"),"good");
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
 }
 function saveAuto(){
   const s={reminder_hours:parseInt($("#aRem").value)||48,escalate_hours:parseInt($("#aEsc").value)||72,auto_advance:$("#aAdv").checked};

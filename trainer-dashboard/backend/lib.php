@@ -20,17 +20,21 @@ function body(): array {
 
 function client_ip(): string { return $_SERVER['REMOTE_ADDR'] ?? 'cli'; }
 
-/** Login mit PIN, gibt Session-Token zurück (mit einfachem Rate-Limit). */
+/** Login mit PIN, gibt Session-Token zurück (mit einfachem Rate-Limit).
+ *  Sperre: nach LOGIN_MAX Fehlversuchen ist der Login LOGIN_WINDOW Sekunden gesperrt. */
+const LOGIN_MAX = 5;      // erlaubte Fehlversuche
+const LOGIN_WINDOW = 300; // Sperr-/Zählfenster in Sekunden (5 Minuten)
 function do_login(string $pin): array {
   $ip=client_ip();
   $row=q("SELECT cnt,window_start FROM login_attempts WHERE ip=?",[$ip])->fetch();
   $win=$row['window_start']??null; $cnt=(int)($row['cnt']??0);
-  if($win && (strtotime($win) > time()-600) && $cnt>=8){
-    fail('Zu viele Versuche. Bitte in ein paar Minuten erneut probieren.',429);
+  if($win && (strtotime($win) > time()-LOGIN_WINDOW) && $cnt>=LOGIN_MAX){
+    $wait = (int)ceil((strtotime($win)+LOGIN_WINDOW - time())/60);
+    fail('Zu viele Fehlversuche. Bitte in etwa '.max(1,$wait).' Minute(n) erneut probieren.',429);
   }
   $hash=config_get('pin_hash');
   if(!$hash || !password_verify($pin, $hash)){
-    if(!$win || strtotime($win) <= time()-600){
+    if(!$win || strtotime($win) <= time()-LOGIN_WINDOW){
       // neues Fenster
       if(is_sqlite()){
         q("INSERT INTO login_attempts(ip,cnt,window_start) VALUES(?,?,?)
