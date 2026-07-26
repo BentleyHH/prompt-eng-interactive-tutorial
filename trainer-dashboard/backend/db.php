@@ -167,6 +167,36 @@ function ensure_schema(): void {
   try{ db()->exec("ALTER TABLE transfer_tokens ADD COLUMN reminded_at VARCHAR(20)"); }catch(Throwable $e){}
   // Rückmeldungen der Trainer zur Einsatzübersicht: „erledigt“-Markierung im Dashboard
   try{ db()->exec("ALTER TABLE plan_tokens ADD COLUMN resolved_at VARCHAR(20)"); }catch(Throwable $e){}
+
+  /* ---- Mehrbenutzer: Konten, Passwort-Zurücksetzen, Änderungsprotokoll ---- */
+  $d->exec("CREATE TABLE IF NOT EXISTS users (
+    id $pk,
+    email VARCHAR(190), name VARCHAR(160), pass_hash VARCHAR(255),
+    role VARCHAR(16) DEFAULT 'editor',            -- 'admin' | 'editor'
+    active INT DEFAULT 1,
+    created_at VARCHAR(20), last_login VARCHAR(20))$eng");
+  // E-Mail eindeutig (getrennt angelegt, damit bestehende Installationen migrieren)
+  try{ $d->exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email ON users(email)"); }catch(Throwable $e){}
+  // Einladungs-/Zurücksetz-Links: einmal verwendbar, mit Ablauf
+  $d->exec("CREATE TABLE IF NOT EXISTS reset_tokens (
+    tok VARCHAR(64) PRIMARY KEY,
+    user_id INT, purpose VARCHAR(16) DEFAULT 'reset',   -- 'reset' | 'invite'
+    created_at VARCHAR(20), used_at VARCHAR(20))$eng");
+  // Wer hat wann was geändert
+  $d->exec("CREATE TABLE IF NOT EXISTS activity (
+    id $pk,
+    user_id INT, user_name VARCHAR(160), action VARCHAR(48),
+    entity VARCHAR(32), entity_id VARCHAR(32), summary VARCHAR(255),
+    created_at VARCHAR(20))$eng");
+  // Sitzung kennt den angemeldeten Benutzer
+  try{ db()->exec("ALTER TABLE sessions ADD COLUMN user_id INT"); }catch(Throwable $e){}
+  // Versionszähler gegen gegenseitiges Überschreiben (optimistisches Sperren)
+  foreach(['trainings','trainers','clients'] as $tbl){
+    foreach(["version INT DEFAULT 1","updated_at VARCHAR(20)","updated_by VARCHAR(160)"] as $col){
+      try{ db()->exec("ALTER TABLE $tbl ADD COLUMN $col"); }catch(Throwable $e){}
+    }
+    try{ db()->exec("UPDATE $tbl SET version=1 WHERE version IS NULL"); }catch(Throwable $e){}
+  }
   // Interne Notizen je Trainer (frei fortschreibbar)
   try{ db()->exec("ALTER TABLE trainers ADD COLUMN notes TEXT"); }catch(Throwable $e){}
   // Bevorzugte Ansprache-Sprache je Trainer ('de' | 'en', leer = globale Einstellung)

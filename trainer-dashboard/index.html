@@ -119,6 +119,13 @@
   .keys button.ghost{border:none;background:transparent;font-size:13px;color:var(--muted);font-weight:600}
   .lock-hint{margin-top:18px;font-size:12px;color:var(--faint)}
   .lock-hint b{color:var(--muted);font-family:var(--mono);letter-spacing:.1em}
+  .lgerr{margin-top:14px;background:var(--crit-bg);color:var(--crit);border:1px solid var(--crit);
+    border-radius:9px;padding:10px 12px;font-size:13.5px;text-align:left}
+  .lgok{margin-top:14px;background:var(--good-bg);color:var(--good);border:1px solid var(--good);
+    border-radius:9px;padding:10px 12px;font-size:13.5px;text-align:left}
+  .lgforgot{display:block;width:100%;margin-top:12px;border:none;background:transparent;
+    color:var(--muted);font-size:13px;font-weight:600;text-align:center}
+  .lgforgot:hover{color:var(--brand)}
 
   /* ============ APP SHELL ============ */
   #app{display:none;min-height:100vh;grid-template-columns:236px 1fr}
@@ -142,6 +149,8 @@
   .side-foot button.lnk{display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;
     background:transparent;border-radius:8px;color:var(--muted);font-size:13px;font-weight:600}
   .side-foot button.lnk:hover{background:var(--panel-2);color:var(--ink)}
+  .mebox{display:flex;align-items:center;gap:9px;padding:8px 10px;margin-bottom:6px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:9px}
 
   main{min-width:0;padding:0 0 60px}
   .topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);
@@ -573,11 +582,29 @@
     <div id="lockLogo" style="color:var(--ink);display:flex;justify-content:center"></div>
     <div class="wm-sub" id="lgSub">Trainer-Koordination</div>
     <h1 id="lgWelcome" style="margin-top:22px">Willkommen zurück</h1>
-    <p id="lgEnter">Bitte 6-stelligen PIN eingeben</p>
-    <div class="pin-dots" id="dots">
-      <span></span><span></span><span></span><span></span><span></span><span></span>
+
+    <!-- Anmeldung mit E-Mail + Passwort (Standard, sobald Konten existieren) -->
+    <div id="lgForm" style="display:none;text-align:left;margin-top:16px">
+      <label class="fld" for="lgEmail" style="margin-top:0">E-Mail</label>
+      <input class="inp" id="lgEmail" type="email" autocomplete="username" inputmode="email"
+             autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter')$('#lgPass').focus()">
+      <label class="fld" for="lgPass">Passwort</label>
+      <input class="inp" id="lgPass" type="password" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doEmailLogin()">
+      <div id="lgErr" class="lgerr" style="display:none"></div>
+      <button class="btn primary" id="lgBtn" style="width:100%;justify-content:center;margin-top:16px"
+              onclick="doEmailLogin()">Anmelden</button>
+      <button class="lnk lgforgot" id="lgForgot" onclick="openForgot()">Passwort vergessen?</button>
     </div>
-    <div class="keys" id="keys"></div>
+
+    <!-- PIN-Feld: nur bei der Ersteinrichtung, solange noch kein Konto existiert -->
+    <div id="lgPin" style="display:none">
+      <p id="lgEnter">Bitte 6-stelligen PIN eingeben</p>
+      <div class="pin-dots" id="dots">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="keys" id="keys"></div>
+    </div>
     <div class="lock-hint" id="lgHint"></div>
   </div>
 </div>
@@ -588,6 +615,7 @@
     <div class="brand"><span id="brandLogo" style="color:var(--ink)"></span></div>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot">
+      <div id="meBox"></div>
       <div class="langrow"><span id="langLbl">Sprache</span><span class="langsw" id="sideLang"></span></div>
       <button class="lnk" onclick="toggleTheme()" id="themeBtn">◐ Design wechseln</button>
       <button class="lnk" onclick="lockNow()" id="lockBtn">⎋ Sperren</button>
@@ -621,6 +649,8 @@
       <section class="view" id="v-trainers"></section>
       <section class="view" id="v-plan"></section>
       <section class="view" id="v-inbox"></section>
+      <section class="view" id="v-users"></section>
+      <section class="view" id="v-activity"></section>
       <section class="view" id="v-transfer"></section>
       <section class="view" id="v-templates"></section>
       <section class="view" id="v-automation"></section>
@@ -738,7 +768,13 @@ async function apiCall(action,payload){
     method:"POST", headers:{"Content-Type":"application/json","X-Auth-Token":AUTH},
     body:JSON.stringify(payload||{})});
   let d; try{d=await r.json();}catch(e){d={ok:false,error:"HTTP "+r.status};}
-  if(!r.ok||d.ok===false) throw new Error(d.error||("HTTP "+r.status));
+  if(!r.ok||d.ok===false){
+    const err=new Error(d.error||("HTTP "+r.status));
+    // Versionskonflikt durchreichen, damit der Aufrufer den Dialog zeigen kann
+    if(d.conflict){ err.conflict=true; err.by=d.by||""; err.at=d.at||""; err.version=d.version; }
+    err.status=r.status;
+    throw err;
+  }
   return d;
 }
 async function pull(){
@@ -747,6 +783,7 @@ async function pull(){
   if(d.clients&&d.clients.length)S.clients=d.clients;
   if(d.materials)S.materials=d.materials;
   if(d.matPresets)S.matPresets=d.matPresets;
+  S.me=d.me||null; S.setupMode=!!d.setupMode;
 }
 /* Nach jedem pull() zeigt S.trainings frische Objekte — curTg muss neu
    aufgelöst werden, sonst rendert die Detailansicht veraltete Daten. */
@@ -806,6 +843,50 @@ const L={
   /* Kurzformen für die Leiste am unteren Rand (Handy) */
   nav_s_dash:"Übersicht", nav_s_trainings:"Trainings", nav_s_bookings:"Belegung",
   nav_s_trainers:"Trainer", nav_s_inbox:"Antworten", nav_more:"Mehr",
+  nav_users:"Benutzer", nav_activity:"Änderungen",
+  tp_users:"Benutzer", tp_usersSub:"Wer darf sich anmelden — Rollen und Zugänge",
+  tp_activity:"Änderungen", tp_activitySub:"Wer hat wann was geändert",
+  // Anmeldung
+  lgSignIn:"Anmelden", lgMissing:"Bitte E-Mail und Passwort eingeben.",
+  lgFailed:"Anmeldung fehlgeschlagen.", lgEnterMail:"Bitte zuerst deine E-Mail-Adresse eingeben.",
+  lgResetSent:"Falls es ein Konto zu dieser Adresse gibt, ist eine E-Mail mit einem Link unterwegs (60 Minuten gültig).",
+  setupHint:"Ersteinrichtung: Melde dich mit dem PIN an und lege unter „Benutzer“ die Zugänge an. Danach ist der PIN-Zugang automatisch gesperrt.",
+  setupBadge:"Ersteinrichtung — bitte Benutzer anlegen",
+  setupDone:m=>`Konto angelegt. Wir haben an ${m} einen Link zum Festlegen des Passworts geschickt — danach kannst du dich hier anmelden.`,
+  setupDoneNoMail:m=>`Konto ${m} angelegt, aber die E-Mail konnte nicht versendet werden. Bitte den SMTP-Zugang in config.php prüfen.`,
+  // Benutzerverwaltung
+  usrCount:n=>`${n} ${n===1?"Benutzer":"Benutzer"}`,
+  usrHint:"Jede Person meldet sich mit eigener E-Mail an — so ist nachvollziehbar, wer was geändert hat.",
+  usrNew:"Benutzer einladen", usrNewTitle:"Benutzer einladen", usrEditTitle:n=>`Benutzer bearbeiten — ${n}`,
+  usrRole:"Rolle", roleAdmin:"Administrator", roleEditor:"Bearbeiter",
+  usrRoleHint:"Bearbeiter können alles planen. Administratoren dürfen zusätzlich Benutzer verwalten und Grundeinstellungen ändern.",
+  usrInviteHint:"Die Person bekommt eine E-Mail mit einem Link, um ein eigenes Passwort festzulegen (60 Minuten gültig).",
+  usrCreate:"Einladen", usrSaved:"Benutzer gespeichert",
+  usrInvited:n=>`Einladung an ${n} verschickt`, usrCreatedNoMail:"Benutzer angelegt — E-Mail konnte nicht versendet werden.",
+  usrActive:"Aktiv", usrBlocked:"Gesperrt", usrBlock:"Sperren", usrUnblock:"Entsperren",
+  usrBlockedToast:"Benutzer gesperrt und abgemeldet", usrUnblocked:"Benutzer entsperrt",
+  usrResend:"Zugangs-Link erneut senden", usrResent:"Link verschickt", usrResendFail:"Versand fehlgeschlagen",
+  usrYou:"du", usrLast:"zuletzt", usrNever:"noch nie angemeldet",
+  usrBadMail:"Bitte eine gültige E-Mail-Adresse angeben.",
+  usrNoRights:"Diesen Bereich dürfen nur Administratoren öffnen.",
+  usrOwnPw:"Eigenes Passwort ändern", usrCurPw:"Aktuelles Passwort", usrNewPw:"Neues Passwort (mind. 8 Zeichen)",
+  usrChangePw:"Passwort ändern", usrPwChanged:"Passwort geändert", usrPwShort:"Mindestens 8 Zeichen.",
+  // Änderungsprotokoll
+  actCount:n=>`${n} Einträge`, actHint:"Die letzten Änderungen aller Benutzer.",
+  actEmpty:"Noch keine Einträge.",
+  act_login:"angemeldet", "act_user.create":"Benutzer angelegt", "act_user.update":"Benutzer geändert",
+  "act_user.invite":"Zugangs-Link gesendet", "act_user.activate":"Benutzer entsperrt", "act_user.deactivate":"Benutzer gesperrt",
+  "act_password.set":"Passwort festgelegt", "act_password.reset":"Passwort zurückgesetzt", "act_password.change":"Passwort geändert",
+  "act_training.create":"Training angelegt", "act_training.update":"Training geändert", "act_training.delete":"Training gelöscht",
+  "act_trainer.create":"Trainer angelegt", "act_trainer.update":"Trainer geändert", "act_trainer.delete":"Trainer gelöscht",
+  "act_client.create":"Kunde angelegt", "act_client.update":"Kunde geändert", "act_client.delete":"Kunde entfernt",
+  "act_request.status":"Status geändert",
+  // Überschreib-Schutz
+  cfTitle:"Gleichzeitig bearbeitet", cfHead:"Dieser Eintrag wurde inzwischen geändert",
+  cfBy:(who,when)=>`Zuletzt geändert von ${who}${when?" · "+when:""}`,
+  cfExplain:"Damit nichts verloren geht, wurde noch nicht gespeichert. Lade den aktuellen Stand neu (deine Eingaben im Formular gehen dabei verloren) — oder überschreibe die fremde Änderung bewusst.",
+  cfReload:"Neu laden", cfOverwrite:"Trotzdem überschreiben",
+  cfReloaded:"Aktueller Stand geladen", cfForced:"Gespeichert — fremde Änderung überschrieben",
   tp_book:"Belegung", tp_bookSub:"Wer ist wann wo gebucht — filterbar nach Trainer",
   bkAllTrainers:"Alle Trainer", bkAllStatus:"Alle Status", bkTrainer:"Trainer", bkClient:"Kunde", bkMonth:"Zeitraum",
   bkAllClients:"Alle Kunden", bkAllMonths:"Alle Zeiträume", bkGroup:"Gruppieren", bkGrpNone:"Keine Gruppierung",
@@ -1047,6 +1128,46 @@ const L={
   /* Short labels for the bottom bar (phone) */
   nav_s_dash:"Overview", nav_s_trainings:"Trainings", nav_s_bookings:"Bookings",
   nav_s_trainers:"Trainers", nav_s_inbox:"Feedback", nav_more:"More",
+  nav_users:"Users", nav_activity:"Changes",
+  tp_users:"Users", tp_usersSub:"Who can sign in — roles and access",
+  tp_activity:"Changes", tp_activitySub:"Who changed what, and when",
+  lgSignIn:"Sign in", lgMissing:"Please enter email and password.",
+  lgFailed:"Sign-in failed.", lgEnterMail:"Please enter your email address first.",
+  lgResetSent:"If an account exists for that address, an email with a link is on its way (valid for 60 minutes).",
+  setupHint:"First-time setup: sign in with the PIN and create the accounts under “Users”. The PIN access is disabled automatically afterwards.",
+  setupBadge:"Setup — please create users",
+  setupDone:m=>`Account created. We sent a link to ${m} to set the password — after that you can sign in here.`,
+  setupDoneNoMail:m=>`Account ${m} created, but the email could not be sent. Please check the SMTP settings in config.php.`,
+  usrCount:n=>`${n} ${n===1?"user":"users"}`,
+  usrHint:"Everyone signs in with their own email — so it is always clear who changed what.",
+  usrNew:"Invite user", usrNewTitle:"Invite user", usrEditTitle:n=>`Edit user — ${n}`,
+  usrRole:"Role", roleAdmin:"Administrator", roleEditor:"Editor",
+  usrRoleHint:"Editors can do all the planning. Administrators may additionally manage users and change core settings.",
+  usrInviteHint:"They receive an email with a link to set their own password (valid for 60 minutes).",
+  usrCreate:"Invite", usrSaved:"User saved",
+  usrInvited:n=>`Invitation sent to ${n}`, usrCreatedNoMail:"User created — the email could not be sent.",
+  usrActive:"Active", usrBlocked:"Blocked", usrBlock:"Block", usrUnblock:"Unblock",
+  usrBlockedToast:"User blocked and signed out", usrUnblocked:"User unblocked",
+  usrResend:"Resend access link", usrResent:"Link sent", usrResendFail:"Sending failed",
+  usrYou:"you", usrLast:"last", usrNever:"never signed in",
+  usrBadMail:"Please enter a valid email address.",
+  usrNoRights:"Only administrators can open this area.",
+  usrOwnPw:"Change your password", usrCurPw:"Current password", usrNewPw:"New password (min. 8 characters)",
+  usrChangePw:"Change password", usrPwChanged:"Password changed", usrPwShort:"At least 8 characters.",
+  actCount:n=>`${n} entries`, actHint:"The most recent changes by all users.",
+  actEmpty:"No entries yet.",
+  act_login:"signed in", "act_user.create":"user created", "act_user.update":"user updated",
+  "act_user.invite":"access link sent", "act_user.activate":"user unblocked", "act_user.deactivate":"user blocked",
+  "act_password.set":"password set", "act_password.reset":"password reset", "act_password.change":"password changed",
+  "act_training.create":"training created", "act_training.update":"training updated", "act_training.delete":"training deleted",
+  "act_trainer.create":"trainer created", "act_trainer.update":"trainer updated", "act_trainer.delete":"trainer deleted",
+  "act_client.create":"client created", "act_client.update":"client updated", "act_client.delete":"client removed",
+  "act_request.status":"status changed",
+  cfTitle:"Edited at the same time", cfHead:"This entry has been changed in the meantime",
+  cfBy:(who,when)=>`Last changed by ${who}${when?" · "+when:""}`,
+  cfExplain:"Nothing was saved yet, so no work is lost. Either reload the current state (your entries in this form will be discarded) — or deliberately overwrite the other change.",
+  cfReload:"Reload", cfOverwrite:"Overwrite anyway",
+  cfReloaded:"Current state loaded", cfForced:"Saved — the other change was overwritten",
   tp_book:"Bookings", tp_bookSub:"Who is booked when and where — filter by trainer",
   bkAllTrainers:"All trainers", bkAllStatus:"All statuses", bkTrainer:"Trainer", bkClient:"Client", bkMonth:"Period",
   bkAllClients:"All clients", bkAllMonths:"All periods", bkGroup:"Group by", bkGrpNone:"No grouping",
@@ -1460,7 +1581,8 @@ function load(){
   return {lang:"de", emailLang:"en", seedVersion:SEED_VERSION, clients:seedClients(), clientFilter:null,
     materials:seedMaterials(), matPresets:seedMatPresets(),
     trainers:seedTrainers(), trainings:seedTrainings(),
-    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180}, emails:[]};
+    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180},
+    emails:[], me:null, setupMode:false};
 }
 function save(){localStorage.setItem("etaf_demo",JSON.stringify(S));}
 function resetDemo(){localStorage.removeItem("etaf_demo");S=load();applyStatic();render();toast(t("resetToast"));}
@@ -1585,7 +1707,60 @@ async function tryUnlock(){
   } else { unlock(); }
 }
 function unlock(){$("#lock").style.display="none";$("#app").style.display="grid";render();startPolling();}
-function lockNow(){stopPolling();pin="";drawDots();$("#lock").style.display="grid";$("#app").style.display="none";}
+function lockNow(){
+  stopPolling(); pin=""; drawDots();
+  if(LIVE){ apiCall("logout").catch(()=>{}); AUTH=""; try{localStorage.removeItem("etaf_token");}catch(e){} }
+  $("#lock").style.display="flex"; $("#app").style.display="none";
+  const p=$("#lgPass"); if(p)p.value="";
+  setupLoginMode();
+}
+
+/* ============================================================
+   ANMELDUNG mit E-Mail + Passwort (PIN nur zur Ersteinrichtung)
+   ============================================================ */
+let setupMode=false;
+async function setupLoginMode(){
+  // Demo ohne Server: PIN-Feld wie gehabt
+  if(!LIVE){ showLoginForm(false); return; }
+  try{ const d=await apiCall("auth.mode"); setupMode=!!d.setup; }
+  catch(e){ setupMode=false; }
+  showLoginForm(!setupMode);
+}
+function showLoginForm(byEmail){
+  const f=$("#lgForm"), p=$("#lgPin"), h=$("#lgHint");
+  if(f)f.style.display=byEmail?"block":"none";
+  if(p)p.style.display=byEmail?"none":"block";
+  if(h)h.innerHTML = byEmail ? "" : (LIVE ? t("setupHint") : t("demoPin"));
+  if(byEmail){ const e=$("#lgEmail"); if(e)setTimeout(()=>e.focus(),80); }
+}
+function lgError(msg){
+  const e=$("#lgErr"); if(!e)return;
+  e.className="lgerr"; e.textContent=msg; e.style.display="block";
+}
+function lgInfo(msg){
+  const e=$("#lgErr"); if(!e)return;
+  e.className="lgok"; e.textContent=msg; e.style.display="block";
+}
+async function doEmailLogin(){
+  const email=($("#lgEmail")?.value||"").trim(), pass=$("#lgPass")?.value||"";
+  if(!email||!pass){ lgError(t("lgMissing")); return; }
+  const b=$("#lgBtn"); if(b){b.disabled=true;b.textContent="…";}
+  try{
+    const d=await apiCall("auth.login",{email,password:pass});
+    AUTH=d.token; try{localStorage.setItem("etaf_token",AUTH);}catch(e){}
+    $("#lgErr").style.display="none"; $("#lgPass").value="";
+    await pull(); unlock();
+  }catch(e){ lgError(e.message||t("lgFailed")); }
+  finally{ if(b){b.disabled=false;b.textContent=t("lgSignIn");} }
+}
+/* Passwort vergessen: Link anfordern (Antwort ist immer gleich — keine Auskunft
+   darüber, ob es die Adresse gibt). */
+async function openForgot(){
+  const email=($("#lgEmail")?.value||"").trim();
+  if(!email){ lgError(t("lgEnterMail")); $("#lgEmail")?.focus(); return; }
+  try{ await apiCall("auth.requestReset",{email}); }catch(e){}
+  lgInfo(t("lgResetSent"));
+}
 document.addEventListener("keydown",e=>{
   if($("#lock").style.display==="none")return;
   if(/^[0-9]$/.test(e.key))press(e.key);
@@ -1612,11 +1787,12 @@ function buildNav(){
   const inb=inboxCount();
   const badgeFor=n=> n.id==="trainings"&&crit ? `<span class="badge">${crit}</span>`
     : n.id==="inbox"&&inb ? `<span class="badge">${inb}</span>` : "";
-  $("#nav").innerHTML=NAV.map(n=>`
+  $("#nav").innerHTML=NAV.concat(extraNav()).map(n=>`
     <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
       ${svg(n.ic)}<span>${t("nav_"+n.id)}</span>
       ${badgeFor(n)}
     </button>`).join("");
+  drawMeBox();
   const rest=NAV.filter(n=>!NAV_MOBILE.includes(n.id));
   const restActive=rest.some(n=>n.id===route);
   $("#mobnav").innerHTML=
@@ -1628,7 +1804,7 @@ function buildNav(){
 }
 /* „Mehr“-Blatt: restliche Bereiche + Einstellungen, mit großen Tap-Zielen. */
 function openMoreNav(){
-  const rest=NAV.filter(n=>!NAV_MOBILE.includes(n.id));
+  const rest=NAV.filter(n=>!NAV_MOBILE.includes(n.id)).concat(extraNav());
   $("#sheetTitle").textContent=t("nav_more");
   $("#sheetBody").innerHTML=rest.map(n=>`
     <button class="morerow ${n.id===route?'on':''}" onclick="closeSheet();go('${n.id}')">
@@ -1645,13 +1821,35 @@ function openMoreNav(){
 }
 function navIcName(id){
   return {dash:"dash",trainings:"cal",bookings:"book",trainers:"users",
-          inbox:"inbox",templates:"mail",automation:"auto",emails:"log"}[id]||"dash";
+          inbox:"inbox",templates:"mail",automation:"auto",emails:"log",
+          users:"users",activity:"log"}[id]||"dash";
+}
+/* Angemeldeter Benutzer unten in der Seitenleiste. */
+function drawMeBox(){
+  const box=$("#meBox"); if(!box) return;
+  const m=S.me;
+  if(!m){ box.innerHTML = S.setupMode
+    ? `<div class="mebox"><div class="meta">${t("setupBadge")}</div></div>` : "";
+    return; }
+  box.innerHTML=`<div class="mebox">
+    <span class="av" style="width:28px;height:28px;font-size:11px;background:${m.role==='admin'?'var(--brand-solid)':'#6E7A82'}">${initials(m.name||m.email)}</span>
+    <div class="rowgrow" style="min-width:0">
+      <div style="font-size:13px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.name||m.email)}</div>
+      <div class="meta" style="font-size:11px">${roleLabel(m.role)}</div>
+    </div></div>`;
+}
+/* Zusätzliche Menüpunkte: Protokoll für alle, Benutzer nur für Admins. */
+function extraNav(){
+  const x=[{id:"activity",ic:IC.log}];
+  if(isAdmin()) x.push({id:"users",ic:IC.users});
+  return x;
 }
 function titleFor(r){
   const m={dash:["tp_dash","tp_dashSub"],trainings:["tp_trn","tp_trnSub"],
     bookings:["tp_book","tp_bookSub"],inbox:["tp_inbox","tp_inboxSub"],
     trainers:["tp_pool","tp_poolSub"],templates:["tp_tpl","tp_tplSub"],
-    automation:["tp_auto","tp_autoSub"],emails:["tp_emails","tp_emailsSub"]};
+    automation:["tp_auto","tp_autoSub"],emails:["tp_emails","tp_emailsSub"],
+    users:["tp_users","tp_usersSub"],activity:["tp_activity","tp_activitySub"]};
   const k=m[r]||m.dash; return [t(k[0]),t(k[1])];
 }
 function go(r){route=r;render();}
@@ -1665,6 +1863,8 @@ function render(){
   else if(route==="trainers"){renderTrainers();$("#v-trainers").classList.add("on");}
   else if(route==="plan"){renderPlan();$("#v-plan").classList.add("on");}
   else if(route==="inbox"){renderInbox();$("#v-inbox").classList.add("on");}
+  else if(route==="users"){renderUsers();$("#v-users").classList.add("on");}
+  else if(route==="activity"){renderActivity();$("#v-activity").classList.add("on");}
   else if(route==="transfer"){renderTransfer();$("#v-transfer").classList.add("on");}
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
@@ -2220,12 +2420,14 @@ async function saveTrainerEdit(){
              label:tg?`${tg.topic} · ${whenText(tg)||""}`.trim():(el.querySelector("b")?.textContent||"") };
   });
   if(LIVE){
-    try{
-      const d=await apiCall("trainer.save", trEditId?{id:trEditId,...data}:data);
+    const cur=trEditId?S.trainers.find(x=>x.id===trEditId):null;
+    const payload = trEditId ? {id:trEditId, version:cur?cur.version:null, ...data} : data;
+    const ok=await saveGuarded("trainer.save",payload,async d=>{
       const id=trEditId||d.id;
       if(items.length) await apiCall("reviews.save",{trainer:id,items});
       await pull();
-    }catch(e){ toast("Fehler: "+e.message,"crit"); return; }
+    });
+    if(!ok) return;
   } else {
     let tr=trEditId?S.trainers.find(x=>x.id===trEditId):null;
     if(!tr){ tr={id:uid("tr"),load:0,color:"#3E4852",reviews:[]}; S.trainers.push(tr); }
@@ -2631,6 +2833,187 @@ async function resolveMsg(trId,resolved){
   buildNav(); renderInbox(); if(route==="dash")renderDash();
   toast(resolved?t("inboxResolved"):t("inboxReopened"),"good");
 }
+/* ============================================================
+   BENUTZER (nur Admin) — Konten anlegen, Rolle ändern, sperren
+   ============================================================ */
+let usersCache=[];
+function meUser(){ return S.me||null; }
+function isAdmin(){ const m=meUser(); return m ? m.role==="admin" : !!S.setupMode; }
+function roleLabel(r){ return r==="admin"?t("roleAdmin"):t("roleEditor"); }
+async function renderUsers(){
+  if(!isAdmin()){ $("#v-users").innerHTML=`<div class="panel"><div class="panel-b meta" style="padding:22px">${t("usrNoRights")}</div></div>`; return; }
+  if(LIVE){ try{ const d=await apiCall("users.list"); usersCache=d.users||[]; }catch(e){ usersCache=[]; } }
+  const me=meUser();
+  const rows=usersCache.map(u=>`
+    <div class="row">
+      <div class="av" style="background:${u.role==='admin'?'var(--brand-solid)':'#6E7A82'}">${initials(u.name||u.email)}</div>
+      <div class="rowgrow">
+        <div class="nm">${esc(u.name||"—")}${me&&me.id===u.id?` <span class="tag">${t("usrYou")}</span>`:""}</div>
+        <div class="meta">${esc(u.email)} · ${roleLabel(u.role)}${u.lastLogin?` · ${t("usrLast")} ${fmtWhen(u.lastLogin)}`:` · ${t("usrNever")}`}</div>
+      </div>
+      <div class="rowacts">
+        <span class="pill ${u.active?'good':'neutral'}">${u.active?t("usrActive"):t("usrBlocked")}</span>
+        <button class="btn sm" onclick="openUserEdit('${u.id}')">${ic("pen",15)}${t("trEdit")}</button>
+        <button class="btn sm" onclick="resendInvite('${u.id}')" title="${t("usrResend")}">${ic("send",15)}</button>
+        <button class="btn sm" onclick="toggleUser('${u.id}',${u.active?0:1})" ${me&&me.id===u.id?'disabled style="opacity:.4"':''}>
+          ${u.active?t("usrBlock"):t("usrUnblock")}</button>
+      </div>
+    </div>`).join("");
+  $("#v-users").innerHTML=`
+    <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="rowgrow"><b>${t("usrCount",usersCache.length)}</b>
+        <div class="meta">${t("usrHint")}</div></div>
+      <button class="btn primary" onclick="openUserEdit(null)">${ic("plus")}${t("usrNew")}</button>
+    </div></div>
+    <div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">—</div>`}</div></div>
+    <div class="panel">
+      <div class="panel-h"><h3>${ic("lock",18)} ${t("usrOwnPw")}</h3></div>
+      <div class="panel-b">
+        <div class="kv"><span class="k">${t("usrCurPw")}</span>
+          <input class="inp" style="width:190px" type="password" id="pwCur" autocomplete="current-password"></div>
+        <div class="kv"><span class="k">${t("usrNewPw")}</span>
+          <input class="inp" style="width:190px" type="password" id="pwNew" autocomplete="new-password"></div>
+        <div style="margin-top:12px"><button class="btn" onclick="changeOwnPassword()">${ic("check",16)}${t("usrChangePw")}</button></div>
+      </div>
+    </div>`;
+}
+function openUserEdit(uid){
+  const u=uid?usersCache.find(x=>x.id===uid):null;
+  let role=u?u.role:"editor";
+  $("#sheetTitle").textContent=u?t("usrEditTitle",u.name):t("usrNewTitle");
+  $("#sheetBody").innerHTML=`
+    <label class="fld">${t("teName")}</label><input class="inp" id="uName" value="${esc(u?u.name:"")}">
+    <label class="fld">${t("teEmail")}</label>
+    <input class="inp" id="uMail" type="email" autocapitalize="off" spellcheck="false" value="${esc(u?u.email:"")}">
+    <div class="fldrow" style="align-items:center;margin-top:14px">
+      <label class="fld" style="margin:0">${t("usrRole")}</label>
+      <span class="langsw" id="uRoleSw">
+        <button onclick="setURole('editor')" class="${role==='editor'?'on':''}">${t("roleEditor")}</button>
+        <button onclick="setURole('admin')" class="${role==='admin'?'on':''}">${t("roleAdmin")}</button>
+      </span>
+    </div>
+    <div class="meta" style="margin-top:6px">${t("usrRoleHint")}</div>
+    ${u?"":`<div class="meta" style="margin-top:14px">${t("usrInviteHint")}</div>`}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
+    <button class="btn primary" onclick="saveUser(${u?`'${u.id}'`:"null"})">${ic("check",15)}${u?t("save"):t("usrCreate")}</button>`;
+  window.__uRole=role; openSheet();
+}
+function setURole(r){
+  window.__uRole=r;
+  const sw=$("#uRoleSw"); if(!sw)return;
+  [...sw.children].forEach((b,i)=>b.classList.toggle("on", (i===0)===(r==="editor")));
+}
+async function saveUser(uid){
+  const name=val("uName").trim(), email=val("uMail").trim(), role=window.__uRole||"editor";
+  if(!name){ toast(t("teName")+"?","crit"); return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast(t("usrBadMail"),"crit"); return; }
+  const wasSetup = !!S.setupMode && !uid;     // erstes Konto während der Ersteinrichtung?
+  try{
+    const d=await apiCall("user.save", uid?{id:uid,name,email,role}:{name,email,role});
+    closeSheet();
+    if(wasSetup){
+      // Ab jetzt gilt die E-Mail-Anmeldung — die PIN-Sitzung endet hier bewusst.
+      finishSetup(email, !!d.invited);
+      return;
+    }
+    await renderUsers();
+    toast(uid?t("usrSaved"):(d.invited?t("usrInvited",name):t("usrCreatedNoMail")), "good");
+  }catch(e){ toast(e.message,"crit"); }
+}
+/* Ersteinrichtung abgeschlossen: abmelden und erklären, wie es weitergeht. */
+function finishSetup(email, invited){
+  stopPolling(); AUTH=""; try{localStorage.removeItem("etaf_token");}catch(e){}
+  S.me=null; S.setupMode=false;
+  $("#app").style.display="none"; $("#lock").style.display="flex";
+  showLoginForm(true);
+  const f=$("#lgEmail"); if(f)f.value=email;
+  lgInfo(invited ? t("setupDone",email) : t("setupDoneNoMail",email));
+}
+async function toggleUser(uid,active){
+  try{ await apiCall("user.setActive",{id:uid,active}); await renderUsers();
+    toast(active?t("usrUnblocked"):t("usrBlockedToast"),"good");
+  }catch(e){ toast(e.message,"crit"); }
+}
+async function resendInvite(uid){
+  try{ const d=await apiCall("user.sendInvite",{id:uid});
+    toast(d.sent?t("usrResent"):t("usrResendFail"), d.sent?"good":"warn");
+  }catch(e){ toast(e.message,"crit"); }
+}
+async function changeOwnPassword(){
+  const cur=val("pwCur"), nw=val("pwNew");
+  if(nw.length<8){ toast(t("usrPwShort"),"crit"); return; }
+  try{ await apiCall("auth.changePassword",{current:cur,new:nw});
+    $("#pwCur").value=""; $("#pwNew").value=""; toast(t("usrPwChanged"),"good");
+  }catch(e){ toast(e.message,"crit"); }
+}
+
+/* ============================================================
+   ÄNDERUNGSPROTOKOLL — wer hat wann was geändert
+   ============================================================ */
+const ACT_ICON={login:"lock","user.create":"users","user.update":"users","user.invite":"send",
+  "user.activate":"users","user.deactivate":"users","password.set":"lock","password.reset":"lock",
+  "password.change":"lock","training.create":"cal","training.update":"cal","training.delete":"trash",
+  "trainer.create":"id","trainer.update":"id","trainer.delete":"trash","client.create":"book",
+  "client.update":"book","client.delete":"trash","request.status":"reply"};
+async function renderActivity(){
+  let list=[];
+  if(LIVE){ try{ const d=await apiCall("activity.list",{limit:200}); list=d.activity||[]; }catch(e){} }
+  const rows=list.map(a=>`
+    <div class="row">
+      <div class="av" style="width:30px;height:30px;background:var(--panel-2);color:var(--muted)">${ic(ACT_ICON[a.action]||"log",15)}</div>
+      <div class="rowgrow">
+        <div class="nm">${esc(a.user_name||"—")} <span class="meta" style="font-weight:500">· ${esc(t("act_"+a.action)!=="act_"+a.action?t("act_"+a.action):a.action)}</span></div>
+        <div class="meta">${esc(a.summary||"")}</div>
+      </div>
+      <span class="meta nowrap">${fmtWhen(a.created_at)}</span>
+    </div>`).join("");
+  $("#v-activity").innerHTML=`
+    <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="rowgrow"><b>${t("actCount",list.length)}</b><div class="meta">${t("actHint")}</div></div>
+      <button class="btn sm" onclick="renderActivity()">${ic("sync",15)}${t("sync")}</button>
+    </div></div>
+    <div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">${t("actEmpty")}</div>`}</div></div>`;
+}
+
+/* ============================================================
+   ÜBERSCHREIB-SCHUTZ — Dialog bei veralteter Fassung
+   ============================================================ */
+/* Zeigt: „X hat den Eintrag inzwischen geändert“ + Neu laden / Trotzdem speichern. */
+function conflictDialog(info, onReload, onForce){
+  $("#sheetTitle").textContent=t("cfTitle");
+  $("#sheetBody").innerHTML=`
+    <div class="ampel a-red" style="margin:0 0 16px"><span class="lamp"></span>
+      <div class="rowgrow"><b>${t("cfHead")}</b>
+        <div class="meta">${t("cfBy", esc(info.by||"—"), info.at?fmtWhen(info.at):"")}</div></div></div>
+    <div class="meta">${t("cfExplain")}</div>`;
+  $("#sheetFoot").innerHTML=`
+    <button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <div class="spacer"></div>
+    <button class="btn" onclick="__cfForce()" style="border-color:var(--crit);color:var(--crit)">${t("cfOverwrite")}</button>
+    <button class="btn primary" onclick="__cfReload()">${ic("sync",15)}${t("cfReload")}</button>`;
+  window.__cfReload=async()=>{ closeSheet(); await pull(); render(); toast(t("cfReloaded"),"good"); if(onReload)onReload(); };
+  window.__cfForce =async()=>{ closeSheet(); if(onForce)await onForce(); };
+  openSheet();
+}
+/* Führt einen Speichervorgang aus und fängt Versionskonflikte ab. */
+async function saveGuarded(action, payload, onDone){
+  try{
+    const d=await apiCall(action,payload);
+    if(onDone)await onDone(d);
+    return true;
+  }catch(e){
+    if(e && e.conflict){
+      conflictDialog(e, null, async()=>{
+        try{ const d=await apiCall(action,Object.assign({},payload,{force:1}));
+          if(onDone)await onDone(d); toast(t("cfForced"),"warn");
+        }catch(e2){ toast(e2.message,"crit"); }
+      });
+      return false;
+    }
+    toast("Fehler: "+e.message,"crit"); return false;
+  }
+}
+
 /* Erledigen-Dialog: Antwort formulieren und (optional) direkt an den Trainer mailen. */
 let rsvTrId=null, rsvLang="de";
 function openResolve(trId){
@@ -3510,8 +3893,13 @@ async function saveTrainingEditor(){
     need:parseInt($("#edNeed").value)||1,participants:parseInt($("#edPart").value)||0};
   let newId=null, prefilled=0;
   if(LIVE){
-    try{ const d=await apiCall("training.save",Object.assign({id:edTraining?edTraining.id:null,client:data.clientId},data));
-      await pull(); newId=d.id; if(d.prefilled)prefilled=d.prefilled; }catch(e){ toast("Fehler: "+e.message,"crit"); return; }
+    // mit Versionsprüfung: warnt, wenn jemand anders den Eintrag inzwischen geändert hat
+    const payload=Object.assign({id:edTraining?edTraining.id:null,client:data.clientId,
+      version:edTraining?edTraining.version:null},data);
+    const ok=await saveGuarded("training.save",payload,async d=>{
+      await pull(); newId=d.id; if(d.prefilled)prefilled=d.prefilled;
+    });
+    if(!ok) return;
   } else {
     if(edTraining){ Object.assign(edTraining,data); newId=edTraining.id; }
     else {
@@ -3860,8 +4248,11 @@ buildKeys();drawDots();applyStatic();
    erneutes PIN-Eingeben nach „Seite aktualisieren“, und die zuletzt
    geöffnete Ansicht (z. B. ein Training) wird wiederhergestellt. */
 (async function resumeSession(){
-  if(!(LIVE && AUTH))return;
-  try{ await pull(); restoreView(); unlock(); markSynced(); }
-  catch(e){ try{localStorage.removeItem("etaf_token");}catch(_){} AUTH=""; }
+  if(!LIVE){ showLoginForm(false); return; }
+  if(AUTH){
+    try{ await pull(); restoreView(); unlock(); markSynced(); return; }
+    catch(e){ try{localStorage.removeItem("etaf_token");}catch(_){} AUTH=""; }
+  }
+  setupLoginMode();          // entscheidet: E-Mail-Anmeldung oder PIN (Ersteinrichtung)
 })();
 </script>

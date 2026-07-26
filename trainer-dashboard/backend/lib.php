@@ -24,52 +24,171 @@ function client_ip(): string { return $_SERVER['REMOTE_ADDR'] ?? 'cli'; }
  *  Sperre: nach LOGIN_MAX Fehlversuchen ist der Login LOGIN_WINDOW Sekunden gesperrt. */
 const LOGIN_MAX = 5;      // erlaubte Fehlversuche
 const LOGIN_WINDOW = 300; // Sperr-/Zählfenster in Sekunden (5 Minuten)
-function do_login(string $pin): array {
+/** Zählt Fehlversuche pro IP und sperrt nach LOGIN_MAX für LOGIN_WINDOW Sekunden. */
+function login_guard_check(): void {
   $ip=client_ip();
   $row=q("SELECT cnt,window_start FROM login_attempts WHERE ip=?",[$ip])->fetch();
   $win=$row['window_start']??null; $cnt=(int)($row['cnt']??0);
   if($win && (strtotime($win) > time()-LOGIN_WINDOW) && $cnt>=LOGIN_MAX){
-    $wait = (int)ceil((strtotime($win)+LOGIN_WINDOW - time())/60);
+    $wait=(int)ceil((strtotime($win)+LOGIN_WINDOW-time())/60);
     fail('Zu viele Fehlversuche. Bitte in etwa '.max(1,$wait).' Minute(n) erneut probieren.',429);
   }
-  $hash=config_get('pin_hash');
-  if(!$hash || !password_verify($pin, $hash)){
-    if(!$win || strtotime($win) <= time()-LOGIN_WINDOW){
-      // neues Fenster
-      if(is_sqlite()){
-        q("INSERT INTO login_attempts(ip,cnt,window_start) VALUES(?,?,?)
-           ON CONFLICT(ip) DO UPDATE SET cnt=1,window_start=excluded.window_start",[$ip,1,now()]);
-      } else {
-        q("INSERT INTO login_attempts(ip,cnt,window_start) VALUES(?,1,?)
-           ON DUPLICATE KEY UPDATE cnt=1,window_start=VALUES(window_start)",[$ip,now()]);
-      }
+}
+function login_guard_fail(): void {
+  $ip=client_ip();
+  $row=q("SELECT cnt,window_start FROM login_attempts WHERE ip=?",[$ip])->fetch();
+  $win=$row['window_start']??null;
+  if(!$win || strtotime($win) <= time()-LOGIN_WINDOW){
+    if(is_sqlite()){
+      q("INSERT INTO login_attempts(ip,cnt,window_start) VALUES(?,?,?)
+         ON CONFLICT(ip) DO UPDATE SET cnt=1,window_start=excluded.window_start",[$ip,1,now()]);
     } else {
-      q("UPDATE login_attempts SET cnt=cnt+1 WHERE ip=?",[$ip]);
+      q("INSERT INTO login_attempts(ip,cnt,window_start) VALUES(?,1,?)
+         ON DUPLICATE KEY UPDATE cnt=1,window_start=VALUES(window_start)",[$ip,now()]);
     }
-    fail('Falscher PIN.',401);
+  } else {
+    q("UPDATE login_attempts SET cnt=cnt+1 WHERE ip=?",[$ip]);
   }
-  // Erfolg: Zähler zurücksetzen, Token ausstellen
-  q("DELETE FROM login_attempts WHERE ip=?",[$ip]);
+}
+function login_guard_reset(): void { q("DELETE FROM login_attempts WHERE ip=?",[client_ip()]); }
+
+/** Sitzung ausstellen (optional an einen Benutzer gebunden). */
+function issue_session(?int $userId): string {
   $tok=token(40);
-  q("INSERT INTO sessions(token,created_at,last_seen) VALUES(?,?,?)",[$tok,now(),now()]);
-  return ['ok'=>true,'token'=>$tok];
+  q("INSERT INTO sessions(token,user_id,created_at,last_seen) VALUES(?,?,?,?)",[$tok,$userId,now(),now()]);
+  return $tok;
+}
+
+function user_count(): int { return (int)q("SELECT COUNT(*) c FROM users WHERE active=1")->fetch()['c']; }
+function admin_count(): int { return (int)q("SELECT COUNT(*) c FROM users WHERE active=1 AND role='admin'")->fetch()['c']; }
+
+/** Gültigkeit der Einladungs-/Zurücksetz-Links in Minuten. */
+const RESET_TTL_MIN = 60;
+
+/** Login mit E-Mail + Passwort. */
+function do_login_email(string $email, string $pass): array {
+  login_guard_check();
+  $email=strtolower(trim($email));
+  $u=$email!=='' ? q("SELECT * FROM users WHERE email=?",[$email])->fetch() : null;
+  // Immer dieselbe Meldung — verrät nicht, ob die Adresse existiert.
+  if(!$u || !$u['pass_hash'] || !password_verify($pass, $u['pass_hash']) || (int)$u['active']!==1){
+    login_guard_fail();
+    fail('E-Mail oder Passwort ist nicht korrekt.',401);
+  }
+  login_guard_reset();
+  q("UPDATE users SET last_login=? WHERE id=?",[now(),$u['id']]);
+  $tok=issue_session((int)$u['id']);
+  audit_as($u,'login','user',(string)$u['id'],'angemeldet');
+  return ['ok'=>true,'token'=>$tok,'user'=>user_public($u)];
+}
+
+/** Login mit PIN — nur zur Ersteinrichtung, solange noch kein Konto existiert. */
+function do_login(string $pin): array {
+  if(user_count()>0){
+    fail('Der PIN-Zugang ist deaktiviert, seit Benutzerkonten eingerichtet sind. Bitte mit E-Mail und Passwort anmelden.',403);
+  }
+  login_guard_check();
+  $hash=config_get('pin_hash');
+  if(!$hash || !password_verify($pin, $hash)){ login_guard_fail(); fail('Falscher PIN.',401); }
+  login_guard_reset();
+  return ['ok'=>true,'token'=>issue_session(null),'setup'=>true];
+}
+
+function user_public(array $u): array {
+  return ['id'=>(string)$u['id'],'email'=>$u['email'],'name'=>$u['name'],
+          'role'=>$u['role']??'editor','active'=>((int)($u['active']??1))===1,
+          'lastLogin'=>$u['last_login']??''];
 }
 
 function auth_token(): ?string {
   $h=$_SERVER['HTTP_X_AUTH_TOKEN'] ?? ($_GET['token'] ?? '');
   return $h!=='' ? $h : null;
 }
+
+/** Angemeldeter Benutzer der aktuellen Sitzung (null im Einrichtungsmodus). */
+function current_user(): ?array {
+  static $cached=false, $u=null;
+  if($cached!==false) return $u;
+  $cached=true;
+  $tok=auth_token(); if(!$tok) return $u=null;
+  $s=q("SELECT user_id FROM sessions WHERE token=?",[$tok])->fetch();
+  if(!$s || !$s['user_id']) return $u=null;
+  $row=q("SELECT * FROM users WHERE id=? AND active=1",[$s['user_id']])->fetch();
+  return $u = $row ?: null;
+}
+
 function require_auth(): void {
   $tok=auth_token();
   if(!$tok) fail('Nicht angemeldet.',401);
-  $row=q("SELECT token,created_at FROM sessions WHERE token=?",[$tok])->fetch();
+  $row=q("SELECT token,created_at,user_id FROM sessions WHERE token=?",[$tok])->fetch();
   if(!$row) fail('Sitzung ungültig.',401);
   $maxDays=(int)(cfg()['session_days']??14);
   if(strtotime($row['created_at']) < time()-$maxDays*86400){
     q("DELETE FROM sessions WHERE token=?",[$tok]);
     fail('Sitzung abgelaufen.',401);
   }
+  // Sitzung ohne Benutzer ist nur gültig, solange noch kein Konto existiert (Ersteinrichtung).
+  if(!$row['user_id'] && user_count()>0){
+    q("DELETE FROM sessions WHERE token=?",[$tok]);
+    fail('Bitte neu anmelden — es gibt jetzt Benutzerkonten.',401);
+  }
+  if($row['user_id'] && !current_user()){
+    q("DELETE FROM sessions WHERE token=?",[$tok]);
+    fail('Dieses Konto ist deaktiviert.',403);
+  }
   q("UPDATE sessions SET last_seen=? WHERE token=?",[now(),$tok]);
+}
+
+/** Nur für Admins (im Einrichtungsmodus ohne Konten erlaubt). */
+function require_admin(): void {
+  require_auth();
+  $u=current_user();
+  if(!$u){ if(user_count()===0) return; fail('Nur für Administratoren.',403); }
+  if(($u['role']??'editor')!=='admin') fail('Dafür fehlen dir die Rechte (nur Administratoren).',403);
+}
+
+function is_admin(): bool {
+  $u=current_user();
+  return $u ? (($u['role']??'editor')==='admin') : (user_count()===0);
+}
+
+/** Änderungsprotokoll schreiben. */
+function audit_as(?array $u, string $action, string $entity='', string $entityId='', string $summary=''): void {
+  try{
+    q("INSERT INTO activity(user_id,user_name,action,entity,entity_id,summary,created_at)
+       VALUES(?,?,?,?,?,?,?)",
+      [$u['id']??null, $u['name']??($u['email']??'Einrichtung'), $action, $entity, $entityId,
+       mb_substr($summary,0,240), now()]);
+  }catch(Throwable $e){ /* Protokoll darf nie den Vorgang blockieren */ }
+}
+function audit(string $action, string $entity='', string $entityId='', string $summary=''): void {
+  audit_as(current_user(), $action, $entity, $entityId, $summary);
+}
+/** Anzeigename des aktuellen Benutzers (für „zuletzt geändert von“). */
+function actor_name(): string {
+  $u=current_user();
+  return $u ? ($u['name'] ?: $u['email']) : 'Einrichtung';
+}
+
+/**
+ * Optimistisches Sperren: prüft, ob der Datensatz seit dem Laden verändert wurde.
+ * $expected = Version, die der Browser geladen hatte (null/0 = Prüfung überspringen).
+ * Bricht mit 409 ab und meldet, wer wann geändert hat.
+ */
+function check_version(string $table, $id, $expected, bool $force=false): void {
+  if($force || $expected===null || $expected==='' ) return;
+  $row=q("SELECT version,updated_at,updated_by FROM $table WHERE id=?",[$id])->fetch();
+  if(!$row) return;                                  // neu oder gelöscht → nichts zu prüfen
+  $cur=(int)($row['version']??1);
+  if($cur === (int)$expected) return;
+  out(['ok'=>false,'conflict'=>true,
+       'error'=>'Dieser Eintrag wurde inzwischen geändert.',
+       'by'=>$row['updated_by']??'', 'at'=>$row['updated_at']??'', 'version'=>$cur], 409);
+}
+/** Version hochzählen + „zuletzt geändert von/am“ setzen. */
+function bump_version(string $table, $id): void {
+  try{ q("UPDATE $table SET version=COALESCE(version,1)+1, updated_at=?, updated_by=? WHERE id=?",
+        [now(), actor_name(), $id]); }catch(Throwable $e){}
 }
 
 /** Vollständiger State im Frontend-Format */
@@ -112,6 +231,7 @@ function get_state(): array {
       'notes'=>$r['notes']??'',
       'prefLang'=>$r['pref_lang']??'',
       'reviews'=>$revBy[(string)$r['id']] ?? [],
+      'version'=>(int)($r['version']??1), 'updatedAt'=>$r['updated_at']??'', 'updatedBy'=>$r['updated_by']??'',
     ];
   }, q("SELECT * FROM trainers ORDER BY id")->fetchAll());
 
@@ -179,6 +299,8 @@ function get_state(): array {
       ],
       'materials'=>$matByT[(string)$r['id']] ?? [],
       'roster'=>$byT[(string)$r['id']] ?? [],
+      // für den Überschreib-Schutz
+      'version'=>(int)($r['version']??1), 'updatedAt'=>$r['updated_at']??'', 'updatedBy'=>$r['updated_by']??'',
     ];
   }, q("SELECT * FROM trainings ORDER BY id")->fetchAll());
 
@@ -188,9 +310,12 @@ function get_state(): array {
       'en'=>['name'=>$r['en_name'],'subject'=>$r['en_subject'],'body'=>$r['en_body']]];
   }, q("SELECT * FROM templates ORDER BY id")->fetchAll());
 
+  $me=current_user();
   return ['ok'=>true,'lang'=>'de','emailLang'=>'en',
     'clients'=>$clients,'materials'=>$materials,'matPresets'=>$matPresets,
-    'trainers'=>$trainers,'trainings'=>$trainings,'templates'=>$templates];
+    'trainers'=>$trainers,'trainings'=>$trainings,'templates'=>$templates,
+    'me'=>$me?user_public($me):null,
+    'setupMode'=>(user_count()===0)];
 }
 
 /** Platzhalter füllen */

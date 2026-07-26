@@ -169,6 +169,42 @@ function transfer_send(string $clientId, string $lang, bool $reminder=false): ar
   return ['ok'=>true,'sent'=>$ok?1:0,'count'=>count($rows)];
 }
 
+/**
+ * Einladung bzw. Passwort-Zurücksetzen: Einmal-Link per E-Mail.
+ * $purpose: 'invite' (Konto neu, Passwort erstmalig setzen) | 'reset'
+ */
+function send_reset_mail(array $u, string $purpose='reset'): bool {
+  // Alte, noch offene Links dieses Kontos entwerten
+  q("DELETE FROM reset_tokens WHERE user_id=? AND used_at IS NULL",[$u['id']]);
+  $tok=token(48);
+  q("INSERT INTO reset_tokens(tok,user_id,purpose,created_at) VALUES(?,?,?,?)",
+    [$tok,$u['id'],$purpose,now()]);
+  $url=base_url().'/reset.php?token='.$tok;
+  $first=explode(' ', preg_replace('/^Dr\.\s*/','',trim((string)($u['name']??''))))[0];
+  $mins=RESET_TTL_MIN;
+  if($purpose==='invite'){
+    $subj='Dein Zugang zur ETAF Trainer-Koordination';
+    $body="Hallo $first,\n\nfür dich wurde ein Zugang zur ETAF Trainer-Koordination angelegt.\n\n"
+      ."Bitte lege über den Button unten dein Passwort fest — der Link ist $mins Minuten gültig "
+      ."und kann nur einmal verwendet werden.\n\n"
+      ."Deine Anmelde-Adresse: ".$u['email'];
+    $cta='Passwort festlegen';
+  } else {
+    $subj='Passwort zurücksetzen — ETAF Trainer-Koordination';
+    $body="Hallo $first,\n\ndu hast angefordert, dein Passwort zurückzusetzen.\n\n"
+      ."Über den Button unten kannst du ein neues Passwort vergeben — der Link ist $mins Minuten "
+      ."gültig und kann nur einmal verwendet werden.\n\n"
+      ."Wenn du das nicht warst, kannst du diese E-Mail einfach ignorieren — dein bisheriges "
+      ."Passwort bleibt dann unverändert.";
+    $cta='Neues Passwort vergeben';
+  }
+  $ok=send_email($u['email'], $u['name']??'', $subj, email_html($body, cta_button($url,$cta)));
+  $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+  q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+     VALUES(?,?,?,?,?,?,?,?)",[null,null,$u['email'],$subj,$body,'de',$st,now()]);
+  return $ok;
+}
+
 /** Ein einzelner CTA-Button (z.B. „Einsatzplan ansehen & bestätigen“).
  *  Dunkle Schrift auf hellem Grund + Rahmen: bleibt in JEDEM Mail-Client lesbar —
  *  auch wenn Hintergrundfarben entfernt werden (sonst: weiß auf weiß = unsichtbar). */

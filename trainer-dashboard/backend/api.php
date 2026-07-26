@@ -23,12 +23,100 @@ $in = body();
 try {
 switch($action){
 
-  case 'login':
+  case 'login':                       // PIN — nur zur Ersteinrichtung
     out(do_login((string)($in['pin']??'')));
+
+  case 'auth.login':                  // E-Mail + Passwort
+    out(do_login_email((string)($in['email']??''), (string)($in['password']??'')));
+
+  case 'auth.mode':                   // Login-Maske: gibt es schon Konten?
+    out(['ok'=>true,'setup'=>(user_count()===0)]);
 
   case 'logout':
     if($t=auth_token()) q("DELETE FROM sessions WHERE token=?",[$t]);
     out(['ok'=>true]);
+
+  /* ---- Passwort vergessen: Link anfordern (verrät nie, ob die Adresse existiert) ---- */
+  case 'auth.requestReset':
+    login_guard_check();
+    $em=strtolower(trim((string)($in['email']??'')));
+    if($em!==''){
+      $u=q("SELECT * FROM users WHERE email=? AND active=1",[$em])->fetch();
+      if($u) send_reset_mail($u,'reset');
+    }
+    out(['ok'=>true]);
+
+  /* ---- Eigenes Passwort ändern ---- */
+  case 'auth.changePassword':
+    require_auth();
+    $me=current_user();
+    if(!$me) fail('Nur für angemeldete Benutzer.',403);
+    $cur=(string)($in['current']??''); $new=(string)($in['new']??'');
+    if(!password_verify($cur, $me['pass_hash']??'')) fail('Aktuelles Passwort ist nicht korrekt.',401);
+    if(strlen($new)<8) fail('Das neue Passwort muss mindestens 8 Zeichen haben.');
+    q("UPDATE users SET pass_hash=? WHERE id=?",[password_hash($new,PASSWORD_DEFAULT),$me['id']]);
+    audit('password.change','user',(string)$me['id'],'Passwort geändert');
+    out(['ok'=>true]);
+
+  /* ---- Benutzerverwaltung (nur Admin) ---- */
+  case 'users.list':
+    require_admin();
+    out(['ok'=>true,'users'=>array_map('user_public',
+      q("SELECT * FROM users ORDER BY (role='admin') DESC, name, id")->fetchAll())]);
+
+  case 'user.save':
+    require_admin();
+    $uid=$in['id']??null;
+    $em=strtolower(trim((string)($in['email']??'')));
+    $nm=trim((string)($in['name']??''));
+    $role=in_array($in['role']??'editor',['admin','editor'],true)?$in['role']:'editor';
+    if(!filter_var($em,FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige E-Mail-Adresse angeben.');
+    if($nm==='') fail('Bitte einen Namen angeben.');
+    $dupe=q("SELECT id FROM users WHERE email=?",[$em])->fetch();
+    if($dupe && (string)$dupe['id']!==(string)$uid) fail('Diese E-Mail-Adresse wird bereits verwendet.');
+    if($uid){
+      // Letzten Admin nicht zum Bearbeiter herabstufen
+      $old=q("SELECT * FROM users WHERE id=?",[$uid])->fetch();
+      if(!$old) fail('Benutzer nicht gefunden.',404);
+      if($old['role']==='admin' && $role!=='admin' && admin_count()<=1)
+        fail('Das ist der letzte Administrator — bitte zuerst einen anderen Admin ernennen.');
+      q("UPDATE users SET email=?,name=?,role=? WHERE id=?",[$em,$nm,$role,$uid]);
+      audit('user.update','user',(string)$uid,"$nm ($em, $role)");
+      out(['ok'=>true,'id'=>(string)$uid]);
+    }
+    q("INSERT INTO users(email,name,role,active,created_at) VALUES(?,?,?,1,?)",[$em,$nm,$role,now()]);
+    $uid=db()->lastInsertId();
+    $u=q("SELECT * FROM users WHERE id=?",[$uid])->fetch();
+    $sent=send_reset_mail($u,'invite');     // Einladung mit Link zum Passwort setzen
+    audit('user.create','user',(string)$uid,"$nm ($em, $role)");
+    out(['ok'=>true,'id'=>(string)$uid,'invited'=>$sent?1:0]);
+
+  case 'user.setActive':
+    require_admin();
+    $uid=$in['id']??0; $act=!empty($in['active'])?1:0;
+    $u=q("SELECT * FROM users WHERE id=?",[$uid])->fetch();
+    if(!$u) fail('Benutzer nicht gefunden.',404);
+    $me=current_user();
+    if($me && (string)$me['id']===(string)$uid && !$act) fail('Du kannst dich nicht selbst deaktivieren.');
+    if(!$act && $u['role']==='admin' && admin_count()<=1) fail('Das ist der letzte Administrator.');
+    q("UPDATE users SET active=? WHERE id=?",[$act,$uid]);
+    if(!$act) q("DELETE FROM sessions WHERE user_id=?",[$uid]);   // sofort abmelden
+    audit($act?'user.activate':'user.deactivate','user',(string)$uid,$u['name']??'');
+    out(['ok'=>true]);
+
+  case 'user.sendInvite':             // Einladung/Zurücksetzen erneut schicken
+    require_admin();
+    $u=q("SELECT * FROM users WHERE id=?",[$in['id']??0])->fetch();
+    if(!$u) fail('Benutzer nicht gefunden.',404);
+    $sent=send_reset_mail($u, empty($u['pass_hash'])?'invite':'reset');
+    audit('user.invite','user',(string)$u['id'],$u['email']);
+    out(['ok'=>true,'sent'=>$sent?1:0]);
+
+  /* ---- Änderungsprotokoll ---- */
+  case 'activity.list':
+    require_auth();
+    $lim=max(1,min(300,(int)($in['limit']??150)));
+    out(['ok'=>true,'activity'=>q("SELECT * FROM activity ORDER BY id DESC LIMIT $lim")->fetchAll()]);
 
   case 'state':
     require_auth();
@@ -44,12 +132,17 @@ switch($action){
       json_encode($in['langs']??[]), !empty($in['uae'])?1:0, (int)($in['load']??0),
       $in['color']??'#3E4852', (string)($in['rating']??'4.5'), (string)($in['notes']??''), $pl];
     if($id){
+      check_version('trainers',$id,$in['version']??null,!empty($in['force']));
       q("UPDATE trainers SET name=?,email=?,phone=?,spec=?,region=?,langs=?,uae=?,load_lvl=?,color=?,rating=?,notes=?,pref_lang=? WHERE id=?",
         array_merge($fields,[$id]));
+      bump_version('trainers',$id);
+      audit('trainer.update','trainer',(string)$id,(string)($in['name']??''));
     } else {
       q("INSERT INTO trainers(name,email,phone,spec,region,langs,uae,load_lvl,color,rating,notes,pref_lang,created_at)
          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", array_merge($fields,[now()]));
       $id=db()->lastInsertId();
+      bump_version('trainers',$id);
+      audit('trainer.create','trainer',(string)$id,(string)($in['name']??''));
     }
     out(['ok'=>true,'id'=>(string)$id]);
 
@@ -78,6 +171,7 @@ switch($action){
   case 'trainer.delete':
     require_auth();
     q("DELETE FROM trainers WHERE id=?",[$in['id']??0]);
+    audit('trainer.delete','trainer',(string)($in['id']??0),'Trainer gelöscht');
     out(['ok'=>true]);
 
   /* ---- Kunde anlegen/ändern (Upsert per id) ---- */
@@ -87,9 +181,15 @@ switch($action){
     $f=[$in['name']??'', $in['short']??'', $in['color']??'#3E4852', $in['cal']??'slategray', $in['country']??'',
         $in['contactName']??'', $in['contactEmail']??''];
     $ex=q("SELECT id FROM clients WHERE id=?",[$cid])->fetch();
-    if($ex) q("UPDATE clients SET name=?,short=?,color=?,cal=?,country=?,contact_name=?,contact_email=? WHERE id=?", array_merge($f,[$cid]));
-    else    q("INSERT INTO clients(id,name,short,color,cal,country,contact_name,contact_email,sort_order) VALUES(?,?,?,?,?,?,?,?, (SELECT COALESCE(MAX(sort_order),0)+1 FROM clients c))",
-              array_merge([$cid],$f));
+    if($ex){
+      check_version('clients',$cid,$in['version']??null,!empty($in['force']));
+      q("UPDATE clients SET name=?,short=?,color=?,cal=?,country=?,contact_name=?,contact_email=? WHERE id=?", array_merge($f,[$cid]));
+    } else {
+      q("INSERT INTO clients(id,name,short,color,cal,country,contact_name,contact_email,sort_order) VALUES(?,?,?,?,?,?,?,?, (SELECT COALESCE(MAX(sort_order),0)+1 FROM clients c))",
+        array_merge([$cid],$f));
+    }
+    bump_version('clients',$cid);
+    audit($ex?'client.update':'client.create','client',(string)$cid,(string)($in['name']??''));
     out(['ok'=>true,'id'=>$cid]);
 
   case 'client.delete':
@@ -100,6 +200,7 @@ switch($action){
     $fb=q("SELECT id FROM clients WHERE id<>? ORDER BY sort_order,id LIMIT 1",[$cid])->fetch();
     if($fb) q("UPDATE trainings SET client_id=? WHERE client_id=?",[$fb['id'],$cid]);
     q("DELETE FROM clients WHERE id=?",[$cid]);
+    audit('client.delete','client',(string)$cid,'Kunde entfernt');
     out(['ok'=>true]);
 
   case 'training.setClient':
@@ -117,12 +218,17 @@ switch($action){
         $spec, (int)($in['need']??5), (int)($in['participants']??0)];
     $prefilled=0;
     if($id){
+      check_version('trainings',$id,$in['version']??null,!empty($in['force']));
       q("UPDATE trainings SET client_id=?,topic=?,city=?,country=?,kw=?,month=?,start_date=?,end_date=?,code=?,spec=?,need_cnt=?,participants=? WHERE id=?",
         array_merge($f,[$id]));
+      bump_version('trainings',$id);
+      audit('training.update','training',(string)$id,(string)($in['topic']??''));
     } else {
       q("INSERT INTO trainings(client_id,topic,city,country,kw,month,start_date,end_date,code,spec,need_cnt,participants,created_at)
          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", array_merge($f,[now()]));
       $id=db()->lastInsertId();
+      bump_version('trainings',$id);
+      audit('training.create','training',(string)$id,(string)($in['topic']??''));
       if($spec!==''){
         foreach(q("SELECT material_id,qty FROM material_presets WHERE spec=?",[$spec])->fetchAll() as $p){
           q("INSERT INTO training_materials(training_id,material_id,qty) VALUES(?,?,?)",[$id,$p['material_id'],$p['qty']]);
@@ -136,6 +242,7 @@ switch($action){
     require_auth();
     $tid=$in['id']??0;
     q("DELETE FROM trainings WHERE id=?",[$tid]);
+    audit('training.delete','training',(string)$tid,'Training gelöscht');
     q("DELETE FROM requests WHERE training_id=?",[$tid]);
     q("DELETE FROM travel WHERE training_id=?",[$tid]);
     q("DELETE FROM training_materials WHERE training_id=?",[$tid]);
@@ -231,6 +338,7 @@ switch($action){
     if($row) q("UPDATE requests SET status=?, responded_at=? WHERE id=?",[$st,now(),$row['id']]);
     else q("INSERT INTO requests(training_id,trainer_id,status,tok,created_at) VALUES(?,?,?,?,?)",
       [$tg,$tr,$st,token(40),now()]);
+    audit('request.status','training',(string)$tg,'Status → '.$st);
     out(['ok'=>true]);
 
   /* ---- Trainer über manuelle Statusänderung informieren (editierbarer Text,
