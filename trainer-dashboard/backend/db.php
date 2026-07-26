@@ -38,6 +38,17 @@ function q(string $sql, array $params=[]): PDOStatement {
   return $st;
 }
 function now(): string { return gmdate('Y-m-d H:i:s'); }
+/**
+ * Zeitstempel aus der Datenbank in Unix-Zeit umrechnen.
+ * WICHTIG: now() schreibt UTC (gmdate). strtotime() würde den Wert dagegen in der
+ * Zeitzone des Servers lesen — auf einem Server in Europe/Berlin wären alle
+ * Zeitstempel dadurch 1–2 Stunden „zu alt“. Deshalb hier immer explizit als UTC.
+ */
+function ts(?string $s): int {
+  if(!$s) return 0;
+  $t=strtotime($s.' UTC');
+  return $t===false ? 0 : $t;
+}
 function token(int $len=32): string { return bin2hex(random_bytes($len/2)); }
 
 /** Schema anlegen (idempotent) + Seed */

@@ -29,8 +29,8 @@ function login_guard_check(): void {
   $ip=client_ip();
   $row=q("SELECT cnt,window_start FROM login_attempts WHERE ip=?",[$ip])->fetch();
   $win=$row['window_start']??null; $cnt=(int)($row['cnt']??0);
-  if($win && (strtotime($win) > time()-LOGIN_WINDOW) && $cnt>=LOGIN_MAX){
-    $wait=(int)ceil((strtotime($win)+LOGIN_WINDOW-time())/60);
+  if($win && (ts($win) > time()-LOGIN_WINDOW) && $cnt>=LOGIN_MAX){
+    $wait=(int)ceil((ts($win)+LOGIN_WINDOW-time())/60);
     fail('Zu viele Fehlversuche. Bitte in etwa '.max(1,$wait).' Minute(n) erneut probieren.',429);
   }
 }
@@ -38,7 +38,7 @@ function login_guard_fail(): void {
   $ip=client_ip();
   $row=q("SELECT cnt,window_start FROM login_attempts WHERE ip=?",[$ip])->fetch();
   $win=$row['window_start']??null;
-  if(!$win || strtotime($win) <= time()-LOGIN_WINDOW){
+  if(!$win || ts($win) <= time()-LOGIN_WINDOW){
     if(is_sqlite()){
       q("INSERT INTO login_attempts(ip,cnt,window_start) VALUES(?,?,?)
          ON CONFLICT(ip) DO UPDATE SET cnt=1,window_start=excluded.window_start",[$ip,1,now()]);
@@ -123,7 +123,7 @@ function require_auth(): void {
   $row=q("SELECT token,created_at,user_id FROM sessions WHERE token=?",[$tok])->fetch();
   if(!$row) fail('Sitzung ungültig.',401);
   $maxDays=(int)(cfg()['session_days']??14);
-  if(strtotime($row['created_at']) < time()-$maxDays*86400){
+  if(ts($row['created_at']) < time()-$maxDays*86400){
     q("DELETE FROM sessions WHERE token=?",[$tok]);
     fail('Sitzung abgelaufen.',401);
   }

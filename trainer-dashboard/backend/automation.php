@@ -22,7 +22,7 @@ function run_automation(): array {
            WHERE r.status='asked'")->fetchAll();
   foreach($rows as $r){
     if(!$r['created_at']) continue;
-    $ageH=($now-strtotime($r['created_at']))/3600;
+    $ageH=($now-ts($r['created_at']))/3600;
     if($ageH>=$reminderH && (int)($r['reminder_count']??0)<1){
       $lang=($r['lang']==='de')?'de':'en';
       $tg=['topic'=>$r['topic'],'city'=>$r['city'],'country'=>$r['country'],
@@ -78,8 +78,8 @@ function run_automation(): array {
   $transfer=0;
   foreach(q("SELECT * FROM transfer_tokens WHERE confirmed_at IS NULL AND sent_at IS NOT NULL")->fetchAll() as $tt){
     if(!$tt['sent_at']) continue;
-    if(($now-strtotime($tt['sent_at']))/3600 < $reminderH) continue;      // noch zu frisch
-    if(!empty($tt['reminded_at']) && ($now-strtotime($tt['reminded_at']))/3600 < $reminderH) continue; // schon erinnert
+    if(($now-ts($tt['sent_at']))/3600 < $reminderH) continue;      // noch zu frisch
+    if(!empty($tt['reminded_at']) && ($now-ts($tt['reminded_at']))/3600 < $reminderH) continue; // schon erinnert
     $res=transfer_send((string)$tt['client_id'], 'en', true);
     if(!empty($res['ok']) && !empty($res['sent'])) $transfer++;
   }
@@ -95,7 +95,7 @@ function run_automation(): array {
     if($exp===false) continue;
     $daysLeft=(int)floor(($exp-$today)/86400);
     if($daysLeft>$lead) continue;                                    // noch genug Vorlauf
-    if(!empty($tr['passport_reminded_at']) && ($now-strtotime($tr['passport_reminded_at']))/86400 < 30) continue; // schon erinnert
+    if(!empty($tr['passport_reminded_at']) && ($now-ts($tr['passport_reminded_at']))/86400 < 30) continue; // schon erinnert
     if(empty($tr['email'])) continue;
     $fn=explode(' ', preg_replace('/^Dr\.\s*/','',trim((string)$tr['name'])))[0];
     $lang=(($tr['pref_lang']??'')==='en')?'en':'de';
@@ -143,7 +143,7 @@ function run_automation(): array {
       foreach(q("SELECT status,created_at FROM requests WHERE training_id=?",[$tgId])->fetchAll() as $r){
         if($r['status']==='no'){ $gaps++; continue; }
         if($r['status']==='asked' && $r['created_at']){
-          if(($now-strtotime($r['created_at']))/3600 >= $escalateH) $gaps++;
+          if(($now-ts($r['created_at']))/3600 >= $escalateH) $gaps++;
         }
       }
       $needMore=max(0,(int)$tg['need_cnt']-$active);

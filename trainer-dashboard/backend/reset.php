@@ -22,7 +22,7 @@ $row = $tok ? q("SELECT r.*, u.email, u.name FROM reset_tokens r
 /* Gültigkeit: nicht benutzt und nicht älter als RESET_TTL_MIN Minuten */
 $valid = false;
 if($row && empty($row['used_at']) && !empty($row['created_at'])){
-  $valid = (time() - strtotime($row['created_at'])) <= RESET_TTL_MIN*60;
+  $valid = (time() - ts($row['created_at'])) <= RESET_TTL_MIN*60;
 }
 $invite = ($row['purpose'] ?? 'reset') === 'invite';
 
