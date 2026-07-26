@@ -342,22 +342,9 @@
   .row .meta{font-size:12.5px;color:var(--muted)}
   .rowgrow{flex:1;min-width:148px}
   .rowacts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end}
-  /* Handy: Avatar links fixiert, Text über die volle Breite, Aktionen darunter.
-     Gilt für alle Listenzeilen — auch wenn Pille/Buttons direkt in .row hängen. */
-  @media(max-width:560px){
-    .row,.att{flex-wrap:wrap;position:relative;row-gap:9px;padding-left:48px}
-    .row>.av{position:absolute;left:0;top:12px}
-    .att{padding-left:42px}
-    .att>.ic{position:absolute;left:0;top:11px}
-    .row>.rowgrow,.att>.rowgrow{flex:1 1 100%;min-width:0}
-    /* alles nach dem Text (Pille, Buttons, Fit-Wert) rutscht auf eine eigene Zeile */
-    .row>.pill,.row>.fit,.row>.btn,.row>.rstat,
-    .att>.pill,.att>.attacts,.row>.rowacts{margin-top:0}
-    .rowacts,.attacts{width:100%;flex:1 1 100%;justify-content:flex-start;padding-left:0}
-    .row>.btn{flex:0 0 auto}
-    /* Panel-Kopfzeilen (z.B. „Alle Kunden · 24 Trainings“ + Knöpfe) */
-    .panel-b>.rowgrow{flex:1 1 100%}
-  }
+  /* (Die Handy-Regeln für Listenzeilen stehen gesammelt im MOBILE-FIRST-Block
+     am Ende des Stylesheets — sie MÜSSEN nach den Grundregeln kommen, sonst
+     überschreibt z.B. .att{padding:11px 0} den linken Einzug wieder.) */
   .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
   .tag{font-size:11px;background:var(--panel-2);border:1px solid var(--line);color:var(--muted);
     padding:1px 8px;border-radius:6px;font-weight:600}
@@ -554,6 +541,23 @@
     /* Plan-/Agenda-Kopf gestapelt */
     .planhead{gap:10px}
     .planactions .btn{flex:1 1 auto;justify-content:center}
+  }
+  /* Handy: Avatar/Icon links fixiert, Text über die volle Breite, Aktionen darunter.
+     Gilt für alle Listenzeilen — auch wenn Pille/Buttons direkt in .row hängen.
+     Steht bewusst HIER (nach allen Grundregeln), damit nichts zurücküberschrieben wird. */
+  @media(max-width:560px){
+    .row,.att{flex-wrap:wrap;position:relative;row-gap:9px;padding-left:48px}
+    .row>.av{position:absolute;left:0;top:12px}
+    .att{padding-left:42px}
+    .att>.ic{position:absolute;left:0;top:11px}
+    .row>.rowgrow,.att>.rowgrow{flex:1 1 100%;min-width:0}
+    /* alles nach dem Text (Pille, Buttons, Fit-Wert) rutscht auf eine eigene Zeile */
+    .row>.pill,.row>.fit,.row>.btn,.row>.rstat,
+    .att>.pill,.att>.attacts,.row>.rowacts{margin-top:0}
+    .rowacts,.att .attacts{width:100%;flex:1 1 100%;justify-content:flex-start;padding-left:0}
+    .row>.btn{flex:0 0 auto}
+    /* Panel-Kopfzeilen (z.B. „Alle Kunden · 24 Trainings“ + Knöpfe) */
+    .panel-b>.rowgrow{flex:1 1 100%}
   }
   @media(max-width:420px){
     .kpis{grid-template-columns:repeat(2,1fr);gap:10px}
