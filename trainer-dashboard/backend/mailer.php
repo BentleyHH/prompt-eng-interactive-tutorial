@@ -220,21 +220,44 @@ function cta_button(string $url, string $label, string $bg='#EDF0F3'): string {
  * Versendet eine Anfrage-Mail. Gibt true/false zurück.
  * $mode: 'mail' | 'smtp' | 'log'
  */
-function send_email(string $toEmail, string $toName, string $subject, string $html): bool {
+/**
+ * MIME-Rumpf bauen: ohne Anhänge einfaches HTML, mit Anhängen multipart/mixed.
+ * $atts: [['name'=>..., 'mime'=>..., 'data_b64'=>Base64-Inhalt], …]
+ * Setzt $ctype auf den passenden Content-Type-Headerwert.
+ */
+function build_mime_body(string $html, array $atts, string &$ctype): string {
+  if(!$atts){ $ctype='text/html; charset=UTF-8'; return $html; }
+  $b='=_ETAF_'.bin2hex(random_bytes(10));
+  $ctype='multipart/mixed; boundary="'.$b.'"';
+  $body ="--$b\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n".$html."\r\n";
+  foreach($atts as $a){
+    $name=preg_replace('/[\r\n"]+/','',(string)($a['name']??'anhang'));
+    $body.="--$b\r\n"
+      .'Content-Type: '.($a['mime']??'application/octet-stream').'; name="'.$name.'"'."\r\n"
+      ."Content-Transfer-Encoding: base64\r\n"
+      .'Content-Disposition: attachment; filename="'.$name.'"'."\r\n\r\n"
+      .chunk_split((string)($a['data_b64']??''),76,"\r\n");
+  }
+  return $body."--$b--\r\n";
+}
+
+function send_email(string $toEmail, string $toName, string $subject, string $html, array $atts=[]): bool {
   $c=cfg();
   $mode=$c['mail_mode']??'mail';
   $GLOBALS['__mail_err']='';
   if($mode==='log'){ $GLOBALS['__mail_err']="mail_mode='log' — es wird NICHTS versendet, nur protokolliert. Für echten Versand in config.php auf 'smtp' (empfohlen) oder 'mail' umstellen."; return true; }
 
   $from=$c['from_email']; $fromName=$c['from_name']??'ETAF';
-  if($mode==='smtp') return smtp_send($toEmail,$subject,$html,$c['smtp']??[],$from,$fromName);
+  if($mode==='smtp') return smtp_send($toEmail,$subject,$html,$c['smtp']??[],$from,$fromName,$atts);
 
   // PHP mail()
+  $ctype='';
+  $body=build_mime_body($html,$atts,$ctype);
   $headers = 'MIME-Version: 1.0'."\r\n"
-    .'Content-Type: text/html; charset=UTF-8'."\r\n"
+    .'Content-Type: '.$ctype."\r\n"
     .'From: '.mb_encode_mimeheader($fromName).' <'.$from.'>'."\r\n"
     .'Reply-To: '.$from."\r\n";
-  $ok=@mail($toEmail, mb_encode_mimeheader($subject), $html, $headers);
+  $ok=@mail($toEmail, mb_encode_mimeheader($subject), $body, $headers);
   if(!$ok) $GLOBALS['__mail_err']="PHP mail() hat false zurückgegeben. Auf artfiles ist für die eigene Domain oft mail_mode='smtp' zuverlässiger.";
   return $ok;
 }
@@ -246,7 +269,7 @@ $GLOBALS['__smtp_trace'] = [];
 /** Minimaler SMTP-Client (AUTH LOGIN, STARTTLS/SSL). Ohne externe Libs.
  *  Protokolliert jeden Schritt in $GLOBALS['__smtp_trace'] und setzt bei
  *  Fehlern $GLOBALS['__mail_err] mit Klartext-Grund. */
-function smtp_send(string $to, string $subject, string $html, array $s, string $from, string $fromName): bool {
+function smtp_send(string $to, string $subject, string $html, array $s, string $from, string $fromName, array $atts=[]): bool {
   $GLOBALS['__smtp_trace']=[]; $GLOBALS['__mail_err']='';
   $log=function($line) { $GLOBALS['__smtp_trace'][]=rtrim($line); };
   $host=$s['host']??''; $port=(int)($s['port']??587); $secure=$s['secure']??'tls';
@@ -272,13 +295,16 @@ function smtp_send(string $to, string $subject, string $html, array $s, string $
   if(strpos($r,'250')===false && strpos($r,'251')===false){ $GLOBALS['__mail_err']='Empfänger abgelehnt: '.trim($r); fclose($fp); return false; }
   $r=$cmd('DATA');
   if(strpos($r,'354')===false){ $GLOBALS['__mail_err']='DATA abgelehnt (kein 354): '.trim($r); fclose($fp); return false; }
+  $ctype='';
+  $body=build_mime_body($html,$atts,$ctype);
+  $body=preg_replace('/^\./m','..',$body);           // Punkt-Stuffing (SMTP)
   $data='From: '.mb_encode_mimeheader($fromName).' <'.$from.'>'."\r\n"
     .'To: <'.$to.'>'."\r\n"
     .'Subject: '.mb_encode_mimeheader($subject)."\r\n"
     .'MIME-Version: 1.0'."\r\n"
-    .'Content-Type: text/html; charset=UTF-8'."\r\n\r\n"
-    .$html."\r\n.";
-  $log('>> [Nachricht … '.strlen($html).' Bytes]');
+    .'Content-Type: '.$ctype."\r\n\r\n"
+    .$body."\r\n.";
+  $log('>> [Nachricht … '.strlen($body).' Bytes'.($atts?', '.count($atts).' Anhang/Anhänge':'').']');
   fwrite($fp,$data."\r\n"); $r=$read();
   $ok=strpos($r,'250')!==false;
   if(!$ok) $GLOBALS['__mail_err']='Server hat die Nachricht nicht angenommen: '.trim($r);

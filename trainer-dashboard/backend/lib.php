@@ -311,7 +311,10 @@ function get_state(): array {
   }, q("SELECT * FROM templates ORDER BY id")->fetchAll());
 
   $me=current_user();
-  return ['ok'=>true,'lang'=>'de','emailLang'=>'en',
+  // Anzahl ungeprüfter Flugpost-Mails (für den Badge in der Navigation)
+  $flightNew=0;
+  try{ $flightNew=(int)q("SELECT COUNT(*) c FROM travel_mail WHERE status='new'")->fetch()['c']; }catch(Throwable $e){}
+  return ['ok'=>true,'lang'=>'de','emailLang'=>'en','flightMailNew'=>$flightNew,
     'clients'=>$clients,'materials'=>$materials,'matPresets'=>$matPresets,
     'trainers'=>$trainers,'trainings'=>$trainings,'templates'=>$templates,
     'me'=>$me?user_public($me):null,

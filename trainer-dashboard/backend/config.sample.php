@@ -51,6 +51,20 @@ return [
     'pass' => '',
   ],
 
+  // ---- Flugpost: Postfach-Abruf für Flugbestätigungen -------------
+  // Die Automatik ruft dieses Postfach per POP3 ab (Mails BLEIBEN liegen),
+  // erkennt Flugbuchungen per KI und schlägt die Zuordnung zu Trainer +
+  // Training vor. Empfehlung: eigene Adresse anlegen (z.B. fluege@…) und
+  // Buchungsbestätigungen dorthin weiterleiten — dann liest die KI nicht
+  // das ganze Hauptpostfach. Leer lassen = Funktion aus.
+  'mailbox' => [
+    'host' => 'pop3.artfiles.de',
+    'port' => 995,                 // 995 = POP3 über SSL
+    'secure' => 'ssl',
+    'user' => '',                  // volle E-Mail-Adresse
+    'pass' => '',
+  ],
+
   // ---- KI: Profilanlage aus Text (Claude API) ---------------------
   // API-Key aus console.anthropic.com. Leer lassen = KI-Import deaktiviert
   // (das Dashboard läuft trotzdem, der Import zeigt dann einen Hinweis).

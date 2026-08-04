@@ -112,6 +112,45 @@ switch($action){
     audit('user.invite','user',(string)$u['id'],$u['email']);
     out(['ok'=>true,'sent'=>$sent?1:0]);
 
+  /* ---- Flugpost: erkannte Flugbuchungen prüfen & übernehmen ---- */
+  case 'mail.poll':
+    require_auth();
+    require_once __DIR__.'/mailfetch.php';
+    out(poll_mailbox());
+
+  case 'mail.list':
+    require_auth();
+    $rows=q("SELECT id,from_addr,subject,received_at,status,extracted,match_trainer_id,match_training_id,confidence,created_at
+             FROM travel_mail WHERE status IN('new','applied','ignored')
+             ORDER BY (status='new') DESC, id DESC LIMIT 60")->fetchAll();
+    $ids=array_column($rows,'id');
+    $attBy=[];
+    if($ids){
+      $ph=implode(',',array_fill(0,count($ids),'?'));
+      foreach(q("SELECT mail_id,name,mime,LENGTH(data) sz FROM travel_mail_att WHERE mail_id IN($ph)",$ids)->fetchAll() as $a)
+        $attBy[(string)$a['mail_id']][]=['name'=>$a['name'],'mime'=>$a['mime']];
+    }
+    out(['ok'=>true,'mails'=>array_map(function($r) use($attBy){
+      return ['id'=>(string)$r['id'],'from'=>$r['from_addr'],'subject'=>$r['subject'],
+        'status'=>$r['status'],'extracted'=>json_decode($r['extracted']?:'{}',true),
+        'trainerId'=>$r['match_trainer_id']?(string)$r['match_trainer_id']:null,
+        'trainingId'=>$r['match_training_id']?(string)$r['match_training_id']:null,
+        'confidence'=>$r['confidence'],'at'=>$r['created_at'],
+        'atts'=>$attBy[(string)$r['id']]??[]];
+    },$rows)]);
+
+  case 'mail.apply':
+    require_auth();
+    require_once __DIR__.'/mailfetch.php';
+    $trId=(int)($in['trainer']??0); $tgId=(int)($in['training']??0);
+    if(!$trId||!$tgId) fail('Bitte Trainer und Training auswählen.');
+    out(mail_apply((int)($in['id']??0), $trId, $tgId));
+
+  case 'mail.ignore':
+    require_auth();
+    q("UPDATE travel_mail SET status='ignored' WHERE id=?",[$in['id']??0]);
+    out(['ok'=>true]);
+
   /* ---- Änderungsprotokoll ---- */
   case 'activity.list':
     require_auth();
@@ -648,10 +687,20 @@ switch($action){
     $btns='<div style="margin:22px 0"><a href="'.$link.'" style="display:inline-block;padding:12px 20px;'
       .'border-radius:8px;background:#3e4852;color:#fff;font:600 14px system-ui,Arial,sans-serif;text-decoration:none">'
       .$btnLabel.'</a></div>';
-    $ok=send_email($tr['email'],$tr['name'],$subj,email_html($intro,$btns));
+    // Ticket/Voucher aus der verknüpften Flugpost-Mail automatisch anhängen
+    $atts=[];
+    $tv=q("SELECT mail_id FROM travel WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+    if($tv && $tv['mail_id']){
+      foreach(q("SELECT name,mime,data FROM travel_mail_att WHERE mail_id=?",[$tv['mail_id']])->fetchAll() as $a){
+        $atts[]=['name'=>$a['name'],'mime'=>$a['mime'],'data_b64'=>$a['data']];
+      }
+      if($atts) $intro.=$lang==='de' ? "\n\nDein Ticket/Voucher hängt an dieser E-Mail."
+                                     : "\n\nYour ticket/voucher is attached to this email.";
+    }
+    $ok=send_email($tr['email'],$tr['name'],$subj,email_html($intro,$btns),$atts);
     q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
        VALUES(?,?,?,?,?,?,?,?)",[$tgId,$trId,$tr['email'],$subj,$intro."\n".$link,$lang,$ok?'sent':'failed',now()]);
-    out(['ok'=>true,'link'=>$link,'sent'=>$ok?1:0]);
+    out(['ok'=>true,'link'=>$link,'sent'=>$ok?1:0,'attached'=>count($atts)]);
 
   default:
     fail('Unbekannte Aktion: '.$action, 404);

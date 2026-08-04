@@ -788,6 +788,7 @@ async function pull(){
   if(d.materials)S.materials=d.materials;
   if(d.matPresets)S.matPresets=d.matPresets;
   S.me=d.me||null; S.setupMode=!!d.setupMode;
+  S.flightMailNew=d.flightMailNew||0;
 }
 /* Nach jedem pull() zeigt S.trainings frische Objekte — curTg muss neu
    aufgelöst werden, sonst rendert die Detailansicht veraltete Daten. */
@@ -891,6 +892,22 @@ const L={
   cfExplain:"Damit nichts verloren geht, wurde noch nicht gespeichert. Lade den aktuellen Stand neu (deine Eingaben im Formular gehen dabei verloren) — oder überschreibe die fremde Änderung bewusst.",
   cfReload:"Neu laden", cfOverwrite:"Trotzdem überschreiben",
   cfReloaded:"Aktueller Stand geladen", cfForced:"Gespeichert — fremde Änderung überschrieben",
+  // Flugpost
+  fmTitle:"Flugpost", fmHint:"Flugbestätigungen aus dem Postfach — automatisch erkannt, hier kurz prüfen und übernehmen.",
+  fmPoll:"Postfach jetzt abrufen", fmPolled:(n,f)=>`${n} neue Mail(s) geholt, ${f} Flugbuchung(en) erkannt`,
+  fmDemo:"Der Postfach-Abruf ist nur in der Live-Version aktiv (mailbox in config.php).",
+  fmEmpty:"Keine Flugpost — sobald eine Buchungsbestätigung im Postfach liegt, erscheint sie hier.",
+  fmRef:"Buchungscode", fmNoExtract:"Keine Flugdaten automatisch erkennbar — bitte unten manuell zuordnen; Anhänge werden trotzdem verknüpft.",
+  fmConfHigh:"Zuordnung sicher", fmConfLow:"Zuordnung unsicher", fmConfNone:"Keine Zuordnung",
+  fmApplied:"Übernommen", fmIgnored:"Ignoriert",
+  fmPickTrainer:"Trainer wählen …", fmPickTraining:"Training wählen …",
+  fmPickBoth:"Bitte Trainer und Training auswählen.",
+  fmApply:"Übernehmen", fmIgnore:"Ignorieren",
+  fmAppliedToast:"Reisedaten übernommen — Ticket hängt künftig an der Agenda",
+  // Reise-Checkliste
+  frFlight:"Flüge", frHotel:"Hotel", frVisa:"Visum", frPass:"Pass",
+  frReady:"Reise komplett", frAllSet:"Flug, Hotel, Visum und Pass sind komplett — bereit für die Agenda.",
+  frMissing:"Es fehlt",
   tp_book:"Belegung", tp_bookSub:"Wer ist wann wo gebucht — filterbar nach Trainer",
   bkAllTrainers:"Alle Trainer", bkAllStatus:"Alle Status", bkTrainer:"Trainer", bkClient:"Kunde", bkMonth:"Zeitraum",
   bkAllClients:"Alle Kunden", bkAllMonths:"Alle Zeiträume", bkGroup:"Gruppieren", bkGrpNone:"Keine Gruppierung",
@@ -1172,6 +1189,22 @@ const L={
   cfExplain:"Nothing was saved yet, so no work is lost. Either reload the current state (your entries in this form will be discarded) — or deliberately overwrite the other change.",
   cfReload:"Reload", cfOverwrite:"Overwrite anyway",
   cfReloaded:"Current state loaded", cfForced:"Saved — the other change was overwritten",
+  // Flight mail
+  fmTitle:"Flight inbox", fmHint:"Flight confirmations from the mailbox — detected automatically, review and apply here.",
+  fmPoll:"Check mailbox now", fmPolled:(n,f)=>`${n} new mail(s) fetched, ${f} flight booking(s) detected`,
+  fmDemo:"Mailbox polling is only active in the live version (mailbox in config.php).",
+  fmEmpty:"No flight mail yet — booking confirmations will appear here.",
+  fmRef:"Booking ref", fmNoExtract:"No flight data could be detected — assign manually below; attachments are linked anyway.",
+  fmConfHigh:"Match certain", fmConfLow:"Match uncertain", fmConfNone:"No match",
+  fmApplied:"Applied", fmIgnored:"Ignored",
+  fmPickTrainer:"Pick trainer …", fmPickTraining:"Pick training …",
+  fmPickBoth:"Please pick trainer and training.",
+  fmApply:"Apply", fmIgnore:"Ignore",
+  fmAppliedToast:"Travel data applied — the ticket will be attached to the agenda",
+  // Travel readiness
+  frFlight:"Flights", frHotel:"Hotel", frVisa:"Visa", frPass:"Passport",
+  frReady:"Travel complete", frAllSet:"Flights, hotel, visa and passport are complete — ready for the agenda.",
+  frMissing:"Missing",
   tp_book:"Bookings", tp_bookSub:"Who is booked when and where — filter by trainer",
   bkAllTrainers:"All trainers", bkAllStatus:"All statuses", bkTrainer:"Trainer", bkClient:"Client", bkMonth:"Period",
   bkAllClients:"All clients", bkAllMonths:"All periods", bkGroup:"Group by", bkGrpNone:"No grouping",
@@ -1781,7 +1814,7 @@ function inboxItems(){ return (S.trainers||[]).filter(tr=>tr.plan&&tr.plan.statu
 function inboxAll(){ return (S.trainers||[]).filter(tr=>tr.plan&&tr.plan.status==="issue"&&tr.plan.note)
   .map(tr=>({tr,note:tr.plan.note,at:tr.plan.confirmedAt,resolvedAt:tr.plan.resolvedAt}))
   .sort((a,b)=>(a.resolvedAt?1:0)-(b.resolvedAt?1:0) || String(b.at||"").localeCompare(String(a.at||""))); }
-function inboxCount(){ return inboxItems().length; }
+function inboxCount(){ return inboxItems().length + (S.flightMailNew||0); }
 let route="dash";
 /* Auf dem Handy nur die wichtigsten Ziele in der Leiste — der Rest liegt hinter „Mehr“.
    Acht Einträge nebeneinander bräuchten ~560px und würden das Layout sprengen. */
@@ -2159,6 +2192,7 @@ function rosterRow(x,tg){
     <div class="rowacts">
       ${x.reminded?`<span class="tag" style="border-color:var(--warn);color:var(--warn)">${t("reminded")}</span>`:''}
       ${(needsVisa(tg.country)&&(x.status==='yes'||x.status==='confirmed'))?visaChip(x):''}
+      ${readyChip(tg,x)}
       <span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${edit}${acts}
     </div>
   </div>`;
@@ -2248,6 +2282,30 @@ function visaChip(x){
   const vs=(x.flight&&x.flight.visaStatus)||'none';
   const cls={approved:'good',rejected:'crit',needed:'warn',applied:'warn',none:'neutral'}[vs]||'neutral';
   return `<span class="pill ${cls}">${t("visaLbl")}: ${t("visa_"+vs)}</span>`;
+}
+/* Reise-Checkliste je Zusage: Flug, Hotel, ggf. Visum, Pass — alles da = grüner Haken. */
+function travelReadiness(tg,x){
+  const fl=x.flight||{};
+  const items=[
+    {ok:!!(fl.flightOut&&fl.flightReturn), lbl:t("frFlight")},
+    {ok:!!((tg.travel&&tg.travel.hotel)||fl.room), lbl:t("frHotel")},
+  ];
+  if(needsVisa(tg.country)){
+    items.push({ok:fl.visaStatus==="approved", lbl:t("frVisa")});
+    const trId=x.trainerId||(x.tr&&x.tr.id);
+    const tr=S.trainers.find(z=>z.id===trId);
+    const pp=tr&&tr.passport, end=tg.dateEnd||tg.date;
+    items.push({ok:!!(pp&&pp.expiry&&(!end||pp.expiry>end)), lbl:t("frPass")});
+  }
+  return items;
+}
+function readyChip(tg,x){
+  if(!(x.status==="yes"||x.status==="confirmed")) return "";
+  const items=travelReadiness(tg,x);
+  const done=items.filter(i=>i.ok).length;
+  if(done===items.length) return `<span class="pill good" title="${t("frAllSet")}">✈ ${t("frReady")}</span>`;
+  const missing=items.filter(i=>!i.ok).map(i=>i.lbl).join(", ");
+  return `<span class="pill neutral" title="${t("frMissing")}: ${esc(missing)}">✈ ${done}/${items.length}</span>`;
 }
 function setStatus(tgId,trId,status){
   const tg=S.trainings.find(x=>x.id===tgId);
@@ -2827,7 +2885,92 @@ function renderInbox(){
       <div class="rowgrow"><b>${openN?t("inboxOpenN",openN):t("inboxAllClear")}</b>
       <div class="meta">${t("inboxHint")}</div></div>
     </div></div>
-    ${items.length?cards:`<div class="panel"><div class="panel-b meta" style="padding:22px">${t("inboxEmpty")}</div></div>`}`;
+    ${items.length?cards:`<div class="panel"><div class="panel-b meta" style="padding:22px">${t("inboxEmpty")}</div></div>`}
+    <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="rowgrow"><b>${ic("plane",17)} ${t("fmTitle")}</b>
+      <div class="meta">${t("fmHint")}</div></div>
+      ${LIVE?`<button class="btn sm" onclick="pollMailbox()">${ic("sync",15)}${t("fmPoll")}</button>`:""}
+    </div></div>
+    <div id="fmList">${LIVE?`<div class="panel"><div class="panel-b meta">…</div></div>`:`<div class="panel"><div class="panel-b meta" style="padding:18px">${t("fmDemo")}</div></div>`}</div>`;
+  if(LIVE) loadFlightMails();
+}
+
+/* ============================================================
+   FLUGPOST — erkannte Flugbuchungen prüfen & übernehmen
+   ============================================================ */
+async function loadFlightMails(){
+  let mails=[];
+  try{ const d=await apiCall("mail.list"); mails=d.mails||[]; }
+  catch(e){ const el=$("#fmList"); if(el)el.innerHTML=`<div class="panel"><div class="panel-b meta">${esc(e.message)}</div></div>`; return; }
+  const el=$("#fmList"); if(!el) return;
+  const open=mails.filter(m=>m.status==="new");
+  const done=mails.filter(m=>m.status!=="new").slice(0,5);
+  const trOpts=(sel)=>`<option value="">${t("fmPickTrainer")}</option>`+S.trainers.slice().sort((a,b)=>a.name.localeCompare(b.name))
+    .map(tr=>`<option value="${tr.id}" ${sel===tr.id?"selected":""}>${esc(tr.name)}</option>`).join("");
+  const tgOpts=(sel)=>`<option value="">${t("fmPickTraining")}</option>`+S.trainings.slice()
+    .sort((a,b)=>String(a.date||"z").localeCompare(String(b.date||"z")))
+    .map(tg=>`<option value="${tg.id}" ${sel===tg.id?"selected":""}>${esc(tg.topic.slice(0,44))} · ${esc(whenText(tg)||"")}</option>`).join("");
+  const segLine=s=>esc(`${s.flight_no||""} ${s.dep_airport||""}→${s.arr_airport||""} ${(s.dep_time||"").slice(0,16)}`.trim());
+  const card=m=>{
+    const ex=m.extracted||{};
+    const conf=m.status!=="new" ? "" :
+      m.confidence==="high" ? `<span class="pill good">${t("fmConfHigh")}</span>` :
+      m.confidence==="low"  ? `<span class="pill warn">${t("fmConfLow")}</span>` :
+                              `<span class="pill neutral">${t("fmConfNone")}</span>`;
+    const st=m.status==="applied"?`<span class="pill good">${t("fmApplied")}</span>`
+           : m.status==="ignored"?`<span class="pill neutral">${t("fmIgnored")}</span>`:"";
+    return `<div class="panel" style="margin:0 0 12px;${m.status!=="new"?"opacity:.65":""}">
+      <div class="panel-b">
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+          <div class="rowgrow">
+            <div style="font-weight:650">${esc(m.subject||"—")}</div>
+            <div class="meta">${esc(m.from||"")} · ${fmtWhen(m.at)}</div>
+          </div>
+          ${conf}${st}
+        </div>
+        <div style="margin-top:10px;padding:12px 14px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;font-size:13.5px">
+          ${(ex.passengers&&ex.passengers.length)?`<div>👤 ${esc(ex.passengers.join(", "))}</div>`:""}
+          ${(ex.segments||[]).map(s=>`<div>✈ ${segLine(s)}</div>`).join("")}
+          ${ex.booking_ref?`<div>🎫 ${t("fmRef")}: <b>${esc(ex.booking_ref)}</b></div>`:""}
+          ${(m.atts||[]).length?`<div>📎 ${m.atts.map(a=>esc(a.name)).join(", ")}</div>`:""}
+          ${(!ex.segments||!ex.segments.length)?`<div class="meta">${t("fmNoExtract")}</div>`:""}
+        </div>
+        ${m.status==="new"?`
+        <div class="fldrow" style="margin-top:12px;gap:8px;flex-wrap:wrap">
+          <select class="inp" style="flex:1;min-width:140px" id="fmTr-${m.id}">${trOpts(m.trainerId)}</select>
+          <select class="inp" style="flex:1.4;min-width:170px" id="fmTg-${m.id}">${tgOpts(m.trainingId)}</select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap">
+          <button class="btn sm" onclick="ignoreFlightMail('${m.id}')">${t("fmIgnore")}</button>
+          <button class="btn sm primary" onclick="applyFlightMail('${m.id}')">${ic("check",15)}${t("fmApply")}</button>
+        </div>`:""}
+      </div>
+    </div>`;
+  };
+  el.innerHTML=(open.length||done.length)
+    ? open.map(card).join("")+done.map(card).join("")
+    : `<div class="panel"><div class="panel-b meta" style="padding:18px">${t("fmEmpty")}</div></div>`;
+}
+async function pollMailbox(){
+  try{
+    const d=await apiCall("mail.poll");
+    if(d.ok===false && d.error){ toast(d.error,"warn"); return; }
+    await pull(); buildNav(); await loadFlightMails();
+    toast(t("fmPolled",d.fetched||0,d.flights||0),"good");
+  }catch(e){ toast(e.message,"crit"); }
+}
+async function applyFlightMail(id){
+  const trId=$("#fmTr-"+id)?.value, tgId=$("#fmTg-"+id)?.value;
+  if(!trId||!tgId){ toast(t("fmPickBoth"),"crit"); return; }
+  try{
+    await apiCall("mail.apply",{id,trainer:trId,training:tgId});
+    await pull(); buildNav(); await loadFlightMails();
+    toast(t("fmAppliedToast"),"good");
+  }catch(e){ toast(e.message,"crit"); }
+}
+async function ignoreFlightMail(id){
+  try{ await apiCall("mail.ignore",{id}); await pull(); buildNav(); await loadFlightMails(); }
+  catch(e){ toast(e.message,"crit"); }
 }
 async function resolveMsg(trId,resolved){
   const tr=S.trainers.find(x=>x.id===trId);

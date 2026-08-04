@@ -179,6 +179,21 @@ function ensure_schema(): void {
   // Rückmeldungen der Trainer zur Einsatzübersicht: „erledigt“-Markierung im Dashboard
   try{ db()->exec("ALTER TABLE plan_tokens ADD COLUMN resolved_at VARCHAR(20)"); }catch(Throwable $e){}
 
+  /* ---- Flugpost: abgerufene Mails + Anhänge (E-Tickets), Zuordnungsstatus ---- */
+  $d->exec("CREATE TABLE IF NOT EXISTS travel_mail (
+    id $pk,
+    uid VARCHAR(190), from_addr VARCHAR(190), subject VARCHAR(255), received_at VARCHAR(48),
+    body_text $longtext,
+    status VARCHAR(16) DEFAULT 'new',      -- new | applied | ignored | irrelevant
+    extracted $longtext,                   -- KI-/Fallback-Extrakt als JSON
+    match_trainer_id INT, match_training_id INT, confidence VARCHAR(8),
+    applied_at VARCHAR(20), created_at VARCHAR(20))$eng");
+  try{ $d->exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_travel_mail_uid ON travel_mail(uid)"); }catch(Throwable $e){}
+  $d->exec("CREATE TABLE IF NOT EXISTS travel_mail_att (
+    id $pk, mail_id INT, name VARCHAR(190), mime VARCHAR(96), data $longtext)$eng");
+  // Verknüpfung Reisedaten → Quell-Mail (fürs Anhängen des Tickets an die Agenda)
+  try{ db()->exec("ALTER TABLE travel ADD COLUMN mail_id INT"); }catch(Throwable $e){}
+
   /* ---- Mehrbenutzer: Konten, Passwort-Zurücksetzen, Änderungsprotokoll ---- */
   $d->exec("CREATE TABLE IF NOT EXISTS users (
     id $pk,

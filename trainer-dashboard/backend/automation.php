@@ -169,5 +169,14 @@ function run_automation(): array {
       }
     }
   }
-  return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,'passport'=>$passport,'auto_advance'=>$autoAdv];
+  /* 5) Flugpost: Postfach abrufen, Flugbestätigungen erkennen (falls konfiguriert) */
+  $mailFetched=0; $mailFlights=0;
+  if(!empty(cfg()['mailbox']['host']) && !empty(cfg()['mailbox']['pass'])){
+    require_once __DIR__.'/mailfetch.php';
+    try{ $mp=poll_mailbox(); $mailFetched=(int)($mp['fetched']??0); $mailFlights=(int)($mp['flights']??0); }
+    catch(Throwable $e){ /* Postfach-Störung darf den Rest der Automatik nicht stoppen */ }
+  }
+
+  return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,
+          'passport'=>$passport,'mail_fetched'=>$mailFetched,'mail_flights'=>$mailFlights,'auto_advance'=>$autoAdv];
 }

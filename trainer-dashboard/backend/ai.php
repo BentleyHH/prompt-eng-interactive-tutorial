@@ -115,6 +115,54 @@ function ai_call(array $content, ?array $schema=null, int $maxTokens=1024): arra
 }
 
 /**
+ * Liest eine Flugbestätigung (Text und/oder E-Ticket-PDF) strukturiert aus.
+ * Rückgabeform ist identisch mit dem Regex-Fallback in mailfetch.php.
+ */
+function ai_extract_flight(string $text, string $subject, ?array $pdf=null): array {
+  $schema=[
+    'type'=>'object',
+    'properties'=>[
+      'is_flight'=>['type'=>'boolean'],
+      'passengers'=>['type'=>'array','items'=>['type'=>'string']],
+      'booking_ref'=>['type'=>'string'],
+      'airline'=>['type'=>'string'],
+      'segments'=>['type'=>'array','items'=>[
+        'type'=>'object',
+        'properties'=>[
+          'flight_no'=>['type'=>'string'],
+          'dep_airport'=>['type'=>'string'],'arr_airport'=>['type'=>'string'],
+          'dep_time'=>['type'=>'string'],'arr_time'=>['type'=>'string'],
+        ],
+        'required'=>['flight_no','dep_airport','arr_airport','dep_time','arr_time'],
+        'additionalProperties'=>false,
+      ]],
+    ],
+    'required'=>['is_flight','passengers','booking_ref','airline','segments'],
+    'additionalProperties'=>false,
+  ];
+  $prompt=
+    "Dies ist eine E-Mail (ggf. mit E-Ticket-PDF) aus dem Postfach einer Trainings-Organisation. "
+    ."Prüfe, ob es eine Flugbuchungs-/Ticketbestätigung ist, und extrahiere die Daten.\n"
+    ."- 'is_flight': true nur bei einer echten Flugbestätigung (keine Newsletter/Werbung/Rechnungen ohne Flugdaten).\n"
+    ."- 'passengers': vollständige Passagiernamen wie angegeben (z.B. „MUSTER/ANNA DR“ → „Anna Muster“).\n"
+    ."- 'booking_ref': Buchungscode/PNR (z.B. X4Y9ZK). Leer, wenn keiner erkennbar.\n"
+    ."- 'segments': jedes Flugsegment einzeln, dep_time/arr_time strikt als YYYY-MM-DD HH:MM "
+    ."(Datum immer mit Jahr; lokale Abflugs-/Ankunftszeit), Flughäfen als IATA-Code (FRA, AUH …).\n"
+    ."Erfinde nichts — nicht Lesbares leer lassen.\n\n"
+    ."=== BETREFF ===\n".$subject."\n\n=== TEXT ===\n".mb_substr($text,0,14000);
+  $content=[];
+  if($pdf && strlen($pdf['data'])<=6*1024*1024){
+    $content[]=['type'=>'document','source'=>['type'=>'base64','media_type'=>'application/pdf',
+                'data'=>base64_encode($pdf['data'])]];
+  }
+  $content[]=['type'=>'text','text'=>$prompt];
+  $r=ai_call($content,$schema,2048);
+  if(!is_array($r) || !array_key_exists('is_flight',$r)) throw new RuntimeException('Unerwartete KI-Antwort.');
+  $r['method']='ai';
+  return $r;
+}
+
+/**
  * Liest die Passdaten aus einem Foto (Data-URI: data:image/jpeg;base64,….).
  * Gibt normalisierte Felder zurück; Datumsangaben als YYYY-MM-DD.
  */
