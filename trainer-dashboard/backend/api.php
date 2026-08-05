@@ -9,9 +9,18 @@ require_once __DIR__.'/mailer.php';
 require_once __DIR__.'/ai.php';
 require_once __DIR__.'/automation.php';
 
-header('Access-Control-Allow-Origin: '.($_SERVER['HTTP_ORIGIN'] ?? '*'));
-header('Access-Control-Allow-Headers: Content-Type, X-Auth-Token');
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+/* CORS: nur die eigene Domain. Same-Origin-Aufrufe (Normalfall) brauchen gar
+   keine CORS-Header; fremde Seiten dürfen die API nicht aus dem Browser ansprechen. */
+$origin=(string)($_SERVER['HTTP_ORIGIN'] ?? '');
+if($origin!==''){
+  $o=parse_url($origin);
+  $oHost=($o['host']??'').(isset($o['port'])?':'.$o['port']:'');
+  if($oHost!=='' && strcasecmp($oHost, $_SERVER['HTTP_HOST']??'')===0){
+    header('Access-Control-Allow-Origin: '.$origin);
+    header('Access-Control-Allow-Headers: Content-Type, X-Auth-Token');
+    header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+  }
+}
 if(($_SERVER['REQUEST_METHOD']??'')==='OPTIONS') { http_response_code(204); exit; }
 
 try { ensure_schema(); }
@@ -42,7 +51,11 @@ switch($action){
     $em=strtolower(trim((string)($in['email']??'')));
     if($em!==''){
       $u=q("SELECT * FROM users WHERE email=? AND active=1",[$em])->fetch();
-      if($u) send_reset_mail($u,'reset');
+      if($u){
+        // Höchstens alle 2 Minuten ein Link pro Konto (verhindert Mail-Bombing).
+        $last=q("SELECT created_at FROM reset_tokens WHERE user_id=? ORDER BY created_at DESC LIMIT 1",[$u['id']])->fetch();
+        if(!$last || time()-ts($last['created_at'])>=120) send_reset_mail($u,'reset');
+      }
     }
     out(['ok'=>true]);
 
@@ -585,7 +598,9 @@ switch($action){
       $img=$in['image'];
       if($img===null || $img==='null'){ $sets[]='passport_file=NULL'; }
       elseif(is_string($img) && $img!==''){
-        if(!preg_match('#^data:image/#',$img)) fail('Ungültiges Bildformat.');
+        // Nur Rasterformate — kein SVG (könnte Skripte enthalten). Das Frontend
+        // rechnet Fotos ohnehin vor dem Upload in JPEG um.
+        if(!preg_match('#^data:image/(jpe?g|png|webp|gif|heic|heif);base64,#i',$img)) fail('Ungültiges Bildformat.');
         $sets[]='passport_file=?'; $vals[]=$img;
       }
     }

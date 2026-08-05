@@ -5,3 +5,4 @@ trainer-dashboard/backend/config.php
 trainer-dashboard/backend/config.js
 trainer-dashboard/backend/*.sqlite
 trainer-dashboard/**/config.js
+trainer-dashboard/backend/backups/

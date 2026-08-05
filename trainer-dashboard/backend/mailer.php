@@ -232,8 +232,11 @@ function build_mime_body(string $html, array $atts, string &$ctype): string {
   $body ="--$b\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n".$html."\r\n";
   foreach($atts as $a){
     $name=preg_replace('/[\r\n"]+/','',(string)($a['name']??'anhang'));
+    // MIME-Typ stammt aus fremden Mails → strikt filtern, damit niemand über
+    // Steuerzeichen eigene Header in unseren Versand einschleusen kann.
+    $mime=preg_replace('#[^a-zA-Z0-9/.+-]#','',(string)($a['mime']??'')) ?: 'application/octet-stream';
     $body.="--$b\r\n"
-      .'Content-Type: '.($a['mime']??'application/octet-stream').'; name="'.$name.'"'."\r\n"
+      .'Content-Type: '.$mime.'; name="'.$name.'"'."\r\n"
       ."Content-Transfer-Encoding: base64\r\n"
       .'Content-Disposition: attachment; filename="'.$name.'"'."\r\n\r\n"
       .chunk_split((string)($a['data_b64']??''),76,"\r\n");
@@ -245,6 +248,14 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
   $c=cfg();
   $mode=$c['mail_mode']??'mail';
   $GLOBALS['__mail_err']='';
+  // Header-Injection-Schutz: Empfänger muss eine echte Adresse sein,
+  // Zeilenumbrüche im Betreff werden entfernt.
+  $toEmail=trim($toEmail);
+  if(!filter_var($toEmail, FILTER_VALIDATE_EMAIL)){
+    $GLOBALS['__mail_err']='Ungültige Empfängeradresse: '.$toEmail;
+    return false;
+  }
+  $subject=preg_replace('/[\r\n]+/',' ',$subject);
   if($mode==='log'){ $GLOBALS['__mail_err']="mail_mode='log' — es wird NICHTS versendet, nur protokolliert. Für echten Versand in config.php auf 'smtp' (empfohlen) oder 'mail' umstellen."; return true; }
 
   $from=$c['from_email']; $fromName=$c['from_name']??'ETAF';

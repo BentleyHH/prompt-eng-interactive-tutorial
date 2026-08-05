@@ -26,7 +26,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 /* Schlüssel-Schutz (wie beim Cron) */
 $need = (string)($c['cron_key'] ?? '');
-if($need==='' || $key!==$need){
+if($need==='' || !hash_equals($need,(string)$key)){
   http_response_code(403);
   echo '<meta charset="utf-8"><body style="font:15px system-ui;padding:30px;color:#242b31">'
      .'<h2>ETAF — E-Mail-Diagnose</h2>'

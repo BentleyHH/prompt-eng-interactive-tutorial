@@ -45,7 +45,17 @@ if(is_file(__DIR__.'/config.php')){
 }else $cfgErr='config.php fehlt.';
 row('config.php lesbar (keine Tippfehler)', $cfgErr==='', $cfgErr!==''?'<b>'.esc($cfgErr).'</b>':'');
 
-if(is_array($cfg)){
+/* Sensible Details (DB-Status, Konfiguration) nur mit ?key=<cron_key> zeigen.
+   Ist config.php kaputt/leer (der eigentliche Rettungsfall), gibt es keinen
+   Key zum Prüfen — dann bleibt die Fehlermeldung oben trotzdem sichtbar. */
+$needKey = is_array($cfg) && !empty($cfg['cron_key']) && $cfg['cron_key']!=='CHANGE_ME_zufälliger_wert';
+$authed  = !$needKey || hash_equals((string)$cfg['cron_key'], (string)($_GET['key'] ?? ''));
+
+if(is_array($cfg) && !$authed){
+  row('Detail-Prüfung (Datenbank & Konfiguration)', null,
+      'Aus Sicherheitsgründen nur mit Schlüssel: <code>check.php?key=DEIN_CRON_KEY</code> (cron_key aus config.php) aufrufen.');
+}
+if(is_array($cfg) && $authed){
   /* 4) Datenbank erreichbar? */
   $dbOk=null; $dbErr='';
   try{

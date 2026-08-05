@@ -177,6 +177,25 @@ function run_automation(): array {
     catch(Throwable $e){ /* Postfach-Störung darf den Rest der Automatik nicht stoppen */ }
   }
 
+  /* 6) Tägliche Datensicherung (kompletter DB-Dump nach backend/backups/) */
+  $backupFile='';
+  try{
+    if(config_get('last_backup_day')!==gmdate('Y-m-d')){
+      require_once __DIR__.'/backup.php';
+      $b=backup_run();
+      if(!empty($b['ok'])){ config_set('last_backup_day',gmdate('Y-m-d')); $backupFile=$b['file']; }
+    }
+  }catch(Throwable $e){ /* Sicherung darf den Rest der Automatik nicht stoppen */ }
+
+  /* 7) Aufräumen: abgelaufene Sitzungen, alte Einmal-Links, alte Login-Sperren */
+  try{
+    $maxDays=(int)(cfg()['session_days']??14);
+    q("DELETE FROM sessions WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-$maxDays*86400)]);
+    q("DELETE FROM reset_tokens WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-86400)]);
+    q("DELETE FROM login_attempts WHERE window_start < ?",[gmdate('Y-m-d H:i:s', $now-3600)]);
+  }catch(Throwable $e){}
+
   return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,
-          'passport'=>$passport,'mail_fetched'=>$mailFetched,'mail_flights'=>$mailFlights,'auto_advance'=>$autoAdv];
+          'passport'=>$passport,'mail_fetched'=>$mailFetched,'mail_flights'=>$mailFlights,
+          'backup'=>$backupFile,'auto_advance'=>$autoAdv];
 }

@@ -167,8 +167,9 @@ function ai_extract_flight(string $text, string $subject, ?array $pdf=null): arr
  * Gibt normalisierte Felder zurück; Datumsangaben als YYYY-MM-DD.
  */
 function ai_extract_passport(string $dataUri): array {
-  if(!preg_match('#^data:(image/[a-zA-Z.+-]+);base64,(.+)$#s', trim($dataUri), $m))
-    throw new RuntimeException('Kein gültiges Bild übergeben.');
+  // Nur Rasterformate, die die Claude API versteht — kein SVG o.ä.
+  if(!preg_match('#^data:(image/(?:jpe?g|png|gif|webp));base64,(.+)$#s', trim($dataUri), $m))
+    throw new RuntimeException('Bitte ein Foto als JPG/PNG/WebP übergeben.');
   $media=$m[1]; $b64=$m[2];
   if($media==='image/jpg') $media='image/jpeg';
   $schema=[
