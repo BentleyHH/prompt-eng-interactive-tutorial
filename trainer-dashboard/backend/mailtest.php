@@ -11,6 +11,9 @@
  * Das Passwort wird NIE angezeigt (nur, ob es gesetzt ist).
  * ---------------------------------------------------------------
  */
+/* Diagnose darf nie „weiß“ bleiben: Fehler auf den Bildschirm statt ins Nichts.
+   (Die Seite ist ohnehin key-geschützt; Passwörter werden nie ausgegeben.) */
+error_reporting(E_ALL); ini_set('display_errors','1');
 require_once __DIR__.'/lib.php';
 require_once __DIR__.'/mailer.php';
 header('Content-Type: text/html; charset=utf-8');
@@ -115,8 +118,12 @@ catch(Throwable $e){ $log=[]; }
  $mbConfigured=!empty($mb['host'])&&!empty($mb['user'])&&!empty($mb['pass']);
  $mbTest=null;
  if($mbConfigured){
-   require_once __DIR__.'/mailfetch.php';
-   try{ $mbTest=pop3_fetch_new($mb,0); }catch(Throwable $e){ $mbTest=['ok'=>false,'error'=>$e->getMessage()]; }
+   if(!is_file(__DIR__.'/mailfetch.php')){
+     $mbTest=['ok'=>false,'error'=>'Datei backend/mailfetch.php fehlt auf dem Server — bitte das komplette ZIP hochladen.'];
+   } else {
+     require_once __DIR__.'/mailfetch.php';
+     try{ $mbTest=pop3_fetch_new($mb,0); }catch(Throwable $e){ $mbTest=['ok'=>false,'error'=>$e->getMessage()]; }
+   }
  }
  $fmLog=[];
  try{ $fmLog=q("SELECT subject,status,confidence,created_at FROM travel_mail ORDER BY id DESC LIMIT 6")->fetchAll(); }catch(Throwable $e){}
