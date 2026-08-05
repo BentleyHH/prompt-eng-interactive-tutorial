@@ -59,6 +59,24 @@ if(is_array($cfg)){
   }catch(\Throwable $e){ $dbOk=false; $dbErr=$e->getMessage(); }
   row('Datenbank-Verbindung', $dbOk, $dbOk?'':esc($dbErr));
 
+  /* 4b) Datenbank-Schema aktuell? (Tabellen aus den letzten Updates vorhanden) */
+  if($dbOk){
+    try{
+      $pdo = ($cfg['driver']??'mysql')==='sqlite'
+        ? new PDO('sqlite:'.($cfg['sqlite_path']??''))
+        : new PDO('mysql:host='.($cfg['db_host']??'').';dbname='.($cfg['db_name']??'').';charset='.($cfg['db_charset']??'utf8mb4'),
+                  $cfg['db_user']??'', $cfg['db_pass']??'');
+      $pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
+      $missT=[];
+      foreach(['users','activity','travel_mail','trainer_reviews'] as $t){
+        try{ $pdo->query("SELECT 1 FROM $t LIMIT 1"); }catch(\Throwable $e){ $missT[]=$t; }
+      }
+      row('Datenbank-Schema aktuell', count($missT)===0,
+          $missT?'<b>Fehlende Tabellen:</b> '.esc(implode(', ',$missT)).' — meist ist backend/db.php veraltet. '
+                .'Aktuelle db.php hochladen und diese Seite neu laden (die Tabellen werden dann automatisch angelegt).':'');
+    }catch(\Throwable $e){ /* DB-Verbindung wurde oben schon bewertet */ }
+  }
+
   /* 5) base_url passt zur aufgerufenen Domain? (wichtig für alle Links in E-Mails) */
   $bu=(string)($cfg['base_url']??''); $host=$_SERVER['HTTP_HOST']??'';
   $buOk = $bu==='' ? null : (stripos($bu,$host)!==false);
