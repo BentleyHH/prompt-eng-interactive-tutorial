@@ -478,6 +478,11 @@
   /* Kein Element darf breiter werden als sein Container */
   #app,main,.wrap,.view,.panel,.panel-b,.sheet-b{min-width:0;max-width:100%;box-sizing:border-box}
   .rowgrow{min-width:0}                    /* war 148px → sprengte schmale Zeilen */
+  /* Desktop/Tablet: Namensspalte behält Mindestbreite — sonst quetschen viele
+     Chips/Buttons den Namen auf Buchstabenbreite („N i l s …“). Die Aktionen
+     (.rowacts, flex-wrap) brechen dann stattdessen um. Unter 560px übernimmt
+     der Mobile-Block (Name auf eigener Zeile). */
+  @media(min-width:561px){ .row>.rowgrow,.att>.rowgrow{min-width:150px} }
   /* break-word statt anywhere: bricht nur, wenn ein Wort wirklich nicht passt —
      sonst zerreißt es Titel mitten im Wort („Informatio nsgewinnung“). */
   .row .nm,.row .meta,.att .nm,.att .meta{overflow-wrap:break-word}
