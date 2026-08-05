@@ -109,6 +109,46 @@ catch(Throwable $e){ $log=[]; }
  </div>
  <?php endif; ?>
 
+ <?php
+ /* ---- Flugpost: POP3-Verbindungstest (holt nichts ab, zählt nur Neues) ---- */
+ $mb=$c['mailbox']??[];
+ $mbConfigured=!empty($mb['host'])&&!empty($mb['user'])&&!empty($mb['pass']);
+ $mbTest=null;
+ if($mbConfigured){
+   require_once __DIR__.'/mailfetch.php';
+   try{ $mbTest=pop3_fetch_new($mb,0); }catch(Throwable $e){ $mbTest=['ok'=>false,'error'=>$e->getMessage()]; }
+ }
+ $fmLog=[];
+ try{ $fmLog=q("SELECT subject,status,confidence,created_at FROM travel_mail ORDER BY id DESC LIMIT 6")->fetchAll(); }catch(Throwable $e){}
+ ?>
+ <div class="card">
+   <h3 style="margin:0 0 8px">Flugpost (Postfach-Abruf)</h3>
+   <table>
+     <tr><td>Postfach-Host</td><td><?=esc(($mb['host']??'').':'.($mb['port']??''))?: '(leer)'?></td></tr>
+     <tr><td>Postfach-User</td><td><?=esc($mb['user']??'(leer)')?></td></tr>
+     <tr><td>Passwort</td><td><?= !empty($mb['pass']) ? '••• gesetzt' : '<span class="bad">⚠ LEER</span>' ?></td></tr>
+     <tr><td>Verbindung</td><td><?php
+       if(!$mbConfigured) echo '<span class="warn">nicht konfiguriert — mailbox-Block in config.php ergänzen</span>';
+       elseif($mbTest['ok']) echo '<span class="ok">✓ Login ok — '.(int)($mbTest['total_new']??0).' neue Mail(s) warten</span>';
+       else echo '<span class="bad">✗ '.esc($mbTest['error']??'Fehler').'</span>';
+     ?></td></tr>
+     <tr><td>KI-Erkennung</td><td><?php
+       $aiKey=trim($c['anthropic_key']??'');
+       if($aiKey==='') echo '<span class="warn">kein anthropic_key — es greift nur die einfache Muster-Erkennung</span>';
+       else echo '<span class="ok">✓ Key gesetzt</span> · Modell: '.esc($c['anthropic_model']??'');
+     ?></td></tr>
+   </table>
+   <?php if($fmLog): ?>
+     <h4 style="margin:14px 0 6px">Zuletzt verarbeitete Mails</h4>
+     <table><?php foreach($fmLog as $r): ?>
+       <tr><td><span class="pill <?= $r['status']==='applied'?'sent':($r['status']==='new'?'logged':'logged') ?>"><?=esc($r['status'])?></span></td>
+           <td><?=esc($r['subject'])?><br><span class="sub" style="font-size:12px"><?=esc($r['created_at'])?><?= $r['confidence']?' · Zuordnung: '.esc($r['confidence']):''?></span></td></tr>
+     <?php endforeach; ?></table>
+   <?php elseif($mbConfigured): ?>
+     <p class="sub" style="margin-top:10px">Noch keine Mails verarbeitet — im Dashboard unter <b>Antworten → Flugpost → „Postfach jetzt abrufen“</b> anstoßen (oder auf den Cron warten).</p>
+   <?php endif; ?>
+ </div>
+
  <div class="card">
    <h3 style="margin:0 0 8px">Letzte 8 Protokoll-Einträge</h3>
    <?php if(!$log): ?><p class="sub">Noch keine E-Mails protokolliert.</p><?php else: ?>
