@@ -348,6 +348,8 @@ switch($action){
   /* ---- KI-Wochenrhythmus: Sessions didaktisch auf Mo–Fr verteilen lassen ---- */
   case 'weekplan.suggest':
     require_auth();
+    // Der KI-Aufruf kann bis zu ~90 s dauern — Standard-Zeitlimit (oft 60 s) reicht nicht.
+    @set_time_limit(180); @ini_set('max_execution_time','180');
     $tid=(int)($in['training']??0);
     $tg=q("SELECT * FROM trainings WHERE id=?",[$tid])->fetch();
     if(!$tg) fail('Training nicht gefunden.',404);

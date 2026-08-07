@@ -98,7 +98,9 @@ function ai_call(array $content, ?array $schema=null, int $maxTokens=1024): arra
     'messages'=>[['role'=>'user','content'=>$content]],
   ];
   if($schema) $body['output_config']=['format'=>['type'=>'json_schema','schema'=>$schema]];
-  $ch=curl_init('https://api.anthropic.com/v1/messages');
+  // Basis-URL überschreibbar (nur für lokale Tests gedacht)
+  $base=rtrim((string)($c['anthropic_base']??'https://api.anthropic.com'),'/');
+  $ch=curl_init($base.'/v1/messages');
   curl_setopt_array($ch,[
     CURLOPT_RETURNTRANSFER=>true, CURLOPT_POST=>true,
     CURLOPT_HTTPHEADER=>['content-type: application/json','x-api-key: '.$key,'anthropic-version: 2023-06-01'],

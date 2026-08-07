@@ -926,6 +926,7 @@ const L={
   attNoContent:"Wochenplan ist noch leer — Inhalte planen",
   attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} fehlen noch`,
   wkAi:"KI-Vorschlag", wkAiAsk:"Die KI verteilt alle Sessions didaktisch sinnvoll auf Mo–Fr (Theorie vor Praxis, Assessment ans Wochenende, ~4 h je Halbtag). Aktuelle Anordnung wird ersetzt — fortfahren?",
+  wkAiRun:"KI plant die Woche … das kann bis zu einer Minute dauern.",
   wkAiDone:"KI-Wochenrhythmus übernommen", wkAiDemo:"Im Demo-Modus ohne KI — stattdessen einfache Auto-Verteilung.",
   wkPrint:"Drucken", wkMat:"Benötigtes Material", wkMatPh:"z.B. 20× DVI-Kit, Beamer, Flipchart",
   wkPrintMat:"Material", wkPrintTrainer:"Trainer",
@@ -1258,6 +1259,7 @@ const L={
   attNoContent:"Week plan is still empty — plan the content",
   attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} still missing`,
   wkAi:"AI suggestion", wkAiAsk:"The AI distributes all sessions sensibly across Mon–Fri (theory before practice, assessment towards the end, ~4 h per half-day). The current arrangement will be replaced — continue?",
+  wkAiRun:"The AI is planning the week … this can take up to a minute.",
   wkAiDone:"AI week rhythm applied", wkAiDemo:"Demo mode has no AI — using simple auto-distribute instead.",
   wkPrint:"Print", wkMat:"Required material", wkMatPh:"e.g. 20× DVI kit, projector, flip chart",
   wkPrintMat:"Material", wkPrintTrainer:"Trainer",
@@ -2302,7 +2304,9 @@ function renderDetail(){
   </div>`;
 
   $("#v-detail").innerHTML=`<button class="btn sm" onclick="go('trainings')" style="margin-bottom:14px">${ic("back")}${t("back")}</button>
-    <div class="split"><div>${info}${roster}${matPanel}</div><div>${sugg}</div></div>`;
+    <div class="split"><div>${info}${roster}${matPanel}</div><div>${sugg}</div></div>
+    <div id="wkDetail" style="margin-top:14px"></div>`;
+  renderWeekEmbed(tg.id);
 }
 function rosterRow(x,tg){
   const acts=x.status==="asked"
@@ -3043,6 +3047,9 @@ const SESS_TYPES=["orga","theorie","uebung","praxis","simulation","assessment","
 const SESS_COL={orga:"#8A939A",theorie:"#4E6E8E",uebung:"#3F7A5E",praxis:"#2E9E6B",
                 simulation:"#B23A42",assessment:"#C77E1E",deliverable:"#6E5A86"};
 let curWeekId=null, WKD=null, wkEditSid=null;
+/* Wohin der Wochenplan zeichnet: eigener Reiter (#wkBody) oder eingebettet
+   in der Trainings-Detailansicht (#wkDetail) — gleiche Daten, gleiche Logik. */
+let wkTarget="#wkBody";
 
 function wkTrainings(){ return curTrainings().slice()
   .sort((a,b)=>String(a.date||"9999").localeCompare(String(b.date||"9999"))); }
@@ -3082,6 +3089,7 @@ async function persistWeekPlan(extra){
 }
 
 async function renderWeek(){
+  wkTarget="#wkBody";
   const el=$("#v-week"); const list=wkTrainings();
   if(!list.length){ el.innerHTML=`<div class="panel"><div class="panel-b empty">${t("wkNoTrainings")}</div></div>`; return; }
   if(!curWeekId || !list.find(x=>String(x.id)===String(curWeekId))){
@@ -3158,7 +3166,9 @@ function drawWeekBody(){
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
       <button class="btn sm" onclick="openPptSheet()">${ic("clip",14)}${t("wkPptChip",done,rel.length)}</button>
-      <button class="btn sm" onclick="openDetail('${tg.id}')">${ic("users",14)}${t("open")} — ${t("nav_trainings")}</button>
+      ${wkTarget==="#wkBody"
+        ? `<button class="btn sm" onclick="openDetail('${tg.id}')">${ic("users",14)}${t("open")} — ${t("nav_trainings")}</button>`
+        : `<button class="btn sm" onclick="openWeek('${tg.id}')">${ic("week",14)}${t("nav_week")}</button>`}
       <button class="btn sm" onclick="printWeek()">${ic("printer",14)}${t("wkPrint")}</button>
       <span class="spacer"></span>
       <button class="btn sm" onclick="wkAiSuggest()">✦ ${t("wkAi")}</button>
@@ -3186,7 +3196,18 @@ function drawWeekBody(){
       ${bench.length?bench.map(wkTile).join(""):`<div class="meta" style="padding:6px 4px">${(WKD.sessions||[]).length?"—":t("wkEmpty")}</div>`}
     </div></div></div>`;
 
-  $("#wkBody").innerHTML=head+grid+benchHtml;
+  const tgt=$(wkTarget); if(tgt) tgt.innerHTML=head+grid+benchHtml;
+}
+
+/* Wochenplan in die Trainings-Detailansicht einbetten (gleiche Datenbasis —
+   Änderungen hier und im Reiter „Wochenplan“ sind automatisch dasselbe). */
+async function renderWeekEmbed(tgId){
+  curWeekId=tgId; wkTarget="#wkDetail";
+  const el=$("#wkDetail"); if(!el) return;
+  el.innerHTML=`<div class="panel"><div class="panel-b meta">…</div></div>`;
+  try{ await loadWeekData(tgId); }
+  catch(e){ el.innerHTML=`<div class="panel"><div class="panel-b meta">${esc(e.message)}</div></div>`; return; }
+  drawWeekBody();
 }
 
 /* ---- Ziehen & Ablegen (Desktop); Antippen öffnet den Editor mit „Verschieben nach“ ---- */
@@ -3336,13 +3357,16 @@ async function wkAiSuggest(){
       while(i<WK_SLOTKEYS.length-1 && hrs(WK_SLOTKEYS[i])+d>4.25) i++;
       plan[WK_SLOTKEYS[i]].push(String(s.id)); }
     WKD.plan={...plan,bench:[]}; save(); drawWeekBody(); return; }
-  const btnToast=toast(t("wkAi")+" …","good");
+  toast(t("wkAiRun"),"good");
   try{
     const d=await apiCall("weekplan.suggest",{training:curWeekId});
     WKD.plan=d.plan||{};
     drawWeekBody();
     toast(t("wkAiDone")+(d.unplaced?` (${d.unplaced} → ${t("wkBench")})`:""),"good");
-  }catch(e){ toast(e.message,"crit"); }
+  }catch(e){
+    // Fehler deutlich zeigen — ein kurzer Toast reicht hier nicht (KI-Läufe dauern).
+    alert(t("wkAi")+": "+e.message);
+  }
 }
 
 /* ---- Wochenplan drucken (A4 quer): Raster Mo–Fr mit Sessions, Trainer, Material ---- */
