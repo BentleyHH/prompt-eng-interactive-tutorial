@@ -547,6 +547,40 @@
     .planhead{gap:10px}
     .planactions .btn{flex:1 1 auto;justify-content:center}
   }
+  /* ---- Wochenplan (aus dem ETAF Dashboard zusammengeführt) ---- */
+  .wktabs{display:flex;gap:8px;padding-bottom:6px;margin-bottom:14px}
+  .wktab{flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 13px;
+    border-radius:10px;border:1px solid var(--line);background:var(--panel);cursor:pointer;color:var(--ink);font:inherit}
+  .wktab small{color:var(--faint);font-size:10.5px}
+  .wktab.on{background:var(--brand-solid);border-color:var(--brand-solid);color:#fff}
+  .wktab.on small{color:rgba(255,255,255,.75)}
+  .wkgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px}
+  .daycol{min-width:0}
+  .daycol h4{margin:0 0 7px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:center}
+  .daycol h4 small{display:block;color:var(--faint);font-weight:600;letter-spacing:0;text-transform:none}
+  .slotbox{border:1px solid var(--line);border-radius:11px;background:var(--panel);margin-bottom:10px;display:flex;flex-direction:column}
+  .slotbox .sl-h{display:flex;justify-content:space-between;gap:6px;padding:6px 10px 2px;
+    font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--faint);text-transform:uppercase}
+  .zone{display:flex;flex-direction:column;gap:6px;padding:6px 7px 8px;min-height:64px;border-radius:0 0 11px 11px}
+  .zone.dragover{outline:2px dashed var(--brand-solid);outline-offset:-4px}
+  .sess{position:relative;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);
+    padding:8px 9px 7px 14px;cursor:grab;font-size:12.5px}
+  .sess:active{cursor:grabbing}
+  .sess .srail{position:absolute;left:0;top:-1px;bottom:-1px;width:4px;border-radius:9px 0 0 9px}
+  .sess .st{font-weight:650;line-height:1.3;margin-bottom:4px;overflow-wrap:anywhere}
+  .sess .sm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--muted);font-size:11px}
+  .sess .sm .tag{padding:0 5px;font-size:10px}
+  .ppdot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+  .ppdot.g{background:var(--good)} .ppdot.y{background:var(--warn)} .ppdot.r{background:var(--crit)}
+  .wkbench .zone{flex-direction:row;flex-wrap:wrap;min-height:50px}
+  .wkbench .sess{flex:0 1 230px}
+  .wkdeliv{border-left:4px solid var(--warn);border-radius:10px;background:var(--panel-2);padding:11px 14px;font-size:13.5px}
+  .wkdeliv b{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:3px}
+  .wkteam{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .wkteam .tmchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:20px;
+    padding:3px 11px 3px 4px;font-size:12.5px;cursor:pointer;background:var(--panel)}
+  @media(max-width:760px){ .wkgrid{grid-template-columns:1fr} .daycol h4{text-align:left} .wkbench .sess{flex:1 1 100%} }
+
   /* Handy: Avatar/Icon links fixiert, Text über die volle Breite, Aktionen darunter.
      Gilt für alle Listenzeilen — auch wenn Pille/Buttons direkt in .row hängen.
      Steht bewusst HIER (nach allen Grundregeln), damit nichts zurücküberschrieben wird. */
@@ -653,6 +687,7 @@
     <div class="wrap">
       <section class="view on" id="v-dash"></section>
       <section class="view" id="v-trainings"></section>
+      <section class="view" id="v-week"></section>
       <section class="view" id="v-bookings"></section>
       <section class="view" id="v-detail"></section>
       <section class="view" id="v-trainers"></section>
@@ -746,7 +781,8 @@ const IC={
   trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
   inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>',
   pen:'<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
-  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'
+  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  week:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="M7 13h3v5H7zM12 13h3v3h-3z"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 /* Inline-Strichicon in Textgröße (für Buttons/Labels). */
@@ -850,9 +886,36 @@ const L={
   keyClear:"Löschen", langLabel:"Sprache",
   theme:"Design wechseln", lock:"Sperren",
   nav_dash:"Übersicht", nav_trainings:"Trainings", nav_bookings:"Belegung", nav_trainers:"Trainer", nav_templates:"Vorlagen",
+  nav_week:"Wochenplan",
   /* Kurzformen für die Leiste am unteren Rand (Handy) */
   nav_s_dash:"Übersicht", nav_s_trainings:"Trainings", nav_s_bookings:"Belegung",
   nav_s_trainers:"Trainer", nav_s_inbox:"Antworten", nav_more:"Mehr",
+  // Wochenplan
+  tp_week:"Wochenplan", tp_weekSub:"Inhalte, Sessions & PowerPoints je Trainingswoche",
+  wkAM:"Vormittag", wkPM:"Nachmittag",
+  wkBench:"Auswechselbank", wkBenchHint:"Noch nicht eingeplante Sessions — ziehen oder antippen zum Einplanen",
+  wkAuto:"Auto-verteilen", wkAutoAsk:"Alle Sessions automatisch auf Mo–Fr verteilen? Die aktuelle Anordnung wird ersetzt.",
+  wkNew:"Session", wkEditTitle:"Session bearbeiten", wkNewTitle:"Neue Session",
+  wkTitle:"Titel", wkTitleEn:"Titel (EN)", wkType:"Art", wkDur:"Dauer (Stunden)", wkDesc:"Beschreibung",
+  wkTrainer:"Trainer für diese Session", wkTrainerNone:"— noch offen —", wkTeamHint:"(Team der Woche zuerst)",
+  wkPpt:"PowerPoint-Status", wkPptBy:"Folien erstellt von", wkPptDue:"Frist",
+  ppt_:"offen", ppt_inArbeit:"in Arbeit", ppt_vorhanden:"vorhanden",
+  wkMove:"Verschieben nach", wkDelete:"Löschen", wkDeleteAsk:s=>`Session „${s}“ wirklich löschen?`,
+  wkDeliverable:"Wochenergebnis (Weekly Deliverable)", wkDeliverableEn:"Wochenergebnis (EN)",
+  wkEditDeliv:"Wochenergebnis bearbeiten",
+  wkPptChip:(d,a)=>`${d}/${a} PowerPoints`, wkPptTitle:"PowerPoints dieser Woche",
+  wkPptEmpty:"Keine fachlichen Sessions in dieser Woche.",
+  wkSessN:n=>`${n} Session${n===1?"":"s"}`, wkHrsN:h=>`${h} h`,
+  wkEmpty:"Für diese Woche sind noch keine Sessions angelegt — mit „+ Session“ starten oder Auto-verteilen nutzen.",
+  wkNoTrainings:"Noch keine Trainings angelegt.",
+  wkSaved:"Wochenplan gespeichert", wkSessSaved:"Session gespeichert", wkSessDeleted:"Session gelöscht",
+  wkTeam:"Team der Woche", wkNoTeam:"Noch niemand zugesagt — Besetzung über das Training öffnen.",
+  wkStage:s=>`Stage ${s}`, wkDays:"Mo–Fr",
+  type_orga:"Orga", type_theorie:"Theorie", type_uebung:"Übung", type_praxis:"Praxis",
+  type_simulation:"Simulation", type_assessment:"Assessment", type_deliverable:"Deliverable",
+  day_mon:"Montag", day_tue:"Dienstag", day_wed:"Mittwoch", day_thu:"Donnerstag", day_fri:"Freitag",
+  attNoContent:"Wochenplan ist noch leer — Inhalte planen",
+  attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} fehlen noch`,
   nav_users:"Benutzer", nav_activity:"Änderungen",
   tp_users:"Benutzer", tp_usersSub:"Wer darf sich anmelden — Rollen und Zugänge",
   tp_activity:"Änderungen", tp_activitySub:"Wer hat wann was geändert",
@@ -1151,9 +1214,36 @@ const L={
   keyClear:"Clear", langLabel:"Language",
   theme:"Switch theme", lock:"Lock",
   nav_dash:"Overview", nav_trainings:"Trainings", nav_bookings:"Bookings", nav_trainers:"Trainers", nav_templates:"Templates",
+  nav_week:"Week plan",
   /* Short labels for the bottom bar (phone) */
   nav_s_dash:"Overview", nav_s_trainings:"Trainings", nav_s_bookings:"Bookings",
   nav_s_trainers:"Trainers", nav_s_inbox:"Feedback", nav_more:"More",
+  // Week plan
+  tp_week:"Week plan", tp_weekSub:"Content, sessions & PowerPoints per training week",
+  wkAM:"Morning", wkPM:"Afternoon",
+  wkBench:"Bench", wkBenchHint:"Unscheduled sessions — drag or tap to place them",
+  wkAuto:"Auto-distribute", wkAutoAsk:"Distribute all sessions across Mon–Fri automatically? The current arrangement will be replaced.",
+  wkNew:"Session", wkEditTitle:"Edit session", wkNewTitle:"New session",
+  wkTitle:"Title", wkTitleEn:"Title (EN)", wkType:"Type", wkDur:"Duration (hours)", wkDesc:"Description",
+  wkTrainer:"Trainer for this session", wkTrainerNone:"— open —", wkTeamHint:"(week team first)",
+  wkPpt:"PowerPoint status", wkPptBy:"Slides by", wkPptDue:"Due",
+  ppt_:"open", ppt_inArbeit:"in progress", ppt_vorhanden:"done",
+  wkMove:"Move to", wkDelete:"Delete", wkDeleteAsk:s=>`Really delete session “${s}”?`,
+  wkDeliverable:"Weekly deliverable", wkDeliverableEn:"Weekly deliverable (EN)",
+  wkEditDeliv:"Edit weekly deliverable",
+  wkPptChip:(d,a)=>`${d}/${a} PowerPoints`, wkPptTitle:"PowerPoints of this week",
+  wkPptEmpty:"No teaching sessions in this week.",
+  wkSessN:n=>`${n} session${n===1?"":"s"}`, wkHrsN:h=>`${h} h`,
+  wkEmpty:"No sessions yet for this week — start with “+ Session” or use auto-distribute.",
+  wkNoTrainings:"No trainings yet.",
+  wkSaved:"Week plan saved", wkSessSaved:"Session saved", wkSessDeleted:"Session deleted",
+  wkTeam:"Week team", wkNoTeam:"Nobody confirmed yet — open the training to build the team.",
+  wkStage:s=>`Stage ${s}`, wkDays:"Mon–Fri",
+  type_orga:"Orga", type_theorie:"Theory", type_uebung:"Exercise", type_praxis:"Practical",
+  type_simulation:"Simulation", type_assessment:"Assessment", type_deliverable:"Deliverable",
+  day_mon:"Monday", day_tue:"Tuesday", day_wed:"Wednesday", day_thu:"Thursday", day_fri:"Friday",
+  attNoContent:"Week plan is still empty — plan the content",
+  attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} still missing`,
   nav_users:"Users", nav_activity:"Changes",
   tp_users:"Users", tp_usersSub:"Who can sign in — roles and access",
   tp_activity:"Changes", tp_activitySub:"Who changed what, and when",
@@ -1812,7 +1902,7 @@ document.addEventListener("keydown",e=>{
 /* ============================================================
    NAV / ROUTER
    ============================================================ */
-const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
+const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"week",ic:IC.week},{id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
 /* Offene Rückmeldungen (Trainer meldeten „stimmt nicht“, noch nicht erledigt). */
 function inboxItems(){ return (S.trainers||[]).filter(tr=>tr.plan&&tr.plan.status==="issue"&&tr.plan.note&&!tr.plan.resolvedAt)
   .map(tr=>({tr,note:tr.plan.note,at:tr.plan.confirmedAt})); }
@@ -1862,7 +1952,7 @@ function openMoreNav(){
   openSheet();
 }
 function navIcName(id){
-  return {dash:"dash",trainings:"cal",bookings:"book",trainers:"users",
+  return {dash:"dash",trainings:"cal",week:"week",bookings:"book",trainers:"users",
           inbox:"inbox",templates:"mail",automation:"auto",emails:"log",
           users:"users",activity:"log"}[id]||"dash";
 }
@@ -1888,6 +1978,7 @@ function extraNav(){
 }
 function titleFor(r){
   const m={dash:["tp_dash","tp_dashSub"],trainings:["tp_trn","tp_trnSub"],
+    week:["tp_week","tp_weekSub"],
     bookings:["tp_book","tp_bookSub"],inbox:["tp_inbox","tp_inboxSub"],
     trainers:["tp_pool","tp_poolSub"],templates:["tp_tpl","tp_tplSub"],
     automation:["tp_auto","tp_autoSub"],emails:["tp_emails","tp_emailsSub"],
@@ -1900,6 +1991,7 @@ function render(){
   $$(".view").forEach(v=>v.classList.remove("on"));
   if(route==="dash"){renderDash();$("#v-dash").classList.add("on");}
   else if(route==="trainings"){renderTrainings();$("#v-trainings").classList.add("on");}
+  else if(route==="week"){renderWeek();$("#v-week").classList.add("on");}
   else if(route==="bookings"){renderBookings();$("#v-bookings").classList.add("on");}
   else if(route==="detail"){renderDetail();$("#v-detail").classList.add("on");}
   else if(route==="trainers"){renderTrainers();$("#v-trainers").classList.add("on");}
@@ -2027,9 +2119,32 @@ function renderDash(){
   const need=T.map(tg=>({tg,s:statusOf(tg),r:rosterStats(tg),c:clientOf(tg)}))
     .filter(x=>x.s.cls!=="good")
     .sort((a,b)=>(a.s.cls==="crit"?0:1)-(b.s.cls==="crit"?0:1));
+  /* Wochenplan-Baustellen (aus dem zusammengeführten ETAF Dashboard):
+     leere Wochen und fehlende PowerPoints der kommenden Trainings. */
+  const todayIso=new Date().toISOString().slice(0,10);
+  const wkNeed=T.filter(tg=>String(tg.dateEnd||tg.date||"")>=todayIso)
+    .map(tg=>({tg,w:tg.week,c:clientOf(tg)}))
+    .filter(x=>!x.w||!x.w.sessions||x.w.pptDone<x.w.pptAll)
+    .sort((a,b)=>String(a.tg.date||"9999").localeCompare(String(b.tg.date||"9999")))
+    .slice(0,8);
+  const wkRows=wkNeed.map(x=>{
+    const empty=!x.w||!x.w.sessions;
+    const txt=empty?t("attNoContent"):t("attPptMiss",x.w.pptAll-x.w.pptDone);
+    return `
+      <div class="att">
+        <div class="ic w">${ic("week",15)}</div>
+        <div class="rowgrow">
+          <div class="nm">${esc(x.tg.code||"")} · ${x.tg.topic}${x.c?` <span class="tag" style="border-color:${x.c.color};color:${x.c.color}">${esc(x.c.short||x.c.name)}</span>`:''}</div>
+          <div class="meta">${txt} · ${whenLabel(x.tg)}</div>
+        </div>
+        <div class="attacts">
+          <button class="btn sm primary" onclick="openWeek('${x.tg.id}')">${t("nav_week")}</button>
+        </div>
+      </div>`;
+  }).join("");
   const att=`<div class="panel">
-    <div class="panel-h"><h3>${t("attTitle")}</h3><div class="sub">${t("attSub",need.length)}</div></div>
-    <div class="panel-b">${need.length?need.map(x=>`
+    <div class="panel-h"><h3>${t("attTitle")}</h3><div class="sub">${t("attSub",need.length+wkNeed.length)}</div></div>
+    <div class="panel-b">${(need.length||wkNeed.length)?need.map(x=>`
       <div class="att">
         <div class="ic ${x.s.cls==='crit'?'c':'w'}">${x.s.cls==='crit'?'!':'…'}</div>
         <div class="rowgrow">
@@ -2040,7 +2155,7 @@ function renderDash(){
           <span class="pill ${x.s.cls}">${t(x.s.key)}</span>
           <button class="btn sm primary" onclick="openDetail('${x.tg.id}')">${t("open")}</button>
         </div>
-      </div>`).join(""):`<div class="empty">${t("attAll")}</div>`}</div>
+      </div>`).join("")+wkRows:`<div class="empty">${t("attAll")}</div>`}</div>
   </div>`;
 
   $("#v-dash").innerHTML=kpis+portfolio+timeline+att;
@@ -2898,6 +3013,330 @@ function renderInbox(){
     </div></div>
     <div id="fmList">${LIVE?`<div class="panel"><div class="panel-b meta">…</div></div>`:`<div class="panel"><div class="panel-b meta" style="padding:18px">${t("fmDemo")}</div></div>`}</div>`;
   if(LIVE) loadFlightMails();
+}
+
+/* ============================================================
+   WOCHENPLAN — Sessions je Trainingswoche (aus dem ETAF Dashboard
+   zusammengeführt): Mo–Fr × Vormittag/Nachmittag, Auswechselbank,
+   Trainer-Zuordnung aus der echten Besetzung, PowerPoint-Status.
+   ============================================================ */
+const WK_SLOTKEYS=["mon_am","mon_pm","tue_am","tue_pm","wed_am","wed_pm","thu_am","thu_pm","fri_am","fri_pm"];
+const WK_DAYS=["mon","tue","wed","thu","fri"];
+const SESS_TYPES=["orga","theorie","uebung","praxis","simulation","assessment","deliverable"];
+const SESS_COL={orga:"#8A939A",theorie:"#4E6E8E",uebung:"#3F7A5E",praxis:"#2E9E6B",
+                simulation:"#B23A42",assessment:"#C77E1E",deliverable:"#6E5A86"};
+let curWeekId=null, WKD=null, wkEditSid=null;
+
+function wkTrainings(){ return curTrainings().slice()
+  .sort((a,b)=>String(a.date||"9999").localeCompare(String(b.date||"9999"))); }
+function openWeek(id){ curWeekId=id; if(route!=="week") go("week"); else renderWeek(); }
+function wkPptRelevant(s){ return s.type!=="orga" && s.type!=="deliverable"; }
+function wkSess(id){ return (WKD&&WKD.sessions||[]).find(s=>String(s.id)===String(id)); }
+function wkCurTg(){ return S.trainings.find(x=>String(x.id)===String(curWeekId)); }
+
+/* Daten je Woche laden — live aus der DB, im Demo-Modus aus dem Browser-Speicher */
+async function loadWeekData(tgId){
+  if(!LIVE){
+    S.weekData=S.weekData||{};
+    const tg=S.trainings.find(x=>x.id===tgId)||{};
+    return WKD=S.weekData[tgId]=S.weekData[tgId]||{sessions:[],plan:{},deliverable:tg.deliverable||"",deliverableEn:"",stage:"",star:0};
+  }
+  const d=await apiCall("sessions.list",{training:tgId});
+  return WKD={sessions:d.sessions||[],plan:d.plan||{},deliverable:d.deliverable||"",
+              deliverableEn:d.deliverableEn||"",stage:d.stage||"",star:d.star||0};
+}
+
+/* Platzierung auflösen: alles, was in keinem Slot liegt, gehört auf die Bank. */
+function wkPlacement(){
+  const plan=WKD.plan||{}; const placed=new Set(); const slots={};
+  for(const k of WK_SLOTKEYS){
+    slots[k]=((plan[k]||[]).map(String)).filter(id=>wkSess(id)&&!placed.has(id)&&(placed.add(id)||true));
+  }
+  const bench=(WKD.sessions||[]).map(s=>String(s.id)).filter(id=>!placed.has(id));
+  return {slots,bench};
+}
+function wkPlanPayload(){ const p=wkPlacement(); return {...p.slots,bench:p.bench}; }
+async function persistWeekPlan(extra){
+  if(LIVE){
+    try{ await apiCall("weekplan.save",{training:curWeekId,plan:wkPlanPayload(),...(extra||{})}); }
+    catch(e){ toast(e.message,"crit"); return false; }
+  } else save();
+  return true;
+}
+
+async function renderWeek(){
+  const el=$("#v-week"); const list=wkTrainings();
+  if(!list.length){ el.innerHTML=`<div class="panel"><div class="panel-b empty">${t("wkNoTrainings")}</div></div>`; return; }
+  if(!curWeekId || !list.find(x=>String(x.id)===String(curWeekId))){
+    const today=new Date().toISOString().slice(0,10);
+    const up=list.find(x=>String(x.dateEnd||x.date||"")>=today);
+    curWeekId=(up||list[0]).id;
+  }
+  const tabs=`<div class="wktabs tscroll">${list.map(x=>{
+    const on=String(x.id)===String(curWeekId);
+    const d=x.date?x.date.slice(8,10)+"."+x.date.slice(5,7)+".":"";
+    return `<button class="wktab ${on?'on':''}" onclick="openWeek('${x.id}')"><b>${esc(x.code||x.kw||"?")}</b><small>${d}</small></button>`;
+  }).join("")}</div>`;
+  el.innerHTML=tabs+`<div id="wkBody"><div class="panel"><div class="panel-b meta">…</div></div></div>`;
+  try{ await loadWeekData(curWeekId); }
+  catch(e){ $("#wkBody").innerHTML=`<div class="panel"><div class="panel-b meta">${esc(e.message)}</div></div>`; return; }
+  drawWeekBody();
+}
+
+function wkDayDate(i){
+  const tg=wkCurTg(); if(!tg||!tg.date) return "";
+  const d=new Date(tg.date+"T00:00:00"); d.setDate(d.getDate()+i);
+  return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+".";
+}
+
+function wkTile(id){
+  const s=wkSess(id); if(!s) return "";
+  const col=SESS_COL[s.type]||"#8A939A";
+  const tr=s.trainerId?S.trainers.find(x=>String(x.id)===String(s.trainerId)):null;
+  const dot=wkPptRelevant(s)
+    ? `<span class="ppdot ${s.ppt==='vorhanden'?'g':s.ppt==='inArbeit'?'y':'r'}" title="PPT: ${t('ppt_'+(s.ppt||''))}"></span>`:"";
+  return `<div class="sess" draggable="true" data-id="${s.id}"
+      ondragstart="wkDragStart(event)" onclick="openSessEdit('${s.id}')">
+    <span class="srail" style="background:${col}"></span>
+    <div class="st">${esc(s.title)}</div>
+    <div class="sm"><span class="tag" style="border-color:${col};color:${col}">${t("type_"+(s.type||"theorie"))}</span>
+      <span>${esc(String(s.dur||1))} h</span>
+      ${tr?`<span class="av" style="width:18px;height:18px;font-size:9px;background:${tr.color||'#607d94'}" title="${esc(tr.name)}">${initials(tr.name)}</span>`:""}
+      ${dot}</div></div>`;
+}
+
+function drawWeekBody(){
+  const tg=wkCurTg(); if(!tg||!WKD) return;
+  const {slots,bench}=wkPlacement();
+  const cl=clientOf(tg); const r=rosterStats(tg);
+  const totalH=(WKD.sessions||[]).reduce((a,s)=>a+(parseFloat(s.dur)||0),0);
+  const rel=(WKD.sessions||[]).filter(wkPptRelevant);
+  const done=rel.filter(s=>s.ppt==="vorhanden").length;
+
+  /* Team der Woche: zugesagte/bestätigte Trainer aus der Besetzung */
+  const team=(tg.roster||[]).filter(x=>["yes","confirmed"].includes(x.status))
+    .map(x=>S.trainers.find(tr2=>tr2.id===x.trainerId)).filter(Boolean);
+  const teamHtml=team.length
+    ? team.map(tr2=>`<span class="tmchip" onclick="openDetail('${tg.id}')">
+        <span class="av" style="width:22px;height:22px;font-size:10px;background:${tr2.color||'#607d94'}">${initials(tr2.name)}</span>${esc(tr2.name)}</span>`).join("")
+    : `<span class="meta">${t("wkNoTeam")}</span>`;
+
+  const head=`<div class="panel"><div class="panel-b">
+    <div class="wkhead" style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
+      <div class="rowgrow" style="min-width:220px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <b style="font-size:17px">${esc(tg.code||"")}${tg.star?" ★":""} — ${esc(tg.topic)}</b>
+          ${cl?`<span class="tag" style="border-color:${cl.color};color:${cl.color}">${esc(cl.short||cl.name)}</span>`:""}
+          ${WKD.stage?`<span class="tag">${t("wkStage",WKD.stage)}</span>`:""}
+        </div>
+        <div class="meta" style="margin-top:3px">${esc(tg.city||"")} · ${whenLabel(tg)} · ${t("wkSessN",(WKD.sessions||[]).length)} · ${t("wkHrsN",totalH)}</div>
+        <div class="wkteam" style="margin-top:10px"><span class="meta" style="font-weight:700">${t("wkTeam")}: ${r.yes}/${r.need}</span>${teamHtml}</div>
+      </div>
+      <div style="flex:1 1 260px;min-width:240px">
+        <div class="wkdeliv"><b>${t("wkDeliverable")}</b>${esc(WKD.deliverable||"—")}
+          <div style="margin-top:6px"><button class="btn sm" onclick="openDelivEdit()">${ic("pen",13)}${t("edit")}</button></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <button class="btn sm" onclick="openPptSheet()">${ic("clip",14)}${t("wkPptChip",done,rel.length)}</button>
+      <button class="btn sm" onclick="openDetail('${tg.id}')">${ic("users",14)}${t("open")} — ${t("nav_trainings")}</button>
+      <span class="spacer"></span>
+      <button class="btn sm" onclick="wkAutofill()">${ic("auto",14)}${t("wkAuto")}</button>
+      <button class="btn sm primary" onclick="openSessEdit(null)">${ic("plus",14)}${t("wkNew")}</button>
+    </div>
+  </div></div>`;
+
+  const grid=`<div class="wkgrid">${WK_DAYS.map((d,i)=>{
+    const cols=["am","pm"].map(half=>{
+      const key=d+"_"+half;
+      const hrs=slots[key].reduce((a,id)=>a+(parseFloat((wkSess(id)||{}).dur)||0),0);
+      return `<div class="slotbox">
+        <div class="sl-h"><span>${t(half==="am"?"wkAM":"wkPM")}</span><span>${hrs?t("wkHrsN",hrs):""}</span></div>
+        <div class="zone" data-slot="${key}" ondragover="wkDragOver(event)" ondragleave="wkDragLeave(event)" ondrop="wkDrop(event)">
+          ${slots[key].map(wkTile).join("")}
+        </div></div>`;
+    }).join("");
+    return `<div class="daycol"><h4>${t("day_"+d)}<small>${wkDayDate(i)}</small></h4>${cols}</div>`;
+  }).join("")}</div>`;
+
+  const benchHtml=`<div class="panel wkbench" style="margin-top:14px">
+    <div class="panel-h"><h3>${t("wkBench")}</h3><div class="sub">${t("wkBenchHint")}</div></div>
+    <div class="panel-b"><div class="zone" data-slot="bench" ondragover="wkDragOver(event)" ondragleave="wkDragLeave(event)" ondrop="wkDrop(event)">
+      ${bench.length?bench.map(wkTile).join(""):`<div class="meta" style="padding:6px 4px">${(WKD.sessions||[]).length?"—":t("wkEmpty")}</div>`}
+    </div></div></div>`;
+
+  $("#wkBody").innerHTML=head+grid+benchHtml;
+}
+
+/* ---- Ziehen & Ablegen (Desktop); Antippen öffnet den Editor mit „Verschieben nach“ ---- */
+function wkDragStart(ev){ ev.dataTransfer.setData("text/plain",ev.currentTarget.dataset.id); ev.dataTransfer.effectAllowed="move"; }
+function wkDragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add("dragover"); }
+function wkDragLeave(ev){ ev.currentTarget.classList.remove("dragover"); }
+async function wkDrop(ev){
+  ev.preventDefault(); ev.currentTarget.classList.remove("dragover");
+  const id=ev.dataTransfer.getData("text/plain"); if(!id||!wkSess(id)) return;
+  wkMoveTo(id, ev.currentTarget.dataset.slot);
+}
+async function wkMoveTo(id,slot){
+  const {slots}=wkPlacement();
+  for(const k of WK_SLOTKEYS) slots[k]=slots[k].filter(x=>x!==String(id));
+  if(slot!=="bench" && WK_SLOTKEYS.includes(slot)) slots[slot].push(String(id));
+  WKD.plan={...slots,bench:slot==="bench"?[String(id)]:[]}; // Bank ergibt sich aus „nirgends platziert“
+  drawWeekBody();
+  await persistWeekPlan();
+}
+
+/* ---- Auto-Verteilung: Sessions der Reihe nach auf Mo–Fr füllen (~4 h je Halbtag) ---- */
+async function wkAutofill(){
+  if(!(WKD.sessions||[]).length){ toast(t("wkEmpty"),"warn"); return; }
+  if(!confirm(t("wkAutoAsk"))) return;
+  const plan={}; WK_SLOTKEYS.forEach(k=>plan[k]=[]);
+  const hrs=k=>plan[k].reduce((a,id)=>a+(parseFloat((wkSess(id)||{}).dur)||1),0);
+  let i=0;
+  for(const s of WKD.sessions){
+    const d=parseFloat(s.dur)||1;
+    while(i<WK_SLOTKEYS.length-1 && hrs(WK_SLOTKEYS[i])+d>4.25) i++;
+    plan[WK_SLOTKEYS[i]].push(String(s.id));
+  }
+  WKD.plan={...plan,bench:[]};
+  drawWeekBody();
+  if(await persistWeekPlan()) toast(t("wkSaved"),"good");
+}
+
+/* ---- Session-Editor (Blatt): Felder + Trainer + PPT + Verschieben ---- */
+function wkTrainerOptions(sel){
+  const tg=wkCurTg();
+  const teamIds=(tg&&tg.roster||[]).filter(x=>["yes","confirmed","maybe","asked"].includes(x.status)).map(x=>String(x.trainerId));
+  const team=S.trainers.filter(tr2=>teamIds.includes(String(tr2.id)));
+  const rest=S.trainers.filter(tr2=>!teamIds.includes(String(tr2.id))).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const opt=tr2=>`<option value="${tr2.id}" ${String(sel||"")===String(tr2.id)?"selected":""}>${esc(tr2.name)}</option>`;
+  return `<option value="">${t("wkTrainerNone")}</option>`
+    +(team.length?`<optgroup label="${t("wkTeam")}">${team.map(opt).join("")}</optgroup>`:"")
+    +`<optgroup label="${t("nav_trainers")}">${rest.map(opt).join("")}</optgroup>`;
+}
+function openSessEdit(sid){
+  wkEditSid=sid;
+  const s=sid?wkSess(sid):null;
+  const {slots}=wkPlacement();
+  let curSlot="bench";
+  if(sid) for(const k of WK_SLOTKEYS) if(slots[k].includes(String(sid))) curSlot=k;
+  const slotOpt=[`<option value="bench" ${curSlot==="bench"?"selected":""}>${t("wkBench")}</option>`]
+    .concat(WK_SLOTKEYS.map(k=>{
+      const [d,h]=k.split("_");
+      return `<option value="${k}" ${curSlot===k?"selected":""}>${t("day_"+d)} · ${t(h==="am"?"wkAM":"wkPM")}</option>`;
+    })).join("");
+  $("#sheetTitle").textContent=s?t("wkEditTitle"):t("wkNewTitle");
+  $("#sheetBody").innerHTML=`
+    <label class="fld">${t("wkTitle")}</label><input class="inp" id="wsTitle" value="${esc(s?s.title:"")}">
+    <label class="fld">${t("wkTitleEn")}</label><input class="inp" id="wsTitleEn" value="${esc(s?s.titleEn||"":"")}">
+    <div class="fldrow">
+      <div style="flex:1"><label class="fld">${t("wkType")}</label>
+        <select class="inp" id="wsType">${SESS_TYPES.map(x=>`<option value="${x}" ${s&&s.type===x?"selected":""}>${t("type_"+x)}</option>`).join("")}</select></div>
+      <div style="flex:1"><label class="fld">${t("wkDur")}</label>
+        <input class="inp" id="wsDur" inputmode="decimal" value="${esc(s?String(s.dur||1):"1")}"></div>
+    </div>
+    <label class="fld">${t("wkDesc")}</label>
+    <textarea id="wsDesc" style="min-height:90px">${esc(s?s.desc||"":"")}</textarea>
+    <label class="fld">${t("wkTrainer")} <span class="meta">${t("wkTeamHint")}</span></label>
+    <select class="inp" id="wsTrainer">${wkTrainerOptions(s?s.trainerId:"")}</select>
+    <div class="fldrow" style="margin-top:4px">
+      <div style="flex:1"><label class="fld">${t("wkPpt")}</label>
+        <select class="inp" id="wsPpt">
+          <option value="" ${!s||!s.ppt?"selected":""}>${t("ppt_")}</option>
+          <option value="inArbeit" ${s&&s.ppt==="inArbeit"?"selected":""}>${t("ppt_inArbeit")}</option>
+          <option value="vorhanden" ${s&&s.ppt==="vorhanden"?"selected":""}>${t("ppt_vorhanden")}</option>
+        </select></div>
+      <div style="flex:1"><label class="fld">${t("wkPptBy")}</label>
+        <select class="inp" id="wsPptBy">${wkTrainerOptions(s?s.pptBy:"")}</select></div>
+      <div style="flex:1"><label class="fld">${t("wkPptDue")}</label>
+        <input class="inp" id="wsPptDue" type="date" value="${esc(s?s.pptDue||"":"")}"></div>
+    </div>
+    <label class="fld">${t("wkMove")}</label>
+    <select class="inp" id="wsSlot">${slotOpt}</select>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    ${s?`<button class="btn" onclick="deleteSess()" style="border-color:var(--crit);color:var(--crit)">${ic("trash",15)}${t("wkDelete")}</button>`:""}
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="saveSess()">${ic("check",15)}${t("save")}</button>`;
+  openSheet();
+}
+async function saveSess(){
+  const title=val("wsTitle").trim();
+  if(!title){ toast(t("wkTitle")+"?","crit"); return; }
+  const data={ training:curWeekId, id:wkEditSid||0, title, titleEn:val("wsTitleEn").trim(),
+    type:val("wsType"), dur:val("wsDur").trim()||"1", desc:val("wsDesc"),
+    trainerId:val("wsTrainer")||0, ppt:val("wsPpt"), pptBy:val("wsPptBy")||0, pptDue:val("wsPptDue") };
+  let sid=wkEditSid;
+  if(LIVE){
+    try{ const d=await apiCall("session.save",data); sid=d.id; }
+    catch(e){ toast(e.message,"crit"); return; }
+  } else {
+    let s=sid?wkSess(sid):null;
+    if(!s){ s={id:uid("s")}; WKD.sessions.push(s); sid=s.id; }
+    Object.assign(s,{title:data.title,titleEn:data.titleEn,type:data.type,dur:data.dur,desc:data.desc,
+      trainerId:data.trainerId?String(data.trainerId):null,ppt:data.ppt,
+      pptBy:data.pptBy?String(data.pptBy):null,pptDue:data.pptDue});
+    save();
+  }
+  // Lokale Kopie aktualisieren (live: frisch geladene Daten beim nächsten renderWeek)
+  if(LIVE){
+    let s=wkSess(sid);
+    if(!s){ s={id:String(sid)}; WKD.sessions.push(s); }
+    Object.assign(s,{title:data.title,titleEn:data.titleEn,type:data.type,dur:data.dur,desc:data.desc,
+      trainerId:data.trainerId?String(data.trainerId):null,ppt:data.ppt,
+      pptBy:data.pptBy?String(data.pptBy):null,pptDue:data.pptDue});
+  }
+  const slot=val("wsSlot");
+  await wkMoveTo(String(sid),slot);
+  closeSheet(); toast(t("wkSessSaved"),"good");
+  if(LIVE) pull().then(()=>{ if(route==="dash")renderDash(); });
+}
+async function deleteSess(){
+  const s=wkSess(wkEditSid); if(!s) return;
+  if(!confirm(t("wkDeleteAsk",s.title))) return;
+  if(LIVE){ try{ await apiCall("session.delete",{id:wkEditSid}); }catch(e){ toast(e.message,"crit"); return; } }
+  WKD.sessions=WKD.sessions.filter(x=>String(x.id)!==String(wkEditSid));
+  if(!LIVE) save();
+  closeSheet(); drawWeekBody(); toast(t("wkSessDeleted"),"good");
+  if(LIVE) pull().then(()=>{ if(route==="dash")renderDash(); });
+}
+
+/* ---- PowerPoint-Liste der Woche (Schnellpflege) ---- */
+function openPptSheet(){
+  const rel=(WKD.sessions||[]).filter(wkPptRelevant);
+  $("#sheetTitle").textContent=t("wkPptTitle");
+  $("#sheetBody").innerHTML=rel.length?rel.map(s=>{
+    const col=s.ppt==="vorhanden"?"g":s.ppt==="inArbeit"?"y":"r";
+    const by=s.pptBy?S.trainers.find(x=>String(x.id)===String(s.pptBy)):null;
+    return `<button class="morerow" onclick="closeSheet();openSessEdit('${s.id}')">
+      <span class="ppdot ${col}" style="flex:none"></span>
+      <span class="rowgrow" style="text-align:left;min-width:0">
+        <span style="display:block;font-weight:650;font-size:13.5px">${esc(s.title)}</span>
+        <span class="meta" style="font-size:12px">${t("ppt_"+(s.ppt||""))}${by?" · "+esc(by.name):""}${s.pptDue?" · "+t("wkPptDue")+" "+esc(s.pptDue):""}</span>
+      </span>${ic("pen",15)}</button>`;
+  }).join(""):`<div class="empty">${t("wkPptEmpty")}</div>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button>`;
+  openSheet();
+}
+
+/* ---- Wochenergebnis bearbeiten ---- */
+function openDelivEdit(){
+  $("#sheetTitle").textContent=t("wkEditDeliv");
+  $("#sheetBody").innerHTML=`
+    <label class="fld">${t("wkDeliverable")}</label>
+    <textarea id="wdDe" style="min-height:80px">${esc(WKD.deliverable||"")}</textarea>
+    <label class="fld">${t("wkDeliverableEn")}</label>
+    <textarea id="wdEn" style="min-height:80px">${esc(WKD.deliverableEn||"")}</textarea>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
+    <button class="btn primary" onclick="saveDeliv()">${ic("check",15)}${t("save")}</button>`;
+  openSheet();
+}
+async function saveDeliv(){
+  WKD.deliverable=val("wdDe"); WKD.deliverableEn=val("wdEn");
+  if(await persistWeekPlan({deliverable:WKD.deliverable,deliverableEn:WKD.deliverableEn})){
+    if(!LIVE){ const tg=wkCurTg(); if(tg) tg.deliverable=WKD.deliverable; save(); }
+    closeSheet(); drawWeekBody(); toast(t("wkSaved"),"good");
+  }
 }
 
 /* ============================================================

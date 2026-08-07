@@ -283,7 +283,18 @@ function get_state(): array {
     $matPresets[$p['spec']][]=['matId'=>$p['material_id'],'qty'=>(int)$p['qty']];
   }
 
-  $trainings=array_map(function($r) use ($byT,$matByT){
+  // Wochenplan-Kurzstand je Training (PPT-Zähler ohne Orga-/Deliverable-Kacheln)
+  $wkAgg=[];
+  try{
+    foreach(q("SELECT training_id, COUNT(*) n,
+        SUM(CASE WHEN ppt='vorhanden' THEN 1 ELSE 0 END) done,
+        SUM(CASE WHEN stype NOT IN('orga','deliverable') THEN 1 ELSE 0 END) rel
+      FROM training_sessions GROUP BY training_id")->fetchAll() as $a){
+      $wkAgg[(string)$a['training_id']]=['sessions'=>(int)$a['n'],'pptAll'=>(int)$a['rel'],'pptDone'=>(int)$a['done']];
+    }
+  }catch(Throwable $e){}
+
+  $trainings=array_map(function($r) use ($byT,$matByT,$wkAgg){
     return [
       'id'=>(string)$r['id'], 'clientId'=>$r['client_id']??null, 'code'=>$r['code']??null,
       'topic'=>$r['topic'], 'city'=>$r['city'], 'country'=>$r['country'],
@@ -299,6 +310,9 @@ function get_state(): array {
       ],
       'materials'=>$matByT[(string)$r['id']] ?? [],
       'roster'=>$byT[(string)$r['id']] ?? [],
+      'stage'=>$r['stage']??'', 'star'=>(int)($r['star']??0),
+      'deliverable'=>$r['deliverable']??'', 'deliverableEn'=>$r['deliverable_en']??'',
+      'week'=>$wkAgg[(string)$r['id']] ?? null,
       // für den Überschreib-Schutz
       'version'=>(int)($r['version']??1), 'updatedAt'=>$r['updated_at']??'', 'updatedBy'=>$r['updated_by']??'',
     ];

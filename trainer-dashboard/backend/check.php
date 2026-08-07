@@ -30,7 +30,8 @@ row('PHP-Version '.PHP_VERSION, version_compare(PHP_VERSION,'8.0','>='), version
 
 /* 2) Dateien vollständig? */
 $need=['config.php','db.php','lib.php','mailer.php','api.php','ai.php','automation.php',
-       'mailfetch.php','mailtest.php','cron.php','respond.php','plan.php','transfer.php','reset.php'];
+       'mailfetch.php','mailtest.php','cron.php','respond.php','plan.php','transfer.php','reset.php',
+       'backup.php','programme-sessions.json'];
 $missing=[];
 foreach($need as $f){ if(!is_file(__DIR__.'/'.$f)) $missing[]=$f; }
 row('Alle Backend-Dateien vorhanden', count($missing)===0,
@@ -78,7 +79,7 @@ if(is_array($cfg) && $authed){
                   $cfg['db_user']??'', $cfg['db_pass']??'');
       $pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
       $missT=[];
-      foreach(['users','activity','travel_mail','trainer_reviews'] as $t){
+      foreach(['users','activity','travel_mail','trainer_reviews','training_sessions'] as $t){
         try{ $pdo->query("SELECT 1 FROM $t LIMIT 1"); }catch(\Throwable $e){ $missT[]=$t; }
       }
       row('Datenbank-Schema aktuell', count($missT)===0,

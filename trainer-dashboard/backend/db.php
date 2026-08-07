@@ -232,6 +232,26 @@ function ensure_schema(): void {
     id $pk, trainer_id INT, training_id INT, label VARCHAR(190),
     stars INT DEFAULT 0, note TEXT, updated_at VARCHAR(20))$eng");
 
+  /* ---- Wochenplan (aus dem ETAF Dashboard zusammengeführt): Sessions je
+         Training, Platzierung Mo–Fr × Vormittag/Nachmittag, Weekly Deliverable.
+         ppt: '' = offen | 'inArbeit' | 'vorhanden'; ppt_by = Trainer-ID;
+         trainer_id an der Session = wer sie hält (aus der Besetzung). ---- */
+  $d->exec("CREATE TABLE IF NOT EXISTS training_sessions (
+    id $pk, training_id INT,
+    title VARCHAR(190), title_en VARCHAR(190),
+    stype VARCHAR(16) DEFAULT 'theorie', dur VARCHAR(8) DEFAULT '1', descr TEXT,
+    trainer_id INT,
+    ppt VARCHAR(12) DEFAULT '', ppt_by INT, ppt_due VARCHAR(12),
+    sort INT DEFAULT 0)$eng");
+  foreach([
+    "stage VARCHAR(8)","star INT DEFAULT 0","deliverable TEXT","deliverable_en TEXT",
+    "plan_slots TEXT"   // JSON: {"mon_am":[ids],…,"fri_pm":[ids],"bench":[ids]}
+  ] as $col){ try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Einmal-Import der Programm-Inhalte (V3.2) über die Block-Codes (W1…Final)
+  if((int)q("SELECT COUNT(*) c FROM training_sessions")->fetch()['c']===0){
+    try{ import_programme_sessions(); }catch(Throwable $e){}
+  }
+
   // Automatik-Standardwerte
   $ac=cfg();
   if(config_get('reminder_hours')===null) config_set('reminder_hours',(string)($ac['reminder_hours']??48));
@@ -253,6 +273,30 @@ function ensure_schema(): void {
   // Material-Katalog sicherstellen (auch für bestehende Installationen)
   if((int)q("SELECT COUNT(*) c FROM materials")->fetch()['c']===0){
     seed_materials();
+  }
+}
+
+/** Programm-Sessions (Export aus dem früheren ETAF Dashboard) einmalig in die
+ *  Trainings importieren. Zuordnung über den Block-Code (W1, W11-A, TtT-I, …). */
+function import_programme_sessions(): void {
+  $f=__DIR__.'/programme-sessions.json';
+  if(!is_file($f)) return;
+  $prog=json_decode((string)file_get_contents($f), true);
+  if(!is_array($prog)) return;
+  foreach(q("SELECT * FROM trainings WHERE code IS NOT NULL AND code<>''")->fetchAll() as $tg){
+    $code=preg_replace('/[^\w-]/u','',(string)$tg['code']);   // "W9 ★" → "W9"
+    $p=$prog[$code]??null; if(!$p) continue;
+    q("UPDATE trainings SET stage=COALESCE(NULLIF(stage,''),?), star=?,
+        deliverable=COALESCE(NULLIF(deliverable,''),?), deliverable_en=COALESCE(NULLIF(deliverable_en,''),?)
+       WHERE id=?",
+      [$p['stage']??'', !empty($p['star'])?1:0, $p['deliverable']??'', $p['deliverableEn']??'', $tg['id']]);
+    $sort=0;
+    foreach(($p['sessions']??[]) as $s){
+      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,ppt,sort)
+         VALUES(?,?,?,?,?,?, '', ?)",
+        [$tg['id'], $s['title']??'', $s['titleEn']??'', $s['type']??'theorie',
+         (string)($s['dur']??'1'), $s['desc']??'', $sort++]);
+    }
   }
 }
 

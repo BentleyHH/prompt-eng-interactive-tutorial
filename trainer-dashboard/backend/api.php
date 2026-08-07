@@ -290,6 +290,82 @@ switch($action){
     }
     out(['ok'=>true,'id'=>(string)$id,'prefilled'=>$prefilled]);
 
+  /* ---- Wochenplan: Sessions + Platzierung je Training ---- */
+  case 'sessions.list':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    $tg=q("SELECT id,plan_slots,deliverable,deliverable_en,stage,star FROM trainings WHERE id=?",[$tid])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $rows=q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$tid])->fetchAll();
+    out(['ok'=>true,
+      'sessions'=>array_map(fn($r)=>[
+        'id'=>(string)$r['id'],'title'=>$r['title'],'titleEn'=>$r['title_en'],
+        'type'=>$r['stype'],'dur'=>$r['dur'],'desc'=>$r['descr'],
+        'trainerId'=>$r['trainer_id']?(string)$r['trainer_id']:null,
+        'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,'pptDue'=>$r['ppt_due']??''],$rows),
+      'plan'=>json_decode($tg['plan_slots']?:'{}',true)?:[],
+      'deliverable'=>$tg['deliverable']??'','deliverableEn'=>$tg['deliverable_en']??'',
+      'stage'=>$tg['stage']??'','star'=>(int)($tg['star']??0)]);
+
+  case 'session.save':
+    require_auth();
+    $tid=(int)($in['training']??0); $sid=(int)($in['id']??0);
+    if(!$tid || !q("SELECT id FROM trainings WHERE id=?",[$tid])->fetch()) fail('Training nicht gefunden.',404);
+    $title=trim((string)($in['title']??'')); if($title==='') fail('Bitte einen Titel angeben.');
+    $type=in_array($in['type']??'',['orga','theorie','uebung','praxis','simulation','assessment','deliverable'],true)?$in['type']:'theorie';
+    $ppt=in_array($in['ppt']??'',['','inArbeit','vorhanden'],true)?$in['ppt']:'';
+    $due=trim((string)($in['pptDue']??''));
+    if($due!=='' && !preg_match('/^\d{4}-\d{2}-\d{2}$/',$due)) $due='';
+    $f=[$title, trim((string)($in['titleEn']??'')), $type, (string)($in['dur']??'1'),
+        (string)($in['desc']??''), (int)($in['trainerId']??0)?:null, $ppt, (int)($in['pptBy']??0)?:null, $due];
+    if($sid && q("SELECT id FROM training_sessions WHERE id=? AND training_id=?",[$sid,$tid])->fetch()){
+      q("UPDATE training_sessions SET title=?,title_en=?,stype=?,dur=?,descr=?,trainer_id=?,ppt=?,ppt_by=?,ppt_due=? WHERE id=?",
+        array_merge($f,[$sid]));
+    } else {
+      $mx=(int)q("SELECT COALESCE(MAX(sort),0) m FROM training_sessions WHERE training_id=?",[$tid])->fetch()['m'];
+      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,trainer_id,ppt,ppt_by,ppt_due,sort)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?)", array_merge([$tid],$f,[$mx+1]));
+      $sid=(int)db()->lastInsertId();
+    }
+    audit('session.save','training',(string)$tid,mb_substr($title,0,80));
+    out(['ok'=>true,'id'=>(string)$sid]);
+
+  case 'session.delete':
+    require_auth();
+    $sid=(int)($in['id']??0);
+    $s=q("SELECT training_id FROM training_sessions WHERE id=?",[$sid])->fetch();
+    q("DELETE FROM training_sessions WHERE id=?",[$sid]);
+    if($s){ // Platzierung bereinigen
+      $tg=q("SELECT plan_slots FROM trainings WHERE id=?",[$s['training_id']])->fetch();
+      $plan=json_decode($tg['plan_slots']?:'{}',true)?:[];
+      foreach($plan as $k=>$ids){ $plan[$k]=array_values(array_filter((array)$ids, fn($x)=>(string)$x!==(string)$sid)); }
+      q("UPDATE trainings SET plan_slots=? WHERE id=?",[json_encode($plan),$s['training_id']]);
+    }
+    out(['ok'=>true]);
+
+  case 'weekplan.save':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    if(!$tid || !q("SELECT id FROM trainings WHERE id=?",[$tid])->fetch()) fail('Training nicht gefunden.',404);
+    // Platzierung validieren: nur bekannte Slots, nur Sessions dieses Trainings, keine Dubletten
+    $valid=array_map('strval', q("SELECT id FROM training_sessions WHERE training_id=?",[$tid])->fetchAll(PDO::FETCH_COLUMN));
+    $keys=['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm','bench'];
+    $plan=[]; $seen=[];
+    foreach($keys as $k){
+      $plan[$k]=[];
+      foreach((array)(($in['plan']??[])[$k]??[]) as $id){
+        $id=(string)(int)$id;
+        if(in_array($id,$valid,true) && !isset($seen[$id])){ $plan[$k][]=$id; $seen[$id]=true; }
+      }
+    }
+    $sets=['plan_slots=?']; $vals=[json_encode($plan)];
+    if(array_key_exists('deliverable',$in)){ $sets[]='deliverable=?'; $vals[]=(string)$in['deliverable']; }
+    if(array_key_exists('deliverableEn',$in)){ $sets[]='deliverable_en=?'; $vals[]=(string)$in['deliverableEn']; }
+    $vals[]=$tid;
+    q("UPDATE trainings SET ".implode(',',$sets)." WHERE id=?",$vals);
+    audit('weekplan.update','training',(string)$tid,'Wochenplan aktualisiert');
+    out(['ok'=>true]);
+
   case 'training.delete':
     require_auth();
     $tid=$in['id']??0;
@@ -298,6 +374,7 @@ switch($action){
     q("DELETE FROM requests WHERE training_id=?",[$tid]);
     q("DELETE FROM travel WHERE training_id=?",[$tid]);
     q("DELETE FROM training_materials WHERE training_id=?",[$tid]);
+    q("DELETE FROM training_sessions WHERE training_id=?",[$tid]);
     out(['ok'=>true]);
 
   /* ---- Termin verschoben: betroffene Trainer informieren / neu anfragen ---- */
