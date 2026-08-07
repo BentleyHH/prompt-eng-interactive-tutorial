@@ -3291,6 +3291,7 @@ function drawWeekBody(){
     </div></div></div>`;
 
   const tgt=$(wkTarget); if(tgt) tgt.innerHTML=head+grid+benchHtml;
+  wkDrawnSig=wkSig();
 }
 
 /* Wochenplan in die Trainings-Detailansicht einbetten (gleiche Datenbasis —
@@ -3298,7 +3299,15 @@ function drawWeekBody(){
    Wird auch vom 8-Sekunden-Hintergrundabgleich aufgerufen — deshalb:
    nie den Platzhalter zeigen, wenn die Woche schon dasteht, und nur neu
    zeichnen, wenn sich die Daten wirklich geändert haben (kein Flackern). */
-let wkEmbedKey=null, wkDragBusy=false;
+let wkEmbedKey=null, wkDragBusy=false, wkDrawnSig="";
+/* Fingerabdruck dessen, was der Wochenplan darstellt: Sessions/Platzierung
+   PLUS Besetzung (Team der Woche) und UI-Sprache — ändert sich davon nichts,
+   muss auch nichts neu gezeichnet werden. */
+function wkSig(){
+  const tg=wkCurTg();
+  const team=((tg&&tg.roster)||[]).map(r=>r.trainerId+":"+r.status).join(",");
+  return JSON.stringify(WKD)+"|"+team+"|"+S.lang;
+}
 async function renderWeekEmbed(tgId){
   const el=$("#wkDetail"); if(!el) return;
   const same = wkEmbedKey===String(tgId) && !!el.querySelector(".wkgrid");
@@ -3307,11 +3316,10 @@ async function renderWeekEmbed(tgId){
   // Mitten in einer Bearbeitung (Blatt offen) oder beim Ziehen: nicht anfassen.
   if(same && (wkDragBusy || $("#sheet").classList.contains("on"))) return;
   if(!same) el.innerHTML=`<div class="panel"><div class="panel-b meta">…</div></div>`;
-  const before = same ? JSON.stringify(WKD) : null;
   try{ await loadWeekData(tgId); }
   catch(e){ if(!same) el.innerHTML=`<div class="panel"><div class="panel-b meta">${esc(e.message)}</div></div>`; return; }
   if(wkTarget!=="#wkDetail" || !$("#wkDetail")) return;   // Ansicht inzwischen gewechselt
-  if(same && JSON.stringify(WKD)===before) return;        // unverändert → nichts neu zeichnen
+  if(same && wkSig()===wkDrawnSig) return;                // exakt derselbe Stand → nichts neu zeichnen
   drawWeekBody();
 }
 
