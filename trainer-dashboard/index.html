@@ -1055,6 +1055,13 @@ const L={
   rsvMailLbl:n=>`Antwort per E-Mail an ${n} senden — mit Link zur aktualisierten Übersicht`,
   rsvBtn:"Erledigen",
   rsvDoneMail:n=>`Erledigt — Antwort an ${n} gesendet`,
+  // Klickbare KPI-Kacheln + Trainings-Filter
+  kpiGoHint:"Klicken zeigt die passenden Trainings",
+  kpiF_all:"Alle", kpiF_good:"Vollständig besetzt", kpiF_open:"Mit offenen Anfragen", kpiF_crit:"Unterbesetzt",
+  kpiFN:n=>`${n} Training${n===1?"":"s"} im Filter`, kpiFClear:"Filter aufheben",
+  // Agenda-Versand mit Kontrolle
+  agMailTitle:"Agenda senden", agSubjLbl:"Betreff", agBodyLbl:"Nachricht",
+  agMailInfo:"Wird automatisch ergänzt: deine Session-Liste („zusammen mit …“), der Wochenplan, der Druck-Button und ggf. Ticket-Anhänge aus der Flugpost.",
   snTitle:n=>`Trainer informieren — ${n}`,
   snInfo:s=>`Status manuell geändert auf „${s}“. Soll der Trainer per E-Mail informiert werden? Den Text kannst du vor dem Senden anpassen — die Mail enthält wie gewohnt die Bestätigungs-Buttons.`,
   snReplyLbl:"Nachricht an den Trainer",
@@ -1415,6 +1422,11 @@ const L={
   rsvMailLbl:n=>`Email the reply to ${n} — with a link to the updated overview`,
   rsvBtn:"Resolve",
   rsvDoneMail:n=>`Done — reply sent to ${n}`,
+  kpiGoHint:"Click to show the matching trainings",
+  kpiF_all:"All", kpiF_good:"Fully staffed", kpiF_open:"With open requests", kpiF_crit:"Understaffed",
+  kpiFN:n=>`${n} training${n===1?"":"s"} in filter`, kpiFClear:"Clear filter",
+  agMailTitle:"Send agenda", agSubjLbl:"Subject", agBodyLbl:"Message",
+  agMailInfo:"Added automatically: the trainer's session list (“together with …”), the week plan, the print button and any flight-mail ticket attachments.",
   snTitle:n=>`Notify trainer — ${n}`,
   snInfo:s=>`Status manually changed to "${s}". Notify the trainer by email? You can adjust the text before sending — the mail includes the usual confirmation buttons.`,
   snReplyLbl:"Message to the trainer",
@@ -2149,10 +2161,10 @@ function renderDash(){
   </div>`;
 
   const kpis=`${ampel}<div class="kpis">
-    <div class="kpi i"><span class="rail"></span><div class="lab">${t("kpiTotal")}</div><div class="val tnum">${T.length}</div></div>
-    <div class="kpi g"><span class="rail"></span><div class="lab">${t("kpiFull")}</div><div class="val tnum">${full}</div></div>
-    <div class="kpi w"><span class="rail"></span><div class="lab">${t("kpiOpen")}</div><div class="val tnum">${openReq}</div></div>
-    <div class="kpi c"><span class="rail"></span><div class="lab">${t("kpiUnder")}</div><div class="val tnum">${crit}</div></div>
+    <div class="kpi i" style="cursor:pointer" onclick="kpiGo('all')" title="${t("kpiGoHint")}"><span class="rail"></span><div class="lab">${t("kpiTotal")}</div><div class="val tnum">${T.length}</div></div>
+    <div class="kpi g" style="cursor:pointer" onclick="kpiGo('good')" title="${t("kpiGoHint")}"><span class="rail"></span><div class="lab">${t("kpiFull")}</div><div class="val tnum">${full}</div></div>
+    <div class="kpi w" style="cursor:pointer" onclick="kpiGo('open')" title="${t("kpiGoHint")}"><span class="rail"></span><div class="lab">${t("kpiOpen")}</div><div class="val tnum">${openReq}</div></div>
+    <div class="kpi c" style="cursor:pointer" onclick="kpiGo('crit')" title="${t("kpiGoHint")}"><span class="rail"></span><div class="lab">${t("kpiUnder")}</div><div class="val tnum">${crit}</div></div>
   </div>`;
 
   /* Kunden-Übersicht (Leitstand) — nur bei „Alle Kunden“ */
@@ -2254,8 +2266,20 @@ function renderDash(){
 /* ============================================================
    TRAININGS LIST
    ============================================================ */
+/* KPI-Kacheln der Übersicht springen gefiltert in die Trainingsliste. */
+let trainFilter="all";
+function kpiGo(f){ trainFilter=f; go("trainings"); }
 function renderTrainings(){
-  const list=curTrainings();
+  let list=curTrainings();
+  if(trainFilter==="good")      list=list.filter(tg=>statusOf(tg).cls==="good");
+  else if(trainFilter==="crit") list=list.filter(tg=>statusOf(tg).cls==="crit");
+  else if(trainFilter==="open") list=list.filter(tg=>rosterStats(tg).asked>0);
+  const filterBar=trainFilter!=="all"?`
+    <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="pill ${trainFilter==="good"?"good":trainFilter==="crit"?"crit":"warn"}">${t("kpiF_"+trainFilter)}</span>
+      <span class="meta rowgrow">${t("kpiFN",list.length)}</span>
+      <button class="btn sm" onclick="trainFilter='all';renderTrainings()">✕ ${t("kpiFClear")}</button>
+    </div></div>`:"";
   const rows=list.map(tg=>{
     const st=statusOf(tg);const r=rosterStats(tg);const cl=clientOf(tg);
     return `<div class="row">
@@ -2279,6 +2303,7 @@ function renderTrainings(){
       <button class="btn sm" onclick="openCalendar()">${ic("cal")}${t("exportCal")}</button>
       <button class="btn sm" onclick="exportIcs()">${t("exportIcs")}</button>
     </div></div>
+    ${filterBar}
     <div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">${t("calEmpty")}</div>`}</div></div>`;
 }
 
@@ -4644,15 +4669,66 @@ function buildAgendaHTML(tg,tr,fl,weekHtml=""){
     <div class="meta" style="text-align:center;margin-top:22px">ETAF · Trainer-Koordination</div>
   </div>`;
 }
-async function sendAgenda(tgId,trId){
+/* Agenda-Versand mit Kontroll-Dialog: Betreff/Text vorher sehen und anpassen
+   (wie bei allen anderen Mails), inkl. DE/EN-Umschalter. */
+let agMail={tg:null,tr:null,lang:"de"};
+function agMailTexts(tg,tr,lang){
+  const first=(tr.name||"").replace(/^Dr\.\s*/,"").split(" ")[0];
+  const kw=kwLabel(tg.kw||"");
+  return lang==="de"
+    ? { subject:`Deine Reise-Agenda — ${tg.topic} in ${tg.city}`,
+        body:`Hallo ${first},\n\nanbei deine persönliche Reise-Agenda für „${tg.topic}“ in ${tg.city} (${kw}). Über den Button kannst du sie öffnen und ausdrucken.` }
+    : { subject:`Your travel agenda — ${tg.topic} in ${tg.city}`,
+        body:`Hi ${first},\n\nhere is your personal travel agenda for "${tg.topic}" in ${tg.city} (${(tg.kw||"").replace(/^\s*KW\s*/,"Week ")}). Open and print it via the button below.` };
+}
+function sendAgenda(tgId,trId){
+  const tg=S.trainings.find(x=>x.id===tgId), tr=S.trainers.find(x=>x.id===trId);
+  if(!tg||!tr) return;
+  agMail={tg,tr,lang:(tr.prefLang||S.lang||"de")==="en"?"en":"de"};
+  drawAgendaMail(true);
+  openSheet();
+}
+function drawAgendaMail(first){
+  const {tg,tr,lang}=agMail;
+  const tx=agMailTexts(tg,tr,lang);
+  if(first){
+    $("#sheetTitle").textContent=t("agMailTitle")+" — "+tr.name;
+    $("#sheetBody").innerHTML=`
+      <div class="fldrow" style="align-items:center;margin-bottom:10px">
+        <span class="meta rowgrow">${esc(tr.email||"—")}</span>
+        <span class="langsw">
+          <button id="agL-de" onclick="agMailLang('de')">DE</button>
+          <button id="agL-en" onclick="agMailLang('en')">EN</button>
+        </span>
+      </div>
+      <label class="fld">${t("agSubjLbl")}</label>
+      <input class="inp" id="agSubj">
+      <label class="fld">${t("agBodyLbl")}</label>
+      <textarea id="agBody" style="min-height:150px"></textarea>
+      <div class="meta" style="margin-top:10px">${ic("clip",13)}${t("agMailInfo")}</div>`;
+    $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
+      <button class="btn primary" onclick="doSendAgenda()">${ic("send",15)}${t("agendaSend")}</button>`;
+  }
+  $("#agSubj").value=tx.subject;
+  $("#agBody").value=tx.body;
+  $("#agL-de").className=lang==="de"?"on":"";
+  $("#agL-en").className=lang==="en"?"on":"";
+}
+function agMailLang(l){ if(agMail.lang===l) return; agMail.lang=l; drawAgendaMail(false); }
+async function doSendAgenda(){
+  const {tg,tr,lang}=agMail;
+  const subject=val("agSubj").trim(), text=val("agBody");
+  if(!text.trim()){ toast(t("agBodyLbl")+"?","crit"); return; }
   if(LIVE){
-    try{ await apiCall("travel.sendAgenda",{training:tgId,trainer:trId}); toast(t("agendaSent"),"good"); }
-    catch(e){ toast("Fehler: "+e.message,"crit"); }
+    try{
+      const d=await apiCall("travel.sendAgenda",{training:tg.id,trainer:tr.id,lang,subject,text});
+      closeSheet();
+      toast(t("agendaSent")+(d.attached?` (+${d.attached} 📎)`:""),"good");
+    }catch(e){ toast("Fehler: "+e.message,"crit"); }
     return;
   }
-  const tr=S.trainers.find(x=>x.id===trId), tg=S.trainings.find(x=>x.id===tgId);
-  demoLog(tr.email, (S.lang==='de'?'Deine Reise-Agenda — ':'Your travel agenda — ')+tg.topic, S.emailLang, "logged");
-  toast(t("agendaSent"),"good");
+  demoLog(tr.email, subject, lang, "logged");
+  closeSheet(); toast(t("agendaSent"),"good");
 }
 
 /* ---------- Flug-Vorschläge (automatisch, Route Region→Ziel) ---------- */

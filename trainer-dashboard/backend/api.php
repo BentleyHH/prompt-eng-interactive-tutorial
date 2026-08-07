@@ -861,6 +861,7 @@ switch($action){
     if(!$tg||!$tr) fail('Training oder Trainer nicht gefunden.',404);
     $rq=q("SELECT * FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
     $lang=($rq['lang']??'en')==='de'?'de':'en';
+    if(in_array($in['lang']??'',['de','en'],true)) $lang=$in['lang'];   // Dialog-Auswahl gewinnt
     $tok=$rq['tok']??'';
     if(!$tok){ $tok=token(40);
       q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?, 'yes',?,?,?)",[$tgId,$trId,$lang,$tok,now()]); }
@@ -870,6 +871,9 @@ switch($action){
       ? "Hallo {{firstName}},\n\nanbei deine persönliche Reise-Agenda für „{{topic}}“ in {{city}} ({{kw}}). Über den Button kannst du sie öffnen und ausdrucken."
       : "Hi {{firstName}},\n\nhere is your personal travel agenda for \"{{topic}}\" in {{city}} ({{kw}}). Open and print it via the button below.",
       $tg,$tr);
+    // Aus dem Kontroll-Dialog angepasste Texte übernehmen
+    if(trim((string)($in['subject']??''))!=='') $subj=preg_replace('/[\r\n]+/',' ',trim((string)$in['subject']));
+    if(trim((string)($in['text']??''))!=='')    $intro=(string)$in['text'];
     $btnLabel=$lang==='de'?'📄 Agenda öffnen & drucken':'📄 Open & print agenda';
     $btns='<div style="margin:22px 0"><a href="'.$link.'" style="display:inline-block;padding:12px 20px;'
       .'border-radius:8px;background:#3e4852;color:#fff;font:600 14px system-ui,Arial,sans-serif;text-decoration:none">'
