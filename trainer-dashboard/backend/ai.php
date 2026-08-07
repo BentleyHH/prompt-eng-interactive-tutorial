@@ -163,6 +163,32 @@ function ai_extract_flight(string $text, string $subject, ?array $pdf=null): arr
 }
 
 /**
+ * KI-Wochenrhythmus: verteilt die Sessions einer Trainingswoche didaktisch
+ * sinnvoll auf Mo–Fr (Vormittag/Nachmittag). Gibt {slots:{mon_am:[ids],…}} zurück.
+ */
+function ai_suggest_week(array $sessions, string $topic): array {
+  $keys=['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm'];
+  $schema=['type'=>'object','properties'=>['slots'=>['type'=>'object',
+    'properties'=>array_fill_keys($keys,['type'=>'array','items'=>['type'=>'string']]),
+    'required'=>$keys,'additionalProperties'=>false]],
+    'required'=>['slots'],'additionalProperties'=>false];
+  $list=implode("\n", array_map(fn($s)=>"- id={$s['id']} | {$s['title']} | Art: {$s['type']} | Dauer: {$s['dur']} h", $sessions));
+  $prompt=
+    "Plane den Wochenrhythmus einer Trainingswoche („$topic“, Montag–Freitag, je Vormittag und Nachmittag).\n"
+    ."Regeln:\n"
+    ."- Jede Session genau EINMAL einplanen (über ihre id), keine ids erfinden.\n"
+    ."- Pro Halbtag höchstens ca. 4 Stunden Summe.\n"
+    ."- Orga/Briefing zuerst (Montag Vormittag), Wochen-Debrief und 'deliverable'-Sessions ans Ende (Freitag).\n"
+    ."- Theorie vor zugehöriger Übung/Praxis; 'assessment' in die zweite Wochenhälfte; "
+    ."'simulation' als zusammenhängende Blöcke.\n"
+    ."- Nachmittage eher praktisch, Vormittage eher Theorie.\n\n"
+    ."Sessions:\n".$list;
+  $r=ai_call([['type'=>'text','text'=>$prompt]], $schema, 2048);
+  if(!is_array($r) || !isset($r['slots']) || !is_array($r['slots'])) throw new RuntimeException('Unerwartete KI-Antwort.');
+  return $r['slots'];
+}
+
+/**
  * Liest die Passdaten aus einem Foto (Data-URI: data:image/jpeg;base64,….).
  * Gibt normalisierte Felder zurück; Datumsangaben als YYYY-MM-DD.
  */

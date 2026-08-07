@@ -302,7 +302,8 @@ switch($action){
         'id'=>(string)$r['id'],'title'=>$r['title'],'titleEn'=>$r['title_en'],
         'type'=>$r['stype'],'dur'=>$r['dur'],'desc'=>$r['descr'],
         'trainerId'=>$r['trainer_id']?(string)$r['trainer_id']:null,
-        'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,'pptDue'=>$r['ppt_due']??''],$rows),
+        'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,'pptDue'=>$r['ppt_due']??'',
+        'mat'=>$r['mat']??''],$rows),
       'plan'=>json_decode($tg['plan_slots']?:'{}',true)?:[],
       'deliverable'=>$tg['deliverable']??'','deliverableEn'=>$tg['deliverable_en']??'',
       'stage'=>$tg['stage']??'','star'=>(int)($tg['star']??0)]);
@@ -317,14 +318,15 @@ switch($action){
     $due=trim((string)($in['pptDue']??''));
     if($due!=='' && !preg_match('/^\d{4}-\d{2}-\d{2}$/',$due)) $due='';
     $f=[$title, trim((string)($in['titleEn']??'')), $type, (string)($in['dur']??'1'),
-        (string)($in['desc']??''), (int)($in['trainerId']??0)?:null, $ppt, (int)($in['pptBy']??0)?:null, $due];
+        (string)($in['desc']??''), (int)($in['trainerId']??0)?:null, $ppt, (int)($in['pptBy']??0)?:null, $due,
+        trim((string)($in['mat']??''))];
     if($sid && q("SELECT id FROM training_sessions WHERE id=? AND training_id=?",[$sid,$tid])->fetch()){
-      q("UPDATE training_sessions SET title=?,title_en=?,stype=?,dur=?,descr=?,trainer_id=?,ppt=?,ppt_by=?,ppt_due=? WHERE id=?",
+      q("UPDATE training_sessions SET title=?,title_en=?,stype=?,dur=?,descr=?,trainer_id=?,ppt=?,ppt_by=?,ppt_due=?,mat=? WHERE id=?",
         array_merge($f,[$sid]));
     } else {
       $mx=(int)q("SELECT COALESCE(MAX(sort),0) m FROM training_sessions WHERE training_id=?",[$tid])->fetch()['m'];
-      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,trainer_id,ppt,ppt_by,ppt_due,sort)
-         VALUES(?,?,?,?,?,?,?,?,?,?,?)", array_merge([$tid],$f,[$mx+1]));
+      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,trainer_id,ppt,ppt_by,ppt_due,mat,sort)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", array_merge([$tid],$f,[$mx+1]));
       $sid=(int)db()->lastInsertId();
     }
     audit('session.save','training',(string)$tid,mb_substr($title,0,80));
@@ -342,6 +344,33 @@ switch($action){
       q("UPDATE trainings SET plan_slots=? WHERE id=?",[json_encode($plan),$s['training_id']]);
     }
     out(['ok'=>true]);
+
+  /* ---- KI-Wochenrhythmus: Sessions didaktisch auf Mo–Fr verteilen lassen ---- */
+  case 'weekplan.suggest':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tid])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $rows=q("SELECT id,title,stype,dur FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$tid])->fetchAll();
+    if(!$rows) fail('Für diese Woche sind noch keine Sessions angelegt.');
+    if(trim(cfg()['anthropic_key']??'')==='') fail('KI nicht konfiguriert — trage anthropic_key in config.php ein.');
+    $sess=array_map(fn($r)=>['id'=>(string)$r['id'],'title'=>$r['title'],'type'=>$r['stype'],'dur'=>$r['dur']],$rows);
+    $slots=ai_suggest_week($sess,(string)$tg['topic']);
+    // Antwort absichern: nur echte IDs, keine Dubletten — Übriges landet auf der Bank
+    $valid=array_map(fn($r)=>(string)$r['id'],$rows);
+    $keys=['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm'];
+    $plan=[]; $seen=[];
+    foreach($keys as $k){
+      $plan[$k]=[];
+      foreach((array)($slots[$k]??[]) as $id){
+        $id=(string)(int)$id;
+        if(in_array($id,$valid,true)&&!isset($seen[$id])){ $plan[$k][]=$id; $seen[$id]=true; }
+      }
+    }
+    $plan['bench']=array_values(array_diff($valid,array_keys($seen)));
+    q("UPDATE trainings SET plan_slots=? WHERE id=?",[json_encode($plan),$tid]);
+    audit('weekplan.suggest','training',(string)$tid,'KI-Wochenrhythmus angewendet');
+    out(['ok'=>true,'plan'=>$plan,'unplaced'=>count($plan['bench'])]);
 
   case 'weekplan.save':
     require_auth();

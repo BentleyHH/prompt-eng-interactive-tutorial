@@ -737,6 +737,15 @@
   <div id="calBody"></div>
 </div>
 
+<!-- Druckbarer Wochenplan (Overlay) -->
+<div id="weekPrint" class="printable">
+  <div class="ag-toolbar">
+    <button class="btn primary" onclick="window.print()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><path d="M6 9V2h12v7"/><rect x="5" y="13" width="14" height="8" rx="1"/><path d="M6 17H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/></svg><span>Drucken</span></button>
+    <button class="btn" onclick="closeWeekPrint()">✕</button>
+  </div>
+  <div id="weekPrintBody"></div>
+</div>
+
 <!-- dynamische Seitenausrichtung für den Druck (Agenda=Hoch, Kalender=Quer) -->
 <style id="pageOrient">@page{size:A4 portrait;margin:16mm}</style>
 
@@ -916,6 +925,10 @@ const L={
   day_mon:"Montag", day_tue:"Dienstag", day_wed:"Mittwoch", day_thu:"Donnerstag", day_fri:"Freitag",
   attNoContent:"Wochenplan ist noch leer — Inhalte planen",
   attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} fehlen noch`,
+  wkAi:"KI-Vorschlag", wkAiAsk:"Die KI verteilt alle Sessions didaktisch sinnvoll auf Mo–Fr (Theorie vor Praxis, Assessment ans Wochenende, ~4 h je Halbtag). Aktuelle Anordnung wird ersetzt — fortfahren?",
+  wkAiDone:"KI-Wochenrhythmus übernommen", wkAiDemo:"Im Demo-Modus ohne KI — stattdessen einfache Auto-Verteilung.",
+  wkPrint:"Drucken", wkMat:"Benötigtes Material", wkMatPh:"z.B. 20× DVI-Kit, Beamer, Flipchart",
+  wkPrintMat:"Material", wkPrintTrainer:"Trainer",
   nav_users:"Benutzer", nav_activity:"Änderungen",
   tp_users:"Benutzer", tp_usersSub:"Wer darf sich anmelden — Rollen und Zugänge",
   tp_activity:"Änderungen", tp_activitySub:"Wer hat wann was geändert",
@@ -1244,6 +1257,10 @@ const L={
   day_mon:"Monday", day_tue:"Tuesday", day_wed:"Wednesday", day_thu:"Thursday", day_fri:"Friday",
   attNoContent:"Week plan is still empty — plan the content",
   attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} still missing`,
+  wkAi:"AI suggestion", wkAiAsk:"The AI distributes all sessions sensibly across Mon–Fri (theory before practice, assessment towards the end, ~4 h per half-day). The current arrangement will be replaced — continue?",
+  wkAiDone:"AI week rhythm applied", wkAiDemo:"Demo mode has no AI — using simple auto-distribute instead.",
+  wkPrint:"Print", wkMat:"Required material", wkMatPh:"e.g. 20× DVI kit, projector, flip chart",
+  wkPrintMat:"Material", wkPrintTrainer:"Trainer",
   nav_users:"Users", nav_activity:"Changes",
   tp_users:"Users", tp_usersSub:"Who can sign in — roles and access",
   tp_activity:"Changes", tp_activitySub:"Who changed what, and when",
@@ -3102,6 +3119,7 @@ function wkTile(id){
     <div class="sm"><span class="tag" style="border-color:${col};color:${col}">${t("type_"+(s.type||"theorie"))}</span>
       <span>${esc(String(s.dur||1))} h</span>
       ${tr?`<span class="av" style="width:18px;height:18px;font-size:9px;background:${tr.color||'#607d94'}" title="${esc(tr.name)}">${initials(tr.name)}</span>`:""}
+      ${s.mat?`<span title="${esc(t("wkMat")+": "+s.mat)}">📦</span>`:""}
       ${dot}</div></div>`;
 }
 
@@ -3141,7 +3159,9 @@ function drawWeekBody(){
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
       <button class="btn sm" onclick="openPptSheet()">${ic("clip",14)}${t("wkPptChip",done,rel.length)}</button>
       <button class="btn sm" onclick="openDetail('${tg.id}')">${ic("users",14)}${t("open")} — ${t("nav_trainings")}</button>
+      <button class="btn sm" onclick="printWeek()">${ic("printer",14)}${t("wkPrint")}</button>
       <span class="spacer"></span>
+      <button class="btn sm" onclick="wkAiSuggest()">✦ ${t("wkAi")}</button>
       <button class="btn sm" onclick="wkAutofill()">${ic("auto",14)}${t("wkAuto")}</button>
       <button class="btn sm primary" onclick="openSessEdit(null)">${ic("plus",14)}${t("wkNew")}</button>
     </div>
@@ -3240,6 +3260,8 @@ function openSessEdit(sid){
     <textarea id="wsDesc" style="min-height:90px">${esc(s?s.desc||"":"")}</textarea>
     <label class="fld">${t("wkTrainer")} <span class="meta">${t("wkTeamHint")}</span></label>
     <select class="inp" id="wsTrainer">${wkTrainerOptions(s?s.trainerId:"")}</select>
+    <label class="fld">${t("wkMat")}</label>
+    <input class="inp" id="wsMat" value="${esc(s?s.mat||"":"")}" placeholder="${t("wkMatPh")}">
     <div class="fldrow" style="margin-top:4px">
       <div style="flex:1"><label class="fld">${t("wkPpt")}</label>
         <select class="inp" id="wsPpt">
@@ -3265,7 +3287,8 @@ async function saveSess(){
   if(!title){ toast(t("wkTitle")+"?","crit"); return; }
   const data={ training:curWeekId, id:wkEditSid||0, title, titleEn:val("wsTitleEn").trim(),
     type:val("wsType"), dur:val("wsDur").trim()||"1", desc:val("wsDesc"),
-    trainerId:val("wsTrainer")||0, ppt:val("wsPpt"), pptBy:val("wsPptBy")||0, pptDue:val("wsPptDue") };
+    trainerId:val("wsTrainer")||0, ppt:val("wsPpt"), pptBy:val("wsPptBy")||0, pptDue:val("wsPptDue"),
+    mat:val("wsMat").trim() };
   let sid=wkEditSid;
   if(LIVE){
     try{ const d=await apiCall("session.save",data); sid=d.id; }
@@ -3275,7 +3298,7 @@ async function saveSess(){
     if(!s){ s={id:uid("s")}; WKD.sessions.push(s); sid=s.id; }
     Object.assign(s,{title:data.title,titleEn:data.titleEn,type:data.type,dur:data.dur,desc:data.desc,
       trainerId:data.trainerId?String(data.trainerId):null,ppt:data.ppt,
-      pptBy:data.pptBy?String(data.pptBy):null,pptDue:data.pptDue});
+      pptBy:data.pptBy?String(data.pptBy):null,pptDue:data.pptDue,mat:data.mat});
     save();
   }
   // Lokale Kopie aktualisieren (live: frisch geladene Daten beim nächsten renderWeek)
@@ -3284,7 +3307,7 @@ async function saveSess(){
     if(!s){ s={id:String(sid)}; WKD.sessions.push(s); }
     Object.assign(s,{title:data.title,titleEn:data.titleEn,type:data.type,dur:data.dur,desc:data.desc,
       trainerId:data.trainerId?String(data.trainerId):null,ppt:data.ppt,
-      pptBy:data.pptBy?String(data.pptBy):null,pptDue:data.pptDue});
+      pptBy:data.pptBy?String(data.pptBy):null,pptDue:data.pptDue,mat:data.mat});
   }
   const slot=val("wsSlot");
   await wkMoveTo(String(sid),slot);
@@ -3300,6 +3323,71 @@ async function deleteSess(){
   closeSheet(); drawWeekBody(); toast(t("wkSessDeleted"),"good");
   if(LIVE) pull().then(()=>{ if(route==="dash")renderDash(); });
 }
+
+/* ---- KI-Wochenrhythmus: Verteilung von der KI vorschlagen lassen ---- */
+async function wkAiSuggest(){
+  if(!(WKD.sessions||[]).length){ toast(t("wkEmpty"),"warn"); return; }
+  if(!confirm(t("wkAiAsk"))) return;
+  if(!LIVE){ toast(t("wkAiDemo"),"warn");
+    const plan={}; WK_SLOTKEYS.forEach(k=>plan[k]=[]);
+    const hrs=k=>plan[k].reduce((a,id)=>a+(parseFloat((wkSess(id)||{}).dur)||1),0);
+    let i=0;
+    for(const s of WKD.sessions){ const d=parseFloat(s.dur)||1;
+      while(i<WK_SLOTKEYS.length-1 && hrs(WK_SLOTKEYS[i])+d>4.25) i++;
+      plan[WK_SLOTKEYS[i]].push(String(s.id)); }
+    WKD.plan={...plan,bench:[]}; save(); drawWeekBody(); return; }
+  const btnToast=toast(t("wkAi")+" …","good");
+  try{
+    const d=await apiCall("weekplan.suggest",{training:curWeekId});
+    WKD.plan=d.plan||{};
+    drawWeekBody();
+    toast(t("wkAiDone")+(d.unplaced?` (${d.unplaced} → ${t("wkBench")})`:""),"good");
+  }catch(e){ toast(e.message,"crit"); }
+}
+
+/* ---- Wochenplan drucken (A4 quer): Raster Mo–Fr mit Sessions, Trainer, Material ---- */
+function printWeek(){
+  const tg=wkCurTg(); if(!tg||!WKD) return;
+  const {slots}=wkPlacement();
+  const cl=clientOf(tg);
+  const cell=key=>slots[key].map(id=>{
+    const s=wkSess(id); if(!s) return "";
+    const tr=s.trainerId?S.trainers.find(x=>String(x.id)===String(s.trainerId)):null;
+    const col=SESS_COL[s.type]||"#8A939A";
+    return `<div style="border-left:3px solid ${col};padding:2px 0 2px 7px;margin:0 0 6px">
+      <b style="font-size:9.5pt">${esc(s.title)}</b>
+      <div style="font-size:8pt;color:#555">${t("type_"+(s.type||"theorie"))} · ${esc(String(s.dur||1))} h${tr?" · "+esc(tr.name):""}${s.mat?" · 📦 "+esc(s.mat):""}</div>
+    </div>`;
+  }).join("")||'<span style="color:#999">—</span>';
+  const rel=(WKD.sessions||[]).filter(wkPptRelevant);
+  const done=rel.filter(s=>s.ppt==="vorhanden").length;
+  $("#weekPrintBody").innerHTML=`<div class="cal-sheet">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8a939a">${t("nav_week")}</div>
+        <h2 style="margin:2px 0 3px;font-size:19px">${esc(tg.code||"")}${tg.star?" ★":""} — ${esc(tg.topic)}</h2>
+        <div style="color:#5c666e;font-size:13px">${esc(tg.city||"")}${cl?" · "+esc(cl.name):""} · ${whenLabel(tg)} · ${t("wkPptChip",done,rel.length)}</div>
+      </div>
+      <div style="font-weight:800;font-size:24px;letter-spacing:-.04em;color:#3e4852">ETAF<span style="color:#d81f26">.</span></div>
+    </div>
+    ${WKD.deliverable?`<div style="border-left:4px solid #C77E1E;background:#faf6ee;border-radius:8px;padding:8px 12px;margin:12px 0 2px;font-size:12.5px">
+      <b style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#8a6a1e;display:block">${t("wkDeliverable")}</b>${esc(WKD.deliverable)}</div>`:""}
+    <table style="width:100%;border-collapse:collapse;margin-top:14px;table-layout:fixed">
+      <tr>
+        <th style="width:24px"></th>
+        ${WK_DAYS.map((d,i)=>`<th style="border:1px solid #d8dcdf;background:#f2f4f5;padding:6px 8px;font-size:9.5pt;text-transform:uppercase;letter-spacing:.05em">${t("day_"+d)}<div style="font-weight:400;color:#777;font-size:8pt">${wkDayDate(i)}</div></th>`).join("")}
+      </tr>
+      ${["am","pm"].map(half=>`<tr>
+        <td style="border:1px solid #d8dcdf;background:#f2f4f5;font-size:8pt;font-weight:700;text-transform:uppercase;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;letter-spacing:.08em;color:#666">${t(half==="am"?"wkAM":"wkPM")}</td>
+        ${WK_DAYS.map(d=>`<td style="border:1px solid #d8dcdf;padding:7px 8px;vertical-align:top;font-size:9pt">${cell(d+"_"+half)}</td>`).join("")}
+      </tr>`).join("")}
+    </table>
+    <div style="margin-top:12px;color:#8a939a;font-size:10px">ETAF · Trainer-Koordination · ${esc(new Date().toLocaleDateString("de-DE"))}</div>
+  </div>`;
+  setPageOrient("landscape");
+  $("#weekPrint").classList.add("on");
+}
+function closeWeekPrint(){ $("#weekPrint").classList.remove("on"); }
 
 /* ---- PowerPoint-Liste der Woche (Schnellpflege) ---- */
 function openPptSheet(){

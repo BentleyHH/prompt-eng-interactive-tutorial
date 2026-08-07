@@ -248,6 +248,8 @@ function ensure_schema(): void {
     "stage VARCHAR(8)","star INT DEFAULT 0","deliverable TEXT","deliverable_en TEXT",
     "plan_slots TEXT"   // JSON: {"mon_am":[ids],…,"fri_pm":[ids],"bench":[ids]}
   ] as $col){ try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Benötigtes Material je Session (Freitext, z.B. "20× DVI-Kit, Beamer")
+  try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN mat TEXT"); }catch(Throwable $e){}
   // Einmal-Import der Programm-Inhalte (V3.2) über die Block-Codes (W1…Final)
   if((int)q("SELECT COUNT(*) c FROM training_sessions")->fetch()['c']===0){
     try{ import_programme_sessions(); }catch(Throwable $e){}
