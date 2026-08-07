@@ -2303,9 +2303,13 @@ function renderDetail(){
     </div>
   </div>`;
 
+  /* Den bereits gezeichneten Wochenplan über den Neuaufbau retten — sonst
+     flackert er bei jedem 8-Sekunden-Abgleich (asynchrones Nachladen). */
+  const keepWk=(typeof wkEmbedKey!=="undefined" && wkEmbedKey===String(tg.id)) ? $("#wkDetail") : null;
   $("#v-detail").innerHTML=`<button class="btn sm" onclick="go('trainings')" style="margin-bottom:14px">${ic("back")}${t("back")}</button>
     <div class="split"><div>${info}${roster}${matPanel}</div><div>${sugg}</div></div>
     <div id="wkDetail" style="margin-top:14px"></div>`;
+  if(keepWk && keepWk.querySelector(".wkgrid")) $("#wkDetail").replaceWith(keepWk);
   renderWeekEmbed(tg.id);
 }
 function rosterRow(x,tg){
@@ -3121,7 +3125,7 @@ function wkTile(id){
   const dot=wkPptRelevant(s)
     ? `<span class="ppdot ${s.ppt==='vorhanden'?'g':s.ppt==='inArbeit'?'y':'r'}" title="PPT: ${t('ppt_'+(s.ppt||''))}"></span>`:"";
   return `<div class="sess" draggable="true" data-id="${s.id}"
-      ondragstart="wkDragStart(event)" onclick="openSessEdit('${s.id}')">
+      ondragstart="wkDragStart(event)" ondragend="wkDragEnd()" onclick="openSessEdit('${s.id}')">
     <span class="srail" style="background:${col}"></span>
     <div class="st">${esc(s.title)}</div>
     <div class="sm"><span class="tag" style="border-color:${col};color:${col}">${t("type_"+(s.type||"theorie"))}</span>
@@ -3200,22 +3204,35 @@ function drawWeekBody(){
 }
 
 /* Wochenplan in die Trainings-Detailansicht einbetten (gleiche Datenbasis —
-   Änderungen hier und im Reiter „Wochenplan“ sind automatisch dasselbe). */
+   Änderungen hier und im Reiter „Wochenplan“ sind automatisch dasselbe).
+   Wird auch vom 8-Sekunden-Hintergrundabgleich aufgerufen — deshalb:
+   nie den Platzhalter zeigen, wenn die Woche schon dasteht, und nur neu
+   zeichnen, wenn sich die Daten wirklich geändert haben (kein Flackern). */
+let wkEmbedKey=null, wkDragBusy=false;
 async function renderWeekEmbed(tgId){
-  curWeekId=tgId; wkTarget="#wkDetail";
   const el=$("#wkDetail"); if(!el) return;
-  el.innerHTML=`<div class="panel"><div class="panel-b meta">…</div></div>`;
+  const same = wkEmbedKey===String(tgId) && !!el.querySelector(".wkgrid");
+  wkEmbedKey=String(tgId);
+  curWeekId=tgId; wkTarget="#wkDetail";
+  // Mitten in einer Bearbeitung (Blatt offen) oder beim Ziehen: nicht anfassen.
+  if(same && (wkDragBusy || $("#sheet").classList.contains("on"))) return;
+  if(!same) el.innerHTML=`<div class="panel"><div class="panel-b meta">…</div></div>`;
+  const before = same ? JSON.stringify(WKD) : null;
   try{ await loadWeekData(tgId); }
-  catch(e){ el.innerHTML=`<div class="panel"><div class="panel-b meta">${esc(e.message)}</div></div>`; return; }
+  catch(e){ if(!same) el.innerHTML=`<div class="panel"><div class="panel-b meta">${esc(e.message)}</div></div>`; return; }
+  if(wkTarget!=="#wkDetail" || !$("#wkDetail")) return;   // Ansicht inzwischen gewechselt
+  if(same && JSON.stringify(WKD)===before) return;        // unverändert → nichts neu zeichnen
   drawWeekBody();
 }
 
 /* ---- Ziehen & Ablegen (Desktop); Antippen öffnet den Editor mit „Verschieben nach“ ---- */
-function wkDragStart(ev){ ev.dataTransfer.setData("text/plain",ev.currentTarget.dataset.id); ev.dataTransfer.effectAllowed="move"; }
+function wkDragStart(ev){ wkDragBusy=true; ev.dataTransfer.setData("text/plain",ev.currentTarget.dataset.id); ev.dataTransfer.effectAllowed="move"; }
+function wkDragEnd(){ wkDragBusy=false; }
 function wkDragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add("dragover"); }
 function wkDragLeave(ev){ ev.currentTarget.classList.remove("dragover"); }
 async function wkDrop(ev){
   ev.preventDefault(); ev.currentTarget.classList.remove("dragover");
+  wkDragBusy=false;   // die Quell-Kachel wird gleich neu gezeichnet — dragend käme dort nie an
   const id=ev.dataTransfer.getData("text/plain"); if(!id||!wkSess(id)) return;
   wkMoveTo(id, ev.currentTarget.dataset.slot);
 }
