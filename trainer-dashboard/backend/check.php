@@ -113,6 +113,21 @@ if(is_array($cfg) && $authed){
     }catch(\Throwable $e){ /* DB-Verbindung wurde oben schon bewertet */ }
   }
 
+  /* 4c) Läuft die tägliche Datensicherung? */
+  $bfiles=glob(__DIR__.'/backups/etaf-backup-*.sql.gz') ?: [];
+  $blast=0; foreach($bfiles as $bf) $blast=max($blast, (int)@filemtime($bf));
+  if($blast){
+    $bh=(time()-$blast)/3600;
+    row('Tägliche Datensicherung', $bh<=36,
+        'Letzte Sicherung vor '.round($bh).' Std. · '.count($bfiles).' Stände vorhanden'
+        .($bh>36?' — <b>läuft der Cron-Job noch?</b> (backend/cron.php?key=…)':'')
+        .' · <a href="backup.php?key='.esc($_GET['key']??'').'">Übersicht & Download</a>');
+  } else {
+    row('Tägliche Datensicherung', false,
+        'Noch keine Sicherung vorhanden. Der stündliche Cron-Job (backend/cron.php?key=…) legt automatisch '
+        .'täglich eine an — oder sofort manuell: <a href="backup.php?key='.esc($_GET['key']??'').'&amp;run=1">jetzt sichern</a>.');
+  }
+
   /* 5) base_url passt zur aufgerufenen Domain? (wichtig für alle Links in E-Mails) */
   $bu=(string)($cfg['base_url']??''); $host=$_SERVER['HTTP_HOST']??'';
   $buOk = $bu==='' ? null : (stripos($bu,$host)!==false);

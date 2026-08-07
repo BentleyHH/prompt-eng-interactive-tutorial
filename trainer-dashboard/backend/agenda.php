@@ -66,6 +66,9 @@ $na = $L['nodata'];
     font-weight:600;text-decoration:none;border:none;cursor:pointer;font-size:14px}
   .toolbar{max-width:800px;margin:0 auto;padding:0 24px 18px;text-align:right}
   .foot{margin-top:24px;color:var(--muted);font-size:12px;text-align:center}
+  .agwk{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  @media(max-width:640px){ .agwk{grid-template-columns:1fr 1fr} }
+  @media(max-width:420px){ .agwk{grid-template-columns:1fr} }
   @media print{
     body{background:#fff}
     .toolbar{display:none}
@@ -132,6 +135,44 @@ $na = $L['nodata'];
             <?php if(!empty($s['mat'])): ?><br><span style="color:var(--muted)">📦 <?=e($s['mat'])?></span><?php endif; ?>
           </td></tr>
     <?php endforeach; ?></table>
+    <?php endif; ?>
+
+    <?php
+    /* Kompletter Wochenplan Mo–Fr als Kacheln — die eigenen Sessions rot markiert */
+    $allSess=[]; $planW=[];
+    try{
+      $allSess=q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$req['training_id']])->fetchAll();
+      $planW=json_decode($req['plan_slots']?:'{}',true)?:[];
+    }catch(Throwable $x){}
+    $byId=[]; foreach($allSess as $s2) $byId[(string)$s2['id']]=$s2;
+    $hasPlan=false; foreach(['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm'] as $k){ if(!empty($planW[$k])){ $hasPlan=true; break; } }
+    if($hasPlan):
+      $dayN2 = $lang==='de' ? ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'] : ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+      $halfN2= $lang==='de' ? ['am'=>'Vormittag','pm'=>'Nachmittag'] : ['am'=>'Morning','pm'=>'Afternoon'];
+      $ini=strtoupper(implode('',array_map(fn($w)=>mb_substr($w,0,1),array_slice(explode(' ',preg_replace('/^Dr\.\s*/','',(string)($tr['name']??''))),0,2))));
+      $cellFn=function($key) use($planW,$byId,$req,$halfN2,$ini,$lang){
+        $out='';
+        foreach((array)($planW[$key]??[]) as $sid){
+          $s2=$byId[(string)$sid]??null; if(!$s2) continue;
+          $mine=((string)($s2['trainer_id']??''))===(string)$req['trid'];
+          $title=($lang==='en'&&($s2['title_en']??'')!=='')?$s2['title_en']:$s2['title'];
+          $out.='<div style="border:1.5px solid '.($mine?'#D81F26':'#e2e5e8').';border-left:4px solid '.($mine?'#D81F26':'#8A939A').';border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:10.5px;line-height:1.35;'.($mine?'background:#fdf1f1;font-weight:600':'').'">'
+            .e($title).'<div style="color:#8a939a;font-size:9.5px">'.e((string)$s2['dur']).' h'.($mine?' · <b style="color:#D81F26">'.e($ini).'</b>':'').'</div></div>';
+        }
+        return $out?:'<div style="color:#c2c8cd;font-size:11px">—</div>';
+      };
+    ?>
+    <h2><?=e($lang==='de'?'Wochenplan (Mo–Fr) — deine Sessions rot markiert':'Week plan (Mon–Fri) — your sessions marked red')?></h2>
+    <div class="agwk">
+      <?php for($i=0;$i<5;$i++): $dk=['mon','tue','wed','thu','fri'][$i];
+        $dLbl=''; if(!empty($req['start_date'])){ try{ $dd=new DateTime($req['start_date']); $dd->modify('+'.$i.' day'); $dLbl=$dd->format('d.m.'); }catch(Throwable $x){} } ?>
+      <div style="min-width:0">
+        <div style="text-align:center;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#5c666e"><?=e($dayN2[$i])?> <span style="color:#8a939a;font-weight:600"><?=e($dLbl)?></span></div>
+        <div style="font-size:9px;color:#8a939a;text-transform:uppercase;margin:5px 0 3px"><?=e($halfN2['am'])?></div><?=$cellFn($dk.'_am')?>
+        <div style="font-size:9px;color:#8a939a;text-transform:uppercase;margin:5px 0 3px"><?=e($halfN2['pm'])?></div><?=$cellFn($dk.'_pm')?>
+      </div>
+      <?php endfor; ?>
+    </div>
     <?php endif; ?>
 
     <h2><?=e($L['travel'])?></h2>

@@ -75,6 +75,15 @@ function backup_run(int $keep=14): array {
   try{ backup_dump(fn(string $s)=>gzwrite($gz,$s)); }
   catch(Throwable $e){ gzclose($gz); @unlink($file); return ['ok'=>false,'error'=>$e->getMessage()]; }
   gzclose($gz);
+  // Integritätsprüfung: die Datei muss sich entpacken lassen und unseren Kopf tragen —
+  // eine kaputte Sicherung wäre schlimmer als keine, weil sie falsche Sicherheit gibt.
+  $chk=@gzopen($file,'rb');
+  $head=$chk?(string)gzread($chk,64):'';
+  if($chk) gzclose($chk);
+  if(strpos($head,'ETAF')===false || filesize($file)<200){
+    @unlink($file);
+    return ['ok'=>false,'error'=>'Sicherung ließ sich nicht zurücklesen — Datei verworfen.'];
+  }
   // Aufbewahrung: nur die letzten $keep Stände behalten
   $all=backup_list();
   foreach(array_slice($all,$keep) as $old){ @unlink($dir.'/'.$old['file']); }

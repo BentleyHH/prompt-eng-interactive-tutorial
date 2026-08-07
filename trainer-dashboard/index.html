@@ -570,6 +570,9 @@
   .sess .st{font-weight:650;line-height:1.3;margin-bottom:4px;overflow-wrap:anywhere}
   .sess .sm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--muted);font-size:11px}
   .sess .sm .tag{padding:0 5px;font-size:10px}
+  .btnspin{width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;
+    display:inline-block;animation:wkrot .8s linear infinite;vertical-align:-2px;margin-right:8px;flex:none}
+  @keyframes wkrot{to{transform:rotate(360deg)}}
   .ppdot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
   .ppdot.g{background:var(--good)} .ppdot.y{background:var(--warn)} .ppdot.r{background:var(--crit)}
   .wkbench .zone{flex-direction:row;flex-wrap:wrap;min-height:50px}
@@ -933,6 +936,11 @@ const L={
   attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} fehlen noch`,
   wkAi:"KI-Vorschlag", wkAiAsk:"Die KI verteilt alle Sessions didaktisch sinnvoll auf Mo–Fr (Theorie vor Praxis, Assessment ans Wochenende, ~4 h je Halbtag). Aktuelle Anordnung wird ersetzt — fortfahren?",
   wkAiRun:"KI plant die Woche … das kann bis zu einer Minute dauern.",
+  wkAiRunShort:"KI plant …",
+  wkConflict:"Doppelbelegung — dieser Trainer ist im selben Halbtag mehrfach eingeplant.",
+  wkConflictToast:n=>`Achtung: ${n} ist in diesem Halbtag jetzt doppelt eingeplant (⚠ an den Kacheln).`,
+  agWeekHead:"Wochenplan (Mo–Fr) — deine Sessions rot markiert",
+  agWeekLegend:"Rot umrandet = deine Sessions · graue Kacheln = übrige Sessions der Woche",
   wkAiDone:"KI-Wochenrhythmus übernommen", wkAiDemo:"Im Demo-Modus ohne KI — stattdessen einfache Auto-Verteilung.",
   wkPrint:"Drucken", wkMat:"Benötigtes Material", wkMatPh:"z.B. 20× DVI-Kit, Beamer, Flipchart",
   wkPrintMat:"Material", wkPrintTrainer:"Trainer",
@@ -1269,6 +1277,11 @@ const L={
   attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} still missing`,
   wkAi:"AI suggestion", wkAiAsk:"The AI distributes all sessions sensibly across Mon–Fri (theory before practice, assessment towards the end, ~4 h per half-day). The current arrangement will be replaced — continue?",
   wkAiRun:"The AI is planning the week … this can take up to a minute.",
+  wkAiRunShort:"AI planning …",
+  wkConflict:"Double booking — this trainer is scheduled more than once in the same half-day.",
+  wkConflictToast:n=>`Note: ${n} is now double-booked in this half-day (⚠ on the tiles).`,
+  agWeekHead:"Week plan (Mon–Fri) — your sessions marked red",
+  agWeekLegend:"Red outline = your sessions · grey tiles = the rest of the week",
   wkAiDone:"AI week rhythm applied", wkAiDemo:"Demo mode has no AI — using simple auto-distribute instead.",
   wkPrint:"Print", wkMat:"Required material", wkMatPh:"e.g. 20× DVI kit, projector, flip chart",
   wkPrintMat:"Material", wkPrintTrainer:"Trainer",
@@ -3127,10 +3140,23 @@ function wkDayDate(i){
   return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+".";
 }
 
+/* Doppelbelegung: derselbe Trainer mehrfach im selben Halbtag. */
+let wkConflictSet=new Set();
+function wkConflictIds(){
+  const {slots}=wkPlacement(); const bad=new Set();
+  for(const k of WK_SLOTKEYS){
+    const byTr={};
+    for(const id of slots[k]){ const s=wkSess(id); const tid=s&&s.trainerId;
+      if(tid) (byTr[tid]=byTr[tid]||[]).push(id); }
+    for(const tid in byTr) if(byTr[tid].length>1) byTr[tid].forEach(id=>bad.add(id));
+  }
+  return bad;
+}
 function wkTile(id){
   const s=wkSess(id); if(!s) return "";
   const col=SESS_COL[s.type]||"#8A939A";
   const tr=s.trainerId?S.trainers.find(x=>String(x.id)===String(s.trainerId)):null;
+  const conflict=wkConflictSet.has(String(id));
   const dot=wkPptRelevant(s)
     ? `<span class="ppdot ${s.ppt==='vorhanden'?'g':s.ppt==='inArbeit'?'y':'r'}" title="PPT: ${t('ppt_'+(s.ppt||''))}"></span>`:"";
   return `<div class="sess" draggable="true" data-id="${s.id}"
@@ -3142,11 +3168,13 @@ function wkTile(id){
       <span>${esc(String(s.dur||1))} h</span>
       ${tr?`<span class="av" style="width:18px;height:18px;font-size:9px;background:${tr.color||'#607d94'}" title="${esc(tr.name)}">${initials(tr.name)}</span>`:""}
       ${s.mat?`<span title="${esc(t("wkMat")+": "+s.mat)}">📦</span>`:""}
+      ${conflict?`<span title="${esc(t("wkConflict"))}" style="color:var(--crit);font-weight:800">⚠</span>`:""}
       ${dot}</div></div>`;
 }
 
 function drawWeekBody(){
   const tg=wkCurTg(); if(!tg||!WKD) return;
+  wkConflictSet=wkConflictIds();
   const {slots,bench}=wkPlacement();
   const cl=clientOf(tg); const r=rosterStats(tg);
   const totalH=(WKD.sessions||[]).reduce((a,s)=>a+(parseFloat(s.dur)||0),0);
@@ -3189,7 +3217,7 @@ function drawWeekBody(){
         : `<button class="btn sm" onclick="openWeek('${tg.id}')">${ic("week",14)}${t("nav_week")}</button>`}
       <button class="btn sm" onclick="printWeek()">${ic("printer",14)}${t("wkPrint")}</button>
       <span class="spacer"></span>
-      <button class="btn sm" onclick="wkAiSuggest()">✦ ${t("wkAi")}</button>
+      <button class="btn sm" id="wkAiBtn" onclick="wkAiSuggest()">✦ ${t("wkAi")}</button>
       <button class="btn sm" onclick="wkAutofill()">${ic("auto",14)}${t("wkAuto")}</button>
       <button class="btn sm primary" onclick="openSessEdit(null)">${ic("plus",14)}${t("wkNew")}</button>
     </div>
@@ -3265,7 +3293,8 @@ async function assignTrainerToSess(sid,trId){
   } else save();
   drawWeekBody();
   const tr=S.trainers.find(x=>String(x.id)===String(trId));
-  toast(t("wkAssigned", s.title, tr?tr.name:"?"),"good");
+  if(wkConflictSet.has(String(sid))) toast(t("wkConflictToast", tr?tr.name:"?"),"warn");
+  else toast(t("wkAssigned", s.title, tr?tr.name:"?"),"good");
 }
 function wkDragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add("dragover"); }
 function wkDragLeave(ev){ ev.currentTarget.classList.remove("dragover"); }
@@ -3413,13 +3442,17 @@ async function wkAiSuggest(){
       while(i<WK_SLOTKEYS.length-1 && hrs(WK_SLOTKEYS[i])+d>4.25) i++;
       plan[WK_SLOTKEYS[i]].push(String(s.id)); }
     WKD.plan={...plan,bench:[]}; save(); drawWeekBody(); return; }
+  // Sichtbar machen, dass gearbeitet wird: Knopf zeigt einen Fortschrittskringel.
+  const btn=$("#wkAiBtn");
+  if(btn){ btn.disabled=true; btn.innerHTML=`<span class="btnspin"></span>${t("wkAiRunShort")}`; }
   toast(t("wkAiRun"),"good");
   try{
     const d=await apiCall("weekplan.suggest",{training:curWeekId});
     WKD.plan=d.plan||{};
-    drawWeekBody();
+    drawWeekBody();   // zeichnet auch den Knopf zurück
     toast(t("wkAiDone")+(d.unplaced?` (${d.unplaced} → ${t("wkBench")})`:""),"good");
   }catch(e){
+    drawWeekBody();
     // Fehler deutlich zeigen — ein kurzer Toast reicht hier nicht (KI-Läufe dauern).
     alert(t("wkAi")+": "+e.message);
   }
@@ -4344,16 +4377,47 @@ async function saveTrainerTravel(tgId,trId){
   }
   save();closeSheet();toast(t("travelSaved"),"good");if(route==="detail")renderDetail();
 }
-function openAgenda(tgId,trId){
+async function openAgenda(tgId,trId){
   const tg=tvGet(tgId); const tr=S.trainers.find(x=>x.id===trId);
   const e=tg.roster.find(r=>r.trainerId===trId)||{};
+  // Wochenplan mitladen: alle Sessions der Woche, die eigenen rot markiert
+  let weekHtml="";
+  try{
+    let sessions=[],plan={};
+    if(LIVE){ const d=await apiCall("sessions.list",{training:tgId}); sessions=d.sessions||[]; plan=d.plan||{}; }
+    else { const wd=(S.weekData||{})[tgId]; if(wd){ sessions=wd.sessions||[]; plan=wd.plan||{}; } }
+    weekHtml=agWeekGrid(sessions,plan,tg,trId);
+  }catch(err){}
   $("#agPrintLbl").textContent=t("printBtn");
-  $("#agendaBody").innerHTML=buildAgendaHTML(tg,tr,e.flight||{});
+  $("#agendaBody").innerHTML=buildAgendaHTML(tg,tr,e.flight||{},weekHtml);
   setPageOrient("portrait");
   $("#agendaPrint").classList.add("on");
 }
+/* Kompakte Wochenübersicht für die Agenda: alle Sessions Mo–Fr,
+   die des Trainers rot umrandet + mit Kürzel (wie im Wochenplan). */
+function agWeekGrid(sessions,plan,tg,trId){
+  const sess=id=>sessions.find(s=>String(s.id)===String(id));
+  const placed=new Set(); const slots={};
+  for(const k of WK_SLOTKEYS){ slots[k]=((plan[k]||[]).map(String)).filter(id=>sess(id)&&!placed.has(id)&&(placed.add(id)||true)); }
+  if(!Object.values(slots).some(a=>a.length)) return "";
+  const tr=S.trainers.find(x=>String(x.id)===String(trId));
+  const dayDate=i=>{ if(!tg.date) return ""; const d=new Date(tg.date+"T00:00:00"); d.setDate(d.getDate()+i);
+    return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."; };
+  const cell=k=>slots[k].map(id=>{ const s=sess(id); const mine=String(s.trainerId||"")===String(trId);
+    return `<div style="border:1.5px solid ${mine?'var(--crit)':'var(--line)'};border-left:4px solid ${mine?'var(--crit)':(SESS_COL[s.type]||'#8A939A')};border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:11px;line-height:1.35;${mine?'background:rgba(216,31,38,.07);font-weight:650':''}">${esc(s.title)}
+      <div style="color:var(--faint);font-size:10px">${esc(String(s.dur||1))} h${mine&&tr?` · <b style="color:var(--crit)">${initials(tr.name)}</b>`:""}</div></div>`;
+  }).join("")||`<div style="color:var(--faint);font-size:11px">—</div>`;
+  return `<div class="ag-h2">${t("agWeekHead")}</div>
+    <div class="agwk" style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px">
+    ${WK_DAYS.map((d,i)=>`<div style="min-width:0">
+      <div style="text-align:center;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${t("day_"+d)}<span style="color:var(--faint);font-weight:600"> ${dayDate(i)}</span></div>
+      <div style="font-size:9px;color:var(--faint);text-transform:uppercase;margin:5px 0 3px">${t("wkAM")}</div>${cell(d+"_am")}
+      <div style="font-size:9px;color:var(--faint);text-transform:uppercase;margin:5px 0 3px">${t("wkPM")}</div>${cell(d+"_pm")}
+    </div>`).join("")}</div>
+    <div style="font-size:10.5px;color:var(--faint);margin-top:6px">${t("agWeekLegend")}</div>`;
+}
 function closeAgenda(){$("#agendaPrint").classList.remove("on");}
-function buildAgendaHTML(tg,tr,fl){
+function buildAgendaHTML(tg,tr,fl,weekHtml=""){
   const v=tg.travel||{}; const na=`<span style="color:var(--faint)">—</span>`;
   const row=(k,val)=>`<div class="ag-k">${k}</div><div class="ag-v">${val?esc(val):na}</div>`;
   const rowH=(k,val)=>`<div class="ag-k">${k}</div><div class="ag-v">${val||na}</div>`;
@@ -4372,6 +4436,7 @@ function buildAgendaHTML(tg,tr,fl){
     <div class="ag-kv">${row(t("tvArrival"),fl.arrival)}${row(t("tvDeparture"),fl.departure)}${row(t("tvFlightOut"),fl.flightOut)}${row(t("tvFlightReturn"),fl.flightReturn)}${row(t("tvRoom"),fl.room)}${(needsVisa(tg.country)||fl.passportExpiry||(fl.visaStatus&&fl.visaStatus!=='none'))?row(t("passportLbl"),fl.passportExpiry)+rowH(t("visaLbl"),t("visa_"+(fl.visaStatus||'none'))):""}${fl.visaNotes?row(t("visaNotesLbl"),fl.visaNotes):""}${fl.notes?row(t("tvNotes"),fl.notes):""}</div>
     <div class="ag-h2">${t("tvLogHead")}</div>
     <div class="ag-kv">${rowH(t("tvHotel"),esc([v.hotel,v.hotelAddr].filter(Boolean).join(" · ")))}${row(t("tvMeet"),v.meetingPoint)}${rowH(t("tvContact"),esc([v.contactName,v.contactPhone].filter(Boolean).join(" · ")))}${row(t("tvDress"),v.dresscode)}${row(t("tvPerDiem"),v.perDiem)}${v.notes?row(t("tvNotes"),v.notes):""}</div>
+    ${weekHtml}
     ${items?`<div class="ag-h2">${t("agTitle")}</div><table class="ag-table">${items}</table>`:""}
     <div class="meta" style="text-align:center;margin-top:22px">ETAF · Trainer-Koordination</div>
   </div>`;
