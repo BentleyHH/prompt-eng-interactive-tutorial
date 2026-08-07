@@ -578,7 +578,10 @@
   .wkdeliv b{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:3px}
   .wkteam{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
   .wkteam .tmchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:20px;
-    padding:3px 11px 3px 4px;font-size:12.5px;cursor:pointer;background:var(--panel)}
+    padding:3px 11px 3px 4px;font-size:12.5px;cursor:grab;background:var(--panel)}
+  .wkteam .tmchip:active{cursor:grabbing}
+  .tmchip .tmcnt{background:var(--brand-solid);color:#fff;border-radius:10px;padding:0 7px;
+    font-size:10.5px;line-height:16px;font-weight:700}
   @media(max-width:760px){ .wkgrid{grid-template-columns:1fr} .daycol h4{text-align:left} .wkbench .sess{flex:1 1 100%} }
 
   /* Handy: Avatar/Icon links fixiert, Text über die volle Breite, Aktionen darunter.
@@ -919,6 +922,9 @@ const L={
   wkNoTrainings:"Noch keine Trainings angelegt.",
   wkSaved:"Wochenplan gespeichert", wkSessSaved:"Session gespeichert", wkSessDeleted:"Session gelöscht",
   wkTeam:"Team der Woche", wkNoTeam:"Noch niemand zugesagt — Besetzung über das Training öffnen.",
+  wkTrDragHint:"Auf eine Session ziehen, um sie zuzuteilen (Klick öffnet das Training)",
+  wkTrCnt:n=> n===1 ? "1 Einsatz in dieser Woche" : `${n} Einsätze in dieser Woche`,
+  wkAssigned:(s,n)=>`„${s.length>32?s.slice(0,32)+"…":s}“ → ${n}`,
   wkStage:s=>`Stage ${s}`, wkDays:"Mo–Fr",
   type_orga:"Orga", type_theorie:"Theorie", type_uebung:"Übung", type_praxis:"Praxis",
   type_simulation:"Simulation", type_assessment:"Assessment", type_deliverable:"Deliverable",
@@ -1252,6 +1258,9 @@ const L={
   wkNoTrainings:"No trainings yet.",
   wkSaved:"Week plan saved", wkSessSaved:"Session saved", wkSessDeleted:"Session deleted",
   wkTeam:"Week team", wkNoTeam:"Nobody confirmed yet — open the training to build the team.",
+  wkTrDragHint:"Drag onto a session to assign (click opens the training)",
+  wkTrCnt:n=> n===1 ? "1 session this week" : `${n} sessions this week`,
+  wkAssigned:(s,n)=>`“${s.length>32?s.slice(0,32)+"…":s}” → ${n}`,
   wkStage:s=>`Stage ${s}`, wkDays:"Mon–Fri",
   type_orga:"Orga", type_theorie:"Theory", type_uebung:"Exercise", type_praxis:"Practical",
   type_simulation:"Simulation", type_assessment:"Assessment", type_deliverable:"Deliverable",
@@ -3125,7 +3134,8 @@ function wkTile(id){
   const dot=wkPptRelevant(s)
     ? `<span class="ppdot ${s.ppt==='vorhanden'?'g':s.ppt==='inArbeit'?'y':'r'}" title="PPT: ${t('ppt_'+(s.ppt||''))}"></span>`:"";
   return `<div class="sess" draggable="true" data-id="${s.id}"
-      ondragstart="wkDragStart(event)" ondragend="wkDragEnd()" onclick="openSessEdit('${s.id}')">
+      ondragstart="wkDragStart(event)" ondragend="wkDragEnd()" onclick="openSessEdit('${s.id}')"
+      ondragover="event.preventDefault();event.stopPropagation()" ondrop="wkTileDrop(event)">
     <span class="srail" style="background:${col}"></span>
     <div class="st">${esc(s.title)}</div>
     <div class="sm"><span class="tag" style="border-color:${col};color:${col}">${t("type_"+(s.type||"theorie"))}</span>
@@ -3147,8 +3157,12 @@ function drawWeekBody(){
   const team=(tg.roster||[]).filter(x=>["yes","confirmed"].includes(x.status))
     .map(x=>S.trainers.find(tr2=>tr2.id===x.trainerId)).filter(Boolean);
   const teamHtml=team.length
-    ? team.map(tr2=>`<span class="tmchip" onclick="openDetail('${tg.id}')">
-        <span class="av" style="width:22px;height:22px;font-size:10px;background:${tr2.color||'#607d94'}">${initials(tr2.name)}</span>${esc(tr2.name)}</span>`).join("")
+    ? team.map(tr2=>{
+        const cnt=(WKD.sessions||[]).filter(s=>String(s.trainerId||"")===String(tr2.id)).length;
+        return `<span class="tmchip" draggable="true" title="${t("wkTrDragHint")}"
+          ondragstart="wkTrDragStart(event,'${tr2.id}')" ondragend="wkDragEnd()" onclick="openDetail('${tg.id}')">
+          <span class="av" style="width:22px;height:22px;font-size:10px;background:${tr2.color||'#607d94'}">${initials(tr2.name)}</span>${esc(tr2.name)}${cnt?`<b class="tmcnt" title="${t("wkTrCnt",cnt)}">${cnt}×</b>`:""}</span>`;
+      }).join("")
     : `<span class="meta">${t("wkNoTeam")}</span>`;
 
   const head=`<div class="panel"><div class="panel-b">
@@ -3228,6 +3242,31 @@ async function renderWeekEmbed(tgId){
 /* ---- Ziehen & Ablegen (Desktop); Antippen öffnet den Editor mit „Verschieben nach“ ---- */
 function wkDragStart(ev){ wkDragBusy=true; ev.dataTransfer.setData("text/plain",ev.currentTarget.dataset.id); ev.dataTransfer.effectAllowed="move"; }
 function wkDragEnd(){ wkDragBusy=false; }
+/* Trainer-Chip ziehen → auf einer Session-Kachel loslassen = zuteilen.
+   Der Trainer bleibt oben im Team und kann weitere Sessions bekommen. */
+function wkTrDragStart(ev,trId){ wkDragBusy=true; ev.dataTransfer.setData("text/plain","tr:"+trId); ev.dataTransfer.effectAllowed="copy"; }
+async function wkTileDrop(ev){
+  ev.preventDefault(); ev.stopPropagation(); wkDragBusy=false;
+  const d=ev.dataTransfer.getData("text/plain");
+  const sid=ev.currentTarget.dataset.id;
+  if(d.startsWith("tr:")){ assignTrainerToSess(sid, d.slice(3)); return; }
+  // Session auf Session fallen gelassen → im selben Slot ablegen
+  const zone=ev.currentTarget.closest(".zone");
+  if(zone && wkSess(d)) wkMoveTo(d, zone.dataset.slot);
+}
+async function assignTrainerToSess(sid,trId){
+  const s=wkSess(sid); if(!s) return;
+  if(String(s.trainerId||"")===String(trId)) return;
+  s.trainerId=String(trId);
+  if(LIVE){
+    try{ await apiCall("session.save",{training:curWeekId,id:sid,title:s.title,titleEn:s.titleEn||"",
+      type:s.type,dur:s.dur,desc:s.desc||"",trainerId:trId,ppt:s.ppt||"",pptBy:s.pptBy||0,pptDue:s.pptDue||"",mat:s.mat||""}); }
+    catch(e){ toast(e.message,"crit"); return; }
+  } else save();
+  drawWeekBody();
+  const tr=S.trainers.find(x=>String(x.id)===String(trId));
+  toast(t("wkAssigned", s.title, tr?tr.name:"?"),"good");
+}
 function wkDragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add("dragover"); }
 function wkDragLeave(ev){ ev.currentTarget.classList.remove("dragover"); }
 async function wkDrop(ev){

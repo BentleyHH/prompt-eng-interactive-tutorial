@@ -810,6 +810,26 @@ switch($action){
     $btns='<div style="margin:22px 0"><a href="'.$link.'" style="display:inline-block;padding:12px 20px;'
       .'border-radius:8px;background:#3e4852;color:#fff;font:600 14px system-ui,Arial,sans-serif;text-decoration:none">'
       .$btnLabel.'</a></div>';
+    // Persönliche Sessions dieser Woche direkt in die Mail (Spiegelung des Wochenplans)
+    $sessHtml='';
+    $ws=trainer_week_sessions((int)$tgId,(int)$trId);
+    if($ws){
+      $dayN=$lang==='de'?['Mo','Di','Mi','Do','Fr']:['Mon','Tue','Wed','Thu','Fri'];
+      $halfN=$lang==='de'?['am'=>'Vormittag','pm'=>'Nachmittag']:['am'=>'Morning','pm'=>'Afternoon'];
+      $li='';
+      foreach($ws as $s2){
+        $when=$s2['dayIdx']!==null
+          ? $dayN[$s2['dayIdx']].($s2['date']?' '.date('d.m.',strtotime($s2['date'])):'').($s2['half']?' · '.($halfN[$s2['half']]??''):'')
+          : ($lang==='de'?'offen':'tbd');
+        $li.='<tr><td style="padding:4px 12px 4px 0;color:#5c666e;white-space:nowrap;font-size:13px;vertical-align:top">'.htmlspecialchars($when).'</td>'
+           .'<td style="padding:4px 0;font-size:13px"><b>'.htmlspecialchars($lang==='en'&&$s2['title_en']!==''?$s2['title_en']:$s2['title']).'</b> · '.htmlspecialchars((string)$s2['dur']).' h'
+           .($s2['pptMine']?'<br><span style="color:#B23A42;font-weight:600">'.($lang==='de'?'PowerPoint: von dir vorzubereiten':'PowerPoint: to be prepared by you').'</span>':'')
+           .'</td></tr>';
+      }
+      $sessHtml='<div style="margin:18px 0 4px;font-family:Arial,Helvetica,sans-serif">'
+        .'<b style="font-size:14px">'.($lang==='de'?'Deine Sessions in dieser Woche':'Your sessions this week').'</b>'
+        .'<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:6px">'.$li.'</table></div>';
+    }
     // Ticket/Voucher aus der verknüpften Flugpost-Mail automatisch anhängen
     $atts=[];
     $tv=q("SELECT mail_id FROM travel WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
@@ -820,7 +840,7 @@ switch($action){
       if($atts) $intro.=$lang==='de' ? "\n\nDein Ticket/Voucher hängt an dieser E-Mail."
                                      : "\n\nYour ticket/voucher is attached to this email.";
     }
-    $ok=send_email($tr['email'],$tr['name'],$subj,email_html($intro,$btns),$atts);
+    $ok=send_email($tr['email'],$tr['name'],$subj,email_html($intro,$sessHtml.$btns),$atts);
     q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
        VALUES(?,?,?,?,?,?,?,?)",[$tgId,$trId,$tr['email'],$subj,$intro."\n".$link,$lang,$ok?'sent':'failed',now()]);
     out(['ok'=>true,'link'=>$link,'sent'=>$ok?1:0,'attached'=>count($atts)]);

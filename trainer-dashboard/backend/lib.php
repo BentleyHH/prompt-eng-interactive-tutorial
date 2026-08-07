@@ -372,6 +372,35 @@ function next_candidate(int $tgId): ?array {
   return $best;
 }
 
+/** Sessions eines Trainers in einer Trainingswoche (aus dem Wochenplan),
+ *  in Wochenreihenfolge — für Agenda-Seite und Agenda-E-Mail. */
+function trainer_week_sessions(int $tgId, int $trId): array {
+  $tg=q("SELECT start_date,plan_slots FROM trainings WHERE id=?",[$tgId])->fetch();
+  if(!$tg) return [];
+  $plan=json_decode($tg['plan_slots']?:'{}',true)?:[];
+  $pos=[]; $ord=0;
+  foreach(['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm'] as $k){
+    foreach((array)($plan[$k]??[]) as $sid){ $pos[(string)$sid]=['slot'=>$k,'ord'=>$ord++]; }
+  }
+  $rows=[];
+  foreach(q("SELECT * FROM training_sessions WHERE training_id=? AND trainer_id=? ORDER BY sort,id",[$tgId,$trId])->fetchAll() as $s){
+    $p=$pos[(string)$s['id']]??null;
+    $day=null; $half=null;
+    if($p){ [$day,$half]=explode('_',$p['slot']); }
+    $dayIdx=$day!==null ? array_search($day,['mon','tue','wed','thu','fri'],true) : null;
+    $date='';
+    if($dayIdx!==false && $dayIdx!==null && !empty($tg['start_date'])){
+      try{ $d=new DateTime($tg['start_date']); $d->modify('+'.$dayIdx.' day'); $date=$d->format('Y-m-d'); }catch(Throwable $e){}
+    }
+    $rows[]=['title'=>$s['title'],'title_en'=>$s['title_en']??'','type'=>$s['stype'],'dur'=>$s['dur'],
+             'dayIdx'=>($dayIdx===false?null:$dayIdx),'half'=>$half,'date'=>$date,'ord'=>$p['ord']??999,
+             'pptMine'=>((string)($s['ppt_by']??''))===(string)$trId && (string)$trId!=='',
+             'ppt'=>$s['ppt']??'','mat'=>$s['mat']??''];
+  }
+  usort($rows, fn($a,$b)=>$a['ord']<=>$b['ord']);
+  return $rows;
+}
+
 /** Alle Einsätze eines Trainers (zugesagt/vielleicht/angefragt), inkl. Reisedaten, nach Datum. */
 function trainer_schedule(int $trId): array {
   return q("SELECT t.*, r.status AS rstatus,

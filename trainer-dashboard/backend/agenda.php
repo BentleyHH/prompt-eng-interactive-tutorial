@@ -112,6 +112,28 @@ $na = $L['nodata'];
       <?php if(!empty($tv['notes'])): ?><div class="k"><?=e($L['notes'])?></div><div class="v"><?=e($tv['notes'])?></div><?php endif; ?>
     </div>
 
+    <?php
+    /* Sessions dieses Trainers in dieser Woche (aus dem Wochenplan) */
+    $mySess = trainer_week_sessions((int)$req['training_id'], (int)$req['trid']);
+    if($mySess):
+      $dayN  = $lang==='de' ? ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'] : ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+      $halfN = $lang==='de' ? ['am'=>'Vormittag','pm'=>'Nachmittag'] : ['am'=>'Morning','pm'=>'Afternoon'];
+    ?>
+    <h2><?=e($lang==='de'?'Deine Sessions in dieser Woche':'Your sessions this week')?></h2>
+    <table><?php foreach($mySess as $s):
+      $when = $s['dayIdx']!==null
+        ? $dayN[$s['dayIdx']].($s['date']?', '.date('d.m.',strtotime($s['date'])):'')
+        : ($lang==='de'?'noch nicht terminiert':'not scheduled yet');
+      $slot = $s['half'] ? ($halfN[$s['half']]??'') : ''; ?>
+      <tr><td class="d" style="width:110px;white-space:nowrap"><?=e($when)?></td>
+          <td class="t" style="width:90px"><?=e($slot)?></td>
+          <td><b><?=e($lang==='en'&&$s['title_en']!==''?$s['title_en']:$s['title'])?></b> · <?=e((string)$s['dur'])?> h
+            <?php if($s['pptMine']): ?><br><span style="color:#B23A42;font-weight:600"><?=e($lang==='de'?'PowerPoint: von dir vorzubereiten':'PowerPoint: to be prepared by you')?></span><?php endif; ?>
+            <?php if(!empty($s['mat'])): ?><br><span style="color:var(--muted)">📦 <?=e($s['mat'])?></span><?php endif; ?>
+          </td></tr>
+    <?php endforeach; ?></table>
+    <?php endif; ?>
+
     <h2><?=e($L['travel'])?></h2>
     <div class="kv">
       <div class="k"><?=e($L['hotel'])?></div><div class="v"><?=e(trim(($req['hotel']??'').' · '.($req['hotel_addr']??''),' ·')) ?: $na?></div>
