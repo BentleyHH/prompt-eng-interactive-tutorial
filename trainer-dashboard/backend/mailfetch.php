@@ -29,7 +29,15 @@ function pop3_fetch_new(array $cfg, int $limit=15): array {
   $line=function() use($fp){ return rtrim((string)fgets($fp,2048),"\r\n"); };
   $cmd=function($c) use($fp,$line){ fwrite($fp,$c."\r\n"); return $line(); };
   $ok=function($r){ return strpos($r,'+OK')===0; };
-  if(!$ok($line())){ fclose($fp); return ['ok'=>false,'error'=>'POP3-Server meldet Fehler beim Verbinden.','mails'=>[]]; }
+  $greet=$line();
+  if(!$ok($greet)){
+    fclose($fp);
+    // Häufigster Fall: IMAP-Port erwischt (993/143) — IMAP grüßt mit "* OK".
+    $hint=strpos($greet,'* OK')===0
+      ? "Auf Port $port antwortet IMAP, nicht POP3. Bitte in config.php beim mailbox-Block 'port' => 995 eintragen (POP3 über SSL)."
+      : 'POP3-Server meldet Fehler beim Verbinden.';
+    return ['ok'=>false,'error'=>$hint,'mails'=>[]];
+  }
   if(!$ok($cmd('USER '.($cfg['user']??'')))){ fclose($fp); return ['ok'=>false,'error'=>'POP3: Benutzer abgelehnt.','mails'=>[]]; }
   if(!$ok($cmd('PASS '.($cfg['pass']??'')))){ fclose($fp); return ['ok'=>false,'error'=>'POP3: Passwort abgelehnt (Zugangsdaten in config.php prüfen).','mails'=>[]]; }
   // UIDL: Liste aller Nachrichten mit eindeutiger ID
