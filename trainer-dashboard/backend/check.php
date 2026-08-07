@@ -37,6 +37,14 @@ foreach($need as $f){ if(!is_file(__DIR__.'/'.$f)) $missing[]=$f; }
 row('Alle Backend-Dateien vorhanden', count($missing)===0,
     $missing?'<b>Fehlt:</b> '.esc(implode(', ',$missing)).' — bitte das komplette ZIP hochladen.':'');
 
+/* 2b) Zugriffsschutz da? (.htaccess ist am Mac/im FTP-Programm oft unsichtbar,
+       weil Dateien mit Punkt am Anfang standardmäßig ausgeblendet werden) */
+row('Zugriffsschutz backend/.htaccess vorhanden', is_file(__DIR__.'/.htaccess'),
+    is_file(__DIR__.'/.htaccess')?'':'<b>Fehlt!</b> Ohne diese Datei ist config.php (mit Passwörtern) ungeschützt. '
+    .'Die Datei heißt exakt <code>.htaccess</code> — sie ist im FTP-Programm oft nur versteckt '
+    .'(FileZilla: Server → „Auflistung versteckter Dateien erzwingen“; Finder: Cmd+Shift+Punkt). '
+    .'Notfalls als <code>htaccess.txt</code> hochladen und auf dem Server in <code>.htaccess</code> umbenennen.');
+
 /* 3) config.php fehlerfrei? (Tippfehler beim Bearbeiten sind die häufigste Ursache) */
 $cfg=null; $cfgErr='';
 if(is_file(__DIR__.'/config.php')){
