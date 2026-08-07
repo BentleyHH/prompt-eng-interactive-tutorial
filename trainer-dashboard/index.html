@@ -965,6 +965,7 @@ const L={
   wkConflict:"Doppelbelegung — dieser Trainer ist im selben Halbtag mehrfach eingeplant.",
   wkConflictToast:n=>`Achtung: ${n} ist in diesem Halbtag jetzt doppelt eingeplant (⚠ an den Kacheln).`,
   agWeekHead:"Wochenplan (Mo–Fr) — deine Sessions rot markiert",
+  agWith:"zusammen mit",
   agWeekLegend:"Rot umrandet = deine Sessions · graue Kacheln = übrige Sessions der Woche",
   wkAiDone:"KI-Wochenrhythmus übernommen", wkAiDemo:"Im Demo-Modus ohne KI — stattdessen einfache Auto-Verteilung.",
   wkPrint:"Drucken", wkMat:"Benötigtes Material", wkMatPh:"z.B. 20× DVI-Kit, Beamer, Flipchart",
@@ -1328,6 +1329,7 @@ const L={
   wkConflict:"Double booking — this trainer is scheduled more than once in the same half-day.",
   wkConflictToast:n=>`Note: ${n} is now double-booked in this half-day (⚠ on the tiles).`,
   agWeekHead:"Week plan (Mon–Fri) — your sessions marked red",
+  agWith:"together with",
   agWeekLegend:"Red outline = your sessions · grey tiles = the rest of the week",
   wkAiDone:"AI week rhythm applied", wkAiDemo:"Demo mode has no AI — using simple auto-distribute instead.",
   wkPrint:"Print", wkMat:"Required material", wkMatPh:"e.g. 20× DVI kit, projector, flip chart",
@@ -4599,8 +4601,14 @@ function agWeekGrid(sessions,plan,tg,trId){
   const dayDate=i=>{ if(!tg.date) return ""; const d=new Date(tg.date+"T00:00:00"); d.setDate(d.getDate()+i);
     return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."; };
   const cell=k=>slots[k].map(id=>{ const s=sess(id); const mine=sessTrIds(s).includes(String(trId));
+    const others=sessTrIds(s).filter(x=>x!==String(trId))
+      .map(tid=>{const x=S.trainers.find(y=>String(y.id)===tid);return x?x.name:null;}).filter(Boolean);
+    const sub=`${esc(String(s.dur||1))} h`
+      +(mine&&tr?` · <b style="color:var(--crit)">${initials(tr.name)}</b>`:"")
+      +(mine&&others.length?`<br><span style="color:var(--good);font-weight:650">👥 ${esc(t("agWith")+" "+others.join(", "))}</span>`
+        :(!mine&&others.length?`<br>${esc(others.join(", "))}`:""));
     return `<div style="border:1.5px solid ${mine?'var(--crit)':'var(--line)'};border-left:4px solid ${mine?'var(--crit)':(SESS_COL[s.type]||'#8A939A')};border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:11px;line-height:1.35;${mine?'background:rgba(216,31,38,.07);font-weight:650':''}">${esc(sessTitle(s))}
-      <div style="color:var(--faint);font-size:10px">${esc(String(s.dur||1))} h${mine&&tr?` · <b style="color:var(--crit)">${initials(tr.name)}</b>`:""}</div></div>`;
+      <div style="color:var(--faint);font-size:10px">${sub}</div></div>`;
   }).join("")||`<div style="color:var(--faint);font-size:11px">—</div>`;
   return `<div class="ag-h2">${t("agWeekHead")}</div>
     <div class="agwk" style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px">

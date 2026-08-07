@@ -887,6 +887,7 @@ switch($action){
           : ($lang==='de'?'offen':'tbd');
         $li.='<tr><td style="padding:4px 12px 4px 0;color:#5c666e;white-space:nowrap;font-size:13px;vertical-align:top">'.htmlspecialchars($when).'</td>'
            .'<td style="padding:4px 0;font-size:13px"><b>'.htmlspecialchars($lang==='en'&&$s2['title_en']!==''?$s2['title_en']:$s2['title']).'</b> · '.htmlspecialchars((string)$s2['dur']).' h'
+           .(!empty($s2['with'])?'<br><span style="color:#3F7A5E;font-weight:600">👥 '.htmlspecialchars(($lang==='de'?'zusammen mit ':'together with ').implode(', ',$s2['with'])).'</span>':'')
            .($s2['pptMine']?'<br><span style="color:#B23A42;font-weight:600">'.($lang==='de'?'PowerPoint: von dir vorzubereiten':'PowerPoint: to be prepared by you').'</span>':'')
            .'</td></tr>';
       }

@@ -379,6 +379,7 @@ function next_candidate(int $tgId): ?array {
 function trainer_week_sessions(int $tgId, int $trId): array {
   $tg=q("SELECT start_date,plan_slots FROM trainings WHERE id=?",[$tgId])->fetch();
   if(!$tg) return [];
+  $tn=[]; foreach(q("SELECT id,name FROM trainers")->fetchAll() as $x){ $tn[(string)$x['id']]=$x['name']; }
   $plan=json_decode($tg['plan_slots']?:'{}',true)?:[];
   $pos=[]; $ord=0;
   foreach(['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm'] as $k){
@@ -398,10 +399,13 @@ function trainer_week_sessions(int $tgId, int $trId): array {
     if($dayIdx!==false && $dayIdx!==null && !empty($tg['start_date'])){
       try{ $d=new DateTime($tg['start_date']); $d->modify('+'.$dayIdx.' day'); $date=$d->format('Y-m-d'); }catch(Throwable $e){}
     }
+    // Co-Teaching: mit wem zusammen? (alle zugeteilten Trainer außer einem selbst)
+    $with=array_values(array_map(fn($x)=>$tn[(string)$x]??'?',
+          array_filter(array_map('strval',$ids), fn($x)=>$x!==(string)$trId)));
     $rows[]=['title'=>$s['title'],'title_en'=>$s['title_en']??'','type'=>$s['stype'],'dur'=>$s['dur'],
              'dayIdx'=>($dayIdx===false?null:$dayIdx),'half'=>$half,'date'=>$date,'ord'=>$p['ord']??999,
              'pptMine'=>((string)($s['ppt_by']??''))===(string)$trId && (string)$trId!=='',
-             'ppt'=>$s['ppt']??'','mat'=>$s['mat']??''];
+             'ppt'=>$s['ppt']??'','mat'=>$s['mat']??'','with'=>$with];
   }
   usort($rows, fn($a,$b)=>$a['ord']<=>$b['ord']);
   return $rows;
