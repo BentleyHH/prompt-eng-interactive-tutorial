@@ -142,7 +142,8 @@ if(basename($_SERVER['SCRIPT_NAME']??'')==='backup.php'){
  .hint{background:#fff8ec;border:1px solid #f0e0bd;border-radius:10px;padding:12px 14px;color:#7a5a12;font-size:13.5px}
  code{background:#eef0f2;padding:1px 5px;border-radius:5px}
 </style></head><body><div class="wrap">
- <h2>ETAF — Datensicherung</h2>
+ <div style="color:#3e4852;margin:0 0 10px;display:flex"><svg viewBox="0 0 1751 656" height="26" role="img" aria-label="ETAF" style="display:block;overflow:visible"><g fill="currentColor"><rect x="0" y="0" width="143" height="429"/><rect x="0" y="0" width="348" height="110"/><rect x="0" y="159" width="323" height="110"/><rect x="0" y="318" width="356" height="110"/><rect x="361" y="0" width="396" height="110"/><rect x="487" y="0" width="144" height="429"/><path fill-rule="evenodd" d="M832 0L978 0L1161 428L1012 428L908 353L795 428L649 428Z M905 146L943 246L870 246Z"/><rect x="1181" y="0" width="144" height="429"/><rect x="1181" y="0" width="348" height="110"/><rect x="1181" y="159" width="323" height="110"/></g><circle cx="1647" cy="552" r="104" fill="#D81F26"/></svg></div>
+ <h2>Datensicherung</h2>
  <p class="sub">Tägliche automatische Sicherung (per Cron) · die letzten 14 Stände bleiben erhalten.</p>
  <?php if($ran): ?>
    <?php if(!empty($ran['ok'])): ?><div class="ok">✓ Sicherung erstellt: <b><?=esc($ran['file'])?></b> (<?=esc($fmtSize($ran['size']))?>)</div>

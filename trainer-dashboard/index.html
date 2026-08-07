@@ -3600,7 +3600,7 @@ function printWeek(){
         <h2 style="margin:2px 0 3px;font-size:19px">${esc(tg.code||"")}${tg.star?" ★":""} — ${esc(tg.topic)}</h2>
         <div style="color:#5c666e;font-size:13px">${esc(tg.city||"")}${cl?" · "+esc(cl.name):""} · ${whenLabel(tg)} · ${t("wkPptChip",done,rel.length)}</div>
       </div>
-      <div style="font-weight:800;font-size:24px;letter-spacing:-.04em;color:#3e4852">ETAF<span style="color:#d81f26">.</span></div>
+      <span style="color:#3e4852;display:inline-flex">${etafLogo(26)}</span>
     </div>
     ${wkDelivText()?`<div style="border-left:4px solid #C77E1E;background:#faf6ee;border-radius:8px;padding:8px 12px;margin:12px 0 2px;font-size:12.5px">
       <b style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#8a6a1e;display:block">${t("wkDeliverable")}</b>${esc(wkDelivText())}</div>`:""}

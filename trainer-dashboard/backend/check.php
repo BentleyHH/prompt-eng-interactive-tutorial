@@ -20,7 +20,8 @@ function row($label,$ok,$detail=''){
 <title>ETAF — Basis-Check</title>
 <body style="font:15px/1.6 system-ui,Arial,sans-serif;color:#242b31;background:#f4f5f6;margin:0;padding:26px">
 <div style="max-width:760px;margin:auto">
-<h2 style="margin:0 0 4px">ETAF — Basis-Check</h2>
+<div style="color:#3e4852;margin:0 0 10px;display:flex"><svg viewBox="0 0 1751 656" height="26" role="img" aria-label="ETAF" style="display:block;overflow:visible"><g fill="currentColor"><rect x="0" y="0" width="143" height="429"/><rect x="0" y="0" width="348" height="110"/><rect x="0" y="159" width="323" height="110"/><rect x="0" y="318" width="356" height="110"/><rect x="361" y="0" width="396" height="110"/><rect x="487" y="0" width="144" height="429"/><path fill-rule="evenodd" d="M832 0L978 0L1161 428L1012 428L908 353L795 428L649 428Z M905 146L943 246L870 246Z"/><rect x="1181" y="0" width="144" height="429"/><rect x="1181" y="0" width="348" height="110"/><rect x="1181" y="159" width="323" height="110"/></g><circle cx="1647" cy="552" r="104" fill="#D81F26"/></svg></div>
+<h2 style="margin:0 0 4px">Basis-Check</h2>
 <p style="color:#8a939a;margin:0 0 18px">PHP <?=esc(PHP_VERSION)?> · <?=esc($_SERVER['HTTP_HOST']??'')?></p>
 <div style="background:#fff;border:1px solid #e2e5e8;border-radius:12px;padding:16px 18px">
 <table style="border-collapse:collapse;width:100%" cellpadding="6">

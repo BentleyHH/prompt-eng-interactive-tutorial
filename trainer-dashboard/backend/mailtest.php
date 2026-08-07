@@ -81,7 +81,8 @@ catch(Throwable $e){ $log=[]; }
  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700}
  .pill.sent{background:#e6f4ec;color:#2E9E6B}.pill.failed{background:#fdeaea;color:#D81F26}.pill.logged{background:#eef0f2;color:#5c666e}
 </style></head><body><div class="wrap">
- <h2>ETAF — E-Mail-Diagnose</h2>
+ <div style="color:#3e4852;margin:0 0 10px;display:flex"><?=etaf_logo_svg(26)?></div>
+ <h2>E-Mail-Diagnose</h2>
  <p class="sub">Prüft Konfiguration und Versand. Passwort wird nicht angezeigt.</p>
 
  <div class="card">

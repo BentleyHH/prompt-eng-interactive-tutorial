@@ -55,11 +55,14 @@ function response_buttons(string $tok, string $lang): string {
 /** HTML-Rumpf im ETAF-Look. */
 function email_html(string $bodyText, string $buttons): string {
   $esc=nl2br(htmlspecialchars($bodyText, ENT_QUOTES, 'UTF-8'));
+  // Echtes Logo (liegt im Hauptordner neben index.html); alt-Text als Fallback,
+  // falls ein Mail-Client Bilder blockiert.
+  $logoUrl=preg_replace('#/backend$#','',base_url()).'/ETAF_Logo.png';
   return '<!doctype html><html><body style="margin:0;background:#f4f5f6;padding:24px">'
     .'<div style="max-width:560px;margin:auto;background:#fff;border:1px solid #e2e5e8;'
     .'border-radius:14px;padding:28px 30px;font:15px/1.6 system-ui,Arial,sans-serif;color:#242b31">'
-    .'<div style="font-weight:800;font-size:26px;letter-spacing:-.04em;color:#3e4852">'
-    .'ETAF<span style="color:#d81f26">.</span></div>'
+    .'<img src="'.$logoUrl.'" alt="ETAF." width="70" height="30" '
+    .'style="display:block;border:0;height:30px;width:auto;font:800 26px system-ui,Arial,sans-serif;color:#3e4852">'
     .'<div style="height:1px;background:#e2e5e8;margin:16px 0 20px"></div>'
     .'<div>'.$esc.'</div>'.$buttons
     .'<div style="height:1px;background:#e2e5e8;margin:20px 0 12px"></div>'

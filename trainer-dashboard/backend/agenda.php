@@ -79,7 +79,7 @@ $na = $L['nodata'];
 </style></head>
 <body>
 <?php if(!$req): ?>
-  <div class="wrap"><div class="sheet"><div class="logo">ETAF<span>.</span></div>
+  <div class="wrap"><div class="sheet"><div class="logo" style="display:flex"><?=etaf_logo_svg(30)?></div>
     <p style="margin-top:18px"><?=e($L['err'])?></p></div></div>
 <?php else: ?>
   <div class="toolbar"><button class="btn" onclick="window.print()">🖨 <?=e($L['print'])?></button></div>
@@ -90,7 +90,7 @@ $na = $L['nodata'];
         <h1><?=e($req['topic'])?></h1>
         <div class="sub"><?=e($req['city'].', '.$req['country'].' · '.$req['kw'].' · '.$req['month'])?></div>
       </div>
-      <div class="logo">ETAF<span>.</span></div>
+      <div class="logo" style="display:flex"><?=etaf_logo_svg(30)?></div>
     </div>
     <div class="bar"></div>
 

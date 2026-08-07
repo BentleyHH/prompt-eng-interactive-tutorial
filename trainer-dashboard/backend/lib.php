@@ -488,6 +488,18 @@ function status_word(string $st, string $lang): string {
   $m=$lang==='de'?$de:$en; return $m[$st] ?? $st;
 }
 
+/** ETAF-Wortmarke als Vektor (identisch mit dem Dashboard-Logo, aus der
+ *  Original-Logodatei vermessen). Buchstaben = currentColor, Punkt = Akzentrot. */
+function etaf_logo_svg(int $h=30): string {
+  return '<svg viewBox="0 0 1751 656" height="'.$h.'" role="img" aria-label="ETAF" style="display:block;overflow:visible">'
+    .'<g fill="currentColor">'
+    .'<rect x="0" y="0" width="143" height="429"/><rect x="0" y="0" width="348" height="110"/><rect x="0" y="159" width="323" height="110"/><rect x="0" y="318" width="356" height="110"/>'
+    .'<rect x="361" y="0" width="396" height="110"/><rect x="487" y="0" width="144" height="429"/>'
+    .'<path fill-rule="evenodd" d="M832 0L978 0L1161 428L1012 428L908 353L795 428L649 428Z M905 146L943 246L870 246Z"/>'
+    .'<rect x="1181" y="0" width="144" height="429"/><rect x="1181" y="0" width="348" height="110"/><rect x="1181" y="159" width="323" height="110"/>'
+    .'</g><circle cx="1647" cy="552" r="104" fill="#D81F26"/></svg>';
+}
+
 function base_url(): string {
   $c=cfg();
   if(!empty($c['base_url'])) return rtrim($c['base_url'],'/');

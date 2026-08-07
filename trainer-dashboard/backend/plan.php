@@ -93,7 +93,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   }
 </style></head><body>
   <div class="card">
-    <div class="logo">ETAF<span>.</span></div>
+    <div class="logo" style="display:flex;justify-content:center"><?=etaf_logo_svg(34)?></div>
     <?php if(!$row): ?>
       <h1>Dieser Link ist ungültig oder abgelaufen.</h1>
       <p class="sub">This link is invalid or has expired.</p>

@@ -78,7 +78,7 @@ $etok   = esc($tok);
   }
 </style></head><body>
   <div class="card">
-    <div class="logo">ETAF<span>.</span></div>
+    <div class="logo" style="display:flex;justify-content:center"><?=etaf_logo_svg(34)?></div>
     <?php if(!$row || !$valid): ?>
       <h1>Dieser Link ist ungültig oder abgelaufen.</h1>
       <p class="sub">Links sind <?=RESET_TTL_MIN?> Minuten gültig und können nur einmal verwendet werden.

@@ -125,7 +125,7 @@ function opt($action,$etok,$key,$label,$text,$strong,$primary){
   }
 </style></head><body>
   <div class="card">
-    <div class="logo">ETAF<span>.</span></div>
+    <div class="logo" style="display:flex;justify-content:center"><?=etaf_logo_svg(34)?></div>
     <div class="bar"></div>
     <?php if($committed): ?>
       <h1><?=$L['thanks']?></h1>
