@@ -46,6 +46,23 @@ if(is_file(__DIR__.'/config.php')){
 }else $cfgErr='config.php fehlt.';
 row('config.php lesbar (keine Tippfehler)', $cfgErr==='', $cfgErr!==''?'<b>'.esc($cfgErr).'</b>':'');
 
+/* 3b) Sind alle nötigen Einträge vorhanden? (erkennt eine fremde/alte config.php,
+       z.B. die des früheren ETAF Dashboards — anderes Format!) */
+if(is_array($cfg)){
+  $reqKeys=['driver','db_host','db_name','db_user','db_pass','default_pin','session_days',
+            'org_name','from_email','from_name','base_url','mail_mode','smtp','mailbox',
+            'anthropic_key','reminder_hours','escalate_hours','auto_advance','cron_key','seed_demo'];
+  $missK=[];
+  foreach($reqKeys as $k){
+    if(strpos($k,'db_')===0 && ($cfg['driver']??'mysql')==='sqlite') continue;
+    if(!array_key_exists($k,$cfg)) $missK[]=$k;
+  }
+  row('config.php vollständig (richtiges Format)', count($missK)===0,
+      $missK?'<b>Fehlende Einträge:</b> '.esc(implode(', ',$missK))
+            .' — das sieht nach einer fremden oder alten config.php aus. Bitte config.sample.php aus dem ZIP als Vorlage nehmen '
+            .'oder die funktionierende config.php der bestehenden Installation kopieren und nur base_url anpassen.':'');
+}
+
 /* Sensible Details (DB-Status, Konfiguration) nur mit ?key=<cron_key> zeigen.
    Ist config.php kaputt/leer (der eigentliche Rettungsfall), gibt es keinen
    Key zum Prüfen — dann bleibt die Fehlermeldung oben trotzdem sichtbar. */

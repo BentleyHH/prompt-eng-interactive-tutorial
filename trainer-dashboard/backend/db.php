@@ -138,11 +138,12 @@ function ensure_schema(): void {
     created_at VARCHAR(20), sent_at VARCHAR(20),
     confirmed_at VARCHAR(20), confirm_status VARCHAR(16), note TEXT)$eng");
 
-  // PIN einmalig setzen
+  // PIN einmalig setzen. Fehlende config-Einträge dürfen den Start nie verhindern —
+  // check.php zeigt sie als klare Liste an, hier greifen sichere Standardwerte.
   if(!config_get('pin_hash')){
-    config_set('pin_hash', password_hash(cfg()['default_pin'], PASSWORD_DEFAULT));
+    config_set('pin_hash', password_hash((string)(cfg()['default_pin'] ?? '481509'), PASSWORD_DEFAULT));
   }
-  if(!config_get('org_name')) config_set('org_name', cfg()['org_name']);
+  if(!config_get('org_name')) config_set('org_name', (string)(cfg()['org_name'] ?? 'ETAF'));
 
   // Migrationen (idempotent): Erinnerungs-Spalten für requests
   try{ db()->exec("ALTER TABLE requests ADD COLUMN reminded_at VARCHAR(20)"); }catch(Throwable $e){}
