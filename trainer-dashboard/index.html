@@ -932,6 +932,29 @@ const L={
   type_orga:"Orga", type_theorie:"Theorie", type_uebung:"Übung", type_praxis:"Praxis",
   type_simulation:"Simulation", type_assessment:"Assessment", type_deliverable:"Deliverable",
   day_mon:"Montag", day_tue:"Dienstag", day_wed:"Mittwoch", day_thu:"Donnerstag", day_fri:"Freitag",
+  day_sat:"Samstag", day_sun:"Sonntag",
+  // Wochenplan übernehmen
+  wkCopy:"Übernehmen aus …", wkCopyTitle:"Wochenplan übernehmen", wkCopyDo:"Übernehmen",
+  wkCopyHint:"Kopiert Sessions, Anordnung und Wochenergebnis einer anderen Woche in diese Woche (z.B. W11-B aus W11-A). Trainer-Zuordnung und PowerPoint-Status werden nicht mitkopiert — neue Woche, neues Team.",
+  wkCopySrc:"Quellwoche",
+  wkCopyAsk:n=>`Diese Woche hat bereits ${n} Session${n===1?"":"s"} — alle ersetzen?`,
+  wkCopied:n=>`${n} Session${n===1?"":"s"} übernommen`,
+  // iCal je Trainer
+  icsBtn:"iCal-Abo", icsHint:"Persönlichen Kalender-Abo-Link kopieren",
+  icsCopied:"Kalender-Link kopiert — in Google/Apple/Outlook als „Kalender abonnieren“ einfügen.",
+  // Info-Mail (Digest)
+  dgTitle:"Info-Mail", dgBtn:"Info-Mail",
+  dgHint:"Automatische Überblicks-Mail an diese Person — Rhythmus und Inhalte frei wählbar. Versand morgens (ca. 7 Uhr) durch die Automatik.",
+  dgFreq:"Rhythmus", dgOff:"Aus", dgDaily:"Täglich", dgEvery2:"Alle 2 Tage", dgWeekly:"Wöchentlich",
+  dgDay:"Wochentag", dgParts:"Inhalte",
+  dgPart_staffing:"Besetzung — fehlende Trainer & offene Anfragen",
+  dgPart_ppt:"PowerPoints — fehlende Folien je Woche",
+  dgPart_travel:"Reisen & Flüge — Trainer ohne Reisedaten",
+  dgPart_inbox:"Posteingang — Rückmeldungen & neue Flugpost",
+  dgPart_week:"Nächstes Training — Team & Wochenergebnis",
+  dgPart_passport:"Reisepässe — ablaufende Dokumente",
+  dgTest:"Probe senden", dgTestSent:"Probe-Mail ist unterwegs", dgTestFail:"Versand fehlgeschlagen",
+  dgSaved:"Info-Mail-Einstellungen gespeichert", dgLiveOnly:"Nur im Live-Betrieb verfügbar.",
   attNoContent:"Wochenplan ist noch leer — Inhalte planen",
   attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} fehlen noch`,
   wkAi:"KI-Vorschlag", wkAiAsk:"Die KI verteilt alle Sessions didaktisch sinnvoll auf Mo–Fr (Theorie vor Praxis, Assessment ans Wochenende, ~4 h je Halbtag). Aktuelle Anordnung wird ersetzt — fortfahren?",
@@ -1273,6 +1296,26 @@ const L={
   type_orga:"Orga", type_theorie:"Theory", type_uebung:"Exercise", type_praxis:"Practical",
   type_simulation:"Simulation", type_assessment:"Assessment", type_deliverable:"Deliverable",
   day_mon:"Monday", day_tue:"Tuesday", day_wed:"Wednesday", day_thu:"Thursday", day_fri:"Friday",
+  day_sat:"Saturday", day_sun:"Sunday",
+  wkCopy:"Copy from …", wkCopyTitle:"Copy week plan", wkCopyDo:"Copy",
+  wkCopyHint:"Copies sessions, arrangement and weekly deliverable from another week into this one (e.g. W11-B from W11-A). Trainer assignments and PowerPoint status are not copied — new week, new team.",
+  wkCopySrc:"Source week",
+  wkCopyAsk:n=>`This week already has ${n} session${n===1?"":"s"} — replace all?`,
+  wkCopied:n=>`${n} session${n===1?"":"s"} copied`,
+  icsBtn:"iCal feed", icsHint:"Copy this trainer's personal calendar subscription link",
+  icsCopied:"Calendar link copied — add it in Google/Apple/Outlook as a calendar subscription.",
+  dgTitle:"Info mail", dgBtn:"Info mail",
+  dgHint:"Automatic overview email for this person — frequency and content are configurable. Sent in the morning (~7:00) by the automation.",
+  dgFreq:"Frequency", dgOff:"Off", dgDaily:"Daily", dgEvery2:"Every 2 days", dgWeekly:"Weekly",
+  dgDay:"Weekday", dgParts:"Content",
+  dgPart_staffing:"Staffing — missing trainers & open requests",
+  dgPart_ppt:"PowerPoints — missing slides per week",
+  dgPart_travel:"Travel & flights — trainers without travel data",
+  dgPart_inbox:"Inbox — feedback & new flight mail",
+  dgPart_week:"Next training — team & weekly deliverable",
+  dgPart_passport:"Passports — expiring documents",
+  dgTest:"Send sample", dgTestSent:"Sample email is on its way", dgTestFail:"Sending failed",
+  dgSaved:"Info-mail settings saved", dgLiveOnly:"Available in live mode only.",
   attNoContent:"Week plan is still empty — plan the content",
   attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} still missing`,
   wkAi:"AI suggestion", wkAiAsk:"The AI distributes all sessions sensibly across Mon–Fri (theory before practice, assessment towards the end, ~4 h per half-day). The current arrangement will be replaced — continue?",
@@ -2621,6 +2664,7 @@ function openTrainerEdit(trId){
     ${histHtml}`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
     ${tr?`<button class="btn" onclick="deleteTrainerEdit()" style="border-color:var(--crit);color:var(--crit)">${ic("trash",15)}${t("teDelete")}</button>`:""}
+    ${tr&&LIVE?`<button class="btn" onclick="copyIcsLink()" title="${t("icsHint")}">${ic("cal",15)}${t("icsBtn")}</button>`:""}
     <div class="spacer"></div>
     <button class="btn primary" onclick="saveTrainerEdit()">${ic("check",15)}${t("save")}</button>`;
   openSheet();
@@ -3081,6 +3125,9 @@ function wkTrainings(){ return curTrainings().slice()
   .sort((a,b)=>String(a.date||"9999").localeCompare(String(b.date||"9999"))); }
 function openWeek(id){ curWeekId=id; if(route!=="week") go("week"); else renderWeek(); }
 function wkPptRelevant(s){ return s.type!=="orga" && s.type!=="deliverable"; }
+/* Titel/Deliverable in der UI-Sprache (EN-Fassungen sind aus dem Programm importiert). */
+function sessTitle(s){ return (S.lang==="en" && s.titleEn) ? s.titleEn : (s.title||""); }
+function wkDelivText(){ return (S.lang==="en" && WKD.deliverableEn) ? WKD.deliverableEn : (WKD.deliverable||""); }
 function wkSess(id){ return (WKD&&WKD.sessions||[]).find(s=>String(s.id)===String(id)); }
 function wkCurTg(){ return S.trainings.find(x=>String(x.id)===String(curWeekId)); }
 
@@ -3163,7 +3210,7 @@ function wkTile(id){
       ondragstart="wkDragStart(event)" ondragend="wkDragEnd()" onclick="openSessEdit('${s.id}')"
       ondragover="event.preventDefault();event.stopPropagation()" ondrop="wkTileDrop(event)">
     <span class="srail" style="background:${col}"></span>
-    <div class="st">${esc(s.title)}</div>
+    <div class="st">${esc(sessTitle(s))}</div>
     <div class="sm"><span class="tag" style="border-color:${col};color:${col}">${t("type_"+(s.type||"theorie"))}</span>
       <span>${esc(String(s.dur||1))} h</span>
       ${tr?`<span class="av" style="width:18px;height:18px;font-size:9px;background:${tr.color||'#607d94'}" title="${esc(tr.name)}">${initials(tr.name)}</span>`:""}
@@ -3205,7 +3252,7 @@ function drawWeekBody(){
         <div class="wkteam" style="margin-top:10px"><span class="meta" style="font-weight:700">${t("wkTeam")}: ${r.yes}/${r.need}</span>${teamHtml}</div>
       </div>
       <div style="flex:1 1 260px;min-width:240px">
-        <div class="wkdeliv"><b>${t("wkDeliverable")}</b>${esc(WKD.deliverable||"—")}
+        <div class="wkdeliv"><b>${t("wkDeliverable")}</b>${esc(wkDelivText()||"—")}
           <div style="margin-top:6px"><button class="btn sm" onclick="openDelivEdit()">${ic("pen",13)}${t("edit")}</button></div>
         </div>
       </div>
@@ -3216,6 +3263,7 @@ function drawWeekBody(){
         ? `<button class="btn sm" onclick="openDetail('${tg.id}')">${ic("users",14)}${t("open")} — ${t("nav_trainings")}</button>`
         : `<button class="btn sm" onclick="openWeek('${tg.id}')">${ic("week",14)}${t("nav_week")}</button>`}
       <button class="btn sm" onclick="printWeek()">${ic("printer",14)}${t("wkPrint")}</button>
+      <button class="btn sm" onclick="openWeekCopy()">${ic("grid",14)}${t("wkCopy")}</button>
       <span class="spacer"></span>
       <button class="btn sm" id="wkAiBtn" onclick="wkAiSuggest()">✦ ${t("wkAi")}</button>
       <button class="btn sm" onclick="wkAutofill()">${ic("auto",14)}${t("wkAuto")}</button>
@@ -3468,7 +3516,7 @@ function printWeek(){
     const tr=s.trainerId?S.trainers.find(x=>String(x.id)===String(s.trainerId)):null;
     const col=SESS_COL[s.type]||"#8A939A";
     return `<div style="border-left:3px solid ${col};padding:2px 0 2px 7px;margin:0 0 6px">
-      <b style="font-size:9.5pt">${esc(s.title)}</b>
+      <b style="font-size:9.5pt">${esc(sessTitle(s))}</b>
       <div style="font-size:8pt;color:#555">${t("type_"+(s.type||"theorie"))} · ${esc(String(s.dur||1))} h${tr?" · "+esc(tr.name):""}${s.mat?" · 📦 "+esc(s.mat):""}</div>
     </div>`;
   }).join("")||'<span style="color:#999">—</span>';
@@ -3483,8 +3531,8 @@ function printWeek(){
       </div>
       <div style="font-weight:800;font-size:24px;letter-spacing:-.04em;color:#3e4852">ETAF<span style="color:#d81f26">.</span></div>
     </div>
-    ${WKD.deliverable?`<div style="border-left:4px solid #C77E1E;background:#faf6ee;border-radius:8px;padding:8px 12px;margin:12px 0 2px;font-size:12.5px">
-      <b style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#8a6a1e;display:block">${t("wkDeliverable")}</b>${esc(WKD.deliverable)}</div>`:""}
+    ${wkDelivText()?`<div style="border-left:4px solid #C77E1E;background:#faf6ee;border-radius:8px;padding:8px 12px;margin:12px 0 2px;font-size:12.5px">
+      <b style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#8a6a1e;display:block">${t("wkDeliverable")}</b>${esc(wkDelivText())}</div>`:""}
     <table style="width:100%;border-collapse:collapse;margin-top:14px;table-layout:fixed">
       <tr>
         <th style="width:24px"></th>
@@ -3502,6 +3550,53 @@ function printWeek(){
 }
 function closeWeekPrint(){ $("#weekPrint").classList.remove("on"); }
 
+/* ---- Wochenplan aus einer anderen Woche übernehmen (z.B. W11-B aus W11-A) ---- */
+function openWeekCopy(){
+  const list=wkTrainings().filter(x=>String(x.id)!==String(curWeekId));
+  if(!list.length) return;
+  $("#sheetTitle").textContent=t("wkCopyTitle");
+  $("#sheetBody").innerHTML=`<div class="meta" style="margin-bottom:12px">${t("wkCopyHint")}</div>
+    <label class="fld">${t("wkCopySrc")}</label>
+    <select class="inp" id="wcFrom">${list.map(x=>
+      `<option value="${x.id}">${esc(x.code||x.kw||"?")} — ${esc((x.topic||"").slice(0,48))}${x.week&&x.week.sessions?` · ${t("wkSessN",x.week.sessions)}`:""}</option>`).join("")}</select>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
+    <button class="btn primary" onclick="doWeekCopy()">${ic("check",15)}${t("wkCopyDo")}</button>`;
+  openSheet();
+}
+async function doWeekCopy(){
+  const from=val("wcFrom"); if(!from) return;
+  if(LIVE){
+    try{
+      let d=await apiCall("weekplan.copy",{from,to:curWeekId});
+      if(d.needsForce){
+        if(!confirm(t("wkCopyAsk",d.existing))) return;
+        d=await apiCall("weekplan.copy",{from,to:curWeekId,force:1});
+      }
+      closeSheet(); await renderWeek(); toast(t("wkCopied",d.sessions||0),"good");
+      pull().then(()=>buildNav());
+    }catch(e){ toast(e.message,"crit"); }
+  } else {
+    S.weekData=S.weekData||{};
+    const src=S.weekData[from];
+    if(!src||!src.sessions.length){ toast(t("wkEmpty"),"warn"); return; }
+    if((S.weekData[curWeekId]?.sessions||[]).length && !confirm(t("wkCopyAsk",S.weekData[curWeekId].sessions.length))) return;
+    const cur=S.weekData[curWeekId]={sessions:[],plan:{},deliverable:src.deliverable||"",deliverableEn:src.deliverableEn||""};
+    const map={};
+    for(const s of src.sessions){ const n={...s,id:uid("s"),trainerId:null,ppt:"",pptBy:null,pptDue:""}; map[s.id]=n.id; cur.sessions.push(n); }
+    for(const k in (src.plan||{})){ cur.plan[k]=(src.plan[k]||[]).map(x=>map[x]).filter(Boolean); }
+    save(); closeSheet(); renderWeek(); toast(t("wkCopied",cur.sessions.length),"good");
+  }
+}
+
+/* ---- Persönlicher iCal-Abo-Link eines Trainers (in die Zwischenablage) ---- */
+async function copyIcsLink(){
+  try{
+    const d=await apiCall("trainer.icsLink",{id:trEditId});
+    try{ await navigator.clipboard.writeText(d.link); toast(t("icsCopied"),"good"); }
+    catch(_){ prompt(t("icsBtn"), d.link); }
+  }catch(e){ toast(e.message,"crit"); }
+}
+
 /* ---- PowerPoint-Liste der Woche (Schnellpflege) ---- */
 function openPptSheet(){
   const rel=(WKD.sessions||[]).filter(wkPptRelevant);
@@ -3512,7 +3607,7 @@ function openPptSheet(){
     return `<button class="morerow" onclick="closeSheet();openSessEdit('${s.id}')">
       <span class="ppdot ${col}" style="flex:none"></span>
       <span class="rowgrow" style="text-align:left;min-width:0">
-        <span style="display:block;font-weight:650;font-size:13.5px">${esc(s.title)}</span>
+        <span style="display:block;font-weight:650;font-size:13.5px">${esc(sessTitle(s))}</span>
         <span class="meta" style="font-size:12px">${t("ppt_"+(s.ppt||""))}${by?" · "+esc(by.name):""}${s.pptDue?" · "+t("wkPptDue")+" "+esc(s.pptDue):""}</span>
       </span>${ic("pen",15)}</button>`;
   }).join(""):`<div class="empty">${t("wkPptEmpty")}</div>`;
@@ -3632,6 +3727,61 @@ let usersCache=[];
 function meUser(){ return S.me||null; }
 function isAdmin(){ const m=meUser(); return m ? m.role==="admin" : !!S.setupMode; }
 function roleLabel(r){ return r==="admin"?t("roleAdmin"):t("roleEditor"); }
+/* ---- Info-Mail (Digest) je Benutzer: Rhythmus + Inhalte einstellen ---- */
+let digestEditId=null;
+const DG_PARTS=["staffing","ppt","travel","inbox","week","passport"];
+function openDigestEdit(uid){
+  const u=usersCache.find(x=>String(x.id)===String(uid)); if(!u) return;
+  digestEditId=uid;
+  const parts=u.digestParts&&u.digestParts.length?u.digestParts:["staffing","ppt","inbox"];
+  const freq=u.digestFreq||"off";
+  $("#sheetTitle").textContent=t("dgTitle")+" — "+(u.name||u.email);
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:12px">${t("dgHint")}</div>
+    <label class="fld">${t("dgFreq")}</label>
+    <select class="inp" id="dgFreq" onchange="$('#dgDayRow').style.display=this.value==='weekly'?'':'none'">
+      <option value="off" ${freq==="off"?"selected":""}>${t("dgOff")}</option>
+      <option value="daily" ${freq==="daily"?"selected":""}>${t("dgDaily")}</option>
+      <option value="every2" ${freq==="every2"?"selected":""}>${t("dgEvery2")}</option>
+      <option value="weekly" ${freq==="weekly"?"selected":""}>${t("dgWeekly")}</option>
+    </select>
+    <div id="dgDayRow" style="display:${freq==="weekly"?"":"none"}">
+      <label class="fld">${t("dgDay")}</label>
+      <select class="inp" id="dgDay">
+        ${["mon","tue","wed","thu","fri","sat","sun"].map((d,i)=>`<option value="${i+1}" ${(u.digestDay||1)===i+1?"selected":""}>${t("day_"+d)||d}</option>`).join("")}
+      </select>
+    </div>
+    <label class="fld" style="margin-top:12px">${t("dgParts")}</label>
+    ${DG_PARTS.map(p=>`
+      <div style="display:flex;align-items:center;gap:12px;margin:9px 0">
+        <label class="sw"><input type="checkbox" id="dgP-${p}" ${parts.includes(p)?"checked":""}><span></span></label>
+        <span style="font-size:14px" class="rowgrow">${t("dgPart_"+p)}</span>
+      </div>`).join("")}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <button class="btn" onclick="sendDigestTest()">${ic("send",15)}${t("dgTest")}</button>
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="saveDigest()">${ic("check",15)}${t("save")}</button>`;
+  openSheet();
+}
+function dgCollect(){
+  return { id:digestEditId, freq:val("dgFreq"), day:parseInt(val("dgDay")||"1",10),
+    parts:DG_PARTS.filter(p=>$("#dgP-"+p)&&$("#dgP-"+p).checked) };
+}
+async function saveDigest(){
+  if(!LIVE){ toast(t("dgLiveOnly"),"warn"); return; }
+  try{ await apiCall("user.digestSave",dgCollect()); }
+  catch(e){ toast(e.message,"crit"); return; }
+  closeSheet(); renderUsers(); toast(t("dgSaved"),"good");
+}
+async function sendDigestTest(){
+  if(!LIVE){ toast(t("dgLiveOnly"),"warn"); return; }
+  try{
+    await apiCall("user.digestSave",dgCollect());          // erst speichern, dann Probe
+    const d=await apiCall("digest.test",{id:digestEditId});
+    toast(d.sent?t("dgTestSent"):t("dgTestFail"), d.sent?"good":"crit");
+  }catch(e){ toast(e.message,"crit"); }
+}
+
 async function renderUsers(){
   if(!isAdmin()){ $("#v-users").innerHTML=`<div class="panel"><div class="panel-b meta" style="padding:22px">${t("usrNoRights")}</div></div>`; return; }
   if(LIVE){ try{ const d=await apiCall("users.list"); usersCache=d.users||[]; }catch(e){ usersCache=[]; } }
@@ -3646,6 +3796,7 @@ async function renderUsers(){
       <div class="rowacts">
         <span class="pill ${u.active?'good':'neutral'}">${u.active?t("usrActive"):t("usrBlocked")}</span>
         <button class="btn sm" onclick="openUserEdit('${u.id}')">${ic("pen",15)}${t("trEdit")}</button>
+        <button class="btn sm" onclick="openDigestEdit('${u.id}')" title="${t("dgTitle")}">${ic("bell",15)}${t("dgBtn")}${u.digestFreq&&u.digestFreq!=="off"?` <b style="color:var(--good)">·</b>`:""}</button>
         <button class="btn sm" onclick="resendInvite('${u.id}')" title="${t("usrResend")}">${ic("send",15)}</button>
         <button class="btn sm" onclick="toggleUser('${u.id}',${u.active?0:1})" ${me&&me.id===u.id?'disabled style="opacity:.4"':''}>
           ${u.active?t("usrBlock"):t("usrUnblock")}</button>
@@ -4404,7 +4555,7 @@ function agWeekGrid(sessions,plan,tg,trId){
   const dayDate=i=>{ if(!tg.date) return ""; const d=new Date(tg.date+"T00:00:00"); d.setDate(d.getDate()+i);
     return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."; };
   const cell=k=>slots[k].map(id=>{ const s=sess(id); const mine=String(s.trainerId||"")===String(trId);
-    return `<div style="border:1.5px solid ${mine?'var(--crit)':'var(--line)'};border-left:4px solid ${mine?'var(--crit)':(SESS_COL[s.type]||'#8A939A')};border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:11px;line-height:1.35;${mine?'background:rgba(216,31,38,.07);font-weight:650':''}">${esc(s.title)}
+    return `<div style="border:1.5px solid ${mine?'var(--crit)':'var(--line)'};border-left:4px solid ${mine?'var(--crit)':(SESS_COL[s.type]||'#8A939A')};border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:11px;line-height:1.35;${mine?'background:rgba(216,31,38,.07);font-weight:650':''}">${esc(sessTitle(s))}
       <div style="color:var(--faint);font-size:10px">${esc(String(s.dur||1))} h${mine&&tr?` · <b style="color:var(--crit)">${initials(tr.name)}</b>`:""}</div></div>`;
   }).join("")||`<div style="color:var(--faint);font-size:11px">—</div>`;
   return `<div class="ag-h2">${t("agWeekHead")}</div>

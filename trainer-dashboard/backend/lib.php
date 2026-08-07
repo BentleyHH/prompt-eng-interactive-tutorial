@@ -97,7 +97,9 @@ function do_login(string $pin): array {
 function user_public(array $u): array {
   return ['id'=>(string)$u['id'],'email'=>$u['email'],'name'=>$u['name'],
           'role'=>$u['role']??'editor','active'=>((int)($u['active']??1))===1,
-          'lastLogin'=>$u['last_login']??''];
+          'lastLogin'=>$u['last_login']??'',
+          'digestFreq'=>$u['digest_freq']??'off','digestDay'=>(int)($u['digest_day']??1),
+          'digestParts'=>json_decode(($u['digest_parts']??'')?:'[]',true)?:[]];
 }
 
 function auth_token(): ?string {

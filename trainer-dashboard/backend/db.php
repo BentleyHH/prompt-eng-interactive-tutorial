@@ -217,6 +217,13 @@ function ensure_schema(): void {
     created_at VARCHAR(20))$eng");
   // Sitzung kennt den angemeldeten Benutzer
   try{ db()->exec("ALTER TABLE sessions ADD COLUMN user_id INT"); }catch(Throwable $e){}
+  // Info-Mail (Digest) je Benutzer: Häufigkeit, Wochentag, gewählte Inhalte
+  foreach([
+    "digest_freq VARCHAR(12) DEFAULT 'off'",   // off | daily | every2 | weekly
+    "digest_day INT DEFAULT 1",                // 1=Mo … 7=So (nur bei weekly)
+    "digest_parts TEXT",                       // JSON-Liste der Inhalte
+    "digest_last VARCHAR(20)"
+  ] as $col){ try{ db()->exec("ALTER TABLE users ADD COLUMN $col"); }catch(Throwable $e){} }
   // Versionszähler gegen gegenseitiges Überschreiben (optimistisches Sperren)
   foreach(['trainings','trainers','clients'] as $tbl){
     foreach(["version INT DEFAULT 1","updated_at VARCHAR(20)","updated_by VARCHAR(160)"] as $col){

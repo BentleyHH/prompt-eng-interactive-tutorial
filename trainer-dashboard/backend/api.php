@@ -117,6 +117,25 @@ switch($action){
     audit($act?'user.activate':'user.deactivate','user',(string)$uid,$u['name']??'');
     out(['ok'=>true]);
 
+  /* ---- Info-Mail (Digest) je Benutzer: Rhythmus + Inhalte ---- */
+  case 'user.digestSave':
+    require_admin();
+    $uid=(int)($in['id']??0);
+    if(!q("SELECT id FROM users WHERE id=?",[$uid])->fetch()) fail('Benutzer nicht gefunden.',404);
+    $freq=in_array($in['freq']??'',['off','daily','every2','weekly'],true)?$in['freq']:'off';
+    $day=max(1,min(7,(int)($in['day']??1)));
+    $validParts=['staffing','ppt','travel','inbox','week','passport'];
+    $dparts=array_values(array_intersect($validParts,(array)($in['parts']??[])));
+    q("UPDATE users SET digest_freq=?,digest_day=?,digest_parts=? WHERE id=?",[$freq,$day,json_encode($dparts),$uid]);
+    audit('user.digest','user',(string)$uid,'Info-Mail: '.$freq);
+    out(['ok'=>true]);
+
+  case 'digest.test':                 // Probe-Mail sofort verschicken
+    require_admin();
+    $u=q("SELECT * FROM users WHERE id=?",[$in['id']??0])->fetch();
+    if(!$u||empty($u['email'])) fail('Benutzer oder E-Mail-Adresse nicht gefunden.',404);
+    out(['ok'=>true,'sent'=>digest_send($u)?1:0]);
+
   case 'user.sendInvite':             // Einladung/Zurücksetzen erneut schicken
     require_admin();
     $u=q("SELECT * FROM users WHERE id=?",[$in['id']??0])->fetch();
@@ -344,6 +363,45 @@ switch($action){
       q("UPDATE trainings SET plan_slots=? WHERE id=?",[json_encode($plan),$s['training_id']]);
     }
     out(['ok'=>true]);
+
+  /* ---- Kalender-Abo-Link je Trainer (iCal) ---- */
+  case 'trainer.icsLink':
+    require_auth();
+    $trId=(int)($in['id']??0);
+    if(!q("SELECT id FROM trainers WHERE id=?",[$trId])->fetch()) fail('Trainer nicht gefunden.',404);
+    $ik=(string)(cfg()['ics_key']??'');
+    if($ik===''||$ik==='CHANGE_ME_kalender_schluessel') fail('Kein ics_key in config.php gesetzt — bitte einen zufälligen Wert eintragen.');
+    out(['ok'=>true,'link'=>base_url().'/ics.php?key='.rawurlencode($ik).'&trainer='.$trId]);
+
+  /* ---- Wochenplan aus einer anderen Woche übernehmen (Vorlage kopieren) ---- */
+  case 'weekplan.copy':
+    require_auth();
+    $from=(int)($in['from']??0); $to=(int)($in['to']??0);
+    if(!$from||!$to||$from===$to) fail('Bitte Quell- und Zielwoche wählen.');
+    if(!q("SELECT id FROM trainings WHERE id=?",[$from])->fetch() || !q("SELECT id FROM trainings WHERE id=?",[$to])->fetch())
+      fail('Training nicht gefunden.',404);
+    $cnt=(int)q("SELECT COUNT(*) c FROM training_sessions WHERE training_id=?",[$to])->fetch()['c'];
+    if($cnt>0 && empty($in['force'])) out(['ok'=>true,'needsForce'=>true,'existing'=>$cnt]);
+    q("DELETE FROM training_sessions WHERE training_id=?",[$to]);
+    // Inhalte kopieren — Trainer-Zuordnung und PPT-Status bewusst NICHT (neue Woche, neues Team)
+    $map=[];
+    foreach(q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$from])->fetchAll() as $s){
+      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,mat,ppt,sort)
+         VALUES(?,?,?,?,?,?,?, '', ?)",
+        [$to,$s['title'],$s['title_en'],$s['stype'],$s['dur'],$s['descr'],$s['mat']??'',$s['sort']]);
+      $map[(string)$s['id']]=(string)db()->lastInsertId();
+    }
+    $src=q("SELECT plan_slots,deliverable,deliverable_en FROM trainings WHERE id=?",[$from])->fetch();
+    $srcPlan=json_decode($src['plan_slots']?:'{}',true)?:[];
+    $newPlan=[];
+    foreach($srcPlan as $k=>$ids){
+      $newPlan[$k]=array_values(array_filter(array_map(fn($x)=>$map[(string)$x]??null,(array)$ids)));
+    }
+    q("UPDATE trainings SET plan_slots=?, deliverable=COALESCE(NULLIF(deliverable,''),?),
+        deliverable_en=COALESCE(NULLIF(deliverable_en,''),?) WHERE id=?",
+      [json_encode($newPlan),$src['deliverable']??'',$src['deliverable_en']??'',$to]);
+    audit('weekplan.copy','training',(string)$to,'Wochenplan aus Training #'.$from.' übernommen');
+    out(['ok'=>true,'sessions'=>count($map)]);
 
   /* ---- KI-Wochenrhythmus: Sessions didaktisch auf Mo–Fr verteilen lassen ---- */
   case 'weekplan.suggest':

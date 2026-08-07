@@ -17,7 +17,8 @@ if($cfgKey==='' || !hash_equals($cfgKey, $key)){
   exit;
 }
 
-$clientId = isset($_GET['client']) ? (string)$_GET['client'] : '';
+$clientId  = isset($_GET['client']) ? (string)$_GET['client'] : '';
+$trainerId = isset($_GET['trainer']) ? (int)$_GET['trainer'] : 0;   // persönlicher Feed: nur Zusagen dieses Trainers
 
 /* ISO-Woche → Montag (UTC) */
 function iso_week_monday(int $year, int $week): DateTimeImmutable {
@@ -41,12 +42,20 @@ function training_week(array $tg): int {
 $clients = [];
 foreach(q("SELECT * FROM clients")->fetchAll() as $c){ $clients[$c['id']] = $c; }
 
-$sql = "SELECT * FROM trainings";
-$params = [];
-if($clientId!==''){ $sql .= " WHERE client_id=?"; $params[]=$clientId; }
-$rows = q($sql, $params)->fetchAll();
-
-$calName = 'ETAF Trainings'.($clientId!=='' && isset($clients[$clientId]) ? ' · '.$clients[$clientId]['name'] : '');
+if($trainerId>0){
+  $rows = q("SELECT DISTINCT t.* FROM trainings t
+             JOIN requests r ON r.training_id=t.id
+             WHERE r.trainer_id=? AND r.status IN('yes','confirmed')".($clientId!==''?" AND t.client_id=?":""),
+            $clientId!=='' ? [$trainerId,$clientId] : [$trainerId])->fetchAll();
+  $trRow = q("SELECT name FROM trainers WHERE id=?",[$trainerId])->fetch();
+  $calName = 'ETAF Einsätze'.($trRow?' · '.$trRow['name']:'');
+} else {
+  $sql = "SELECT * FROM trainings";
+  $params = [];
+  if($clientId!==''){ $sql .= " WHERE client_id=?"; $params[]=$clientId; }
+  $rows = q($sql, $params)->fetchAll();
+  $calName = 'ETAF Trainings'.($clientId!=='' && isset($clients[$clientId]) ? ' · '.$clients[$clientId]['name'] : '');
+}
 $stamp = gmdate('Ymd\THis\Z');
 
 $out = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//ETAF//Trainer-Koordination//DE",

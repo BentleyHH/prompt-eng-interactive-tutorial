@@ -6,6 +6,101 @@
 require_once __DIR__.'/lib.php';
 require_once __DIR__.'/mailer.php';
 
+/**
+ * Info-Mail (Digest): baut die gewählten Inhalts-Blöcke als HTML.
+ * Blöcke: staffing | ppt | travel | inbox | week | passport
+ */
+function digest_build(array $parts): string {
+  $today=gmdate('Y-m-d'); $out='';
+  $H=fn($t)=>'<div style="font-weight:800;font-size:15px;margin:18px 0 6px;color:#3e4852">'.$t.'</div>';
+  $li=fn($t)=>'<div style="padding:3px 0;font-size:14px;color:#242b31">• '.$t.'</div>';
+  $upcoming=q("SELECT * FROM trainings WHERE (end_date>=? OR end_date IS NULL OR end_date='')
+               ORDER BY (start_date IS NULL), start_date",[$today])->fetchAll();
+  $fmt=fn($tg)=>(($tg['code']??'')?$tg['code'].' · ':'').$tg['topic']
+    .((($tg['start_date']??'')!=='')?' ('.date('d.m.',strtotime($tg['start_date'])).')':'');
+
+  if(in_array('staffing',$parts,true)){
+    $rows=[];
+    foreach($upcoming as $tg){
+      $yes=(int)q("SELECT COUNT(*) c FROM requests WHERE training_id=? AND status IN('yes','confirmed')",[$tg['id']])->fetch()['c'];
+      $ask=(int)q("SELECT COUNT(*) c FROM requests WHERE training_id=? AND status='asked'",[$tg['id']])->fetch()['c'];
+      if($yes<(int)$tg['need_cnt']) $rows[]=$li(htmlspecialchars($fmt($tg))." — <b>$yes/{$tg['need_cnt']}</b> zugesagt".($ask?", $ask angefragt":""));
+      if(count($rows)>=8) break;
+    }
+    $out.=$H('Besetzung').($rows?implode('',$rows):$li('Alle kommenden Trainings sind voll besetzt ✓'));
+  }
+  if(in_array('ppt',$parts,true)){
+    $rows=[];
+    foreach($upcoming as $tg){
+      try{
+        $a=q("SELECT COUNT(*) n, SUM(CASE WHEN ppt='vorhanden' THEN 1 ELSE 0 END) d
+              FROM training_sessions WHERE training_id=? AND stype NOT IN('orga','deliverable')",[$tg['id']])->fetch();
+      }catch(Throwable $e){ break; }
+      $miss=(int)$a['n']-(int)$a['d'];
+      if((int)$a['n']>0 && $miss>0) $rows[]=$li(htmlspecialchars($fmt($tg))." — <b>$miss</b> PowerPoint".($miss===1?'':'s')." fehlen");
+      if(count($rows)>=8) break;
+    }
+    $out.=$H('PowerPoints').($rows?implode('',$rows):$li('Alle PowerPoints der kommenden Wochen sind da ✓'));
+  }
+  if(in_array('travel',$parts,true)){
+    $rows=[];
+    foreach($upcoming as $tg){
+      $n=(int)q("SELECT COUNT(*) c FROM requests r
+                 LEFT JOIN travel tv ON tv.training_id=r.training_id AND tv.trainer_id=r.trainer_id
+                 WHERE r.training_id=? AND r.status IN('yes','confirmed')
+                   AND (tv.id IS NULL OR ((tv.flight_out IS NULL OR tv.flight_out='') AND (tv.arrival IS NULL OR tv.arrival='')))",[$tg['id']])->fetch()['c'];
+      if($n>0) $rows[]=$li(htmlspecialchars($fmt($tg))." — <b>$n</b> Trainer ohne Reisedaten");
+      if(count($rows)>=8) break;
+    }
+    $out.=$H('Reisen & Flüge').($rows?implode('',$rows):$li('Reisedaten der zugesagten Trainer sind vollständig ✓'));
+  }
+  if(in_array('inbox',$parts,true)){
+    $fb=(int)q("SELECT COUNT(*) c FROM plan_tokens WHERE confirm_status='issue' AND note IS NOT NULL AND note<>'' AND resolved_at IS NULL")->fetch()['c'];
+    $fm=0; try{ $fm=(int)q("SELECT COUNT(*) c FROM travel_mail WHERE status='new'")->fetch()['c']; }catch(Throwable $e){}
+    $out.=$H('Posteingang').(($fb||$fm)
+      ? ($fb?$li("<b>$fb</b> offene Rückmeldung".($fb===1?'':'en')." von Trainern"):'')
+        .($fm?$li("<b>$fm</b> neue Flugpost-Mail".($fm===1?'':'s')." zu prüfen"):'')
+      : $li('Keine offenen Rückmeldungen ✓'));
+  }
+  if(in_array('week',$parts,true)){
+    $nx=null; foreach($upcoming as $tg){ if(($tg['start_date']??'')>=$today){ $nx=$tg; break; } }
+    if($nx){
+      $team=q("SELECT tr.name FROM requests r JOIN trainers tr ON tr.id=r.trainer_id
+               WHERE r.training_id=? AND r.status IN('yes','confirmed')",[$nx['id']])->fetchAll(PDO::FETCH_COLUMN);
+      $out.=$H('Nächstes Training')
+        .$li('<b>'.htmlspecialchars((($nx['code']??'')?$nx['code'].' — ':'').$nx['topic']).'</b>')
+        .$li(htmlspecialchars(($nx['city']??'').' · '.fmt_date_range($nx['start_date']??null,$nx['end_date']??null,'de')))
+        .$li('Team: '.($team?htmlspecialchars(implode(', ',$team)):'— noch niemand zugesagt —'))
+        .((($nx['deliverable']??'')!=='')?$li('Wochenergebnis: '.htmlspecialchars($nx['deliverable'])):'');
+    }
+  }
+  if(in_array('passport',$parts,true)){
+    $lead=(int)(config_get('passport_lead_days')??180); $rows=[];
+    foreach(q("SELECT name,passport_expiry FROM trainers WHERE passport_expiry IS NOT NULL AND passport_expiry<>''")->fetchAll() as $trr){
+      $exp=strtotime((string)$trr['passport_expiry']); if($exp===false) continue;
+      $days=(int)floor(($exp-strtotime($today))/86400);
+      if($days<=$lead) $rows[]=$li(htmlspecialchars($trr['name']).' — Reisepass '.($days<0?'<b>abgelaufen</b>':'läuft in <b>'.$days.' Tagen</b> ab'));
+    }
+    if($rows) $out.=$H('Reisepässe').implode('',array_slice($rows,0,8));
+  }
+  return $out;
+}
+
+/** Digest-Mail an einen Benutzer schicken (auch für die Probe-Mail genutzt). */
+function digest_send(array $u): bool {
+  $parts=json_decode($u['digest_parts']?:'[]',true)?:['staffing','ppt','inbox'];
+  $first=explode(' ',trim((string)($u['name']??'')))[0]?:'';
+  $dash=preg_replace('#/backend$#','',base_url());
+  $html=email_html("Guten Morgen".($first?" $first":"").",\n\nhier dein aktueller ETAF-Überblick.",
+    digest_build($parts).cta_button($dash,'Zum Cockpit'));
+  $subj='ETAF Info — '.date('d.m.Y');
+  $ok=send_email($u['email'],$u['name']??'',$subj,$html);
+  $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+  q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+     VALUES(?,?,?,?,?,?,?,?)",[null,null,$u['email'],$subj,'Info-Mail (Digest)','de',$st,now()]);
+  return $ok;
+}
+
 function run_automation(): array {
   $reminderH=(int)(config_get('reminder_hours') ?? 48);
   $escalateH=(int)(config_get('escalate_hours') ?? 72);
@@ -187,6 +282,23 @@ function run_automation(): array {
     }
   }catch(Throwable $e){ /* Sicherung darf den Rest der Automatik nicht stoppen */ }
 
+  /* 6b) Info-Mails (Digest) je Benutzer — morgens, gemäß eingestelltem Rhythmus */
+  $digestSent=0;
+  try{
+    if((int)gmdate('H')>=5){                       // frühestens ~07:00 deutscher Zeit
+      $todayD=gmdate('Y-m-d');
+      foreach(q("SELECT * FROM users WHERE active=1 AND email<>'' AND digest_freq IS NOT NULL AND digest_freq<>'off'")->fetchAll() as $u){
+        $lastDay=substr((string)($u['digest_last']??''),0,10);
+        if($lastDay===$todayD) continue;           // heute schon verschickt
+        $due = ($u['digest_freq']==='daily')
+          || ($u['digest_freq']==='every2' && (!$lastDay || (strtotime($todayD)-strtotime($lastDay))>=2*86400))
+          || ($u['digest_freq']==='weekly' && (int)gmdate('N')===max(1,min(7,(int)($u['digest_day']?:1))));
+        if(!$due) continue;
+        if(digest_send($u)){ q("UPDATE users SET digest_last=? WHERE id=?",[now(),$u['id']]); $digestSent++; }
+      }
+    }
+  }catch(Throwable $e){ /* Digest darf den Rest nicht stoppen */ }
+
   /* 7) Aufräumen: abgelaufene Sitzungen, alte Einmal-Links, alte Login-Sperren */
   try{
     $maxDays=(int)(cfg()['session_days']??14);
@@ -197,5 +309,5 @@ function run_automation(): array {
 
   return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,
           'passport'=>$passport,'mail_fetched'=>$mailFetched,'mail_flights'=>$mailFlights,
-          'backup'=>$backupFile,'auto_advance'=>$autoAdv];
+          'digest'=>$digestSent,'backup'=>$backupFile,'auto_advance'=>$autoAdv];
 }
