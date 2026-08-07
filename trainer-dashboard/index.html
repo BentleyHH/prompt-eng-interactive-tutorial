@@ -925,7 +925,9 @@ const L={
   wkNoTrainings:"Noch keine Trainings angelegt.",
   wkSaved:"Wochenplan gespeichert", wkSessSaved:"Session gespeichert", wkSessDeleted:"Session gelöscht",
   wkTeam:"Team der Woche", wkNoTeam:"Noch niemand zugesagt — Besetzung über das Training öffnen.",
-  wkTrDragHint:"Auf eine Session ziehen, um sie zuzuteilen (Klick öffnet das Training)",
+  wkTrDragHint:"Auf eine Session ziehen, um sie zuzuteilen — mehrere Trainer je Session möglich (Klick öffnet das Training)",
+  wkTrAdd:"+ Trainer hinzufügen …",
+  wkAlreadyAssigned:n=>`${n} ist dieser Session bereits zugeteilt.`,
   wkTrCnt:n=> n===1 ? "1 Einsatz in dieser Woche" : `${n} Einsätze in dieser Woche`,
   wkAssigned:(s,n)=>`„${s.length>32?s.slice(0,32)+"…":s}“ → ${n}`,
   wkStage:s=>`Stage ${s}`, wkDays:"Mo–Fr",
@@ -1289,7 +1291,9 @@ const L={
   wkNoTrainings:"No trainings yet.",
   wkSaved:"Week plan saved", wkSessSaved:"Session saved", wkSessDeleted:"Session deleted",
   wkTeam:"Week team", wkNoTeam:"Nobody confirmed yet — open the training to build the team.",
-  wkTrDragHint:"Drag onto a session to assign (click opens the training)",
+  wkTrDragHint:"Drag onto a session to assign — multiple trainers per session are fine (click opens the training)",
+  wkTrAdd:"+ Add trainer …",
+  wkAlreadyAssigned:n=>`${n} is already assigned to this session.`,
   wkTrCnt:n=> n===1 ? "1 session this week" : `${n} sessions this week`,
   wkAssigned:(s,n)=>`“${s.length>32?s.slice(0,32)+"…":s}” → ${n}`,
   wkStage:s=>`Stage ${s}`, wkDays:"Mon–Fri",
@@ -3127,6 +3131,8 @@ function openWeek(id){ curWeekId=id; if(route!=="week") go("week"); else renderW
 function wkPptRelevant(s){ return s.type!=="orga" && s.type!=="deliverable"; }
 /* Titel/Deliverable in der UI-Sprache (EN-Fassungen sind aus dem Programm importiert). */
 function sessTitle(s){ return (S.lang==="en" && s.titleEn) ? s.titleEn : (s.title||""); }
+/* Co-Teaching: Liste der Trainer-IDs einer Session (immer als Strings). */
+function sessTrIds(s){ return ((s&&s.trainerIds)||[]).map(String); }
 function wkDelivText(){ return (S.lang==="en" && WKD.deliverableEn) ? WKD.deliverableEn : (WKD.deliverable||""); }
 function wkSess(id){ return (WKD&&WKD.sessions||[]).find(s=>String(s.id)===String(id)); }
 function wkCurTg(){ return S.trainings.find(x=>String(x.id)===String(curWeekId)); }
@@ -3193,8 +3199,8 @@ function wkConflictIds(){
   const {slots}=wkPlacement(); const bad=new Set();
   for(const k of WK_SLOTKEYS){
     const byTr={};
-    for(const id of slots[k]){ const s=wkSess(id); const tid=s&&s.trainerId;
-      if(tid) (byTr[tid]=byTr[tid]||[]).push(id); }
+    for(const id of slots[k]){ const s=wkSess(id);
+      for(const tid of sessTrIds(s)) (byTr[tid]=byTr[tid]||[]).push(id); }
     for(const tid in byTr) if(byTr[tid].length>1) byTr[tid].forEach(id=>bad.add(id));
   }
   return bad;
@@ -3202,7 +3208,9 @@ function wkConflictIds(){
 function wkTile(id){
   const s=wkSess(id); if(!s) return "";
   const col=SESS_COL[s.type]||"#8A939A";
-  const tr=s.trainerId?S.trainers.find(x=>String(x.id)===String(s.trainerId)):null;
+  const trs=sessTrIds(s).map(tid=>S.trainers.find(x=>String(x.id)===tid)).filter(Boolean);
+  const avs=trs.slice(0,3).map(tr2=>`<span class="av" style="width:18px;height:18px;font-size:9px;background:${tr2.color||'#607d94'}" title="${esc(tr2.name)}">${initials(tr2.name)}</span>`).join("")
+    +(trs.length>3?`<span class="meta" title="${esc(trs.slice(3).map(x=>x.name).join(", "))}">+${trs.length-3}</span>`:"");
   const conflict=wkConflictSet.has(String(id));
   const dot=wkPptRelevant(s)
     ? `<span class="ppdot ${s.ppt==='vorhanden'?'g':s.ppt==='inArbeit'?'y':'r'}" title="PPT: ${t('ppt_'+(s.ppt||''))}"></span>`:"";
@@ -3213,7 +3221,7 @@ function wkTile(id){
     <div class="st">${esc(sessTitle(s))}</div>
     <div class="sm"><span class="tag" style="border-color:${col};color:${col}">${t("type_"+(s.type||"theorie"))}</span>
       <span>${esc(String(s.dur||1))} h</span>
-      ${tr?`<span class="av" style="width:18px;height:18px;font-size:9px;background:${tr.color||'#607d94'}" title="${esc(tr.name)}">${initials(tr.name)}</span>`:""}
+      ${avs}
       ${s.mat?`<span title="${esc(t("wkMat")+": "+s.mat)}">📦</span>`:""}
       ${conflict?`<span title="${esc(t("wkConflict"))}" style="color:var(--crit);font-weight:800">⚠</span>`:""}
       ${dot}</div></div>`;
@@ -3233,7 +3241,7 @@ function drawWeekBody(){
     .map(x=>S.trainers.find(tr2=>tr2.id===x.trainerId)).filter(Boolean);
   const teamHtml=team.length
     ? team.map(tr2=>{
-        const cnt=(WKD.sessions||[]).filter(s=>String(s.trainerId||"")===String(tr2.id)).length;
+        const cnt=(WKD.sessions||[]).filter(s=>sessTrIds(s).includes(String(tr2.id))).length;
         return `<span class="tmchip" draggable="true" title="${t("wkTrDragHint")}"
           ondragstart="wkTrDragStart(event,'${tr2.id}')" ondragend="wkDragEnd()" onclick="openDetail('${tg.id}')">
           <span class="av" style="width:22px;height:22px;font-size:10px;background:${tr2.color||'#607d94'}">${initials(tr2.name)}</span>${esc(tr2.name)}${cnt?`<b class="tmcnt" title="${t("wkTrCnt",cnt)}">${cnt}×</b>`:""}</span>`;
@@ -3340,15 +3348,17 @@ async function wkTileDrop(ev){
 }
 async function assignTrainerToSess(sid,trId){
   const s=wkSess(sid); if(!s) return;
-  if(String(s.trainerId||"")===String(trId)) return;
-  s.trainerId=String(trId);
+  const tr=S.trainers.find(x=>String(x.id)===String(trId));
+  const ids=sessTrIds(s);
+  // Co-Teaching: Hinzufügen statt Ersetzen — mehrere Trainer je Session sind normal.
+  if(ids.includes(String(trId))){ toast(t("wkAlreadyAssigned", tr?tr.name:"?"),"warn"); return; }
+  ids.push(String(trId)); s.trainerIds=ids;
   if(LIVE){
     try{ await apiCall("session.save",{training:curWeekId,id:sid,title:s.title,titleEn:s.titleEn||"",
-      type:s.type,dur:s.dur,desc:s.desc||"",trainerId:trId,ppt:s.ppt||"",pptBy:s.pptBy||0,pptDue:s.pptDue||"",mat:s.mat||""}); }
+      type:s.type,dur:s.dur,desc:s.desc||"",trainerIds:ids,ppt:s.ppt||"",pptBy:s.pptBy||0,pptDue:s.pptDue||"",mat:s.mat||""}); }
     catch(e){ toast(e.message,"crit"); return; }
   } else save();
   drawWeekBody();
-  const tr=S.trainers.find(x=>String(x.id)===String(trId));
   if(wkConflictSet.has(String(sid))) toast(t("wkConflictToast", tr?tr.name:"?"),"warn");
   else toast(t("wkAssigned", s.title, tr?tr.name:"?"),"good");
 }
@@ -3397,9 +3407,33 @@ function wkTrainerOptions(sel){
     +(team.length?`<optgroup label="${t("wkTeam")}">${team.map(opt).join("")}</optgroup>`:"")
     +`<optgroup label="${t("nav_trainers")}">${rest.map(opt).join("")}</optgroup>`;
 }
+let wkEdTrainers=[];   // Arbeitsliste der Trainer im Session-Editor (Co-Teaching)
+function wsDrawTrainers(){
+  const box=$("#wsTrList"); if(!box) return;
+  box.innerHTML=wkEdTrainers.length?wkEdTrainers.map(tid=>{
+    const tr2=S.trainers.find(x=>String(x.id)===String(tid));
+    return `<span class="tmchip" style="cursor:default">
+      <span class="av" style="width:22px;height:22px;font-size:10px;background:${tr2?tr2.color||'#607d94':'#607d94'}">${tr2?initials(tr2.name):"?"}</span>
+      ${esc(tr2?tr2.name:"?")}
+      <button onclick="wsRemoveTrainer('${tid}')" style="border:none;background:none;cursor:pointer;color:var(--crit);font-weight:800;font-size:14px;padding:0 2px">×</button></span>`;
+  }).join(""):`<span class="meta">${t("wkTrainerNone")}</span>`;
+  const tg=wkCurTg();
+  const teamIds=((tg&&tg.roster)||[]).filter(x=>["yes","confirmed","maybe","asked"].includes(x.status)).map(x=>String(x.trainerId));
+  const opt=tr2=>`<option value="${tr2.id}">${esc(tr2.name)}</option>`;
+  const avail=S.trainers.filter(tr2=>!wkEdTrainers.includes(String(tr2.id)));
+  const team=avail.filter(tr2=>teamIds.includes(String(tr2.id)));
+  const rest=avail.filter(tr2=>!teamIds.includes(String(tr2.id))).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const sel=$("#wsTrAdd");
+  if(sel) sel.innerHTML=`<option value="">${t("wkTrAdd")}</option>`
+    +(team.length?`<optgroup label="${t("wkTeam")}">${team.map(opt).join("")}</optgroup>`:"")
+    +`<optgroup label="${t("nav_trainers")}">${rest.map(opt).join("")}</optgroup>`;
+}
+function wsAddTrainer(tid){ if(!tid||wkEdTrainers.includes(String(tid))) return; wkEdTrainers.push(String(tid)); wsDrawTrainers(); }
+function wsRemoveTrainer(tid){ wkEdTrainers=wkEdTrainers.filter(x=>x!==String(tid)); wsDrawTrainers(); }
 function openSessEdit(sid){
   wkEditSid=sid;
   const s=sid?wkSess(sid):null;
+  wkEdTrainers=s?sessTrIds(s).slice():[];
   const {slots}=wkPlacement();
   let curSlot="bench";
   if(sid) for(const k of WK_SLOTKEYS) if(slots[k].includes(String(sid))) curSlot=k;
@@ -3421,7 +3455,8 @@ function openSessEdit(sid){
     <label class="fld">${t("wkDesc")}</label>
     <textarea id="wsDesc" style="min-height:90px">${esc(s?s.desc||"":"")}</textarea>
     <label class="fld">${t("wkTrainer")} <span class="meta">${t("wkTeamHint")}</span></label>
-    <select class="inp" id="wsTrainer">${wkTrainerOptions(s?s.trainerId:"")}</select>
+    <div id="wsTrList" style="display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 8px"></div>
+    <select class="inp" id="wsTrAdd" onchange="wsAddTrainer(this.value);this.value=''"></select>
     <label class="fld">${t("wkMat")}</label>
     <input class="inp" id="wsMat" value="${esc(s?s.mat||"":"")}" placeholder="${t("wkMatPh")}">
     <div class="fldrow" style="margin-top:4px">
@@ -3443,13 +3478,14 @@ function openSessEdit(sid){
     <div class="spacer"></div>
     <button class="btn primary" onclick="saveSess()">${ic("check",15)}${t("save")}</button>`;
   openSheet();
+  wsDrawTrainers();
 }
 async function saveSess(){
   const title=val("wsTitle").trim();
   if(!title){ toast(t("wkTitle")+"?","crit"); return; }
   const data={ training:curWeekId, id:wkEditSid||0, title, titleEn:val("wsTitleEn").trim(),
     type:val("wsType"), dur:val("wsDur").trim()||"1", desc:val("wsDesc"),
-    trainerId:val("wsTrainer")||0, ppt:val("wsPpt"), pptBy:val("wsPptBy")||0, pptDue:val("wsPptDue"),
+    trainerIds:wkEdTrainers.slice(), ppt:val("wsPpt"), pptBy:val("wsPptBy")||0, pptDue:val("wsPptDue"),
     mat:val("wsMat").trim() };
   let sid=wkEditSid;
   if(LIVE){
@@ -3459,7 +3495,7 @@ async function saveSess(){
     let s=sid?wkSess(sid):null;
     if(!s){ s={id:uid("s")}; WKD.sessions.push(s); sid=s.id; }
     Object.assign(s,{title:data.title,titleEn:data.titleEn,type:data.type,dur:data.dur,desc:data.desc,
-      trainerId:data.trainerId?String(data.trainerId):null,ppt:data.ppt,
+      trainerIds:data.trainerIds.slice(),ppt:data.ppt,
       pptBy:data.pptBy?String(data.pptBy):null,pptDue:data.pptDue,mat:data.mat});
     save();
   }
@@ -3468,7 +3504,7 @@ async function saveSess(){
     let s=wkSess(sid);
     if(!s){ s={id:String(sid)}; WKD.sessions.push(s); }
     Object.assign(s,{title:data.title,titleEn:data.titleEn,type:data.type,dur:data.dur,desc:data.desc,
-      trainerId:data.trainerId?String(data.trainerId):null,ppt:data.ppt,
+      trainerIds:data.trainerIds.slice(),ppt:data.ppt,
       pptBy:data.pptBy?String(data.pptBy):null,pptDue:data.pptDue,mat:data.mat});
   }
   const slot=val("wsSlot");
@@ -3521,11 +3557,11 @@ function printWeek(){
   const cl=clientOf(tg);
   const cell=key=>slots[key].map(id=>{
     const s=wkSess(id); if(!s) return "";
-    const tr=s.trainerId?S.trainers.find(x=>String(x.id)===String(s.trainerId)):null;
+    const trNames=sessTrIds(s).map(tid=>{const x=S.trainers.find(y=>String(y.id)===tid);return x?x.name:null;}).filter(Boolean);
     const col=SESS_COL[s.type]||"#8A939A";
     return `<div style="border-left:3px solid ${col};padding:2px 0 2px 7px;margin:0 0 6px">
       <b style="font-size:9.5pt">${esc(sessTitle(s))}</b>
-      <div style="font-size:8pt;color:#555">${t("type_"+(s.type||"theorie"))} · ${esc(String(s.dur||1))} h${tr?" · "+esc(tr.name):""}${s.mat?" · 📦 "+esc(s.mat):""}</div>
+      <div style="font-size:8pt;color:#555">${t("type_"+(s.type||"theorie"))} · ${esc(String(s.dur||1))} h${trNames.length?" · "+esc(trNames.join(", ")):""}${s.mat?" · 📦 "+esc(s.mat):""}</div>
     </div>`;
   }).join("")||'<span style="color:#999">—</span>';
   const rel=(WKD.sessions||[]).filter(wkPptRelevant);
@@ -3590,7 +3626,7 @@ async function doWeekCopy(){
     if((S.weekData[curWeekId]?.sessions||[]).length && !confirm(t("wkCopyAsk",S.weekData[curWeekId].sessions.length))) return;
     const cur=S.weekData[curWeekId]={sessions:[],plan:{},deliverable:src.deliverable||"",deliverableEn:src.deliverableEn||""};
     const map={};
-    for(const s of src.sessions){ const n={...s,id:uid("s"),trainerId:null,ppt:"",pptBy:null,pptDue:""}; map[s.id]=n.id; cur.sessions.push(n); }
+    for(const s of src.sessions){ const n={...s,id:uid("s"),trainerIds:[],ppt:"",pptBy:null,pptDue:""}; map[s.id]=n.id; cur.sessions.push(n); }
     for(const k in (src.plan||{})){ cur.plan[k]=(src.plan[k]||[]).map(x=>map[x]).filter(Boolean); }
     save(); closeSheet(); renderWeek(); toast(t("wkCopied",cur.sessions.length),"good");
   }
@@ -4562,7 +4598,7 @@ function agWeekGrid(sessions,plan,tg,trId){
   const tr=S.trainers.find(x=>String(x.id)===String(trId));
   const dayDate=i=>{ if(!tg.date) return ""; const d=new Date(tg.date+"T00:00:00"); d.setDate(d.getDate()+i);
     return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."; };
-  const cell=k=>slots[k].map(id=>{ const s=sess(id); const mine=String(s.trainerId||"")===String(trId);
+  const cell=k=>slots[k].map(id=>{ const s=sess(id); const mine=sessTrIds(s).includes(String(trId));
     return `<div style="border:1.5px solid ${mine?'var(--crit)':'var(--line)'};border-left:4px solid ${mine?'var(--crit)':(SESS_COL[s.type]||'#8A939A')};border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:11px;line-height:1.35;${mine?'background:rgba(216,31,38,.07);font-weight:650':''}">${esc(sessTitle(s))}
       <div style="color:var(--faint);font-size:10px">${esc(String(s.dur||1))} h${mine&&tr?` · <b style="color:var(--crit)">${initials(tr.name)}</b>`:""}</div></div>`;
   }).join("")||`<div style="color:var(--faint);font-size:11px">—</div>`;

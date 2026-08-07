@@ -385,7 +385,11 @@ function trainer_week_sessions(int $tgId, int $trId): array {
     foreach((array)($plan[$k]??[]) as $sid){ $pos[(string)$sid]=['slot'=>$k,'ord'=>$ord++]; }
   }
   $rows=[];
-  foreach(q("SELECT * FROM training_sessions WHERE training_id=? AND trainer_id=? ORDER BY sort,id",[$tgId,$trId])->fetchAll() as $s){
+  foreach(q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$tgId])->fetchAll() as $s){
+    // Co-Teaching: Trainer-Liste (Alt-Daten: Einzelspalte)
+    $ids=json_decode(($s['trainer_ids']??'')?:'',true);
+    if(!is_array($ids)) $ids=$s['trainer_id']?[(string)$s['trainer_id']]:[];
+    if(!in_array((string)$trId, array_map('strval',$ids), true)) continue;
     $p=$pos[(string)$s['id']]??null;
     $day=null; $half=null;
     if($p){ [$day,$half]=explode('_',$p['slot']); }

@@ -154,7 +154,9 @@ $na = $L['nodata'];
         $out='';
         foreach((array)($planW[$key]??[]) as $sid){
           $s2=$byId[(string)$sid]??null; if(!$s2) continue;
-          $mine=((string)($s2['trainer_id']??''))===(string)$req['trid'];
+          $ids2=json_decode(($s2['trainer_ids']??'')?:'',true);
+          if(!is_array($ids2)) $ids2=$s2['trainer_id']?[(string)$s2['trainer_id']]:[];
+          $mine=in_array((string)$req['trid'], array_map('strval',$ids2), true);
           $title=($lang==='en'&&($s2['title_en']??'')!=='')?$s2['title_en']:$s2['title'];
           $out.='<div style="border:1.5px solid '.($mine?'#D81F26':'#e2e5e8').';border-left:4px solid '.($mine?'#D81F26':'#8A939A').';border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:10.5px;line-height:1.35;'.($mine?'background:#fdf1f1;font-weight:600':'').'">'
             .e($title).'<div style="color:#8a939a;font-size:9.5px">'.e((string)$s2['dur']).' h'.($mine?' · <b style="color:#D81F26">'.e($ini).'</b>':'').'</div></div>';

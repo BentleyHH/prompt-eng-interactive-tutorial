@@ -257,6 +257,15 @@ function ensure_schema(): void {
   ] as $col){ try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){} }
   // Benötigtes Material je Session (Freitext, z.B. "20× DVI-Kit, Beamer")
   try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN mat TEXT"); }catch(Throwable $e){}
+  // Co-Teaching: MEHRERE Trainer je Session (JSON-Liste). Alt-Bestand aus der
+  // früheren Einzelspalte trainer_id einmalig übernehmen (nur solange NULL —
+  // eine bewusst geleerte Liste '[]' wird nie wieder überschrieben).
+  try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN trainer_ids TEXT"); }catch(Throwable $e){}
+  try{
+    foreach(q("SELECT id,trainer_id FROM training_sessions WHERE trainer_id IS NOT NULL AND trainer_ids IS NULL")->fetchAll() as $ms){
+      q("UPDATE training_sessions SET trainer_ids=? WHERE id=?",[json_encode([(string)$ms['trainer_id']]),$ms['id']]);
+    }
+  }catch(Throwable $e){}
   // Einmal-Import der Programm-Inhalte (V3.2) über die Block-Codes (W1…Final)
   if((int)q("SELECT COUNT(*) c FROM training_sessions")->fetch()['c']===0){
     try{ import_programme_sessions(); }catch(Throwable $e){}

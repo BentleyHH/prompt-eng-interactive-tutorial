@@ -317,12 +317,15 @@ switch($action){
     if(!$tg) fail('Training nicht gefunden.',404);
     $rows=q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$tid])->fetchAll();
     out(['ok'=>true,
-      'sessions'=>array_map(fn($r)=>[
+      'sessions'=>array_map(function($r){
+        $ids=json_decode(($r['trainer_ids']??'')?:'',true);
+        if(!is_array($ids)) $ids=$r['trainer_id']?[(string)$r['trainer_id']]:[];
+        return [
         'id'=>(string)$r['id'],'title'=>$r['title'],'titleEn'=>$r['title_en'],
         'type'=>$r['stype'],'dur'=>$r['dur'],'desc'=>$r['descr'],
-        'trainerId'=>$r['trainer_id']?(string)$r['trainer_id']:null,
+        'trainerIds'=>array_values(array_map('strval',$ids)),
         'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,'pptDue'=>$r['ppt_due']??'',
-        'mat'=>$r['mat']??''],$rows),
+        'mat'=>$r['mat']??''];},$rows),
       'plan'=>json_decode($tg['plan_slots']?:'{}',true)?:[],
       'deliverable'=>$tg['deliverable']??'','deliverableEn'=>$tg['deliverable_en']??'',
       'stage'=>$tg['stage']??'','star'=>(int)($tg['star']??0)]);
@@ -336,15 +339,18 @@ switch($action){
     $ppt=in_array($in['ppt']??'',['','inArbeit','vorhanden'],true)?$in['ppt']:'';
     $due=trim((string)($in['pptDue']??''));
     if($due!=='' && !preg_match('/^\d{4}-\d{2}-\d{2}$/',$due)) $due='';
+    // Co-Teaching: Liste der Trainer (leer = noch offen)
+    $tids=array_values(array_unique(array_filter(array_map('intval',(array)($in['trainerIds']??[])))));
+    $tidsJson=json_encode(array_map('strval',$tids));
     $f=[$title, trim((string)($in['titleEn']??'')), $type, (string)($in['dur']??'1'),
-        (string)($in['desc']??''), (int)($in['trainerId']??0)?:null, $ppt, (int)($in['pptBy']??0)?:null, $due,
+        (string)($in['desc']??''), $tidsJson, $ppt, (int)($in['pptBy']??0)?:null, $due,
         trim((string)($in['mat']??''))];
     if($sid && q("SELECT id FROM training_sessions WHERE id=? AND training_id=?",[$sid,$tid])->fetch()){
-      q("UPDATE training_sessions SET title=?,title_en=?,stype=?,dur=?,descr=?,trainer_id=?,ppt=?,ppt_by=?,ppt_due=?,mat=? WHERE id=?",
+      q("UPDATE training_sessions SET title=?,title_en=?,stype=?,dur=?,descr=?,trainer_ids=?,ppt=?,ppt_by=?,ppt_due=?,mat=?,trainer_id=NULL WHERE id=?",
         array_merge($f,[$sid]));
     } else {
       $mx=(int)q("SELECT COALESCE(MAX(sort),0) m FROM training_sessions WHERE training_id=?",[$tid])->fetch()['m'];
-      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,trainer_id,ppt,ppt_by,ppt_due,mat,sort)
+      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,trainer_ids,ppt,ppt_by,ppt_due,mat,sort)
          VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", array_merge([$tid],$f,[$mx+1]));
       $sid=(int)db()->lastInsertId();
     }
