@@ -215,6 +215,12 @@ function ensure_schema(): void {
     user_id INT, user_name VARCHAR(160), action VARCHAR(48),
     entity VARCHAR(32), entity_id VARCHAR(32), summary VARCHAR(255),
     created_at VARCHAR(20))$eng");
+  // Rückgängig/Wiederholen: Datenstand vor und nach der Änderung
+  foreach([
+    "undo_before $longtext","undo_after $longtext",
+    "undo_spec TEXT",           // welche Tabellen/Zeilen betroffen sind
+    "undone_at VARCHAR(20)"
+  ] as $col){ try{ db()->exec("ALTER TABLE activity ADD COLUMN $col"); }catch(Throwable $e){} }
   // Sitzung kennt den angemeldeten Benutzer
   try{ db()->exec("ALTER TABLE sessions ADD COLUMN user_id INT"); }catch(Throwable $e){}
   // Info-Mail (Digest) je Benutzer: Häufigkeit, Wochentag, gewählte Inhalte

@@ -587,6 +587,12 @@
   .sess .st{font-weight:650;line-height:1.3;margin-bottom:4px;overflow-wrap:anywhere}
   .sess .sm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--muted);font-size:11px}
   .sess .sm .tag{padding:0 5px;font-size:10px}
+  /* Rückgängig / Wiederholen oben in der Kopfzeile */
+  .undogrp{display:inline-flex;gap:6px}
+  .undogrp .btn{font-size:15px;line-height:1;padding:9px 11px}
+  .undogrp .btn[disabled]{opacity:.4;cursor:default}
+  .undolbl{margin-left:7px;font-size:13px}
+  @media(max-width:900px){ .undolbl{display:none} }
   .btnspin{width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;
     display:inline-block;animation:wkrot .8s linear infinite;vertical-align:-2px;margin-right:8px;flex:none}
   @keyframes wkrot{to{transform:rotate(360deg)}}
@@ -711,6 +717,10 @@
         <div class="sub" id="ts"></div>
       </div>
       <div class="spacer"></div>
+      <span class="undogrp">
+        <button class="btn" id="undoBtn" onclick="doUndo()" disabled>↶<span class="undolbl">Rückgängig</span></button>
+        <button class="btn" id="redoBtn" onclick="doRedo()" disabled>↷</button>
+      </span>
       <span class="sub synct" id="syncTime"></span>
       <button class="btn" id="syncBtn" onclick="syncNow()" title="Aktualisieren">
         <span id="syncIcon"></span><span id="syncLbl" class="synclbl">Aktualisieren</span>
@@ -880,6 +890,7 @@ async function pull(){
   if(d.matPresets)S.matPresets=d.matPresets;
   S.me=d.me||null; S.setupMode=!!d.setupMode;
   S.flightMailNew=d.flightMailNew||0;
+  S.undo=d.undo||null; drawUndo();
 }
 /* Nach jedem pull() zeigt S.trainings frische Objekte — curTg muss neu
    aufgelöst werden, sonst rendert die Detailansicht veraltete Daten. */
@@ -907,6 +918,58 @@ async function syncNow(){
   catch(e){ toast(t("syncFail"),"crit"); }
   finally{ syncing=false; if(b)b.classList.remove("spin"); }
 }
+/* ============================================================
+   RÜCKGÄNGIG / WIEDERHOLEN — gilt für alles: Trainings, Trainer, Besetzung,
+   Wochenplan, Material, Vorlagen … Live wird der Datenstand serverseitig
+   gesichert (auch Änderungen von Kolleginnen und Kollegen lassen sich so
+   zurücknehmen); im Demo-Modus liegt der Stapel im Browser.
+   ============================================================ */
+function undoInfo(){
+  if(!LIVE) return { undo: demoUndo.length?{summary:t("undoStep")}:null,
+                     redo: demoRedo.length?{summary:t("undoStep")}:null };
+  return (S.undo)||{undo:null,redo:null};
+}
+function drawUndo(){
+  const i=undoInfo(), ub=$("#undoBtn"), rb=$("#redoBtn");
+  if(!ub||!rb) return;
+  ub.disabled=!i.undo; rb.disabled=!i.redo;
+  ub.title = i.undo ? t("undoTip", i.undo.summary||"", i.undo.by||"") : t("undoNothing");
+  rb.title = i.redo ? t("redoTip", i.redo.summary||"") : t("redoNothing");
+  const lbl=ub.querySelector(".undolbl"); if(lbl) lbl.textContent=t("undoBtn");
+}
+async function doUndo(){ await undoStep(-1); }
+async function doRedo(){ await undoStep(+1); }
+async function undoStep(dir){
+  const btn=$(dir<0?"#undoBtn":"#redoBtn");
+  if(btn&&btn.disabled) return;
+  if(!LIVE){
+    const from=dir<0?demoUndo:demoRedo, to=dir<0?demoRedo:demoUndo;
+    if(!from.length) return;
+    to.push(JSON.stringify(S));
+    S=JSON.parse(from.pop()); demoLast=JSON.stringify(S);
+    localStorage.setItem("etaf_demo",demoLast);
+    render(); drawUndo(); toast(dir<0?t("undoDone",""):t("redoDone",""),"good");
+    return;
+  }
+  if(btn) btn.disabled=true;
+  try{
+    const d=await apiCall(dir<0?"undo.do":"redo.do",{});
+    await pull(); reAnchorCurTg(); render();
+    if(route==="week"||$("#wkDetail")) { WKD=null; wkDrawnSig=""; if(route==="week") renderWeek(); }
+    toast(dir<0?t("undoDone",d.summary||""):t("redoDone",d.summary||""),"good");
+  }catch(e){ toast(e.message,"crit"); }
+  finally{ drawUndo(); }
+}
+/* Tastenkürzel: Cmd/Strg+Z und Cmd/Strg+Umschalt+Z */
+document.addEventListener("keydown",ev=>{
+  if(!(ev.metaKey||ev.ctrlKey) || ev.key.toLowerCase()!=="z") return;
+  const el=document.activeElement;
+  if(el&&/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;   // im Eingabefeld gilt der Browser
+  const lk=$("#lock"); if(lk && lk.style.display!=="none") return;   // Anmeldemaske offen
+  ev.preventDefault();
+  ev.shiftKey?doRedo():doUndo();
+});
+
 function startPolling(){
   if(!LIVE||pollTimer)return;
   const ms=(window.ETAF&&window.ETAF.pollMs)||8000;
@@ -1095,6 +1158,13 @@ const L={
   rsvBtn:"Erledigen",
   rsvDoneMail:n=>`Erledigt — Antwort an ${n} gesendet`,
   // Klickbare KPI-Kacheln + Trainings-Filter
+  undoBtn:"Rückgängig",
+  undoStep:"letzte Änderung",
+  undoTip:(what,who)=>`Rückgängig: ${what}${who?" (von "+who+")":""} · Cmd/Strg+Z`,
+  redoTip:what=>`Wiederholen: ${what} · Cmd/Strg+Umschalt+Z`,
+  undoNothing:"Nichts zum Zurücknehmen", redoNothing:"Nichts zum Wiederholen",
+  undoDone:w=>w?`Zurückgenommen: ${w}`:"Änderung zurückgenommen",
+  redoDone:w=>w?`Wiederholt: ${w}`:"Änderung wiederhergestellt",
   kpiGoHint:"Klicken zeigt die passenden Trainings",
   kpiF_all:"Alle", kpiF_good:"Vollständig besetzt", kpiF_open:"Mit offenen Anfragen", kpiF_crit:"Unterbesetzt",
   kpiFN:n=>`${n} Training${n===1?"":"s"} im Filter`, kpiFClear:"Filter aufheben",
@@ -1465,6 +1535,13 @@ const L={
   rsvMailLbl:n=>`Email the reply to ${n} — with a link to the updated overview`,
   rsvBtn:"Resolve",
   rsvDoneMail:n=>`Done — reply sent to ${n}`,
+  undoBtn:"Undo",
+  undoStep:"last change",
+  undoTip:(what,who)=>`Undo: ${what}${who?" (by "+who+")":""} · Cmd/Ctrl+Z`,
+  redoTip:what=>`Redo: ${what} · Cmd/Ctrl+Shift+Z`,
+  undoNothing:"Nothing to undo", redoNothing:"Nothing to redo",
+  undoDone:w=>w?`Undone: ${w}`:"Change undone",
+  redoDone:w=>w?`Redone: ${w}`:"Change restored",
   kpiGoHint:"Click to show the matching trainings",
   kpiF_all:"All", kpiF_good:"Fully staffed", kpiF_open:"With open requests", kpiF_crit:"Understaffed",
   kpiFN:n=>`${n} training${n===1?"":"s"} in filter`, kpiFClear:"Clear filter",
@@ -1861,7 +1938,17 @@ function load(){
     templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180},
     emails:[], me:null, setupMode:false};
 }
-function save(){localStorage.setItem("etaf_demo",JSON.stringify(S));}
+/* Demo-Modus: vor jedem Speichern den vorherigen Stand auf den Rückgängig-Stapel
+   legen (live übernimmt das der Server). */
+let demoUndo=[], demoRedo=[], demoLast=null;
+function save(){
+  if(!LIVE){
+    if(demoLast && demoLast!==JSON.stringify(S)){ demoUndo.push(demoLast); if(demoUndo.length>40) demoUndo.shift(); demoRedo=[]; }
+    demoLast=JSON.stringify(S);
+  }
+  localStorage.setItem("etaf_demo",JSON.stringify(S));
+  drawUndo();
+}
 function resetDemo(){localStorage.removeItem("etaf_demo");S=load();applyStatic();render();toast(t("resetToast"));}
 
 /* ---------- MATCHING (simulierte KI-Vorauswahl) ---------- */

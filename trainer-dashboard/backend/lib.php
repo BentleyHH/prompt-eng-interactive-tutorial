@@ -4,6 +4,8 @@
 require_once __DIR__.'/db.php';
 
 function out($data, int $code=200): void {
+  // Bei erfolgreichen Änderungen den Wiederherstellungspunkt festschreiben
+  if(!isset($data['ok']) || $data['ok']!==false) { try{ undo_commit(); }catch(Throwable $e){} }
   http_response_code($code);
   header('Content-Type: application/json; charset=utf-8');
   echo json_encode($data, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
@@ -152,6 +154,162 @@ function require_admin(): void {
 function is_admin(): bool {
   $u=current_user();
   return $u ? (($u['role']??'editor')==='admin') : (user_count()===0);
+}
+
+/* ============================================================
+   RÜCKGÄNGIG / WIEDERHOLEN
+   Vor jeder Änderung wird der betroffene Datenstand gesichert, danach der
+   neue. „Rückgängig“ schreibt den alten Stand zurück, „Wiederholen“ den
+   neuen. Das funktioniert für alle Vorgänge gleich — ohne dass für jede
+   Aktion eine eigene Umkehrfunktion nötig wäre.
+   ============================================================ */
+const UNDO_TABLES=['trainings','trainers','clients','requests','travel','training_sessions',
+  'training_materials','material_presets','materials','templates','trainer_reviews','plan_tokens'];
+
+/** Zeilen zu einer Spezifikation [tabelle, spalte, wert] einsammeln. */
+function snap_take(array $specs): array {
+  $out=[];
+  foreach($specs as $s){
+    [$tbl,$col,$val]=$s;
+    if(!in_array($tbl,UNDO_TABLES,true) || !preg_match('/^[A-Za-z0-9_]+$/',$col)) continue;
+    try{ $rows=q("SELECT * FROM $tbl WHERE $col=?",[$val])->fetchAll(); }catch(Throwable $e){ $rows=[]; }
+    $out[]=['t'=>$tbl,'c'=>$col,'v'=>(string)$val,'rows'=>$rows];
+  }
+  return $out;
+}
+/** Gesicherten Stand zurückschreiben (deckt Anlegen, Ändern und Löschen ab). */
+function snap_restore(array $snap): void {
+  foreach($snap as $part){
+    $tbl=$part['t']??''; $col=$part['c']??''; $val=$part['v']??'';
+    if(!in_array($tbl,UNDO_TABLES,true) || !preg_match('/^[A-Za-z0-9_]+$/',$col)) continue;
+    q("DELETE FROM $tbl WHERE $col=?",[$val]);
+    foreach(($part['rows']??[]) as $r){
+      if(!is_array($r)||!$r) continue;
+      $cols=array_keys($r);
+      foreach($cols as $c){ if(!preg_match('/^[A-Za-z0-9_]+$/',$c)) continue 2; }
+      // Zeile könnte inzwischen woandershin verschoben worden sein (z.B. anderer
+      // Kunde) — dann steckt sie nicht mehr im gelöschten Bereich und würde beim
+      // Einfügen mit dem Schlüssel kollidieren. Deshalb zusätzlich per id räumen.
+      if(array_key_exists('id',$r)) { try{ q("DELETE FROM $tbl WHERE id=?",[$r['id']]); }catch(Throwable $e){} }
+      q("INSERT INTO $tbl (".implode(',',$cols).") VALUES (".implode(',',array_fill(0,count($cols),'?')).")",
+        array_values($r));
+    }
+  }
+}
+
+/** Welche Daten hängen an einer Aktion? Liefert Spezifikation + Klartext-Titel. */
+function undo_targets(string $action, array $in): ?array {
+  $tg=fn()=>(string)($in['training']??$in['id']??0);
+  $byTraining=function($id){ return [
+    ['trainings','id',$id],['requests','training_id',$id],['travel','training_id',$id],
+    ['training_sessions','training_id',$id],['training_materials','training_id',$id]]; };
+  switch($action){
+    case 'training.save': case 'training.delete': case 'training.travelSave':
+    case 'training.setClient': case 'training.materials.save':
+    case 'weekplan.save': case 'weekplan.suggest': case 'weekplan.copy':
+    case 'session.save': case 'session.delete':
+      $id=(string)($in['training']??$in['to']??$in['id']??0);
+      if($action==='session.delete'){
+        $s=q("SELECT training_id FROM training_sessions WHERE id=?",[$in['id']??0])->fetch();
+        $id=(string)($s['training_id']??0);
+      }
+      if(!$id) return null;
+      return ['specs'=>$byTraining($id),'label'=>'training','ref'=>$id];
+    case 'trainer.save': case 'trainer.delete': case 'passport.save': case 'passport.clear':
+    case 'reviews.save':
+      $id=(string)($in['id']??$in['trainer']??0); if(!$id) return null;
+      return ['specs'=>[['trainers','id',$id],['trainer_reviews','trainer_id',$id]],'label'=>'trainer','ref'=>$id];
+    case 'client.save': case 'client.delete':
+      $id=(string)($in['id']??''); if($id==='') return null;
+      return ['specs'=>[['clients','id',$id],['trainings','client_id',$id]],'label'=>'client','ref'=>$id];
+    case 'request.setStatus': case 'request.notifyStatus': case 'trainer.travelSave':
+      $id=(string)($in['training']??0); if(!$id) return null;
+      return ['specs'=>[['requests','training_id',$id],['travel','training_id',$id]],'label'=>'training','ref'=>$id];
+    case 'template.save':
+      $id=(string)($in['id']??''); if($id==='') return null;
+      return ['specs'=>[['templates','id',$id]],'label'=>'template','ref'=>$id];
+    case 'matpreset.save':
+      $sp=(string)($in['spec']??''); if($sp==='') return null;
+      return ['specs'=>[['material_presets','spec',$sp]],'label'=>'material','ref'=>$sp];
+    case 'material.save': case 'material.delete':
+      $id=(string)($in['id']??''); if($id==='') return null;
+      return ['specs'=>[['materials','id',$id],['training_materials','material_id',$id],
+                        ['material_presets','material_id',$id]],'label'=>'material','ref'=>$id];
+    case 'message.resolve':
+      $id=(string)($in['trainer']??0); if(!$id) return null;
+      return ['specs'=>[['plan_tokens','trainer_id',$id]],'label'=>'trainer','ref'=>$id];
+  }
+  return null;
+}
+
+/** Klartext für Aktionen ohne eigene Protokollzeile. */
+function undo_label(string $action): string {
+  $m=['training.travelSave'=>'Reisedaten & Agenda geändert','training.setClient'=>'Kunde zugeordnet',
+      'training.materials.save'=>'Materialliste geändert','trainer.travelSave'=>'Reisedaten geändert',
+      'weekplan.save'=>'Wochenplan geändert','weekplan.suggest'=>'KI-Wochenrhythmus angewendet',
+      'weekplan.copy'=>'Wochenplan übernommen','session.save'=>'Session gespeichert',
+      'session.delete'=>'Session gelöscht','reviews.save'=>'Bewertungen gespeichert',
+      'passport.save'=>'Reisepass gespeichert','passport.clear'=>'Reisepass gelöscht',
+      'material.save'=>'Material gespeichert','material.delete'=>'Material gelöscht',
+      'matpreset.save'=>'Material-Vorlage gespeichert','template.save'=>'Vorlage gespeichert',
+      'message.resolve'=>'Rückmeldung bearbeitet','request.notifyStatus'=>'Trainer informiert'];
+  return $m[$action] ?? $action;
+}
+
+/** Vor der Änderung: Stand sichern (wird in api.php aufgerufen). */
+function undo_prepare(string $action, array $in): void {
+  $t=undo_targets($action,$in);
+  if(!$t) return;
+  $maxId=0; try{ $maxId=(int)q("SELECT COALESCE(MAX(id),0) m FROM activity")->fetch()['m']; }catch(Throwable $e){}
+  $GLOBALS['__undo']=['specs'=>$t['specs'],'label'=>$t['label'],'ref'=>$t['ref'],
+                      'action'=>$action,'maxId'=>$maxId,'before'=>snap_take($t['specs'])];
+}
+/** Nach der Änderung: neuen Stand sichern und Protokollzeile ergänzen. */
+function undo_commit(): void {
+  $u=$GLOBALS['__undo']??null;
+  if(!$u) return;
+  $GLOBALS['__undo']=null;
+  $after=snap_take($u['specs']);
+  if(json_encode($u['before'])===json_encode($after)) return;   // nichts verändert
+  // Ein neuer Schritt beendet die Wiederholen-Kette
+  try{ q("UPDATE activity SET undo_before=NULL, undo_after=NULL WHERE undone_at IS NOT NULL AND undo_before IS NOT NULL"); }catch(Throwable $e){}
+  // An die Protokollzeile dieses Vorgangs hängen — hat die Aktion selbst keine
+  // geschrieben, legen wir eine an (sonst hinge der Stand an einer fremden Zeile).
+  $row=q("SELECT id FROM activity ORDER BY id DESC LIMIT 1")->fetch();
+  if(!$row || (int)$row['id'] <= (int)($u['maxId']??0)){
+    audit($u['action'],$u['label'],$u['ref'],undo_label($u['action']));
+    $row=q("SELECT id FROM activity ORDER BY id DESC LIMIT 1")->fetch();
+    if(!$row) return;
+  }
+  q("UPDATE activity SET undo_before=?, undo_after=?, undo_spec=?, undone_at=NULL WHERE id=?",
+    [json_encode($u['before'],JSON_UNESCAPED_UNICODE), json_encode($after,JSON_UNESCAPED_UNICODE),
+     json_encode($u['specs']), $row['id']]);
+}
+
+/** Was lässt sich gerade zurücknehmen / wiederholen? */
+function undo_status(): array {
+  $fmt=function($r){ return $r ? ['id'=>(int)$r['id'],'summary'=>$r['summary']?:$r['action'],
+      'by'=>$r['user_name']??'','at'=>$r['created_at']??''] : null; };
+  $un=null; $re=null;
+  try{
+    $un=q("SELECT * FROM activity WHERE undo_before IS NOT NULL AND undone_at IS NULL ORDER BY id DESC LIMIT 1")->fetch();
+    $re=q("SELECT * FROM activity WHERE undo_after IS NOT NULL AND undone_at IS NOT NULL ORDER BY id ASC LIMIT 1")->fetch();
+  }catch(Throwable $e){}
+  return ['undo'=>$fmt($un?:null),'redo'=>$fmt($re?:null)];
+}
+
+/** Rückgängig ($dir=-1) bzw. Wiederholen ($dir=+1). */
+function undo_apply(int $dir): array {
+  if($dir<0) $row=q("SELECT * FROM activity WHERE undo_before IS NOT NULL AND undone_at IS NULL ORDER BY id DESC LIMIT 1")->fetch();
+  else       $row=q("SELECT * FROM activity WHERE undo_after IS NOT NULL AND undone_at IS NOT NULL ORDER BY id ASC LIMIT 1")->fetch();
+  if(!$row) fail($dir<0?'Nichts zum Zurücknehmen.':'Nichts zum Wiederholen.');
+  $snap=json_decode($dir<0?$row['undo_before']:$row['undo_after'],true);
+  if(!is_array($snap)) fail('Der gespeicherte Stand ist nicht lesbar.');
+  snap_restore($snap);
+  q("UPDATE activity SET undone_at=? WHERE id=?",[$dir<0?now():null,$row['id']]);
+  audit($dir<0?'undo':'redo','', (string)$row['id'],
+        ($dir<0?'Zurückgenommen: ':'Wiederholt: ').mb_substr((string)($row['summary']?:$row['action']),0,120));
+  return ['ok'=>true,'summary'=>$row['summary']?:$row['action'],'status'=>undo_status()];
 }
 
 /** Änderungsprotokoll schreiben. */
@@ -334,6 +492,7 @@ function get_state(): array {
     'clients'=>$clients,'materials'=>$materials,'matPresets'=>$matPresets,
     'trainers'=>$trainers,'trainings'=>$trainings,'templates'=>$templates,
     'me'=>$me?user_public($me):null,
+    'undo'=>undo_status(),
     'setupMode'=>(user_count()===0)];
 }
 

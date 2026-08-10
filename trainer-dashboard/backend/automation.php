@@ -305,6 +305,13 @@ function run_automation(): array {
     q("DELETE FROM sessions WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-$maxDays*86400)]);
     q("DELETE FROM reset_tokens WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-86400)]);
     q("DELETE FROM login_attempts WHERE window_start < ?",[gmdate('Y-m-d H:i:s', $now-3600)]);
+    // Rückgängig-Stände nur für die jüngsten 300 Änderungen vorhalten — die
+    // Protokollzeilen selbst bleiben vollständig erhalten.
+    $keep=q("SELECT id FROM activity WHERE undo_before IS NOT NULL ORDER BY id DESC LIMIT 300")->fetchAll(PDO::FETCH_COLUMN);
+    if(count($keep)>=300){
+      q("UPDATE activity SET undo_before=NULL, undo_after=NULL, undo_spec=NULL WHERE undo_before IS NOT NULL AND id < ?",
+        [min(array_map('intval',$keep))]);
+    }
   }catch(Throwable $e){}
 
   return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,

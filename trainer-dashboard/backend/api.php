@@ -28,6 +28,8 @@ catch(Throwable $e){ fail('DB-Fehler: '.$e->getMessage(),500); }
 
 $action = $_GET['action'] ?? '';
 $in = body();
+// Vor jeder ändernden Aktion den betroffenen Datenstand sichern (für „Rückgängig“)
+try{ undo_prepare($action,$in); }catch(Throwable $e){}
 
 try {
 switch($action){
@@ -182,6 +184,15 @@ switch($action){
     require_auth();
     q("UPDATE travel_mail SET status='ignored' WHERE id=?",[$in['id']??0]);
     out(['ok'=>true]);
+
+  /* ---- Rückgängig / Wiederholen ---- */
+  case 'undo.do':
+    require_auth();
+    out(undo_apply(-1));
+
+  case 'redo.do':
+    require_auth();
+    out(undo_apply(+1));
 
   /* ---- Änderungsprotokoll ---- */
   case 'activity.list':
