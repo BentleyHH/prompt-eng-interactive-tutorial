@@ -330,6 +330,25 @@ switch($action){
       'deliverable'=>$tg['deliverable']??'','deliverableEn'=>$tg['deliverable_en']??'',
       'stage'=>$tg['stage']??'','star'=>(int)($tg['star']??0)]);
 
+  /* ---- Alle Wochenpläne auf einmal (für den Wandkalender mit Inhalten) ---- */
+  case 'sessions.all':
+    require_auth();
+    $plans=[];
+    foreach(q("SELECT id,plan_slots FROM trainings")->fetchAll() as $tg)
+      $plans[(string)$tg['id']]=['plan'=>json_decode($tg['plan_slots']?:'{}',true)?:[], 'sessions'=>[]];
+    foreach(q("SELECT * FROM training_sessions ORDER BY sort,id")->fetchAll() as $r){
+      $tid=(string)$r['training_id'];
+      if(!isset($plans[$tid])) continue;
+      $ids=json_decode(($r['trainer_ids']??'')?:'',true);
+      if(!is_array($ids)) $ids=$r['trainer_id']?[(string)$r['trainer_id']]:[];
+      $plans[$tid]['sessions'][]=[
+        'id'=>(string)$r['id'],'title'=>$r['title'],'titleEn'=>$r['title_en'],
+        'type'=>$r['stype'],'dur'=>$r['dur'],
+        'trainerIds'=>array_values(array_map('strval',$ids)),
+        'ppt'=>$r['ppt']??'','mat'=>$r['mat']??''];
+    }
+    out(['ok'=>true,'weeks'=>$plans]);
+
   case 'session.save':
     require_auth();
     $tid=(int)($in['training']??0); $sid=(int)($in['id']??0);

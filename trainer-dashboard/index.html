@@ -561,11 +561,28 @@
   .slotbox{border:1px solid var(--line);border-radius:11px;background:var(--panel);margin-bottom:10px;display:flex;flex-direction:column}
   .slotbox .sl-h{display:flex;justify-content:space-between;gap:6px;padding:6px 10px 2px;
     font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--faint);text-transform:uppercase}
-  .zone{display:flex;flex-direction:column;gap:6px;padding:6px 7px 8px;min-height:64px;border-radius:0 0 11px 11px}
-  .zone.dragover{outline:2px dashed var(--brand-solid);outline-offset:-4px}
+  .zone{display:flex;flex-direction:column;gap:6px;padding:6px 7px 10px;min-height:76px;border-radius:0 0 11px 11px;
+    transition:background .12s}
+  /* Ablageziel deutlich hervorheben: ganzer Halbtag eingefärbt + Rahmen */
+  /* --brand-050 ist der helle/dunkle Marken-Ton je Design — funktioniert in
+     beiden Modi und in jedem Browser (kein color-mix nötig). */
+  .zone.dragover{background:var(--brand-050);outline:2px solid var(--brand-solid);outline-offset:-3px}
+  .slotbox.dropbox{border-color:var(--brand-solid);box-shadow:0 0 0 3px var(--brand-050)}
+  /* Einfügemarke zwischen zwei Kacheln */
+  .dropline{height:5px;flex:none;border-radius:3px;background:var(--brand-solid);margin:-1px 0;
+    box-shadow:0 0 0 2px var(--brand-050)}
   .sess{position:relative;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);
-    padding:8px 9px 7px 14px;cursor:grab;font-size:12.5px}
+    padding:8px 30px 7px 14px;cursor:grab;font-size:12.5px}
   .sess:active{cursor:grabbing}
+  .sess.dragging{opacity:.35}
+  .sess.trtarget{outline:2px solid var(--good);outline-offset:-1px}
+  /* Pfeile zum genauen Umsortieren (Maus: beim Überfahren, Touch: immer sichtbar) */
+  .snudge{position:absolute;top:4px;right:4px;display:flex;flex-direction:column;gap:2px;opacity:0;transition:opacity .12s}
+  .sess:hover .snudge{opacity:1}
+  .snudge button{width:22px;height:17px;line-height:1;padding:0;border:1px solid var(--line);border-radius:5px;
+    background:var(--panel);color:var(--muted);font-size:9px;cursor:pointer}
+  .snudge button:hover{background:var(--brand-solid);border-color:var(--brand-solid);color:#fff}
+  @media (pointer:coarse){ .snudge{opacity:1} .snudge button{width:30px;height:24px;font-size:11px} }
   .sess .srail{position:absolute;left:0;top:-1px;bottom:-1px;width:4px;border-radius:9px 0 0 9px}
   .sess .st{font-weight:650;line-height:1.3;margin-bottom:4px;overflow-wrap:anywhere}
   .sess .sm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--muted);font-size:11px}
@@ -577,6 +594,22 @@
   .ppdot.g{background:var(--good)} .ppdot.y{background:var(--warn)} .ppdot.r{background:var(--crit)}
   .wkbench .zone{flex-direction:row;flex-wrap:wrap;min-height:50px}
   .wkbench .sess{flex:0 1 230px}
+  /* Wandkalender: Wocheninhalte (nur wenn eingeblendet) */
+  .cal-sheet.det .cal-block{align-items:flex-start;break-inside:avoid;page-break-inside:avoid}
+  .cal-sheet.det .cal-dt,.cal-sheet.det .cal-bd{padding-top:2px}
+  .cal-det{margin:8px 0 2px;border-top:1px solid var(--line);padding-top:7px}
+  .cal-del{font-size:11px;color:var(--muted);margin:0 0 6px}
+  .cal-day{margin:0 0 5px;display:flex;gap:8px;align-items:flex-start}
+  .cal-dn{flex:none;width:52px;font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.04em;padding-top:1px;overflow-wrap:anywhere}
+  /* Sammelzeilen (Auswechselbank / noch nicht verteilt): Label über die volle Breite */
+  .cal-day.full{flex-direction:column;gap:2px}
+  .cal-day.full .cal-dn{width:auto}
+  .cal-h{margin:0 0 4px}
+  .cal-h b{display:block;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .cal-s{font-size:11.5px;line-height:1.35;padding-left:11px;position:relative}
+  .cal-s i{color:var(--muted);font-style:normal}
+  .cal-sd{position:absolute;left:0;top:5px;width:5px;height:5px;border-radius:50%}
   .wkdeliv{border-left:4px solid var(--warn);border-radius:10px;background:var(--panel-2);padding:11px 14px;font-size:13.5px}
   .wkdeliv b{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:3px}
   .wkteam{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
@@ -737,6 +770,7 @@
 <!-- Druckbarer Wandkalender (Overlay), farbcodiert nach Kunde -->
 <div id="calPrint" class="printable">
   <div class="ag-toolbar">
+    <button class="btn" id="calDetailBtn" onclick="toggleCalDetail()">Mit Wocheninhalten</button>
     <button class="btn primary" onclick="window.print()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><path d="M6 9V2h12v7"/><rect x="5" y="13" width="14" height="8" rx="1"/><path d="M6 17H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/></svg><span id="agPrintLbl2">Drucken</span></button>
     <button class="btn" onclick="closeCalendar()">✕</button>
   </div>
@@ -928,6 +962,10 @@ const L={
   wkTeam:"Team der Woche", wkNoTeam:"Noch niemand zugesagt — Besetzung über das Training öffnen.",
   wkTrDragHint:"Auf eine Session ziehen, um sie zuzuteilen — mehrere Trainer je Session möglich (Klick öffnet das Training)",
   wkTrAdd:"+ Trainer hinzufügen …",
+  wkUp:"Eine Position nach oben (über die Grenze: vorheriger Halbtag)",
+  wkDown:"Eine Position nach unten (über die Grenze: nächster Halbtag)",
+  calDetailOn:"Mit Wocheninhalten", calDetailOff:"Ohne Wocheninhalte",
+  calNotPlanned:"noch nicht auf Tage verteilt",
   wkAlreadyAssigned:n=>`${n} ist dieser Session bereits zugeteilt.`,
   wkTrCnt:n=> n===1 ? "1 Einsatz in dieser Woche" : `${n} Einsätze in dieser Woche`,
   wkAssigned:(s,n)=>`„${s.length>32?s.slice(0,32)+"…":s}“ → ${n}`,
@@ -1302,6 +1340,10 @@ const L={
   wkTeam:"Week team", wkNoTeam:"Nobody confirmed yet — open the training to build the team.",
   wkTrDragHint:"Drag onto a session to assign — multiple trainers per session are fine (click opens the training)",
   wkTrAdd:"+ Add trainer …",
+  wkUp:"One position up (across the boundary: previous half-day)",
+  wkDown:"One position down (across the boundary: next half-day)",
+  calDetailOn:"With week content", calDetailOff:"Without week content",
+  calNotPlanned:"not scheduled to days yet",
   wkAlreadyAssigned:n=>`${n} is already assigned to this session.`,
   wkTrCnt:n=> n===1 ? "1 session this week" : `${n} sessions this week`,
   wkAssigned:(s,n)=>`“${s.length>32?s.slice(0,32)+"…":s}” → ${n}`,
@@ -3243,9 +3285,12 @@ function wkTile(id){
   const dot=wkPptRelevant(s)
     ? `<span class="ppdot ${s.ppt==='vorhanden'?'g':s.ppt==='inArbeit'?'y':'r'}" title="PPT: ${t('ppt_'+(s.ppt||''))}"></span>`:"";
   return `<div class="sess" draggable="true" data-id="${s.id}"
-      ondragstart="wkDragStart(event)" ondragend="wkDragEnd()" onclick="openSessEdit('${s.id}')"
-      ondragover="event.preventDefault();event.stopPropagation()" ondrop="wkTileDrop(event)">
+      ondragstart="wkDragStart(event)" ondragend="wkDragEnd()" onclick="openSessEdit('${s.id}')">
     <span class="srail" style="background:${col}"></span>
+    <span class="snudge">
+      <button onclick="wkNudge('${s.id}',-1,event)" title="${t("wkUp")}">▲</button>
+      <button onclick="wkNudge('${s.id}',1,event)" title="${t("wkDown")}">▼</button>
+    </span>
     <div class="st">${esc(sessTitle(s))}</div>
     <div class="sm"><span class="tag" style="border-color:${col};color:${col}">${t("type_"+(s.type||"theorie"))}</span>
       <span>${esc(String(s.dur||1))} h</span>
@@ -3360,19 +3405,96 @@ async function renderWeekEmbed(tgId){
 }
 
 /* ---- Ziehen & Ablegen (Desktop); Antippen öffnet den Editor mit „Verschieben nach“ ---- */
-function wkDragStart(ev){ wkDragBusy=true; ev.dataTransfer.setData("text/plain",ev.currentTarget.dataset.id); ev.dataTransfer.effectAllowed="move"; }
-function wkDragEnd(){ wkDragBusy=false; }
+/* Ziehen wird komplett auf Ebene des Halbtags (.zone) ausgewertet — so ist die
+   ganze Fläche inklusive der Kacheln ein Ablageziel (kein Zielen mehr nötig),
+   und die Einfügestelle ergibt sich aus der Mausposition. */
+let wkDragId=null, wkDragTr=null;
+function wkDragStart(ev){
+  wkDragBusy=true; wkDragId=ev.currentTarget.dataset.id; wkDragTr=null;
+  ev.dataTransfer.setData("text/plain",wkDragId);
+  ev.dataTransfer.effectAllowed="move";
+  ev.currentTarget.classList.add("dragging");
+}
 /* Trainer-Chip ziehen → auf einer Session-Kachel loslassen = zuteilen.
    Der Trainer bleibt oben im Team und kann weitere Sessions bekommen. */
-function wkTrDragStart(ev,trId){ wkDragBusy=true; ev.dataTransfer.setData("text/plain","tr:"+trId); ev.dataTransfer.effectAllowed="copy"; }
-async function wkTileDrop(ev){
-  ev.preventDefault(); ev.stopPropagation(); wkDragBusy=false;
-  const d=ev.dataTransfer.getData("text/plain");
-  const sid=ev.currentTarget.dataset.id;
-  if(d.startsWith("tr:")){ assignTrainerToSess(sid, d.slice(3)); return; }
-  // Session auf Session fallen gelassen → im selben Slot ablegen
-  const zone=ev.currentTarget.closest(".zone");
-  if(zone && wkSess(d)) wkMoveTo(d, zone.dataset.slot);
+function wkTrDragStart(ev,trId){ wkDragBusy=true; wkDragTr=String(trId); wkDragId=null;
+  ev.dataTransfer.setData("text/plain","tr:"+trId); ev.dataTransfer.effectAllowed="copy"; }
+function wkDragEnd(){ wkDragBusy=false; wkDragId=null; wkDragTr=null; wkClearDrop(); }
+function wkClearDrop(){
+  $$(".zone.dragover").forEach(z=>z.classList.remove("dragover"));
+  $$(".slotbox.dropbox").forEach(z=>z.classList.remove("dropbox"));
+  $$(".sess.trtarget").forEach(z=>z.classList.remove("trtarget"));
+  $$(".sess.dragging").forEach(z=>z.classList.remove("dragging"));
+  $$(".dropline").forEach(l=>l.remove());
+}
+/* An welche Stelle im Halbtag käme die Kachel? (Mitte der Nachbarkachel entscheidet) */
+function wkInsertIndex(zone,y){
+  const tiles=[...zone.querySelectorAll(".sess:not(.dragging)")];
+  for(let i=0;i<tiles.length;i++){
+    const r=tiles[i].getBoundingClientRect();
+    if(y < r.top + r.height/2) return i;
+  }
+  return tiles.length;
+}
+function wkDragOver(ev){
+  ev.preventDefault();
+  const zone=ev.currentTarget;
+  if(wkDragTr){                       // Trainer-Chip: nur die Kachel darunter markieren
+    ev.dataTransfer.dropEffect="copy";
+    $$(".sess.trtarget").forEach(z=>z.classList.remove("trtarget"));
+    const tile=ev.target.closest&&ev.target.closest(".sess");
+    if(tile) tile.classList.add("trtarget");
+    return;
+  }
+  ev.dataTransfer.dropEffect="move";
+  // Ziel-Halbtag deutlich hervorheben
+  $$(".zone.dragover").forEach(z=>{ if(z!==zone) z.classList.remove("dragover"); });
+  $$(".slotbox.dropbox").forEach(z=>z.classList.remove("dropbox"));
+  zone.classList.add("dragover");
+  zone.closest(".slotbox")&&zone.closest(".slotbox").classList.add("dropbox");
+  if(zone.dataset.slot==="bench"){ $$(".dropline").forEach(l=>l.remove()); return; }
+  // Einfügemarke an der richtigen Stelle zeigen
+  const idx=wkInsertIndex(zone,ev.clientY);
+  const tiles=[...zone.querySelectorAll(".sess:not(.dragging)")];
+  let line=zone.querySelector(".dropline");
+  if(!line){ $$(".dropline").forEach(l=>l.remove()); line=document.createElement("div"); line.className="dropline"; }
+  if(idx>=tiles.length) zone.appendChild(line); else zone.insertBefore(line,tiles[idx]);
+}
+function wkDragLeave(ev){
+  // nur räumen, wenn der Zeiger den Halbtag wirklich verlässt
+  if(ev.relatedTarget && ev.currentTarget.contains(ev.relatedTarget)) return;
+  ev.currentTarget.classList.remove("dragover");
+  ev.currentTarget.closest(".slotbox")&&ev.currentTarget.closest(".slotbox").classList.remove("dropbox");
+  ev.currentTarget.querySelectorAll(".dropline").forEach(l=>l.remove());
+}
+async function wkDrop(ev){
+  ev.preventDefault();
+  const zone=ev.currentTarget, slot=zone.dataset.slot;
+  const idx=slot==="bench"?null:wkInsertIndex(zone,ev.clientY);
+  const trId=wkDragTr, sid=wkDragId;
+  const tile=ev.target.closest&&ev.target.closest(".sess");
+  wkClearDrop(); wkDragBusy=false; wkDragTr=null; wkDragId=null;
+  if(trId){ if(tile) assignTrainerToSess(tile.dataset.id, trId); return; }
+  const id=sid || ev.dataTransfer.getData("text/plain");
+  if(!id || !wkSess(id)) return;
+  wkMoveTo(id, slot, idx);
+}
+/* Pfeile an der Kachel: eine Position höher/tiefer — über die Halbtags-Grenze
+   hinaus landet die Kachel im Nachbar-Halbtag. Auch am Handy nutzbar. */
+async function wkNudge(id,dir,ev){
+  if(ev){ ev.stopPropagation(); ev.preventDefault(); }
+  const {slots}=wkPlacement();
+  let cur=null, idx=-1;
+  for(const k of WK_SLOTKEYS){ const i=slots[k].indexOf(String(id)); if(i>=0){ cur=k; idx=i; break; } }
+  if(cur===null){   // von der Bank ins Raster
+    return wkMoveTo(id, dir<0?WK_SLOTKEYS[WK_SLOTKEYS.length-1]:WK_SLOTKEYS[0], null);
+  }
+  const ni=idx+dir;
+  if(ni>=0 && ni<slots[cur].length) return wkMoveTo(id,cur,ni);
+  const pos=WK_SLOTKEYS.indexOf(cur)+dir;
+  if(pos<0||pos>=WK_SLOTKEYS.length) return;
+  const target=WK_SLOTKEYS[pos];
+  return wkMoveTo(id,target, dir<0 ? slots[target].length : 0);
 }
 async function assignTrainerToSess(sid,trId){
   const s=wkSess(sid); if(!s) return;
@@ -3390,19 +3512,16 @@ async function assignTrainerToSess(sid,trId){
   if(wkConflictSet.has(String(sid))) toast(t("wkConflictToast", tr?tr.name:"?"),"warn");
   else toast(t("wkAssigned", s.title, tr?tr.name:"?"),"good");
 }
-function wkDragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add("dragover"); }
-function wkDragLeave(ev){ ev.currentTarget.classList.remove("dragover"); }
-async function wkDrop(ev){
-  ev.preventDefault(); ev.currentTarget.classList.remove("dragover");
-  wkDragBusy=false;   // die Quell-Kachel wird gleich neu gezeichnet — dragend käme dort nie an
-  const id=ev.dataTransfer.getData("text/plain"); if(!id||!wkSess(id)) return;
-  wkMoveTo(id, ev.currentTarget.dataset.slot);
-}
-async function wkMoveTo(id,slot){
+/* Kachel verschieben. index = Einfügestelle im Halbtag (null = ans Ende). */
+async function wkMoveTo(id,slot,index){
   const {slots}=wkPlacement();
   for(const k of WK_SLOTKEYS) slots[k]=slots[k].filter(x=>x!==String(id));
-  if(slot!=="bench" && WK_SLOTKEYS.includes(slot)) slots[slot].push(String(id));
-  WKD.plan={...slots,bench:slot==="bench"?[String(id)]:[]}; // Bank ergibt sich aus „nirgends platziert“
+  if(slot!=="bench" && WK_SLOTKEYS.includes(slot)){
+    const arr=slots[slot];
+    const i=(index===null||index===undefined||index<0||index>arr.length)?arr.length:index;
+    arr.splice(i,0,String(id));
+  }
+  WKD.plan={...slots,bench:[]};   // Bank ergibt sich aus „nirgends platziert“
   drawWeekBody();
   await persistWeekPlan();
 }
@@ -4855,8 +4974,61 @@ function exportIcs(){
 }
 function setPageOrient(o){const el=$("#pageOrient");
   if(el)el.textContent="@page{size:A4 "+o+";margin:"+(o==="landscape"?"12mm":"16mm")+"}";}
+/* Wandkalender: optional mit den Inhalten jeder Woche (Sessions + Trainer). */
+let calDetail=false, calWeeks=null;
+async function toggleCalDetail(){
+  calDetail=!calDetail;
+  if(calDetail && !calWeeks){
+    const b=$("#calDetailBtn"); if(b){ b.disabled=true; b.textContent="…"; }
+    try{
+      if(LIVE){ const d=await apiCall("sessions.all"); calWeeks=d.weeks||{}; }
+      else { calWeeks={}; for(const k in (S.weekData||{})) calWeeks[k]=S.weekData[k]; }
+    }catch(e){ toast(e.message,"crit"); calDetail=false; }
+    if(b) b.disabled=false;
+  }
+  openCalendar();
+}
+/* Kompakte Tagesliste einer Woche für den Ausdruck. */
+function calWeekDetail(tg){
+  const wd=calWeeks&&calWeeks[String(tg.id)];
+  if(!wd||!(wd.sessions||[]).length) return "";
+  const sess=id=>(wd.sessions||[]).find(s=>String(s.id)===String(id));
+  const plan=wd.plan||{}; const placed=new Set();
+  const slots={};
+  for(const k of WK_SLOTKEYS) slots[k]=((plan[k]||[]).map(String)).filter(id=>sess(id)&&!placed.has(id)&&(placed.add(id)||true));
+  const line=s=>{
+    const trs=(s.trainerIds||[]).map(tid=>{const x=S.trainers.find(y=>String(y.id)===String(tid));return x?x.name.replace(/^Dr\.\s*/,""):null;}).filter(Boolean);
+    return `<div class="cal-s"><span class="cal-sd" style="background:${SESS_COL[s.type]||'#8A939A'}"></span>`
+      +`${esc((S.lang==="en"&&s.titleEn)?s.titleEn:s.title)}`
+      +`<i> · ${esc(String(s.dur||1))} h${trs.length?" · "+esc(trs.join(", ")):""}</i></div>`;
+  };
+  const del0=(S.lang==="en"&&tg.deliverableEn)?tg.deliverableEn:(tg.deliverable||"");
+  // Woche noch nicht auf Tage verteilt → Inhalte trotzdem auflisten
+  if(!Object.values(slots).some(a=>a.length)){
+    return `<div class="cal-det">${del0?`<div class="cal-del"><b>${t("wkDeliverable")}:</b> ${esc(del0)}</div>`:""}
+      <div class="cal-day full"><div class="cal-dn">${t("calNotPlanned")}</div><div>${(wd.sessions||[]).map(line).join("")}</div></div></div>`;
+  }
+  const dayLbl=["mon","tue","wed","thu","fri"];
+  const rows=dayLbl.map((d,i)=>{
+    const halves=["am","pm"].map(h=>{
+      const items=slots[d+"_"+h].map(id=>line(sess(id))).join("");
+      return items?`<div class="cal-h"><b>${t(h==="am"?"wkAM":"wkPM")}</b>${items}</div>`:"";
+    }).join("");
+    if(!halves) return "";
+    let dt="";
+    if(tg.date){ const dd=new Date(tg.date+"T00:00:00"); dd.setDate(dd.getDate()+i);
+      dt=" "+String(dd.getDate()).padStart(2,"0")+"."+String(dd.getMonth()+1).padStart(2,"0")+"."; }
+    return `<div class="cal-day"><div class="cal-dn">${t("day_"+d).slice(0,2)}${dt}</div><div>${halves}</div></div>`;
+  }).join("");
+  // Nicht verplante Sessions am Ende ergänzen (Auswechselbank)
+  const restIds=(wd.sessions||[]).map(s=>String(s.id)).filter(id=>!placed.has(id));
+  const rest=restIds.length
+    ? `<div class="cal-day full"><div class="cal-dn">${t("wkBench")}</div><div>${restIds.map(id=>line(sess(id))).join("")}</div></div>` : "";
+  return `<div class="cal-det">${del0?`<div class="cal-del"><b>${t("wkDeliverable")}:</b> ${esc(del0)}</div>`:""}${rows}${rest}</div>`;
+}
 function openCalendar(){
   const M=(S.lang==='de'?MONTHS_DE:MONTHS_EN); const list=sortedForCal();
+  const db=$("#calDetailBtn"); if(db) db.textContent=calDetail?t("calDetailOff"):t("calDetailOn");
   const legend=(S.clients||[]).map(c=>`<span class="cal-lg"><i style="background:${c.color}"></i>${esc(c.name)}</span>`).join("");
   let body;
   if(!list.length){ body=`<div class="empty">${t("calEmpty")}</div>`; }
@@ -4871,12 +5043,13 @@ function openCalendar(){
           return `<div class="cal-block" style="border-left:6px solid ${cl?cl.color:'var(--brand)'}">
             <div class="cal-dt">${s.getUTCDate()}.${pad2(s.getUTCMonth()+1)}.<span>${esc(tg.kw)}</span></div>
             <div class="cal-main"><div class="cal-tt">${esc(tg.topic)}</div>
-              <div class="cal-ss">${esc(tg.city+", "+tg.country)}${cl?" · "+esc(cl.name):""}</div></div>
+              <div class="cal-ss">${esc(tg.city+", "+tg.country)}${cl?" · "+esc(cl.name):""}</div>
+              ${calDetail?calWeekDetail(tg):""}</div>
             <div class="cal-bd" style="color:${stcol}">${r.yes}/${r.need}</div>
           </div>`;}).join("")+`</div>`;
     }).join("")+"</div>";
   }
-  $("#calBody").innerHTML=`<div class="cal-sheet">
+  $("#calBody").innerHTML=`<div class="cal-sheet${calDetail?" det":""}">
     <div class="ag-top"><div><div class="ag-eyebrow">${t("calTitle")}</div>
       <div class="ag-h1">${activeClient()?esc(activeClient().name):t("clientAll")}</div>
       <div class="meta">${t("calSub")}</div></div>
