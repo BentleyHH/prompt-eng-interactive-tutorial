@@ -36,10 +36,25 @@ $L = $lang==='de' ? [
 ];
 function e($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 $na = $L['nodata'];
+
+/* Zeitraum kurz („09.11.–13.11.2026“) — steht im Dokumenttitel und wird damit
+   zum Dateinamen, wenn der Trainer die Seite als PDF sichert. */
+$dSpan = '';
+if($req && !empty($req['start_date'])){
+  $f = function($s){ $t=strtotime($s); return $t? date('d.m.',$t) : ''; };
+  $y = substr((string)($req['end_date'] ?: $req['start_date']),0,4);
+  $dSpan = (!empty($req['end_date']) && $req['end_date']!==$req['start_date'])
+    ? $f($req['start_date']).'–'.$f($req['end_date']).$y
+    : $f($req['start_date']).$y;
+}
+$docTitle = $req
+  ? 'ETAF '.$L['title'].' '.($tr['name']??'').' '.((string)($req['code']??'')).($dSpan?' ('.$dSpan.')':'')
+  : 'ETAF · '.$L['title'];
+$docTitle = trim(preg_replace('/\s+/',' ', str_replace(['/','\\',':','*','?','"','<','>','|'],' ', $docTitle)));
 ?>
 <!doctype html><html lang="<?=e($lang)?>"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ETAF · <?=e($L['title'])?></title>
+<title><?=e($docTitle)?></title>
 <style>
   :root{--ink:#242b31;--muted:#5c666e;--line:#e2e5e8;--brand:#3e4852;--accent:#d81f26}
   *{box-sizing:border-box}
@@ -67,14 +82,26 @@ $na = $L['nodata'];
   .toolbar{max-width:800px;margin:0 auto;padding:0 24px 18px;text-align:right}
   .foot{margin-top:24px;color:var(--muted);font-size:12px;text-align:center}
   .agwk{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  .agwk>div{break-inside:avoid;page-break-inside:avoid}
+  .mine{font-size:13px;color:var(--brand);font-weight:600;margin:0 0 9px}
   @media(max-width:640px){ .agwk{grid-template-columns:1fr 1fr} }
   @media(max-width:420px){ .agwk{grid-template-columns:1fr} }
+  /* Ausdruck: eine Seite, nichts doppelt, nichts abgeschnitten */
   @media print{
-    body{background:#fff}
+    body{background:#fff;font-size:10pt;line-height:1.4}
     .toolbar{display:none}
-    .wrap{padding:0}
+    .wrap{padding:0;max-width:none}
     .sheet{border:none;border-radius:0;padding:0}
-    @page{margin:16mm}
+    @page{margin:12mm}
+    h1{font-size:17pt;margin:1px 0 2px}
+    .eyebrow{font-size:7.5pt}
+    .bar{margin:9px 0 11px;height:2px}
+    h2{font-size:8.5pt;margin:11px 0 5px;padding-bottom:3px}
+    .kv{grid-template-columns:150px 1fr;gap:2px 12px;font-size:9.5pt}
+    td{padding:3px 5px;font-size:9.5pt}
+    .agwk{gap:5px}
+    .mine{font-size:9.5pt;margin:0 0 6px}
+    .foot{margin-top:12px}
   }
 </style></head>
 <body>
@@ -116,30 +143,11 @@ $na = $L['nodata'];
     </div>
 
     <?php
-    /* Sessions dieses Trainers in dieser Woche (aus dem Wochenplan) */
+    /* Wochenplan: entweder das Kachelraster Mo–Fr (eigene Sessions rot, mit
+       PowerPoint- und Materialhinweis) ODER — falls die Woche noch nicht auf
+       Tage verteilt ist — die reine Liste der eigenen Sessions. Beides
+       zusammen wäre dieselbe Information zweimal im Ausdruck. */
     $mySess = trainer_week_sessions((int)$req['training_id'], (int)$req['trid']);
-    if($mySess):
-      $dayN  = $lang==='de' ? ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'] : ['Monday','Tuesday','Wednesday','Thursday','Friday'];
-      $halfN = $lang==='de' ? ['am'=>'Vormittag','pm'=>'Nachmittag'] : ['am'=>'Morning','pm'=>'Afternoon'];
-    ?>
-    <h2><?=e($lang==='de'?'Deine Sessions in dieser Woche':'Your sessions this week')?></h2>
-    <table><?php foreach($mySess as $s):
-      $when = $s['dayIdx']!==null
-        ? $dayN[$s['dayIdx']].($s['date']?', '.date('d.m.',strtotime($s['date'])):'')
-        : ($lang==='de'?'noch nicht terminiert':'not scheduled yet');
-      $slot = $s['half'] ? ($halfN[$s['half']]??'') : ''; ?>
-      <tr><td class="d" style="width:110px;white-space:nowrap"><?=e($when)?></td>
-          <td class="t" style="width:90px"><?=e($slot)?></td>
-          <td><b><?=e($lang==='en'&&$s['title_en']!==''?$s['title_en']:$s['title'])?></b> · <?=e((string)$s['dur'])?> h
-            <?php if(!empty($s['with'])): ?><br><span style="color:#3F7A5E;font-weight:600">👥 <?=e(($lang==='de'?'zusammen mit ':'together with ').implode(', ',$s['with']))?></span><?php endif; ?>
-            <?php if($s['pptMine']): ?><br><span style="color:#B23A42;font-weight:600"><?=e($lang==='de'?'PowerPoint: von dir vorzubereiten':'PowerPoint: to be prepared by you')?></span><?php endif; ?>
-            <?php if(!empty($s['mat'])): ?><br><span style="color:var(--muted)">📦 <?=e($s['mat'])?></span><?php endif; ?>
-          </td></tr>
-    <?php endforeach; ?></table>
-    <?php endif; ?>
-
-    <?php
-    /* Kompletter Wochenplan Mo–Fr als Kacheln — die eigenen Sessions rot markiert */
     $allSess=[]; $planW=[];
     try{
       $allSess=q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$req['training_id']])->fetchAll();
@@ -152,7 +160,7 @@ $na = $L['nodata'];
       $halfN2= $lang==='de' ? ['am'=>'Vormittag','pm'=>'Nachmittag'] : ['am'=>'Morning','pm'=>'Afternoon'];
       $ini=strtoupper(implode('',array_map(fn($w)=>mb_substr($w,0,1),array_slice(explode(' ',preg_replace('/^Dr\.\s*/','',(string)($tr['name']??''))),0,2))));
       $tnames=[]; foreach(q("SELECT id,name FROM trainers")->fetchAll() as $tx){ $tnames[(string)$tx['id']]=$tx['name']; }
-      $cellFn=function($key) use($planW,$byId,$req,$halfN2,$ini,$lang,$tnames){
+      $cellFn=function($key) use($planW,$byId,$req,$ini,$lang,$tnames){
         $out='';
         foreach((array)($planW[$key]??[]) as $sid){
           $s2=$byId[(string)$sid]??null; if(!$s2) continue;
@@ -166,13 +174,22 @@ $na = $L['nodata'];
             .($mine?' · <b style="color:#D81F26">'.e($ini).'</b>':'')
             .($mine&&$others?'<br><span style="color:#3F7A5E;font-weight:600">👥 '.e(($lang==='de'?'mit ':'with ').implode(', ',$others)).'</span>'
               :(!$mine&&$others?'<br>'.e(implode(', ',$others)):''));
+          // Vorbereitungs-Hinweise nur bei den eigenen Sessions — der Rest bleibt schlank
+          if($mine && (string)($s2['ppt_by']??'')===(string)$req['trid'])
+            $sub.='<br><span style="color:#B23A42;font-weight:600">'.e($lang==='de'?'PowerPoint: von dir':'PowerPoint: by you').'</span>';
+          if($mine && !empty($s2['mat'])) $sub.='<br>📦 '.e($s2['mat']);
           $out.='<div style="border:1.5px solid '.($mine?'#D81F26':'#e2e5e8').';border-left:4px solid '.($mine?'#D81F26':'#8A939A').';border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:10.5px;line-height:1.35;'.($mine?'background:#fdf1f1;font-weight:600':'').'">'
             .e($title).'<div style="color:#8a939a;font-size:9.5px">'.$sub.'</div></div>';
         }
         return $out?:'<div style="color:#c2c8cd;font-size:11px">—</div>';
       };
+      $myH=0; foreach($mySess as $s) $myH+=(float)$s['dur'];
+      $myPpt=0; foreach($mySess as $s) if($s['pptMine']) $myPpt++;
     ?>
     <h2><?=e($lang==='de'?'Wochenplan (Mo–Fr) — deine Sessions rot markiert':'Week plan (Mon–Fri) — your sessions marked red')?></h2>
+    <div class="mine"><?=e($lang==='de'
+        ? 'Deine Einsätze: '.count($mySess).' Sessions · '.rtrim(rtrim(number_format($myH,1,',',''),'0'),',').' h'.($myPpt?' · '.$myPpt.'× PowerPoint von dir vorzubereiten':'')
+        : 'Your sessions: '.count($mySess).' · '.rtrim(rtrim(number_format($myH,1,'.',''),'0'),'.').' h'.($myPpt?' · '.$myPpt.' PowerPoint(s) to prepare':''))?></div>
     <div class="agwk">
       <?php for($i=0;$i<5;$i++): $dk=['mon','tue','wed','thu','fri'][$i];
         $dLbl=''; if(!empty($req['start_date'])){ try{ $dd=new DateTime($req['start_date']); $dd->modify('+'.$i.' day'); $dLbl=$dd->format('d.m.'); }catch(Throwable $x){} } ?>
@@ -183,6 +200,17 @@ $na = $L['nodata'];
       </div>
       <?php endfor; ?>
     </div>
+    <?php elseif($mySess):
+      $halfN = $lang==='de' ? ['am'=>'Vormittag','pm'=>'Nachmittag'] : ['am'=>'Morning','pm'=>'Afternoon']; ?>
+    <h2><?=e($lang==='de'?'Deine Sessions in dieser Woche':'Your sessions this week')?></h2>
+    <table><?php foreach($mySess as $s): ?>
+      <tr><td class="t" style="width:90px"><?=e($s['half'] ? ($halfN[$s['half']]??'') : ($lang==='de'?'offen':'open'))?></td>
+          <td><b><?=e($lang==='en'&&$s['title_en']!==''?$s['title_en']:$s['title'])?></b> · <?=e((string)$s['dur'])?> h
+            <?php if(!empty($s['with'])): ?><br><span style="color:#3F7A5E;font-weight:600">👥 <?=e(($lang==='de'?'zusammen mit ':'together with ').implode(', ',$s['with']))?></span><?php endif; ?>
+            <?php if($s['pptMine']): ?><br><span style="color:#B23A42;font-weight:600"><?=e($lang==='de'?'PowerPoint: von dir vorzubereiten':'PowerPoint: to be prepared by you')?></span><?php endif; ?>
+            <?php if(!empty($s['mat'])): ?><br><span style="color:var(--muted)">📦 <?=e($s['mat'])?></span><?php endif; ?>
+          </td></tr>
+    <?php endforeach; ?></table>
     <?php endif; ?>
 
     <h2><?=e($L['travel'])?></h2>
