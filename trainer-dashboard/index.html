@@ -449,7 +449,7 @@
   /* ============ AGENDA PRINT OVERLAY ============ */
   .printable{position:fixed;inset:0;z-index:70;background:var(--bg);overflow:auto;display:none;padding:22px}
   .printable.on{display:block}
-  .ag-toolbar{max-width:800px;margin:0 auto 12px;display:flex;justify-content:flex-end;gap:10px}
+  .ag-toolbar{max-width:800px;margin:0 auto 12px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
   .ag-sheet{max-width:800px;margin:0 auto;background:var(--panel);border:1px solid var(--line);
     border-radius:14px;padding:34px 38px;box-shadow:var(--shadow)}
   .ag-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -468,6 +468,7 @@
   .ag-table td.ag-d{white-space:nowrap;color:var(--muted);width:66px}
 
   /* ============ WANDKALENDER ============ */
+  .ag-toolbar.wide{max-width:900px}
   .cal-sheet{max-width:900px;margin:0 auto;background:var(--panel);border:1px solid var(--line);
     border-radius:14px;padding:30px 34px;box-shadow:var(--shadow)}
   .cal-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 18px;font-size:12.5px;color:var(--muted)}
@@ -1009,6 +1010,7 @@
   <div class="ag-toolbar">
     <button class="btn" id="calDetailBtn" onclick="toggleCalDetail()">Mit Wocheninhalten</button>
     <button class="btn primary" onclick="window.print()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><path d="M6 9V2h12v7"/><rect x="5" y="13" width="14" height="8" rx="1"/><path d="M6 17H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/></svg><span id="agPrintLbl2">Drucken</span></button>
+    <button class="btn" onclick="calToMailClient()" id="calMailBtn">Mit eigenem Mailprogramm</button>
     <button class="btn" onclick="closeCalendar()">✕</button>
   </div>
   <div id="calBody"></div>
@@ -1018,6 +1020,7 @@
 <div id="weekPrint" class="printable">
   <div class="ag-toolbar">
     <button class="btn primary" onclick="window.print()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><path d="M6 9V2h12v7"/><rect x="5" y="13" width="14" height="8" rx="1"/><path d="M6 17H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/></svg><span>Drucken</span></button>
+    <button class="btn" onclick="weekToMailClient()" id="wkMailBtn">Mit eigenem Mailprogramm</button>
     <button class="btn" onclick="closeWeekPrint()">✕</button>
   </div>
   <div id="weekPrintBody"></div>
@@ -1627,6 +1630,13 @@ const L={
   mtLong:"Der Text ist lang — manche Mailprogramme kürzen ihn.",
   mtDemo:"Links gibt es erst im Live-Betrieb.",
   mtHint:"Öffnet einen Entwurf in deinem Mailprogramm. Anhänge kann ein Mail-Link technisch nicht mitgeben — deshalb geht der Agenda-Link mit, der immer den aktuellen Stand zeigt.",
+  agAllBtn:"Agenda an alle", agAllTo:n=>`Geht an ${n} bestätigte Trainer:`,
+  agAllSend:n=>`An ${n} senden`, agAllNone:"Für dieses Training ist noch niemand bestätigt.",
+  agAllHint:"Anrede und Session-Liste werden je Person eingesetzt — {{firstName}} im Text bleibt als Platzhalter stehen.",
+  agAllDone:n=>`${n} Agenden verschickt`, agAllFail:w=>`nicht zugestellt: ${w}`,
+  agNoMail:"keine E-Mail",
+  mtNothing:"Hier gibt es noch nichts zum Verschicken.",
+  mtMore:n=>`… und ${n} weitere Termine (vollständig im Cockpit)`,
   emNone:"Noch keine E-Mails versendet.", em_sent:"gesendet", em_logged:"protokolliert", em_failed:"fehlgeschlagen",
   agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
   resetToast:"Demo-Daten zurückgesetzt",
@@ -2060,6 +2070,13 @@ const L={
   mtLong:"The text is long — some email apps will truncate it.",
   mtDemo:"Links are only available in live mode.",
   mtHint:"Opens a draft in your own email app. A mail link cannot carry attachments — so the agenda link travels instead and always shows the current state.",
+  agAllBtn:"Agenda to all", agAllTo:n=>`Goes to ${n} confirmed trainers:`,
+  agAllSend:n=>`Send to ${n}`, agAllNone:"Nobody is confirmed for this training yet.",
+  agAllHint:"Salutation and session list are filled in per person — {{firstName}} stays as a placeholder.",
+  agAllDone:n=>`${n} agendas sent`, agAllFail:w=>`not delivered: ${w}`,
+  agNoMail:"no email",
+  mtNothing:"There is nothing to send here yet.",
+  mtMore:n=>`… and ${n} more dates (full list in the cockpit)`,
   emNone:"No emails sent yet.", em_sent:"sent", em_logged:"logged", em_failed:"failed",
   agendaHint:"The trainer receives this overview by email (print link) and can print it.",
   resetToast:"Demo data reset",
@@ -2367,6 +2384,8 @@ function setLang(l){
 }
 function applyStatic(){
   { const ll=$("#lockLogo"); if(ll)ll.innerHTML=etafLogo(48); const bl=$("#brandLogo"); if(bl)bl.innerHTML=etafLogo(30); }
+  { const wm=$("#wkMailBtn"), cm=$("#calMailBtn");
+    if(wm) wm.textContent=t("dbMailClient"); if(cm) cm.textContent=t("dbMailClient"); }
   $("#lgSub").textContent=t("subTitle");
   $("#lgWelcome").textContent=t("welcome");
   $("#lgEnter").textContent=t("enterPin");
@@ -2862,7 +2881,9 @@ function renderDetail(){
   </div>`;
 
   const roster=`<div class="panel">
-    <div class="panel-h"><h3>${t("teamStatus")}</h3><div class="sub">${t("inProcess",inRoster.length)}</div></div>
+    <div class="panel-h"><h3>${t("teamStatus")}</h3><div class="sub">${t("inProcess",inRoster.length)}</div>
+      ${inRoster.filter(x=>["yes","confirmed"].includes(x.status)).length>1
+        ? `<div class="spacer"></div><button class="btn sm" onclick="sendAgendaAll('${tg.id}')">${ic("send",14)}${esc(t("agAllBtn"))}</button>` : ""}</div>
     <div class="panel-b">${inRoster.length?inRoster.map(x=>rosterRow(x,tg)).join(""):`<div class="empty">${t("noneAsked")}</div>`}</div>
   </div>`;
 
@@ -5274,8 +5295,9 @@ function buildAgendaHTML(tg,tr,fl,weekHtml=""){
 /* Agenda-Versand mit Kontroll-Dialog: Betreff/Text vorher sehen und anpassen
    (wie bei allen anderen Mails), inkl. DE/EN-Umschalter. */
 let agMail={tg:null,tr:null,lang:"de"};
-function agMailTexts(tg,tr,lang){
-  const first=(tr.name||"").replace(/^Dr\.\s*/,"").split(" ")[0];
+function agMailTexts(tg,tr,lang,batch){
+  // Beim Serienversand bleibt {{firstName}} stehen — das Backend füllt es je Trainer
+  const first=batch ? "{{firstName}}" : (tr.name||"").replace(/^Dr\.\s*/,"").split(" ")[0];
   const kw=kwLabel(tg.kw||"");
   return lang==="de"
     ? { subject:`Deine Reise-Agenda — ${tg.topic} in ${tg.city}`,
@@ -5283,21 +5305,37 @@ function agMailTexts(tg,tr,lang){
     : { subject:`Your travel agenda — ${tg.topic} in ${tg.city}`,
         body:`Hi ${first},\n\nhere is your personal travel agenda for "${tg.topic}" in ${tg.city} (${(tg.kw||"").replace(/^\s*KW\s*/,"Week ")}). Open and print it via the button below.` };
 }
+/* Serienversand: derselbe Kontroll-Dialog, nur mit Empfängerliste.
+   Betreff und Text dürfen Platzhalter enthalten — {{firstName}} wird je
+   Trainer gefüllt, sonst stünde in allen Mails dieselbe Anrede. */
+function sendAgendaAll(tgId){
+  const tg=S.trainings.find(x=>String(x.id)===String(tgId)); if(!tg) return;
+  const list=(tg.roster||[]).filter(r=>["yes","confirmed"].includes(r.status))
+    .map(r=>S.trainers.find(x=>String(x.id)===String(r.trainerId))).filter(Boolean);
+  if(!list.length){ toast(t("agAllNone"),"warn"); return; }
+  agMail={tg,tr:list[0],lang:S.lang==="en"?"en":"de",all:list};
+  drawAgendaMail(true);
+  openSheet();
+}
 function sendAgenda(tgId,trId){
   const tg=S.trainings.find(x=>x.id===tgId), tr=S.trainers.find(x=>x.id===trId);
   if(!tg||!tr) return;
-  agMail={tg,tr,lang:(tr.prefLang||S.lang||"de")==="en"?"en":"de"};
+  agMail={tg,tr,lang:(tr.prefLang||S.lang||"de")==="en"?"en":"de",all:null};
   drawAgendaMail(true);
   openSheet();
 }
 function drawAgendaMail(first){
-  const {tg,tr,lang}=agMail;
-  const tx=agMailTexts(tg,tr,lang);
+  const {tg,tr,lang,all}=agMail;
+  const tx=agMailTexts(tg,tr,lang,!!all);
   if(first){
-    $("#sheetTitle").textContent=t("agMailTitle")+" — "+tr.name;
+    $("#sheetTitle").textContent=t("agMailTitle")+" — "+(all?tg.code||tg.topic:tr.name);
+    const who = all
+      ? `<div class="meta rowgrow">${esc(t("agAllTo",all.length))}<br>${all.map(x=>
+           esc(x.name)+(x.email?"":` <b style="color:var(--crit)">${esc(t("agNoMail"))}</b>`)).join(" · ")}</div>`
+      : `<span class="meta rowgrow">${esc(tr.email||"—")}</span>`;
     $("#sheetBody").innerHTML=`
-      <div class="fldrow" style="align-items:center;margin-bottom:10px">
-        <span class="meta rowgrow">${esc(tr.email||"—")}</span>
+      <div class="fldrow" style="align-items:flex-start;margin-bottom:10px">
+        ${who}
         <span class="langsw">
           <button id="agL-de" onclick="agMailLang('de')">DE</button>
           <button id="agL-en" onclick="agMailLang('en')">EN</button>
@@ -5307,18 +5345,35 @@ function drawAgendaMail(first){
       <input class="inp" id="agSubj">
       <label class="fld">${t("agBodyLbl")}</label>
       <textarea id="agBody" style="min-height:150px"></textarea>
+      ${all?`<div class="meta" style="margin-top:8px">${ic("users",13)}${t("agAllHint")}</div>`:""}
       <div class="meta" style="margin-top:10px">${ic("clip",13)}${t("agMailInfo")}</div>
-      <div class="meta" style="margin-top:8px">${ic("mail",13)}${t("mtHint")}</div>`;
+      ${all?"":`<div class="meta" style="margin-top:8px">${ic("mail",13)}${t("mtHint")}</div>`}`;
     $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
-      <button class="btn sm" onclick="agendaCopyLink()">${ic("clip",14)}${t("mtLink")}</button>
-      <button class="btn sm" onclick="agendaToMailClient()">${ic("mail",14)}${t("dbMailClient")}</button>
+      ${all?"":`<button class="btn sm" onclick="agendaCopyLink()">${ic("clip",14)}${t("mtLink")}</button>
+        <button class="btn sm" onclick="agendaToMailClient()">${ic("mail",14)}${t("dbMailClient")}</button>`}
       <div class="spacer"></div>
-      <button class="btn primary" onclick="doSendAgenda()">${ic("send",15)}${t("agendaSend")}</button>`;
+      <button class="btn primary" onclick="${all?"doSendAgendaAll()":"doSendAgenda()"}">${ic("send",15)}${
+        all?t("agAllSend",all.length):t("agendaSend")}</button>`;
   }
   $("#agSubj").value=tx.subject;
   $("#agBody").value=tx.body;
   $("#agL-de").className=lang==="de"?"on":"";
   $("#agL-en").className=lang==="en"?"on":"";
+}
+async function doSendAgendaAll(){
+  const {tg,lang,all}=agMail;
+  const subject=val("agSubj").trim(), text=val("agBody");
+  if(!text.trim()){ toast(t("agBodyLbl")+"?","crit"); return; }
+  if(!LIVE){ toast(t("mtDemo"),"warn"); return; }
+  const btn=$("#sheetFoot .btn.primary"); if(btn){ btn.disabled=true; btn.innerHTML=`<span class="btnspin"></span>`; }
+  try{
+    const d=await apiCall("travel.sendAgendaAll",
+      {training:tg.id,trainers:all.map(x=>x.id),lang,subject,text});
+    closeSheet();
+    toast(t("agAllDone",d.sent||0)+((d.failed||[]).length?" · "+t("agAllFail",d.failed.join(", ")):""),
+      (d.failed||[]).length?"warn":"good");
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+  finally{ if(btn){ btn.disabled=false; drawAgendaMail(true); } }
 }
 function agMailLang(l){ if(agMail.lang===l) return; agMail.lang=l; drawAgendaMail(false); }
 async function doSendAgenda(){
@@ -6949,6 +7004,46 @@ function mailtoOpen(to,subject,body){
 async function copyText(txt,msg){
   try{ await navigator.clipboard.writeText(txt); toast(msg||t("mtCopied"),"good"); }
   catch(e){ prompt(t("mtCopyManual"),txt); }
+}
+
+/* Wochenplan als Text ins eigene Mailprogramm — Tag für Tag mit Trainern. */
+function weekToMailClient(){
+  const tg=wkCurTg(); if(!tg||!WKD){ toast(t("mtNothing"),"warn"); return; }
+  const {slots,bench}=wkPlacement();
+  const L=[(tg.code?tg.code+" — ":"")+tg.topic, (tg.city||"")+" · "+whenLabel(tg), ""];
+  WK_DAYS.forEach((d,i)=>{
+    const day=["am","pm"].map(h=>{
+      const items=slots[d+"_"+h].map(id=>{
+        const ses=wkSess(id); if(!ses) return null;
+        const names=sessTrIds(ses).map(x=>{const y=S.trainers.find(z=>String(z.id)===x);return y?y.name.replace(/^Dr\.\s*/,""):null;}).filter(Boolean);
+        return "  " + sessTitle(ses) + " (" + (ses.dur||1) + " h" + (names.length?", "+names.join(", "):"") + ")";
+      }).filter(Boolean);
+      return items.length ? [t(h==="am"?"wkAM":"wkPM")+":"].concat(items).join("\n") : "";
+    }).filter(Boolean).join("\n");
+    if(day) L.push(t("day_"+d)+" "+wkDayDate(i)+"\n"+day);
+  });
+  if(bench.length) L.push(t("wkBench")+": "+bench.map(id=>sessTitle(wkSess(id))).join(", "));
+  if(wkDelivText()) L.push("\n"+t("wkDeliverable")+": "+wkDelivText());
+  L.push("\n— ETAF Trainer-Koordination");
+  mailtoOpen("", t("nav_week")+" "+(tg.code?tg.code+" ":"")+tg.topic, L.join("\n"));
+}
+/* Wandkalender als Terminliste ins eigene Mailprogramm. */
+function calToMailClient(){
+  const list=sortedForCal();
+  if(!list.length){ toast(t("mtNothing"),"warn"); return; }
+  const cl=activeClient();
+  const L=[t("calTitle")+(cl?" — "+cl.name:""),""];
+  // mailto-Adressen sind längenbegrenzt — deshalb kürzen und ehrlich sagen,
+  // wie viele Termine nicht mehr in die Mail passen.
+  const MAX=22;
+  list.slice(0,MAX).forEach(tg=>{
+    const r=rosterStats(tg);
+    L.push((tg.date?fmtDate(tg.date):"")+(tg.dateEnd&&tg.dateEnd!==tg.date?"–"+fmtDate(tg.dateEnd):"")
+      +" · "+(tg.code?tg.code+" ":"")+tg.topic+" · "+(tg.city||"")+" · "+r.yes+"/"+r.need);
+  });
+  if(list.length>MAX) L.push(t("mtMore",list.length-MAX));
+  L.push("\n— ETAF Trainer-Koordination");
+  mailtoOpen("", t("calTitle")+(cl?" — "+cl.name:""), L.join("\n"));
 }
 
 /* Agenda an das eigene Mailprogramm übergeben (Link statt Anhang). */

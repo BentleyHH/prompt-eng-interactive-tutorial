@@ -123,6 +123,109 @@ function digest_send(array $u): bool {
   return $ok;
 }
 
+
+/** HTML-Block einer Auswertung für die Mail — kompakt, ohne Bilder,
+ *  damit er in jedem Mailprogramm lesbar bleibt und sich drucken lässt. */
+function report_mail_html(array $rep, string $title): string {
+  $H=fn($t)=>'<div style="font-weight:800;font-size:15px;margin:18px 0 6px;color:#3e4852">'.$t.'</div>';
+  $band=fn($v)=>$v===null?'#8a939a':($v>=4?'#2E9E6B':($v>=3?'#C77E1E':'#D81F26'));
+  $num=fn($v)=>$v===null?'—':number_format((float)$v,1,',','');
+  $out='<div style="font-family:Arial,Helvetica,sans-serif">'.$H($title);
+  $cov = !empty($rep['due']) ? round(($rep['dueDone']??0)/$rep['due']*100).'%' : '—';
+  $out.='<div style="font-size:14px;margin-bottom:4px">Ø Gesamteindruck: '
+      .'<b style="color:'.$band($rep['overall']??null).';font-size:19px">'.$num($rep['overall']??null).'</b> / 5'
+      .' · '.(int)($rep['n']??0).' Bericht'.(((int)($rep['n']??0))===1?'':'e').' · Abdeckung '.$cov.'</div>';
+
+  // Bereiche
+  if(!empty($rep['groups'])){
+    $cells='';
+    foreach(debrief_catalog()['groups'] as $g){
+      $x=null; foreach($rep['groups'] as $gg) if($gg['key']===$g['key']) $x=$gg['avg'];
+      $cells.='<td style="padding:6px 12px 6px 0;font-size:13px;color:#5c666e">'.htmlspecialchars($g['de'])
+        .' <b style="color:'.$band($x).';font-size:15px">'.$num($x).'</b></td>';
+    }
+    $out.=$H('Bereiche').'<table role="presentation" cellpadding="0" cellspacing="0"><tr>'.$cells.'</tr></table>';
+  }
+  // Schwächste Werte
+  $crit=$rep['criteria']??[];
+  usort($crit, fn($a,$b)=>($a['avg']??9)<=>($b['avg']??9));
+  $rows='';
+  foreach(array_slice($crit,0,6) as $c){
+    $w=max(2,(int)round(($c['avg']/5)*160));
+    $rows.='<tr><td style="padding:3px 12px 3px 0;font-size:13px;color:#242b31">'.htmlspecialchars(debrief_label($c['key'])).'</td>'
+      .'<td style="padding:3px 0"><div style="width:160px;background:#eef0f2;border-radius:4px;height:8px">'
+      .'<div style="width:'.$w.'px;height:8px;border-radius:4px;background:'.$band($c['avg']).'"></div></div></td>'
+      .'<td style="padding:3px 0 3px 10px;font-size:13px;font-weight:700;white-space:nowrap">'.$num($c['avg']).'<span style="color:#8a939a;font-weight:400"> n='.$c['n'].'</span></td></tr>';
+  }
+  if($rows) $out.=$H('Schwächste Werte').'<table role="presentation" cellpadding="0" cellspacing="0">'.$rows.'</table>';
+
+  // Trainer
+  if(!empty($rep['trainers'])){
+    $tr='';
+    foreach(array_slice($rep['trainers'],0,10) as $x){
+      $tr.='<tr><td style="padding:3px 14px 3px 0;font-size:13px">'.htmlspecialchars($x['name']).'</td>'
+        .'<td style="padding:3px 0;font-size:13px;font-weight:700;color:'.$band($x['avg']).'">'.$num($x['avg']).'</td></tr>';
+    }
+    $out.=$H('Trainerinnen und Trainer').'<table role="presentation" cellpadding="0" cellspacing="0">'.$tr.'</table>';
+  }
+  // Vorkommnisse und offene Maßnahmen
+  if(!empty($rep['flags'])){
+    $f=[]; foreach(array_slice($rep['flags'],0,8) as $x) $f[]=htmlspecialchars(debrief_label($x['key'])).' <b>'.$x['n'].'×</b>';
+    $out.=$H('Häufigste Vorkommnisse').'<div style="font-size:13px;color:#5c666e">'.implode(' · ',$f).'</div>';
+  }
+  if(!empty($rep['actions'])){
+    $a='';
+    foreach(array_slice($rep['actions'],0,10) as $x){
+      $a.='<div style="font-size:13px;padding:2px 0">• '.htmlspecialchars($x['text'])
+        .' <span style="color:#8a939a">— '.htmlspecialchars($x['owner']?:'?')
+        .($x['due']?', '.date('d.m.Y',strtotime($x['due'])):'').($x['code']?' ('.htmlspecialchars($x['code']).')':'').'</span></div>';
+    }
+    $out.=$H('Offene Maßnahmen').$a;
+  }
+  return $out.'</div>';
+}
+
+/** Quartals- und Jahresauswertung automatisch verschicken.
+ *  Läuft in den ersten Tagen eines neuen Quartals genau einmal. */
+function send_period_report(): int {
+  if(config_get('period_report')==='0') return 0;   // in den Einstellungen abschaltbar
+  $now=time();
+  $q=(int)ceil(((int)gmdate('n',$now))/3);          // aktuelles Quartal 1..4
+  $y=(int)gmdate('Y',$now);
+  // Vorquartal bestimmen
+  $pq=$q-1; $py=$y; if($pq<1){ $pq=4; $py--; }
+  $from=sprintf('%04d-%02d-01',$py,($pq-1)*3+1);
+  $to=date('Y-m-t', strtotime(sprintf('%04d-%02d-01',$py,($pq-1)*3+3)));
+  $flag='period_report_'.$py.'Q'.$pq;
+  if(config_get($flag)!==null) return 0;            // schon verschickt
+  // Erst ab dem 2. Tag des neuen Quartals, damit späte Berichte noch eingehen
+  if((int)gmdate('j',$now) < 2) return 0;
+
+  $rep=debrief_report($from,$to,'','month');
+  if((int)$rep['n']===0){ config_set($flag,now()); return 0; }   // nichts zu berichten
+
+  $admins=q("SELECT email,name FROM users WHERE active=1 AND role='admin' AND email<>''")->fetchAll();
+  if(!$admins) return 0;
+  $dash=preg_replace('#/backend$#','',base_url());
+  $title='Quartalsbericht '.$pq.'/'.$py;
+  $sent=0;
+  foreach($admins as $a){
+    $first=explode(' ',trim((string)($a['name']??'')))[0]?:'';
+    $html=email_html("Hallo".($first?" $first":"").",\n\n"
+      ."hier die Auswertung aller Trainingsberichte aus dem Quartal "
+      .date('d.m.Y',strtotime($from)).' – '.date('d.m.Y',strtotime($to)).".",
+      report_mail_html($rep,$title).cta_button($dash,'Auswertung im Cockpit öffnen'));
+    $subj='ETAF — '.$title;
+    $ok=send_email($a['email'],$a['name']??'',$subj,$html);
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[null,null,$a['email'],$subj,$title,'de',
+       ((cfg()['mail_mode']??'mail')==='log'?'logged':($ok?'sent':'failed')),now()]);
+    if($ok) $sent++;
+  }
+  config_set($flag,now());
+  return $sent;
+}
+
 function run_automation(): array {
   $reminderH=(int)(config_get('reminder_hours') ?? 48);
   $escalateH=(int)(config_get('escalate_hours') ?? 72);
@@ -351,6 +454,10 @@ function run_automation(): array {
     }
   }catch(Throwable $e){ /* Erinnerung darf den Rest nicht stoppen */ }
 
+  /* 6d) Quartalsbericht (einmal je Quartal an die Koordination) */
+  $periodRep=0;
+  try{ $periodRep=send_period_report(); }catch(Throwable $e){ /* darf den Rest nicht stoppen */ }
+
   /* 7) Aufräumen: abgelaufene Sitzungen, alte Einmal-Links, alte Login-Sperren */
   try{
     $maxDays=(int)(cfg()['session_days']??14);
@@ -368,5 +475,5 @@ function run_automation(): array {
 
   return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,
           'passport'=>$passport,'mail_fetched'=>$mailFetched,'mail_flights'=>$mailFlights,
-          'digest'=>$digestSent,'debrief_ping'=>$debriefPing,'backup'=>$backupFile,'auto_advance'=>$autoAdv];
+          'digest'=>$digestSent,'debrief_ping'=>$debriefPing,'period_report'=>$periodRep,'backup'=>$backupFile,'auto_advance'=>$autoAdv];
 }

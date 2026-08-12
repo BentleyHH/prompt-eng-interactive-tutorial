@@ -1023,64 +1023,33 @@ switch($action){
   /* ---- Persönliche Reise-Agenda per E-Mail senden (mit Druck-Link) ---- */
   case 'travel.sendAgenda':
     require_auth();
-    $tgId=$in['training']??0; $trId=$in['trainer']??0;
-    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
-    $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
-    if(!$tg||!$tr) fail('Training oder Trainer nicht gefunden.',404);
-    $rq=q("SELECT * FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
-    $lang=($rq['lang']??'en')==='de'?'de':'en';
-    if(in_array($in['lang']??'',['de','en'],true)) $lang=$in['lang'];   // Dialog-Auswahl gewinnt
-    $tok=$rq['tok']??'';
-    if(!$tok){ $tok=token(40);
-      q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?, 'yes',?,?,?)",[$tgId,$trId,$lang,$tok,now()]); }
-    $link=base_url().'/agenda.php?token='.$tok;
-    $subj=fill_tpl($lang==='de'?'Deine Reise-Agenda — {{topic}} in {{city}}':'Your travel agenda — {{topic}} in {{city}}',$tg,$tr);
-    $intro=fill_tpl($lang==='de'
-      ? "Hallo {{firstName}},\n\nanbei deine persönliche Reise-Agenda für „{{topic}}“ in {{city}} ({{kw}}). Über den Button kannst du sie öffnen und ausdrucken."
-      : "Hi {{firstName}},\n\nhere is your personal travel agenda for \"{{topic}}\" in {{city}} ({{kw}}). Open and print it via the button below.",
-      $tg,$tr);
-    // Aus dem Kontroll-Dialog angepasste Texte übernehmen
-    if(trim((string)($in['subject']??''))!=='') $subj=preg_replace('/[\r\n]+/',' ',trim((string)$in['subject']));
-    if(trim((string)($in['text']??''))!=='')    $intro=(string)$in['text'];
-    $btnLabel=$lang==='de'?'📄 Agenda öffnen & drucken':'📄 Open & print agenda';
-    $btns='<div style="margin:22px 0"><a href="'.$link.'" style="display:inline-block;padding:12px 20px;'
-      .'border-radius:8px;background:#3e4852;color:#fff;font:600 14px system-ui,Arial,sans-serif;text-decoration:none">'
-      .$btnLabel.'</a></div>';
-    // Persönliche Sessions dieser Woche direkt in die Mail (Spiegelung des Wochenplans)
-    $sessHtml='';
-    $ws=trainer_week_sessions((int)$tgId,(int)$trId);
-    if($ws){
-      $dayN=$lang==='de'?['Mo','Di','Mi','Do','Fr']:['Mon','Tue','Wed','Thu','Fri'];
-      $halfN=$lang==='de'?['am'=>'Vormittag','pm'=>'Nachmittag']:['am'=>'Morning','pm'=>'Afternoon'];
-      $li='';
-      foreach($ws as $s2){
-        $when=$s2['dayIdx']!==null
-          ? $dayN[$s2['dayIdx']].($s2['date']?' '.date('d.m.',strtotime($s2['date'])):'').($s2['half']?' · '.($halfN[$s2['half']]??''):'')
-          : ($lang==='de'?'offen':'tbd');
-        $li.='<tr><td style="padding:4px 12px 4px 0;color:#5c666e;white-space:nowrap;font-size:13px;vertical-align:top">'.htmlspecialchars($when).'</td>'
-           .'<td style="padding:4px 0;font-size:13px"><b>'.htmlspecialchars($lang==='en'&&$s2['title_en']!==''?$s2['title_en']:$s2['title']).'</b> · '.htmlspecialchars((string)$s2['dur']).' h'
-           .(!empty($s2['with'])?'<br><span style="color:#3F7A5E;font-weight:600">👥 '.htmlspecialchars(($lang==='de'?'zusammen mit ':'together with ').implode(', ',$s2['with'])).'</span>':'')
-           .($s2['pptMine']?'<br><span style="color:#B23A42;font-weight:600">'.($lang==='de'?'PowerPoint: von dir vorzubereiten':'PowerPoint: to be prepared by you').'</span>':'')
-           .'</td></tr>';
-      }
-      $sessHtml='<div style="margin:18px 0 4px;font-family:Arial,Helvetica,sans-serif">'
-        .'<b style="font-size:14px">'.($lang==='de'?'Deine Sessions in dieser Woche':'Your sessions this week').'</b>'
-        .'<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:6px">'.$li.'</table></div>';
+    $r=send_agenda_mail((int)($in['training']??0), (int)($in['trainer']??0),
+        (string)($in['lang']??''), (string)($in['subject']??''), (string)($in['text']??''));
+    if(empty($r['ok'])) fail($r['error']??'Versand fehlgeschlagen.',404);
+    out(['ok'=>true,'link'=>$r['link'],'sent'=>$r['sent'],'attached'=>$r['attached']]);
+
+  /* ---- Serienversand: Agenda an alle bestätigten Trainer eines Trainings.
+         Betreff und Text kommen aus dem Kontroll-Dialog und dürfen Platzhalter
+         wie {{firstName}} enthalten — je Trainer wird individuell gefüllt. ---- */
+  case 'travel.sendAgendaAll':
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    if(!q("SELECT id FROM trainings WHERE id=?",[$tgId])->fetch()) fail('Training nicht gefunden.',404);
+    $ids=array_values(array_filter(array_map('intval',(array)($in['trainers']??[]))));
+    if(!$ids){
+      $ids=array_map('intval', q("SELECT trainer_id FROM requests WHERE training_id=? AND status IN('yes','confirmed')",
+        [$tgId])->fetchAll(PDO::FETCH_COLUMN));
     }
-    // Ticket/Voucher aus der verknüpften Flugpost-Mail automatisch anhängen
-    $atts=[];
-    $tv=q("SELECT mail_id FROM travel WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
-    if($tv && $tv['mail_id']){
-      foreach(q("SELECT name,mime,data FROM travel_mail_att WHERE mail_id=?",[$tv['mail_id']])->fetchAll() as $a){
-        $atts[]=['name'=>$a['name'],'mime'=>$a['mime'],'data_b64'=>$a['data']];
-      }
-      if($atts) $intro.=$lang==='de' ? "\n\nDein Ticket/Voucher hängt an dieser E-Mail."
-                                     : "\n\nYour ticket/voucher is attached to this email.";
+    if(!$ids) fail('Für dieses Training ist noch niemand bestätigt.');
+    $done=[]; $failed=[]; $att=0;
+    foreach($ids as $trId){
+      $r=send_agenda_mail($tgId,$trId,(string)($in['lang']??''),
+          (string)($in['subject']??''),(string)($in['text']??''));
+      if(empty($r['ok'])||empty($r['sent'])) $failed[]=$r['name']??('#'.$trId);
+      else { $done[]=$r['name']; $att+=(int)$r['attached']; }
     }
-    $ok=send_email($tr['email'],$tr['name'],$subj,email_html($intro,$sessHtml.$btns),$atts);
-    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
-       VALUES(?,?,?,?,?,?,?,?)",[$tgId,$trId,$tr['email'],$subj,$intro."\n".$link,$lang,$ok?'sent':'failed',now()]);
-    out(['ok'=>true,'link'=>$link,'sent'=>$ok?1:0,'attached'=>count($atts)]);
+    audit('travel.sendAgendaAll','training',(string)$tgId,count($done).' Agenden verschickt');
+    out(['ok'=>true,'sent'=>count($done),'failed'=>$failed,'names'=>$done,'attached'=>$att]);
 
   default:
     fail('Unbekannte Aktion: '.$action, 404);

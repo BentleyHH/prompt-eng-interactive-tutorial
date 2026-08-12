@@ -980,3 +980,71 @@ function debriefs_missing(int $graceDays=0): array {
               AND NOT EXISTS (SELECT 1 FROM debriefs d WHERE d.training_id=t.id AND d.status='final')
             ORDER BY COALESCE(t.end_date,t.start_date) DESC",[$cut])->fetchAll();
 }
+
+/**
+ * Reise-Agenda an einen Trainer schicken. Steckt hier, damit Einzel- und
+ * Serienversand garantiert dieselbe Mail erzeugen.
+ * $lang/$subject/$text überschreiben die Vorgaben aus dem Kontroll-Dialog.
+ */
+function send_agenda_mail(int $tgId, int $trId, string $lang='', string $subject='', string $text=''): array {
+  $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+  $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
+  if(!$tg||!$tr) return ['ok'=>false,'error'=>'Training oder Trainer nicht gefunden.'];
+  $rq=q("SELECT * FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+  $lg=($rq['lang']??'en')==='de'?'de':'en';
+  if(in_array($lang,['de','en'],true)) $lg=$lang;
+  $tok=$rq['tok']??'';
+  if(!$tok){ $tok=token(40);
+    q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?,'yes',?,?,?)",
+      [$tgId,$trId,$lg,$tok,now()]); }
+  $link=base_url().'/agenda.php?token='.$tok;
+  $subj=fill_tpl($lg==='de'?'Deine Reise-Agenda — {{topic}} in {{city}}':'Your travel agenda — {{topic}} in {{city}}',$tg,$tr);
+  $intro=fill_tpl($lg==='de'
+    ? "Hallo {{firstName}},\n\nanbei deine persönliche Reise-Agenda für „{{topic}}“ in {{city}} ({{kw}}). Über den Button kannst du sie öffnen und ausdrucken."
+    : "Hi {{firstName}},\n\nhere is your personal travel agenda for \"{{topic}}\" in {{city}} ({{kw}}). Open and print it via the button below.",
+    $tg,$tr);
+  // Aus dem Kontroll-Dialog angepasste Texte übernehmen (Platzhalter werden gefüllt)
+  if(trim($subject)!=='') $subj=preg_replace('/[\r\n]+/',' ',fill_tpl(trim($subject),$tg,$tr));
+  if(trim($text)!=='')    $intro=fill_tpl($text,$tg,$tr);
+
+  $btnLabel=$lg==='de'?'📄 Agenda öffnen & drucken':'📄 Open & print agenda';
+  $btns='<div style="margin:22px 0"><a href="'.$link.'" style="display:inline-block;padding:12px 20px;'
+    .'border-radius:8px;background:#3e4852;color:#fff;font:600 14px system-ui,Arial,sans-serif;text-decoration:none">'
+    .$btnLabel.'</a></div>';
+  // Persönliche Sessions dieser Woche direkt in die Mail (Spiegelung des Wochenplans)
+  $sessHtml='';
+  $ws=trainer_week_sessions($tgId,$trId);
+  if($ws){
+    $dayN=$lg==='de'?['Mo','Di','Mi','Do','Fr']:['Mon','Tue','Wed','Thu','Fri'];
+    $halfN=$lg==='de'?['am'=>'Vormittag','pm'=>'Nachmittag']:['am'=>'Morning','pm'=>'Afternoon'];
+    $li='';
+    foreach($ws as $s2){
+      $when=$s2['dayIdx']!==null
+        ? $dayN[$s2['dayIdx']].($s2['date']?' '.date('d.m.',strtotime($s2['date'])):'').($s2['half']?' · '.($halfN[$s2['half']]??''):'')
+        : ($lg==='de'?'offen':'tbd');
+      $li.='<tr><td style="padding:4px 12px 4px 0;color:#5c666e;white-space:nowrap;font-size:13px;vertical-align:top">'.htmlspecialchars($when).'</td>'
+         .'<td style="padding:4px 0;font-size:13px"><b>'.htmlspecialchars($lg==='en'&&$s2['title_en']!==''?$s2['title_en']:$s2['title']).'</b> · '.htmlspecialchars((string)$s2['dur']).' h'
+         .(!empty($s2['with'])?'<br><span style="color:#3F7A5E;font-weight:600">👥 '.htmlspecialchars(($lg==='de'?'zusammen mit ':'together with ').implode(', ',$s2['with'])).'</span>':'')
+         .($s2['pptMine']?'<br><span style="color:#B23A42;font-weight:600">'.($lg==='de'?'PowerPoint: von dir vorzubereiten':'PowerPoint: to be prepared by you').'</span>':'')
+         .'</td></tr>';
+    }
+    $sessHtml='<div style="margin:18px 0 4px;font-family:Arial,Helvetica,sans-serif">'
+      .'<b style="font-size:14px">'.($lg==='de'?'Deine Sessions in dieser Woche':'Your sessions this week').'</b>'
+      .'<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:6px">'.$li.'</table></div>';
+  }
+  // Ticket/Voucher aus der verknüpften Flugpost-Mail automatisch anhängen
+  $atts=[];
+  $tv=q("SELECT mail_id FROM travel WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+  if($tv && $tv['mail_id']){
+    foreach(q("SELECT name,mime,data FROM travel_mail_att WHERE mail_id=?",[$tv['mail_id']])->fetchAll() as $a){
+      $atts[]=['name'=>$a['name'],'mime'=>$a['mime'],'data_b64'=>$a['data']];
+    }
+    if($atts) $intro.=$lg==='de' ? "\n\nDein Ticket/Voucher hängt an dieser E-Mail."
+                                 : "\n\nYour ticket/voucher is attached to this email.";
+  }
+  $ok=send_email($tr['email'],$tr['name'],$subj,email_html($intro,$sessHtml.$btns),$atts);
+  q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+     VALUES(?,?,?,?,?,?,?,?)",[$tgId,$trId,$tr['email'],$subj,$intro."\n".$link,$lg,$ok?'sent':'failed',now()]);
+  return ['ok'=>true,'link'=>$link,'sent'=>$ok?1:0,'attached'=>count($atts),
+          'name'=>$tr['name'],'email'=>$tr['email']];
+}
