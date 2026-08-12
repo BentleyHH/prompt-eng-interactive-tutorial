@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — API-Router
+ * ETAF - API-Router
  * Aufruf: backend/api.php?action=<name>  (POST, JSON-Body)
  * Antwort: JSON. Auth via Header X-Auth-Token (außer 'login').
  */
@@ -34,7 +34,7 @@ try{ undo_prepare($action,$in); }catch(Throwable $e){}
 try {
 switch($action){
 
-  case 'login':                       // PIN — nur zur Ersteinrichtung
+  case 'login':                       // PIN - nur zur Ersteinrichtung
     out(do_login((string)($in['pin']??'')));
 
   case 'auth.login':                  // E-Mail + Passwort
@@ -94,7 +94,7 @@ switch($action){
       $old=q("SELECT * FROM users WHERE id=?",[$uid])->fetch();
       if(!$old) fail('Benutzer nicht gefunden.',404);
       if($old['role']==='admin' && $role!=='admin' && admin_count()<=1)
-        fail('Das ist der letzte Administrator — bitte zuerst einen anderen Admin ernennen.');
+        fail('Das ist der letzte Administrator - bitte zuerst einen anderen Admin ernennen.');
       q("UPDATE users SET email=?,name=?,role=? WHERE id=?",[$em,$nm,$role,$uid]);
       audit('user.update','user',(string)$uid,"$nm ($em, $role)");
       out(['ok'=>true,'id'=>(string)$uid]);
@@ -400,7 +400,7 @@ switch($action){
     }
     out(['ok'=>true]);
 
-  /* ---- Nur den Agenda-Link holen (ohne zu senden) — für „mit eigenem
+  /* ---- Nur den Agenda-Link holen (ohne zu senden) - für „mit eigenem
          Mailprogramm verschicken" und zum Kopieren in eine laufende Mail ---- */
   case 'travel.agendaLink':
     require_auth();
@@ -421,7 +421,7 @@ switch($action){
     $trId=(int)($in['id']??0);
     if(!q("SELECT id FROM trainers WHERE id=?",[$trId])->fetch()) fail('Trainer nicht gefunden.',404);
     $ik=(string)(cfg()['ics_key']??'');
-    if($ik===''||$ik==='CHANGE_ME_kalender_schluessel') fail('Kein ics_key in config.php gesetzt — bitte einen zufälligen Wert eintragen.');
+    if($ik===''||$ik==='CHANGE_ME_kalender_schluessel') fail('Kein ics_key in config.php gesetzt - bitte einen zufälligen Wert eintragen.');
     out(['ok'=>true,'link'=>base_url().'/ics.php?key='.rawurlencode($ik).'&trainer='.$trId]);
 
   /* ============================================================
@@ -458,7 +458,7 @@ switch($action){
     $rec=in_array($in['recommend']??'',['yes','partly','no'],true)?$in['recommend']:'';
     $ov=(int)($in['overall']??0); if($ov<0||$ov>5) $ov=0;
 
-    // Nur bekannte Kriterien mit Werten 1..5 übernehmen — alles andere fällt weg
+    // Nur bekannte Kriterien mit Werten 1..5 übernehmen - alles andere fällt weg
     $keys=debrief_keys(); $sc=[];
     foreach((array)($in['scores']??[]) as $k=>$v){
       if(in_array((string)$k,$keys,true) && is_numeric($v) && $v>=1 && $v<=5) $sc[(string)$k]=(int)$v;
@@ -557,7 +557,7 @@ switch($action){
     $cnt=(int)q("SELECT COUNT(*) c FROM training_sessions WHERE training_id=?",[$to])->fetch()['c'];
     if($cnt>0 && empty($in['force'])) out(['ok'=>true,'needsForce'=>true,'existing'=>$cnt]);
     q("DELETE FROM training_sessions WHERE training_id=?",[$to]);
-    // Inhalte kopieren — Trainer-Zuordnung und PPT-Status bewusst NICHT (neue Woche, neues Team)
+    // Inhalte kopieren - Trainer-Zuordnung und PPT-Status bewusst NICHT (neue Woche, neues Team)
     $map=[];
     foreach(q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$from])->fetchAll() as $s){
       q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,mat,ppt,sort)
@@ -577,20 +577,20 @@ switch($action){
     audit('weekplan.copy','training',(string)$to,'Wochenplan aus Training #'.$from.' übernommen');
     out(['ok'=>true,'sessions'=>count($map)]);
 
-  /* ---- KI-Wochenrhythmus: Sessions didaktisch auf Mo–Fr verteilen lassen ---- */
+  /* ---- KI-Wochenrhythmus: Sessions didaktisch auf Mo-Fr verteilen lassen ---- */
   case 'weekplan.suggest':
     require_auth();
-    // Der KI-Aufruf kann bis zu ~90 s dauern — Standard-Zeitlimit (oft 60 s) reicht nicht.
+    // Der KI-Aufruf kann bis zu ~90 s dauern - Standard-Zeitlimit (oft 60 s) reicht nicht.
     @set_time_limit(180); @ini_set('max_execution_time','180');
     $tid=(int)($in['training']??0);
     $tg=q("SELECT * FROM trainings WHERE id=?",[$tid])->fetch();
     if(!$tg) fail('Training nicht gefunden.',404);
     $rows=q("SELECT id,title,stype,dur FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$tid])->fetchAll();
     if(!$rows) fail('Für diese Woche sind noch keine Sessions angelegt.');
-    if(trim(cfg()['anthropic_key']??'')==='') fail('KI nicht konfiguriert — trage anthropic_key in config.php ein.');
+    if(trim(cfg()['anthropic_key']??'')==='') fail('KI nicht konfiguriert - trage anthropic_key in config.php ein.');
     $sess=array_map(fn($r)=>['id'=>(string)$r['id'],'title'=>$r['title'],'type'=>$r['stype'],'dur'=>$r['dur']],$rows);
     $slots=ai_suggest_week($sess,(string)$tg['topic']);
-    // Antwort absichern: nur echte IDs, keine Dubletten — Übriges landet auf der Bank
+    // Antwort absichern: nur echte IDs, keine Dubletten - Übriges landet auf der Bank
     $valid=array_map(fn($r)=>(string)$r['id'],$rows);
     $keys=['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm'];
     $plan=[]; $seen=[];
@@ -659,12 +659,12 @@ switch($action){
       if($mode==='reask') q("UPDATE requests SET status='asked', lang=?, tok=?, created_at=?, responded_at=NULL WHERE id=?",[$lang,$tok,now(),$r['rid']]);
       else                q("UPDATE requests SET tok=? WHERE id=?",[$tok,$r['rid']]);
       $first=explode(' ', preg_replace('/^Dr\.\s*/','',$r['name']))[0];
-      $subj = $lang==='de' ? 'Terminänderung — '.$tg['topic'].' ('.$tg['city'].')' : 'Schedule change — '.$tg['topic'].' ('.$tg['city'].')';
+      $subj = $lang==='de' ? 'Terminänderung - '.$tg['topic'].' ('.$tg['city'].')' : 'Schedule change - '.$tg['topic'].' ('.$tg['city'].')';
       $intro = $lang==='de'
         ? "Hallo $first,\n\nkurze Info: Der Termin für „{$tg['topic']}“ in {$tg['city']} hat sich geändert.\nNeuer Zeitraum: $newWhen.\n\n"
-          .($mode==='reask' ? "Bitte bestätige über die Buttons unten, ob du zum neuen Termin verfügbar bist." : "Deine Zusage bleibt bestehen — falls der neue Termin nicht passt, melde dich bitte kurz.")
+          .($mode==='reask' ? "Bitte bestätige über die Buttons unten, ob du zum neuen Termin verfügbar bist." : "Deine Zusage bleibt bestehen - falls der neue Termin nicht passt, melde dich bitte kurz.")
         : "Hi $first,\n\nquick note: the schedule for \"{$tg['topic']}\" in {$tg['city']} has changed.\nNew period: $newWhen.\n\n"
-          .($mode==='reask' ? "Please confirm your availability for the new date via the buttons below." : "Your commitment stands — if the new date doesn't work, please let us know.");
+          .($mode==='reask' ? "Please confirm your availability for the new date via the buttons below." : "Your commitment stands - if the new date doesn't work, please let us know.");
       $html=email_html($intro, $mode==='reask' ? response_buttons($tok,$lang) : '');
       $ok=send_email($r['email'],$r['name'],$subj,$html);
       $st=$ok ? (($c['mail_mode']??'mail')==='log'?'logged':'sent') : 'failed';
@@ -752,7 +752,7 @@ switch($action){
     $lang=($in['lang']??'de')==='en'?'en':'de';
     $tgRow=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
     $subj=trim((string)($in['subject']??'')) ?: (($lang==='de'?'Änderung deines Einsatzes':'Change to your assignment')
-      .($tgRow?' — '.$tgRow['topic'].' ('.$tgRow['city'].')':''));
+      .($tgRow?' - '.$tgRow['topic'].' ('.$tgRow['city'].')':''));
     $html=email_html($text, response_buttons($tok,$lang));
     $ok=send_email($tr['email'],$tr['name'],$subj,$html);
     $st2=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
@@ -788,7 +788,7 @@ switch($action){
       else q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at,responded_at) VALUES(?,?,?,?,?,?,?)",
         [$tgId,$trId,$forceStatus,$lang,$tok,now(),$respondedAt]);
       // Text füllen
-      $subject=fill_tpl($subjTpl ?? 'Anfrage — {{topic}}', $tg, $tr);
+      $subject=fill_tpl($subjTpl ?? 'Anfrage - {{topic}}', $tg, $tr);
       $bodyText=fill_tpl($bodyTpl ?? '', $tg, $tr);
       // Bei einer Absage/Planänderung keine Verfügbarkeits-Buttons anhängen.
       $html=email_html($bodyText, $forceStatus==='asked' ? response_buttons($tok,$lang) : '');
@@ -815,11 +815,11 @@ switch($action){
     else    q("INSERT INTO plan_tokens(trainer_id,tok,created_at,sent_at) VALUES(?,?,?,?)",[$trId,$tok,now(),now()]);
     $first=explode(' ', preg_replace('/^Dr\.\s*/','',$tr['name']))[0];
     $intro=$lang==='de'
-      ? "Hallo $first,\n\nhier ist deine persönliche Einsatzübersicht. Bitte prüfe kurz, ob alles stimmt, und bestätige den Plan über den Button unten — oder melde uns, falls etwas nicht passt."
-      : "Hi $first,\n\nhere is your personal assignment overview. Please check that everything is correct and confirm the plan via the button below — or let us know if something doesn't fit.";
+      ? "Hallo $first,\n\nhier ist deine persönliche Einsatzübersicht. Bitte prüfe kurz, ob alles stimmt, und bestätige den Plan über den Button unten - oder melde uns, falls etwas nicht passt."
+      : "Hi $first,\n\nhere is your personal assignment overview. Please check that everything is correct and confirm the plan via the button below - or let us know if something doesn't fit.";
     $cta=$lang==='de' ? 'Einsatzplan ansehen & bestätigen' : 'View & confirm your plan';
     $url=base_url().'/plan.php?token='.$tok;
-    $subject=$lang==='de' ? 'Deine Einsatzübersicht — bitte bestätigen' : 'Your assignment overview — please confirm';
+    $subject=$lang==='de' ? 'Deine Einsatzübersicht - bitte bestätigen' : 'Your assignment overview - please confirm';
     $html=email_html($intro, plan_table_html($sched,$lang).cta_button($url,$cta));
     $ok=send_email($tr['email'],$tr['name'],$subject,$html);
     $st=$ok ? ((cfg()['mail_mode']??'mail')==='log'?'logged':'sent') : 'failed';
@@ -857,8 +857,8 @@ switch($action){
           ? cta_button(base_url().'/plan.php?token='.$pt['tok'],
               $lang==='de' ? 'Aktualisierte Einsatzübersicht ansehen & bestätigen' : 'View & confirm updated overview')
           : '';
-        $subj=$lang==='de' ? 'Antwort auf deine Rückmeldung — Einsatzübersicht'
-                           : 'Reply to your feedback — assignment overview';
+        $subj=$lang==='de' ? 'Antwort auf deine Rückmeldung - Einsatzübersicht'
+                           : 'Reply to your feedback - assignment overview';
         $ok=send_email($tr['email'],$tr['name'],$subj,email_html($reply,$cta));
         $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
         q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
@@ -938,7 +938,7 @@ switch($action){
       $img=$in['image'];
       if($img===null || $img==='null'){ $sets[]='passport_file=NULL'; }
       elseif(is_string($img) && $img!==''){
-        // Nur Rasterformate — kein SVG (könnte Skripte enthalten). Das Frontend
+        // Nur Rasterformate - kein SVG (könnte Skripte enthalten). Das Frontend
         // rechnet Fotos ohnehin vor dem Upload in JPEG um.
         if(!preg_match('#^data:image/(jpe?g|png|webp|gif|heic|heif);base64,#i',$img)) fail('Ungültiges Bildformat.');
         $sets[]='passport_file=?'; $vals[]=$img;
@@ -988,7 +988,7 @@ switch($action){
     $new = trim((string)($in['new'] ?? ''));
     $hash = config_get('pin_hash');
     if($hash && !password_verify($cur, $hash)) fail('Aktueller PIN ist nicht korrekt.',401);
-    if(!preg_match('/^\d{4,8}$/', $new)) fail('Neuer PIN muss 4–8 Ziffern haben.');
+    if(!preg_match('/^\d{4,8}$/', $new)) fail('Neuer PIN muss 4-8 Ziffern haben.');
     config_set('pin_hash', password_hash($new, PASSWORD_DEFAULT));
     out(['ok'=>true]);
 
@@ -1030,7 +1030,7 @@ switch($action){
 
   /* ---- Serienversand: Agenda an alle bestätigten Trainer eines Trainings.
          Betreff und Text kommen aus dem Kontroll-Dialog und dürfen Platzhalter
-         wie {{firstName}} enthalten — je Trainer wird individuell gefüllt. ---- */
+         wie {{firstName}} enthalten - je Trainer wird individuell gefüllt. ---- */
   case 'travel.sendAgendaAll':
     require_auth();
     $tgId=(int)($in['training']??0);

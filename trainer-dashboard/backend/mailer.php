@@ -1,9 +1,9 @@
 <?php
-/** ETAF — E-Mail-Versand (mail() / SMTP / log) inkl. Magic-Link-Buttons */
+/** ETAF - E-Mail-Versand (mail() / SMTP / log) inkl. Magic-Link-Buttons */
 
 require_once __DIR__.'/lib.php';
 
-/** Baut die drei Antwort-Buttons (Magic-Links) als HTML — tabellenbasiert,
+/** Baut die drei Antwort-Buttons (Magic-Links) als HTML - tabellenbasiert,
  *  gestapelt und mit voller Breite, damit sie in jedem Mail-Client (inkl.
  *  Apple Mail, Outlook, Gmail) sauber und gut tippbar dargestellt werden. */
 /** Minimalistisches Strich-Icon als Inline-SVG (für die Web-Bestätigungsseiten).
@@ -27,7 +27,7 @@ function response_buttons(string $tok, string $lang): string {
     ? ['yes'=>'✓&nbsp;&nbsp;Ja, verfügbar','maybe'=>'○&nbsp;&nbsp;Vielleicht','no'=>'✕&nbsp;&nbsp;Nein']
     : ['yes'=>'✓&nbsp;&nbsp;Yes, available','maybe'=>'○&nbsp;&nbsp;Maybe','no'=>'✕&nbsp;&nbsp;No'];
   // Dunkle Schrift auf hellem Grund + farbiger Rahmen: bleibt in JEDEM Mail-Client
-  // lesbar — auch wenn Hintergrundfarben entfernt werden (dann steht die Beschriftung
+  // lesbar - auch wenn Hintergrundfarben entfernt werden (dann steht die Beschriftung
   // farbig auf Weiß statt weiß auf Weiß / unsichtbar).
   $btn=function($url,$label,$text,$bg,$border){
     return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 10px;border-collapse:separate">'
@@ -119,9 +119,9 @@ function transfer_table_html(array $rows, string $lang): string {
     $ctx=htmlspecialchars($r['topic']).' · '.htmlspecialchars(trim(($r['city']??'').(($r['country']??'')?', '.$r['country']:'')));
     $body.='<tr>'
       .'<td style="'.$cell.'"><b>'.htmlspecialchars($r['trainer']).'</b>'.($r['phone']?'<div style="color:#8a939a;font-size:12px">☎ '.htmlspecialchars($r['phone']).'</div>':'').'</td>'
-      .'<td style="'.$cell.'">'.($arr?:'—').'</td>'
-      .'<td style="'.$cell.'">'.($dep?:'—').'</td>'
-      .'<td style="'.$cell.'">'.($hotel?:'—').'</td>'
+      .'<td style="'.$cell.'">'.($arr?:'-').'</td>'
+      .'<td style="'.$cell.'">'.($dep?:'-').'</td>'
+      .'<td style="'.$cell.'">'.($hotel?:'-').'</td>'
       .'<td style="'.$cell.'">'.$ctx.'</td></tr>';
   }
   return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
@@ -153,17 +153,17 @@ function transfer_send(string $clientId, string $lang, bool $reminder=false): ar
   $hi = $cname!=='' ? explode(' ',$cname)[0] : 'Team';
   if($reminder){
     $intro = $lang==='de'
-      ? "Hallo $hi,\n\nkurze Erinnerung: Wir hatten dir die Transfer-Übersicht unserer Trainer für {$cl['name']} geschickt. Bitte bestätige uns kurz den Erhalt über den Button unten — danke!"
-      : "Hello $hi,\n\na quick reminder: we sent you the transfer overview of our trainers for {$cl['name']}. Please confirm receipt via the button below — thank you!";
+      ? "Hallo $hi,\n\nkurze Erinnerung: Wir hatten dir die Transfer-Übersicht unserer Trainer für {$cl['name']} geschickt. Bitte bestätige uns kurz den Erhalt über den Button unten - danke!"
+      : "Hello $hi,\n\na quick reminder: we sent you the transfer overview of our trainers for {$cl['name']}. Please confirm receipt via the button below - thank you!";
   } else {
     $intro = $lang==='de'
-      ? "Hallo $hi,\n\nanbei die Übersicht unserer bestätigten Trainer für {$cl['name']} mit An-/Abreise und Hotel — bitte die Abholung/den Transfer entsprechend organisieren.\n\nBitte kurz den Erhalt bestätigen (Button unten)."
-      : "Hello $hi,\n\nplease find below our confirmed trainers for {$cl['name']} with arrival/departure and hotel details — kindly arrange pickup/transfer accordingly.\n\nPlease confirm receipt via the button below.";
+      ? "Hallo $hi,\n\nanbei die Übersicht unserer bestätigten Trainer für {$cl['name']} mit An-/Abreise und Hotel - bitte die Abholung/den Transfer entsprechend organisieren.\n\nBitte kurz den Erhalt bestätigen (Button unten)."
+      : "Hello $hi,\n\nplease find below our confirmed trainers for {$cl['name']} with arrival/departure and hotel details - kindly arrange pickup/transfer accordingly.\n\nPlease confirm receipt via the button below.";
   }
   $cta = $lang==='de' ? 'Erhalt bestätigen' : 'Confirm receipt';
   $url = base_url().'/transfer.php?token='.$tok;
   $pre = $reminder ? ($lang==='de'?'Erinnerung: ':'Reminder: ') : '';
-  $subject = $pre.($lang==='de' ? 'Trainer-Anreise & Transfer — ' : 'Trainer arrivals & transfer — ').$cl['name'];
+  $subject = $pre.($lang==='de' ? 'Trainer-Anreise & Transfer - ' : 'Trainer arrivals & transfer - ').$cl['name'];
   $html = email_html($intro, transfer_table_html($rows,$lang).cta_button($url,$cta));
   $ok = send_email($to, $cname ?: $cl['name'], $subject, $html);
   $st = $ok ? ((cfg()['mail_mode']??'mail')==='log'?'logged':'sent') : 'failed';
@@ -188,16 +188,16 @@ function send_reset_mail(array $u, string $purpose='reset'): bool {
   if($purpose==='invite'){
     $subj='Dein Zugang zur ETAF Trainer-Koordination';
     $body="Hallo $first,\n\nfür dich wurde ein Zugang zur ETAF Trainer-Koordination angelegt.\n\n"
-      ."Bitte lege über den Button unten dein Passwort fest — der Link ist $mins Minuten gültig "
+      ."Bitte lege über den Button unten dein Passwort fest - der Link ist $mins Minuten gültig "
       ."und kann nur einmal verwendet werden.\n\n"
       ."Deine Anmelde-Adresse: ".$u['email'];
     $cta='Passwort festlegen';
   } else {
-    $subj='Passwort zurücksetzen — ETAF Trainer-Koordination';
+    $subj='Passwort zurücksetzen - ETAF Trainer-Koordination';
     $body="Hallo $first,\n\ndu hast angefordert, dein Passwort zurückzusetzen.\n\n"
-      ."Über den Button unten kannst du ein neues Passwort vergeben — der Link ist $mins Minuten "
+      ."Über den Button unten kannst du ein neues Passwort vergeben - der Link ist $mins Minuten "
       ."gültig und kann nur einmal verwendet werden.\n\n"
-      ."Wenn du das nicht warst, kannst du diese E-Mail einfach ignorieren — dein bisheriges "
+      ."Wenn du das nicht warst, kannst du diese E-Mail einfach ignorieren - dein bisheriges "
       ."Passwort bleibt dann unverändert.";
     $cta='Neues Passwort vergeben';
   }
@@ -209,7 +209,7 @@ function send_reset_mail(array $u, string $purpose='reset'): bool {
 }
 
 /** Ein einzelner CTA-Button (z.B. „Einsatzplan ansehen & bestätigen“).
- *  Dunkle Schrift auf hellem Grund + Rahmen: bleibt in JEDEM Mail-Client lesbar —
+ *  Dunkle Schrift auf hellem Grund + Rahmen: bleibt in JEDEM Mail-Client lesbar -
  *  auch wenn Hintergrundfarben entfernt werden (sonst: weiß auf weiß = unsichtbar). */
 function cta_button(string $url, string $label, string $bg='#EDF0F3'): string {
   return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 4px;max-width:360px;border-collapse:separate">'
@@ -259,7 +259,7 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
     return false;
   }
   $subject=preg_replace('/[\r\n]+/',' ',$subject);
-  if($mode==='log'){ $GLOBALS['__mail_err']="mail_mode='log' — es wird NICHTS versendet, nur protokolliert. Für echten Versand in config.php auf 'smtp' (empfohlen) oder 'mail' umstellen."; return true; }
+  if($mode==='log'){ $GLOBALS['__mail_err']="mail_mode='log' - es wird NICHTS versendet, nur protokolliert. Für echten Versand in config.php auf 'smtp' (empfohlen) oder 'mail' umstellen."; return true; }
 
   $from=$c['from_email']; $fromName=$c['from_name']??'ETAF';
   if($mode==='smtp') return smtp_send($toEmail,$subject,$html,$c['smtp']??[],$from,$fromName,$atts);
@@ -303,7 +303,7 @@ function smtp_send(string $to, string $subject, string $html, array $s, string $
   $cmd('AUTH LOGIN');
   $cmd(base64_encode($s['user']??''),true);
   $r=$cmd(base64_encode($s['pass']??''),true);
-  if(strpos($r,'235')===false){ $GLOBALS['__mail_err']='Login abgelehnt (kein 235). Benutzer/Passwort in config.php prüfen — user muss die volle E-Mail-Adresse sein.'; fclose($fp); return false; }
+  if(strpos($r,'235')===false){ $GLOBALS['__mail_err']='Login abgelehnt (kein 235). Benutzer/Passwort in config.php prüfen - user muss die volle E-Mail-Adresse sein.'; fclose($fp); return false; }
   $cmd('MAIL FROM:<'.$from.'>');
   $r=$cmd('RCPT TO:<'.$to.'>');
   if(strpos($r,'250')===false && strpos($r,'251')===false){ $GLOBALS['__mail_err']='Empfänger abgelehnt: '.trim($r); fclose($fp); return false; }

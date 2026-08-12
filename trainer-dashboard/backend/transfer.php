@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — Transfer-/Abholliste für den Kunden + Empfangsbestätigung
+ * ETAF - Transfer-/Abholliste für den Kunden + Empfangsbestätigung
  * ---------------------------------------------------------------
  * GET  transfer.php?token=<tok> → zeigt die Liste + einen POST-Button.
  *      Ändert nichts (scanner-sicher).
@@ -31,7 +31,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>ETAF — Transfer</title>
+<title>ETAF - Transfer</title>
 <style>
   body{margin:0;min-height:100vh;background:#f4f5f6;padding:24px;box-sizing:border-box;
     font:16px/1.6 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#242b31}
@@ -73,7 +73,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
     <?php if(!$row): ?>
       <h1>This link is invalid or has expired.</h1>
     <?php else: ?>
-      <h1>Trainer arrivals &amp; transfer — <?=esc($row['name'])?></h1>
+      <h1>Trainer arrivals &amp; transfer - <?=esc($row['name'])?></h1>
       <p class="sub">Please arrange pickup &amp; hotel transfer for the trainers below.</p>
       <?php if(!$rows): ?>
         <div class="empty">No confirmed trainers yet.</div>
@@ -86,7 +86,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
             $hotel=trim(($r['hotel']?:'').($r['room']?' · '.$r['room']:'')); ?>
             <tr>
               <td data-l="Trainer"><b><?=esc($r['trainer'])?></b><?php if($r['phone']): ?><br><span class="sub">☎ <?=esc($r['phone'])?></span><?php endif; ?></td>
-              <td data-l="Arrival"><?=esc($arr?:'—')?></td><td data-l="Departure"><?=esc($dep?:'—')?></td><td data-l="Hotel"><?=esc($hotel?:'—')?></td>
+              <td data-l="Arrival"><?=esc($arr?:'-')?></td><td data-l="Departure"><?=esc($dep?:'-')?></td><td data-l="Hotel"><?=esc($hotel?:'-')?></td>
               <td data-l="Training / Location"><?=esc($r['topic'])?><br><span class="sub"><?=esc(trim(($r['city']??'').(($r['country']??'')?', '.$r['country']:'')))?></span></td>
             </tr>
           <?php endforeach; ?>
@@ -94,7 +94,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       <?php endif; ?>
 
       <?php if($committed): ?>
-        <div class="done"><?=stroke_icon('check',18)?><b>Thank you!</b> Receipt confirmed — we have noted that your team will handle the transfers.</div>
+        <div class="done"><?=stroke_icon('check',18)?><b>Thank you!</b> Receipt confirmed - we have noted that your team will handle the transfers.</div>
       <?php else: ?>
         <form method="post" action="<?=$action?>">
           <input type="hidden" name="token" value="<?=$etok?>">

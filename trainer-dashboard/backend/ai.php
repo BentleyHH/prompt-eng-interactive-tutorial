@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — KI-Profilanlage via Claude API (Messages API, strukturierte JSON-Ausgabe).
+ * ETAF - KI-Profilanlage via Claude API (Messages API, strukturierte JSON-Ausgabe).
  * Dependency-frei (curl). Modell: claude-opus-4-8.
  */
 require_once __DIR__.'/lib.php';
@@ -9,7 +9,7 @@ require_once __DIR__.'/lib.php';
 function ai_extract_profiles(string $text): array {
   $c=cfg();
   $key=trim($c['anthropic_key']??'');
-  if($key==='') throw new RuntimeException('KI nicht konfiguriert — trage anthropic_key in config.php ein.');
+  if($key==='') throw new RuntimeException('KI nicht konfiguriert - trage anthropic_key in config.php ein.');
   $model=$c['anthropic_model']??'claude-opus-4-8';
 
   // Strukturierte Ausgabe: garantiert gültiges JSON nach diesem Schema.
@@ -47,7 +47,7 @@ function ai_extract_profiles(string $text): array {
     ."- 'region': z.B. DE-Süd, DE-West, DE-Nord, AT, CH, UAE, UK.\n"
     ."- 'langs': Sprachkürzel (DE, EN, AR).\n"
     ."- 'uae': true, wenn Erfahrung im Nahen Osten / UAE erkennbar ist, sonst false.\n"
-    ."- 'rating': Zahl 4.0–5.0 als Text; wenn unbekannt, \"4.5\".\n"
+    ."- 'rating': Zahl 4.0-5.0 als Text; wenn unbekannt, \"4.5\".\n"
     ."Fehlende Felder sinnvoll leer lassen (\"\" bzw. []). Erfinde keine Personen.\n\n"
     ."=== TEXT ===\n".$text;
 
@@ -91,7 +91,7 @@ function ai_extract_profiles(string $text): array {
 function ai_call(array $content, ?array $schema=null, int $maxTokens=1024): array {
   $c=cfg();
   $key=trim($c['anthropic_key']??'');
-  if($key==='') throw new RuntimeException('KI nicht konfiguriert — trage anthropic_key in config.php ein.');
+  if($key==='') throw new RuntimeException('KI nicht konfiguriert - trage anthropic_key in config.php ein.');
   $body=[
     'model'=>$c['anthropic_model']??'claude-opus-4-8',
     'max_tokens'=>$maxTokens,
@@ -150,7 +150,7 @@ function ai_extract_flight(string $text, string $subject, ?array $pdf=null): arr
     ."- 'booking_ref': Buchungscode/PNR (z.B. X4Y9ZK). Leer, wenn keiner erkennbar.\n"
     ."- 'segments': jedes Flugsegment einzeln, dep_time/arr_time strikt als YYYY-MM-DD HH:MM "
     ."(Datum immer mit Jahr; lokale Abflugs-/Ankunftszeit), Flughäfen als IATA-Code (FRA, AUH …).\n"
-    ."Erfinde nichts — nicht Lesbares leer lassen.\n\n"
+    ."Erfinde nichts - nicht Lesbares leer lassen.\n\n"
     ."=== BETREFF ===\n".$subject."\n\n=== TEXT ===\n".mb_substr($text,0,14000);
   $content=[];
   if($pdf && strlen($pdf['data'])<=6*1024*1024){
@@ -166,7 +166,7 @@ function ai_extract_flight(string $text, string $subject, ?array $pdf=null): arr
 
 /**
  * KI-Wochenrhythmus: verteilt die Sessions einer Trainingswoche didaktisch
- * sinnvoll auf Mo–Fr (Vormittag/Nachmittag). Gibt {slots:{mon_am:[ids],…}} zurück.
+ * sinnvoll auf Mo-Fr (Vormittag/Nachmittag). Gibt {slots:{mon_am:[ids],…}} zurück.
  */
 function ai_suggest_week(array $sessions, string $topic): array {
   $keys=['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm'];
@@ -176,7 +176,7 @@ function ai_suggest_week(array $sessions, string $topic): array {
     'required'=>['slots'],'additionalProperties'=>false];
   $list=implode("\n", array_map(fn($s)=>"- id={$s['id']} | {$s['title']} | Art: {$s['type']} | Dauer: {$s['dur']} h", $sessions));
   $prompt=
-    "Plane den Wochenrhythmus einer Trainingswoche („$topic“, Montag–Freitag, je Vormittag und Nachmittag).\n"
+    "Plane den Wochenrhythmus einer Trainingswoche („$topic“, Montag-Freitag, je Vormittag und Nachmittag).\n"
     ."Regeln:\n"
     ."- Jede Session genau EINMAL einplanen (über ihre id), keine ids erfinden.\n"
     ."- Pro Halbtag höchstens ca. 4 Stunden Summe.\n"
@@ -195,7 +195,7 @@ function ai_suggest_week(array $sessions, string $topic): array {
  * Gibt normalisierte Felder zurück; Datumsangaben als YYYY-MM-DD.
  */
 function ai_extract_passport(string $dataUri): array {
-  // Nur Rasterformate, die die Claude API versteht — kein SVG o.ä.
+  // Nur Rasterformate, die die Claude API versteht - kein SVG o.ä.
   if(!preg_match('#^data:(image/(?:jpe?g|png|gif|webp));base64,(.+)$#s', trim($dataUri), $m))
     throw new RuntimeException('Bitte ein Foto als JPG/PNG/WebP übergeben.');
   $media=$m[1]; $b64=$m[2];
@@ -223,7 +223,7 @@ function ai_extract_passport(string $dataUri): array {
     ."- 'surname' / 'given_names': Nachname / Vornamen wie im Dokument.\n"
     ."- 'full_name': vollständiger Name „Vorname Nachname“.\n"
     ."- 'nationality': Land als Klartext (z.B. Deutschland, United Arab Emirates).\n"
-    ."- 'birthdate' und 'expiry': strikt im Format YYYY-MM-DD. MRZ-Jahr 00–30 → 20xx, 31–99 → 19xx.\n"
+    ."- 'birthdate' und 'expiry': strikt im Format YYYY-MM-DD. MRZ-Jahr 00-30 → 20xx, 31-99 → 19xx.\n"
     ."- 'sex': M, F oder X.\n"
     ."- 'is_passport': true, wenn ein Reise-/Ausweisdokument erkennbar ist, sonst false.\n"
     ."Wenn ein Feld nicht lesbar ist, leer lassen (\"\"). Erfinde nichts.";

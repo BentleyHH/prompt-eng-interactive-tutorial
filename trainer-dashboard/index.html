@@ -91,7 +91,7 @@
       var(--bg);
     padding:calc(20px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px))
             calc(20px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px))}
-  /* 100% = Breite INNERHALB des Innenabstands — vorher sprengten 94vw den Rahmen */
+  /* 100% = Breite INNERHALB des Innenabstands - vorher sprengten 94vw den Rahmen */
   .lock-card{width:min(380px,100%);margin:auto;background:var(--panel);border:1px solid var(--line);
     border-radius:20px;box-shadow:var(--shadow);padding:34px 30px 28px;text-align:center}
   @media(max-width:400px){ .lock-card{padding:26px 20px 22px} .keys button{height:52px;font-size:20px} }
@@ -129,7 +129,7 @@
 
   /* ============ APP SHELL ============ */
   #app{display:none;min-height:100vh;grid-template-columns:236px 1fr}
-  /* Tablet hoch: schmalere Seitenleiste — der Inhalt braucht die Breite mehr */
+  /* Tablet hoch: schmalere Seitenleiste - der Inhalt braucht die Breite mehr */
   @media(max-width:1100px){#app{grid-template-columns:206px 1fr} .side{padding:18px 10px}
     .nav button{padding:9px 9px;gap:9px} .brand{padding:4px 4px 14px}}
   @media(max-width:820px){#app{grid-template-columns:1fr}}
@@ -159,7 +159,7 @@
     background:var(--panel-2);border:1px solid var(--line);border-radius:9px}
 
   main{min-width:0;padding:0 0 60px}
-  /* Kopfzeile bricht IMMER um — so kann rechts nie etwas abgeschnitten werden,
+  /* Kopfzeile bricht IMMER um - so kann rechts nie etwas abgeschnitten werden,
      egal ob Handy, iPad im Hoch- oder Querformat oder schmales Fenster. */
   .topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);
     backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
@@ -169,7 +169,7 @@
   .topbar>div:first-child{min-width:0;flex:1 1 220px}
   .topbar h2,.topbar .sub{overflow-wrap:anywhere}
   /* Bedienelemente als geschlossene Gruppe: sie brechen gemeinsam um und
-     bleiben rechtsbündig — so steht nie ein einzelner Knopf verloren da. */
+     bleiben rechtsbündig - so steht nie ein einzelner Knopf verloren da. */
   .tbacts{display:flex;align-items:center;justify-content:flex-end;
     gap:8px 10px;flex-wrap:wrap;min-width:0;flex:0 1 auto}
   /* Tablet: Titel bekommt eine eigene Zeile, die Steuerelemente die zweite */
@@ -369,7 +369,7 @@
   .rowgrow{flex:1;min-width:148px}
   .rowacts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end}
   /* (Die Handy-Regeln für Listenzeilen stehen gesammelt im MOBILE-FIRST-Block
-     am Ende des Stylesheets — sie MÜSSEN nach den Grundregeln kommen, sonst
+     am Ende des Stylesheets - sie MÜSSEN nach den Grundregeln kommen, sonst
      überschreibt z.B. .att{padding:11px 0} den linken Einzug wieder.) */
   .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
   .tag{font-size:11px;background:var(--panel-2);border:1px solid var(--line);color:var(--muted);
@@ -495,7 +495,7 @@
   }
 
   /* ============================================================
-     MOBILE-FIRST — nichts darf horizontal über den Rand laufen.
+     MOBILE-FIRST - nichts darf horizontal über den Rand laufen.
      Grundregel: jede Flex-/Grid-Zelle darf schrumpfen (min-width:0),
      breite Tabellen scrollen in ihrem eigenen Container.
      ============================================================ */
@@ -507,12 +507,12 @@
   /* Kein Element darf breiter werden als sein Container */
   #app,main,.wrap,.view,.panel,.panel-b,.sheet-b{min-width:0;max-width:100%;box-sizing:border-box}
   .rowgrow{min-width:0}                    /* war 148px → sprengte schmale Zeilen */
-  /* Desktop/Tablet: Namensspalte behält Mindestbreite — sonst quetschen viele
+  /* Desktop/Tablet: Namensspalte behält Mindestbreite - sonst quetschen viele
      Chips/Buttons den Namen auf Buchstabenbreite („N i l s …“). Die Aktionen
      (.rowacts, flex-wrap) brechen dann stattdessen um. Unter 560px übernimmt
      der Mobile-Block (Name auf eigener Zeile). */
   @media(min-width:561px){ .row>.rowgrow,.att>.rowgrow{min-width:150px} }
-  /* break-word statt anywhere: bricht nur, wenn ein Wort wirklich nicht passt —
+  /* break-word statt anywhere: bricht nur, wenn ein Wort wirklich nicht passt -
      sonst zerreißt es Titel mitten im Wort („Informatio nsgewinnung“). */
   .row .nm,.row .meta,.att .nm,.att .meta{overflow-wrap:break-word}
   /* Kunden-Badge als Block: rutscht als Ganzes in die nächste Zeile,
@@ -593,7 +593,7 @@
   .zone{display:flex;flex-direction:column;gap:6px;padding:6px 7px 10px;min-height:76px;border-radius:0 0 11px 11px;
     transition:background .12s}
   /* Ablageziel deutlich hervorheben: ganzer Halbtag eingefärbt + Rahmen */
-  /* --brand-050 ist der helle/dunkle Marken-Ton je Design — funktioniert in
+  /* --brand-050 ist der helle/dunkle Marken-Ton je Design - funktioniert in
      beiden Modi und in jedem Browser (kein color-mix nötig). */
   .zone.dragover{background:var(--brand-050);outline:2px solid var(--brand-solid);outline-offset:-3px}
   .slotbox.dropbox{border-color:var(--brand-solid);box-shadow:0 0 0 3px var(--brand-050)}
@@ -644,7 +644,7 @@
   .cal-h b{display:block;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700}
   .cal-s{font-size:11.5px;line-height:1.35;padding-left:11px;position:relative}
   .cal-s i{color:var(--muted);font-style:normal}
-  /* Fließzeile für Wochen ohne Tagesverteilung — spart im Ausdruck viele Seiten */
+  /* Fließzeile für Wochen ohne Tagesverteilung - spart im Ausdruck viele Seiten */
   .cal-inl{font-size:11.5px;line-height:1.45;color:var(--ink)}
   .cal-inl i{color:var(--muted);font-style:normal}
   .cal-sd{position:absolute;left:0;top:5px;width:5px;height:5px;border-radius:50%}
@@ -654,7 +654,7 @@
   .dbsec h4{margin:0 0 9px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
   .dbrow{display:flex;align-items:center;gap:10px;padding:5px 0;flex-wrap:wrap}
   .dbrow .lbl{flex:1 1 190px;min-width:0;font-size:13.5px}
-  /* Skala 1–5 + „n.z.“ — bewusst große Flächen, damit es am Handy vor Ort läuft */
+  /* Skala 1-5 + „n.z.“ - bewusst große Flächen, damit es am Handy vor Ort läuft */
   .scale{display:flex;gap:4px;flex:none}
   .scale button{width:34px;height:34px;border:1px solid var(--line);background:var(--panel);border-radius:9px;
     font:600 13px/1 var(--sans);color:var(--muted);cursor:pointer;padding:0}
@@ -704,12 +704,17 @@
   .dbringwrap b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
   .dbringwrap b i{font-style:normal;font-size:8px;font-weight:600;margin-left:1px}
+  /* 100 % ist dreistellig - Prozentzeichen weglassen und etwas kleiner setzen,
+     sonst stößt die Zahl an den Kreis. */
+  .dbringwrap b.full{font-size:9.5px;letter-spacing:-.04em}
+  .dbringwrap b.full i{display:none}
+  .dbringwrap.sm b.full{font-size:8.5px}
   .dbringwrap b.g{color:var(--good)} .dbringwrap b.i{color:var(--info)} .dbringwrap b.f{color:var(--faint)}
   .dbringwrap b.g{display:none}   /* fertig = Haken, keine Zahl */
   .dbprog{display:flex;align-items:center;gap:10px;margin-top:8px}
-  .dbringwrap.sm{width:30px;height:30px}
+  .dbringwrap.sm{width:36px;height:36px}
   .dbringwrap.sm b{font-size:9.5px}
-  .dbringwrap.sm b i{font-size:7px}
+  .dbringwrap.sm b i{font-size:7.5px}
   .row.dbrow-l{cursor:pointer}
   .row.dbrow-l:hover{background:var(--panel-2)}
   .chips.rpchips button b{font-variant-numeric:tabular-nums;margin-left:3px;opacity:.75}
@@ -740,7 +745,7 @@
   .rpacts li.done{color:var(--faint);text-decoration:line-through}
   .dspage{height:0}
   @media(max-width:560px){ .dskv{grid-template-columns:1fr auto} }
-  /* Hinweisband über der Auswertung — muss auffallen, ohne zu schreien */
+  /* Hinweisband über der Auswertung - muss auffallen, ohne zu schreien */
   .rpnote{display:flex;align-items:flex-start;gap:11px;padding:12px 16px;margin-bottom:14px;
     border:1px solid var(--warn);border-left-width:4px;border-radius:var(--radius-sm);
     background:var(--warn-bg);color:var(--ink);font-size:13.5px}
@@ -758,9 +763,9 @@
   .rpbar i{display:block;height:100%;border-radius:0 5px 5px 0}
   .rpval{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
   .rpn{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
-  /* Zwei gleich breite Spalten — .grid2 füllt mit auto-fill auch 4 Spuren auf */
+  /* Zwei gleich breite Spalten - .grid2 füllt mit auto-fill auch 4 Spuren auf */
   .rpgrid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;align-items:start}
-  /* Tablet hochkant: eine Spalte — zwei Spalten drücken sonst die Knöpfe
+  /* Tablet hochkant: eine Spalte - zwei Spalten drücken sonst die Knöpfe
      in den Zeilen über den Rand */
   @media(max-width:900px){ .rpgrid2{grid-template-columns:1fr} }
   .rpcols .rpbars{display:block;columns:2;column-gap:34px}
@@ -809,7 +814,7 @@
   @media(max-width:760px){ .wkgrid{grid-template-columns:1fr} .daycol h4{text-align:left} .wkbench .sess{flex:1 1 100%} }
 
   /* Handy: Avatar/Icon links fixiert, Text über die volle Breite, Aktionen darunter.
-     Gilt für alle Listenzeilen — auch wenn Pille/Buttons direkt in .row hängen.
+     Gilt für alle Listenzeilen - auch wenn Pille/Buttons direkt in .row hängen.
      Steht bewusst HIER (nach allen Grundregeln), damit nichts zurücküberschrieben wird. */
   @media(max-width:560px){
     .row,.att{flex-wrap:wrap;position:relative;row-gap:9px;padding-left:48px}
@@ -838,7 +843,7 @@
     :root{--bg:#fff;--panel:#fff;--panel-2:#f6f7f8;--ink:#242b31;--muted:#5c666e;--faint:#8a939a;--line:#e2e5e8;--brand:#3e4852}
     body>*{display:none!important}
     /* Wenn ein Druckbogen offen ist, darf die Bildschirmansicht NICHT mitgedruckt
-       werden — sonst steht der Inhalt doppelt im PDF. Muss den ID-Selektor
+       werden - sonst steht der Inhalt doppelt im PDF. Muss den ID-Selektor
        #app aus dem Block weiter oben ausstechen, daher body.sheetprint davor. */
     body.sheetprint #app{display:none!important}
     .printable.on{display:block!important;position:static;padding:0;background:#fff;overflow:visible}
@@ -1059,7 +1064,7 @@
 <script src="config.js" onerror="/* Demo-Modus: keine config.js vorhanden */"></script>
 <script>
 /* ============================================================
-   ETAF Trainer-Koordination — klickbarer Prototyp
+   ETAF Trainer-Koordination - klickbarer Prototyp
    Demo: Daten liegen im Browser (localStorage). DE/EN Oberfläche,
    E-Mail-Sprache pro Anfrage wählbar.
    ============================================================ */
@@ -1104,7 +1109,7 @@ const IC={
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 /* Inline-Strichicon in Textgröße (für Buttons/Labels). */
 function ic(name,size){const s=size||16;return `<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px;flex:none">${IC[name]||""}</svg>`;}
-/* ETAF-Wortmarke als Vektor — direkt aus ETAF_Logo.png nachgezeichnet
+/* ETAF-Wortmarke als Vektor - direkt aus ETAF_Logo.png nachgezeichnet
    (Konturverfolgung, Abweichung 0,09 % = nur Kantenglättung).
    Buchstaben = currentColor (passt sich an Hell/Dunkel an), Punkt im Logo-Rot. */
 const ETAF_PATH="M0 0 349 0 349 110 143 110 143 159 323 159 323 264 143 264 143 320 357 320 357 429 0 429Z"
@@ -1119,7 +1124,7 @@ function etafLogo(h){
 }
 
 /* ============================================================
-   LIVE-MODUS — spricht mit dem PHP-Backend (config.js gesetzt).
+   LIVE-MODUS - spricht mit dem PHP-Backend (config.js gesetzt).
    Ohne config.js läuft alles als lokale Demo (localStorage).
    ============================================================ */
 const API=(window.ETAF&&window.ETAF.apiBase)?String(window.ETAF.apiBase).replace(/\/$/,''):null;
@@ -1150,7 +1155,7 @@ async function pull(){
   S.flightMailNew=d.flightMailNew||0;
   S.undo=d.undo||null; drawUndo();
 }
-/* Nach jedem pull() zeigt S.trainings frische Objekte — curTg muss neu
+/* Nach jedem pull() zeigt S.trainings frische Objekte - curTg muss neu
    aufgelöst werden, sonst rendert die Detailansicht veraltete Daten. */
 function reAnchorCurTg(){
   if(curTg){ const f=S.trainings.find(x=>x.id===curTg.id);
@@ -1177,7 +1182,7 @@ async function syncNow(){
   finally{ syncing=false; if(b)b.classList.remove("spin"); }
 }
 /* ============================================================
-   RÜCKGÄNGIG / WIEDERHOLEN — gilt für alles: Trainings, Trainer, Besetzung,
+   RÜCKGÄNGIG / WIEDERHOLEN - gilt für alles: Trainings, Trainer, Besetzung,
    Wochenplan, Material, Vorlagen … Live wird der Datenstand serverseitig
    gesichert (auch Änderungen von Kolleginnen und Kollegen lassen sich so
    zurücknehmen); im Demo-Modus liegt der Stapel im Browser.
@@ -1246,7 +1251,7 @@ function restoreView(){
 }
 
 /* ============================================================
-   I18N — UI-Sprache Deutsch / Englisch
+   I18N - UI-Sprache Deutsch / Englisch
    Werte sind Strings oder Funktionen (für Platzhalter).
    ============================================================ */
 const L={
@@ -1264,11 +1269,11 @@ const L={
   // Wochenplan
   tp_week:"Wochenplan", tp_weekSub:"Inhalte, Sessions & PowerPoints je Trainingswoche",
   wkAM:"Vormittag", wkPM:"Nachmittag",
-  wkBench:"Auswechselbank", wkBenchHint:"Noch nicht eingeplante Sessions — ziehen oder antippen zum Einplanen",
-  wkAuto:"Auto-verteilen", wkAutoAsk:"Alle Sessions automatisch auf Mo–Fr verteilen? Die aktuelle Anordnung wird ersetzt.",
+  wkBench:"Auswechselbank", wkBenchHint:"Noch nicht eingeplante Sessions - ziehen oder antippen zum Einplanen",
+  wkAuto:"Auto-verteilen", wkAutoAsk:"Alle Sessions automatisch auf Mo-Fr verteilen? Die aktuelle Anordnung wird ersetzt.",
   wkNew:"Session", wkEditTitle:"Session bearbeiten", wkNewTitle:"Neue Session",
   wkTitle:"Titel", wkTitleEn:"Titel (EN)", wkType:"Art", wkDur:"Dauer (Stunden)", wkDesc:"Beschreibung",
-  wkTrainer:"Trainer für diese Session", wkTrainerNone:"— noch offen —", wkTeamHint:"(Team der Woche zuerst)",
+  wkTrainer:"Trainer für diese Session", wkTrainerNone:"- noch offen -", wkTeamHint:"(Team der Woche zuerst)",
   wkPpt:"PowerPoint-Status", wkPptBy:"Folien erstellt von", wkPptDue:"Frist",
   ppt_:"offen", ppt_inArbeit:"in Arbeit", ppt_vorhanden:"vorhanden",
   wkMove:"Verschieben nach", wkDelete:"Löschen", wkDeleteAsk:s=>`Session „${s}“ wirklich löschen?`,
@@ -1277,11 +1282,11 @@ const L={
   wkPptChip:(d,a)=>`${d}/${a} PowerPoints`, wkPptTitle:"PowerPoints dieser Woche",
   wkPptEmpty:"Keine fachlichen Sessions in dieser Woche.",
   wkSessN:n=>`${n} Session${n===1?"":"s"}`, wkHrsN:h=>`${h} h`,
-  wkEmpty:"Für diese Woche sind noch keine Sessions angelegt — mit „+ Session“ starten oder Auto-verteilen nutzen.",
+  wkEmpty:"Für diese Woche sind noch keine Sessions angelegt - mit „+ Session“ starten oder Auto-verteilen nutzen.",
   wkNoTrainings:"Noch keine Trainings angelegt.",
   wkSaved:"Wochenplan gespeichert", wkSessSaved:"Session gespeichert", wkSessDeleted:"Session gelöscht",
-  wkTeam:"Team der Woche", wkNoTeam:"Noch niemand zugesagt — Besetzung über das Training öffnen.",
-  wkTrDragHint:"Auf eine Session ziehen, um sie zuzuteilen — mehrere Trainer je Session möglich (Klick öffnet das Training)",
+  wkTeam:"Team der Woche", wkNoTeam:"Noch niemand zugesagt - Besetzung über das Training öffnen.",
+  wkTrDragHint:"Auf eine Session ziehen, um sie zuzuteilen - mehrere Trainer je Session möglich (Klick öffnet das Training)",
   wkTrAdd:"+ Trainer hinzufügen …",
   wkUp:"Eine Position nach oben (über die Grenze: vorheriger Halbtag)",
   wkDown:"Eine Position nach unten (über die Grenze: nächster Halbtag)",
@@ -1290,69 +1295,69 @@ const L={
   wkAlreadyAssigned:n=>`${n} ist dieser Session bereits zugeteilt.`,
   wkTrCnt:n=> n===1 ? "1 Einsatz in dieser Woche" : `${n} Einsätze in dieser Woche`,
   wkAssigned:(s,n)=>`„${s.length>32?s.slice(0,32)+"…":s}“ → ${n}`,
-  wkStage:s=>`Stage ${s}`, wkDays:"Mo–Fr",
+  wkStage:s=>`Stage ${s}`, wkDays:"Mo-Fr",
   type_orga:"Orga", type_theorie:"Theorie", type_uebung:"Übung", type_praxis:"Praxis",
   type_simulation:"Simulation", type_assessment:"Assessment", type_deliverable:"Deliverable",
   day_mon:"Montag", day_tue:"Dienstag", day_wed:"Mittwoch", day_thu:"Donnerstag", day_fri:"Freitag",
   day_sat:"Samstag", day_sun:"Sonntag",
   // Wochenplan übernehmen
   wkCopy:"Übernehmen aus …", wkCopyTitle:"Wochenplan übernehmen", wkCopyDo:"Übernehmen",
-  wkCopyHint:"Kopiert Sessions, Anordnung und Wochenergebnis einer anderen Woche in diese Woche (z.B. W11-B aus W11-A). Trainer-Zuordnung und PowerPoint-Status werden nicht mitkopiert — neue Woche, neues Team.",
+  wkCopyHint:"Kopiert Sessions, Anordnung und Wochenergebnis einer anderen Woche in diese Woche (z.B. W11-B aus W11-A). Trainer-Zuordnung und PowerPoint-Status werden nicht mitkopiert - neue Woche, neues Team.",
   wkCopySrc:"Quellwoche",
-  wkCopyAsk:n=>`Diese Woche hat bereits ${n} Session${n===1?"":"s"} — alle ersetzen?`,
+  wkCopyAsk:n=>`Diese Woche hat bereits ${n} Session${n===1?"":"s"} - alle ersetzen?`,
   wkCopied:n=>`${n} Session${n===1?"":"s"} übernommen`,
   // iCal je Trainer
   icsBtn:"iCal-Abo", icsHint:"Persönlichen Kalender-Abo-Link kopieren",
-  icsCopied:"Kalender-Link kopiert — in Google/Apple/Outlook als „Kalender abonnieren“ einfügen.",
+  icsCopied:"Kalender-Link kopiert - in Google/Apple/Outlook als „Kalender abonnieren“ einfügen.",
   // Info-Mail (Digest)
   dgTitle:"Info-Mail", dgBtn:"Info-Mail",
-  dgHint:"Automatische Überblicks-Mail an diese Person — Rhythmus und Inhalte frei wählbar. Versand morgens (ca. 7 Uhr) durch die Automatik.",
+  dgHint:"Automatische Überblicks-Mail an diese Person - Rhythmus und Inhalte frei wählbar. Versand morgens (ca. 7 Uhr) durch die Automatik.",
   dgFreq:"Rhythmus", dgOff:"Aus", dgDaily:"Täglich", dgEvery2:"Alle 2 Tage", dgWeekly:"Wöchentlich",
   dgDay:"Wochentag", dgParts:"Inhalte",
-  dgPart_staffing:"Besetzung — fehlende Trainer & offene Anfragen",
-  dgPart_ppt:"PowerPoints — fehlende Folien je Woche",
-  dgPart_travel:"Reisen & Flüge — Trainer ohne Reisedaten",
-  dgPart_inbox:"Posteingang — Rückmeldungen & neue Flugpost",
-  dgPart_week:"Nächstes Training — Team & Wochenergebnis",
-  dgPart_passport:"Reisepässe — ablaufende Dokumente",
-  dgPart_reports:"Trainingsberichte — Schnitt, Handlungsbedarf & fehlende Berichte",
+  dgPart_staffing:"Besetzung - fehlende Trainer & offene Anfragen",
+  dgPart_ppt:"PowerPoints - fehlende Folien je Woche",
+  dgPart_travel:"Reisen & Flüge - Trainer ohne Reisedaten",
+  dgPart_inbox:"Posteingang - Rückmeldungen & neue Flugpost",
+  dgPart_week:"Nächstes Training - Team & Wochenergebnis",
+  dgPart_passport:"Reisepässe - ablaufende Dokumente",
+  dgPart_reports:"Trainingsberichte - Schnitt, Handlungsbedarf & fehlende Berichte",
   dgTest:"Probe senden", dgTestSent:"Probe-Mail ist unterwegs", dgTestFail:"Versand fehlgeschlagen",
   dgSaved:"Info-Mail-Einstellungen gespeichert", dgLiveOnly:"Nur im Live-Betrieb verfügbar.",
-  attNoContent:"Wochenplan ist noch leer — Inhalte planen",
+  attNoContent:"Wochenplan ist noch leer - Inhalte planen",
   attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} fehlen noch`,
-  wkAi:"KI-Vorschlag", wkAiAsk:"Die KI verteilt alle Sessions didaktisch sinnvoll auf Mo–Fr (Theorie vor Praxis, Assessment ans Wochenende, ~4 h je Halbtag). Aktuelle Anordnung wird ersetzt — fortfahren?",
+  wkAi:"KI-Vorschlag", wkAiAsk:"Die KI verteilt alle Sessions didaktisch sinnvoll auf Mo-Fr (Theorie vor Praxis, Assessment ans Wochenende, ~4 h je Halbtag). Aktuelle Anordnung wird ersetzt - fortfahren?",
   wkAiRun:"KI plant die Woche … das kann bis zu einer Minute dauern.",
   wkAiRunShort:"KI plant …",
-  wkConflict:"Doppelbelegung — dieser Trainer ist im selben Halbtag mehrfach eingeplant.",
+  wkConflict:"Doppelbelegung - dieser Trainer ist im selben Halbtag mehrfach eingeplant.",
   wkConflictToast:n=>`Achtung: ${n} ist in diesem Halbtag jetzt doppelt eingeplant (⚠ an den Kacheln).`,
-  agWeekHead:"Wochenplan (Mo–Fr) — deine Sessions rot markiert",
+  agWeekHead:"Wochenplan (Mo-Fr) - deine Sessions rot markiert",
   agWith:"zusammen mit",
   agWeekLegend:"Rot umrandet = deine Sessions · graue Kacheln = übrige Sessions der Woche",
   agMineSum:(n,h,p)=>`Deine Einsätze: ${n} Sessions · ${h} h`+(p?` · ${p}× PowerPoint von dir vorzubereiten`:""),
   agPptMine:"PowerPoint: von dir",
-  wkAiDone:"KI-Wochenrhythmus übernommen", wkAiDemo:"Im Demo-Modus ohne KI — stattdessen einfache Auto-Verteilung.",
+  wkAiDone:"KI-Wochenrhythmus übernommen", wkAiDemo:"Im Demo-Modus ohne KI - stattdessen einfache Auto-Verteilung.",
   wkPrint:"Drucken", wkMat:"Benötigtes Material", wkMatPh:"z.B. 20× DVI-Kit, Beamer, Flipchart",
   wkPrintMat:"Material", wkPrintTrainer:"Trainer",
   nav_users:"Benutzer", nav_activity:"Änderungen",
-  tp_users:"Benutzer", tp_usersSub:"Wer darf sich anmelden — Rollen und Zugänge",
+  tp_users:"Benutzer", tp_usersSub:"Wer darf sich anmelden - Rollen und Zugänge",
   tp_activity:"Änderungen", tp_activitySub:"Wer hat wann was geändert",
   // Anmeldung
   lgSignIn:"Anmelden", lgMissing:"Bitte E-Mail und Passwort eingeben.",
   lgFailed:"Anmeldung fehlgeschlagen.", lgEnterMail:"Bitte zuerst deine E-Mail-Adresse eingeben.",
   lgResetSent:"Falls es ein Konto zu dieser Adresse gibt, ist eine E-Mail mit einem Link unterwegs (60 Minuten gültig).",
   setupHint:"Ersteinrichtung: Melde dich mit dem PIN an und lege unter „Benutzer“ die Zugänge an. Danach ist der PIN-Zugang automatisch gesperrt.",
-  setupBadge:"Ersteinrichtung — bitte Benutzer anlegen",
-  setupDone:m=>`Konto angelegt. Wir haben an ${m} einen Link zum Festlegen des Passworts geschickt — danach kannst du dich hier anmelden.`,
+  setupBadge:"Ersteinrichtung - bitte Benutzer anlegen",
+  setupDone:m=>`Konto angelegt. Wir haben an ${m} einen Link zum Festlegen des Passworts geschickt - danach kannst du dich hier anmelden.`,
   setupDoneNoMail:m=>`Konto ${m} angelegt, aber die E-Mail konnte nicht versendet werden. Bitte den SMTP-Zugang in config.php prüfen.`,
   // Benutzerverwaltung
   usrCount:n=>`${n} ${n===1?"Benutzer":"Benutzer"}`,
-  usrHint:"Jede Person meldet sich mit eigener E-Mail an — so ist nachvollziehbar, wer was geändert hat.",
-  usrNew:"Benutzer einladen", usrNewTitle:"Benutzer einladen", usrEditTitle:n=>`Benutzer bearbeiten — ${n}`,
+  usrHint:"Jede Person meldet sich mit eigener E-Mail an - so ist nachvollziehbar, wer was geändert hat.",
+  usrNew:"Benutzer einladen", usrNewTitle:"Benutzer einladen", usrEditTitle:n=>`Benutzer bearbeiten - ${n}`,
   usrRole:"Rolle", roleAdmin:"Administrator", roleEditor:"Bearbeiter",
   usrRoleHint:"Bearbeiter können alles planen. Administratoren dürfen zusätzlich Benutzer verwalten und Grundeinstellungen ändern.",
   usrInviteHint:"Die Person bekommt eine E-Mail mit einem Link, um ein eigenes Passwort festzulegen (60 Minuten gültig).",
   usrCreate:"Einladen", usrSaved:"Benutzer gespeichert",
-  usrInvited:n=>`Einladung an ${n} verschickt`, usrCreatedNoMail:"Benutzer angelegt — E-Mail konnte nicht versendet werden.",
+  usrInvited:n=>`Einladung an ${n} verschickt`, usrCreatedNoMail:"Benutzer angelegt - E-Mail konnte nicht versendet werden.",
   usrActive:"Aktiv", usrBlocked:"Gesperrt", usrBlock:"Sperren", usrUnblock:"Entsperren",
   usrBlockedToast:"Benutzer gesperrt und abgemeldet", usrUnblocked:"Benutzer entsperrt",
   usrResend:"Zugangs-Link erneut senden", usrResent:"Link verschickt", usrResendFail:"Versand fehlgeschlagen",
@@ -1374,35 +1379,35 @@ const L={
   // Überschreib-Schutz
   cfTitle:"Gleichzeitig bearbeitet", cfHead:"Dieser Eintrag wurde inzwischen geändert",
   cfBy:(who,when)=>`Zuletzt geändert von ${who}${when?" · "+when:""}`,
-  cfExplain:"Damit nichts verloren geht, wurde noch nicht gespeichert. Lade den aktuellen Stand neu (deine Eingaben im Formular gehen dabei verloren) — oder überschreibe die fremde Änderung bewusst.",
+  cfExplain:"Damit nichts verloren geht, wurde noch nicht gespeichert. Lade den aktuellen Stand neu (deine Eingaben im Formular gehen dabei verloren) - oder überschreibe die fremde Änderung bewusst.",
   cfReload:"Neu laden", cfOverwrite:"Trotzdem überschreiben",
-  cfReloaded:"Aktueller Stand geladen", cfForced:"Gespeichert — fremde Änderung überschrieben",
+  cfReloaded:"Aktueller Stand geladen", cfForced:"Gespeichert - fremde Änderung überschrieben",
   // Flugpost
-  fmTitle:"Flugpost", fmHint:"Flugbestätigungen aus dem Postfach — automatisch erkannt, hier kurz prüfen und übernehmen.",
+  fmTitle:"Flugpost", fmHint:"Flugbestätigungen aus dem Postfach - automatisch erkannt, hier kurz prüfen und übernehmen.",
   fmPoll:"Postfach jetzt abrufen", fmPolled:(n,f)=>`${n} neue Mail(s) geholt, ${f} Flugbuchung(en) erkannt`,
   fmDemo:"Der Postfach-Abruf ist nur in der Live-Version aktiv (mailbox in config.php).",
-  fmEmpty:"Keine Flugpost — sobald eine Buchungsbestätigung im Postfach liegt, erscheint sie hier.",
-  fmRef:"Buchungscode", fmNoExtract:"Keine Flugdaten automatisch erkennbar — bitte unten manuell zuordnen; Anhänge werden trotzdem verknüpft.",
+  fmEmpty:"Keine Flugpost - sobald eine Buchungsbestätigung im Postfach liegt, erscheint sie hier.",
+  fmRef:"Buchungscode", fmNoExtract:"Keine Flugdaten automatisch erkennbar - bitte unten manuell zuordnen; Anhänge werden trotzdem verknüpft.",
   fmConfHigh:"Zuordnung sicher", fmConfLow:"Zuordnung unsicher", fmConfNone:"Keine Zuordnung",
   fmApplied:"Übernommen", fmIgnored:"Ignoriert",
   fmPickTrainer:"Trainer wählen …", fmPickTraining:"Training wählen …",
   fmPickBoth:"Bitte Trainer und Training auswählen.",
   fmApply:"Übernehmen", fmIgnore:"Ignorieren",
-  fmAppliedToast:"Reisedaten übernommen — Ticket hängt künftig an der Agenda",
+  fmAppliedToast:"Reisedaten übernommen - Ticket hängt künftig an der Agenda",
   // Reise-Checkliste
   frFlight:"Flüge", frHotel:"Hotel", frVisa:"Visum", frPass:"Pass",
-  frReady:"Reise komplett", frAllSet:"Flug, Hotel, Visum und Pass sind komplett — bereit für die Agenda.",
+  frReady:"Reise komplett", frAllSet:"Flug, Hotel, Visum und Pass sind komplett - bereit für die Agenda.",
   frMissing:"Es fehlt",
-  tp_book:"Belegung", tp_bookSub:"Wer ist wann wo gebucht — filterbar nach Trainer",
+  tp_book:"Belegung", tp_bookSub:"Wer ist wann wo gebucht - filterbar nach Trainer",
   bkAllTrainers:"Alle Trainer", bkAllStatus:"Alle Status", bkTrainer:"Trainer", bkClient:"Kunde", bkMonth:"Zeitraum",
   bkAllClients:"Alle Kunden", bkAllMonths:"Alle Zeiträume", bkGroup:"Gruppieren", bkGrpNone:"Keine Gruppierung",
   bkNoClient:"Ohne Kunde", bkReset:"Filter zurücksetzen", bkSearch:"🔎 Suche (Training, Ort, Trainer …)",
   bkCount:n=>`${n} ${n===1?"Buchung":"Buchungen"}`,
   bkStats:(tr,tg)=>`${tr} ${tr===1?"Trainer":"Trainer"} · ${tg} ${tg===1?"Training":"Trainings"}`,
   bkConflict:"Doppelt", bkConflictHint:"Dieser Trainer ist in dieser KW mehrfach gebucht.",
-  bkOpenModule:"Modul öffnen — wer ist noch dabei?",
+  bkOpenModule:"Modul öffnen - wer ist noch dabei?",
   bkConflictN:n=>`${n} Doppelbuchung${n===1?"":"en"}`,
-  ampel_green:"Alles im grünen Bereich", ampel_amber:"Läuft — mit Handlungsbedarf", ampel_red:"Achtung: Konflikte",
+  ampel_green:"Alles im grünen Bereich", ampel_amber:"Läuft - mit Handlungsbedarf", ampel_red:"Achtung: Konflikte",
   ampelUnder:n=>`${n} unterbesetzte${n===1?"s":""} Training${n===1?"":"s"}`, ampelOpen:n=>`${n} offene Anfrage${n===1?"":"n"}`,
   ampelAllGood:"Keine Konflikte, alle Trainings besetzt.", ampelShow:"Konflikte ansehen",
   nav_inbox:"Rückmeldungen", tp_inbox:"Rückmeldungen", tp_inboxSub:"Trainer-Rückmeldungen zur Einsatzübersicht",
@@ -1412,12 +1417,12 @@ const L={
   inboxEmpty:"Noch keine Rückmeldungen eingegangen.",
   inboxResolve:"Erledigen & antworten", inboxReopen:"Wieder öffnen", inboxOpenPlan:"Plan öffnen & korrigieren",
   inboxResolved:"Als erledigt markiert", inboxReopened:"Wieder geöffnet",
-  rsvTitle:n=>`Rückmeldung erledigen — ${n}`,
+  rsvTitle:n=>`Rückmeldung erledigen - ${n}`,
   rsvOrig:"Rückmeldung des Trainers",
   rsvReplyLbl:"Deine Antwort (was wurde angepasst?)",
-  rsvMailLbl:n=>`Antwort per E-Mail an ${n} senden — mit Link zur aktualisierten Übersicht`,
+  rsvMailLbl:n=>`Antwort per E-Mail an ${n} senden - mit Link zur aktualisierten Übersicht`,
   rsvBtn:"Erledigen",
-  rsvDoneMail:n=>`Erledigt — Antwort an ${n} gesendet`,
+  rsvDoneMail:n=>`Erledigt - Antwort an ${n} gesendet`,
   // Klickbare KPI-Kacheln + Trainings-Filter
   undoBtn:"Rückgängig",
   undoStep:"letzte Änderung",
@@ -1432,38 +1437,38 @@ const L={
   // Agenda-Versand mit Kontrolle
   agMailTitle:"Agenda senden", agSubjLbl:"Betreff", agBodyLbl:"Nachricht",
   agMailInfo:"Wird automatisch ergänzt: deine Session-Liste („zusammen mit …“), der Wochenplan, der Druck-Button und ggf. Ticket-Anhänge aus der Flugpost.",
-  snTitle:n=>`Trainer informieren — ${n}`,
-  snInfo:s=>`Status manuell geändert auf „${s}“. Soll der Trainer per E-Mail informiert werden? Den Text kannst du vor dem Senden anpassen — die Mail enthält wie gewohnt die Bestätigungs-Buttons.`,
+  snTitle:n=>`Trainer informieren - ${n}`,
+  snInfo:s=>`Status manuell geändert auf „${s}“. Soll der Trainer per E-Mail informiert werden? Den Text kannst du vor dem Senden anpassen - die Mail enthält wie gewohnt die Bestätigungs-Buttons.`,
   snReplyLbl:"Nachricht an den Trainer",
   snSkip:"Nicht informieren", snSend:"Mail senden",
   snSent:n=>`Info an ${n} gesendet`,
   bkCsvToast:n=>`${n} Buchungen als CSV exportiert`,
-  bkHint:"Alle Einsätze über alle Trainings — nach Trainer oder Status filtern.",
+  bkHint:"Alle Einsätze über alle Trainings - nach Trainer oder Status filtern.",
   bkEmpty:"Keine Buchungen für diese Auswahl.",
   quickReplace:"Schnell-Ersatz", import:"Import",
-  sync:"Aktualisieren", synced:"Aktualisiert — auf dem neuesten Stand", syncFail:"Aktualisierung fehlgeschlagen",
+  sync:"Aktualisieren", synced:"Aktualisiert - auf dem neuesten Stand", syncFail:"Aktualisierung fehlgeschlagen",
   syncDemo:"Im Demo-Modus gibt es keinen Server zum Abgleichen.", lastSync:z=>`aktualisiert ${z}`,
   planView:"Einsatzübersicht", planTitle:"Einsatzübersicht",
   planOk:"Plan bestätigt", planIssue:"Rückmeldung offen", planSent:"Übersicht gesendet",
   planOkMsg:"Trainer hat den Einsatzplan als korrekt bestätigt.",
-  planIssueMsg:"Trainer hat eine Rückmeldung hinterlassen", planSentMsg:"Übersicht per E-Mail gesendet — Bestätigung ausstehend.",
+  planIssueMsg:"Trainer hat eine Rückmeldung hinterlassen", planSentMsg:"Übersicht per E-Mail gesendet - Bestätigung ausstehend.",
   planColStatus:"Status", planColWhen:"Zeitraum", planColWhere:"Ort", planColWhat:"Training",
   planEmpty:"Für diesen Trainer sind aktuell keine Einsätze hinterlegt.",
   planFoot:"Erstellt mit dem ETAF Trainer-Koordinationssystem · Bitte Angaben vor Buchung prüfen.",
   planPrint:"Als PDF / Drucken", planSend:"Per E-Mail senden",
   planNoMail:"Für diesen Trainer ist keine E-Mail-Adresse hinterlegt.",
-  planSentToast:n=>`Einsatzübersicht an ${n} gesendet`, planSubject:"Deine Einsatzübersicht — bitte bestätigen",
+  planSentToast:n=>`Einsatzübersicht an ${n} gesendet`, planSubject:"Deine Einsatzübersicht - bitte bestätigen",
   travelWin:"Reisezeitraum inkl. An-/Abreise",
   clientContact:"Ansprechpartner", clientEmail:"Kontakt-E-Mail",
   trfTitle:"Transfer-/Abholliste", trfBtn:"Transferliste", trfSend:"An Kunde senden",
   trfArr:"Anreise", trfDep:"Abreise", trfHotel:"Hotel",
   trfEmpty:"Noch keine bestätigten Trainer für diesen Kunden.",
-  trfFoot:"An-/Abreise & Hotel — bitte Abholung/Transfer organisieren. Angaben können sich noch ändern.",
-  trfSent:"An Kunde gesendet — Empfangsbestätigung ausstehend.", trfConfirmed:"Kunde hat den Erhalt bestätigt.",
+  trfFoot:"An-/Abreise & Hotel - bitte Abholung/Transfer organisieren. Angaben können sich noch ändern.",
+  trfSent:"An Kunde gesendet - Empfangsbestätigung ausstehend.", trfConfirmed:"Kunde hat den Erhalt bestätigt.",
   trfNoMail:"Für diesen Kunden ist keine Kontakt-E-Mail hinterlegt (unter „Kunden verwalten“).",
   trfSentToast:n=>`Transferliste an ${n} gesendet`,
   trfRemind:"Erinnerung senden", trfRemindToast:n=>`Erinnerung an ${n} gesendet`,
-  trfCardOk:"Transfer bestätigt", trfCardOpen:"Transfer offen", trfCardOpenHint:"Transferliste gesendet — Bestätigung ausstehend. Klicken zum Öffnen.",
+  trfCardOk:"Transfer bestätigt", trfCardOpen:"Transfer offen", trfCardOpenHint:"Transferliste gesendet - Bestätigung ausstehend. Klicken zum Öffnen.",
   bkViewList:"Liste", bkViewCal:"Kalender", bkCalTrainer:"Trainer",
   bkCalEmpty:"Keine Buchungen für diese Auswahl.",
   bkLegend:"Legende:", bkLegYes:"Zugesagt", bkLegMaybe:"Vielleicht", bkLegAsked:"Angefragt", bkLegClash:"Doppelbuchung",
@@ -1487,34 +1492,34 @@ const L={
   teamStatus:"Team / Status", inProcess:n=>`${n} im Prozess`,
   noneAsked:"Noch niemand angefragt. Wähle unten aus den KI-Vorschlägen.",
   aiTitle:"KI-Vorauswahl", aiSub:"nach Fachgebiet, Region, Auslastung & Bewertung",
-  aiHelp:"Vorgeschlagene Trainer — in Reihenfolge anfragen, Nachrücker rutschen automatisch nach",
-  suggReset:"↺ Zurücksetzen", suggEmpty:"Keine Vorschläge — unten Trainer hinzufügen.",
+  aiHelp:"Vorgeschlagene Trainer - in Reihenfolge anfragen, Nachrücker rutschen automatisch nach",
+  suggReset:"↺ Zurücksetzen", suggEmpty:"Keine Vorschläge - unten Trainer hinzufügen.",
   topMatch:"Top-Match", uaeExp:"UAE-erfahren", fit:n=>`${n}% Fit`, ask:"Anfragen",
   travelData:"Reisedaten", nextInLine:"Nachrücker anfragen",
   simReply:"Antwort simulieren", simReplyT:"Antwort des Trainers simulieren",
   noMore:"Keine weiteren Vorschläge im Pool",
   poolCount:n=>`${n} Trainer im Pool`,
-  poolHint:"Profile manuell anlegen & bearbeiten oder per KI aus Text importieren — mit internen Notizen & Bewertungen je Trainer.",
+  poolHint:"Profile manuell anlegen & bearbeiten oder per KI aus Text importieren - mit internen Notizen & Bewertungen je Trainer.",
   importProfiles:"KI-Import", trNew:"Neuer Trainer", trEdit:"Bearbeiten",
   teName:"Name", teEmail:"E-Mail", tePhone:"Telefon", teRegion:"Region",
   teSpec:"Fachgebiete (Komma-getrennt)", teLangs:"Sprachen (Komma-getrennt, z.B. DE, EN, AR)",
-  teUae:"UAE-/Auslandserfahrung", teRating:"Basis-Rating (4.0–5.0)",
+  teUae:"UAE-/Auslandserfahrung", teRating:"Basis-Rating (4.0-5.0)",
   tePrefLang:"Ansprache-Sprache (E-Mails)",
-  tePrefLangHint:"Wird bei allen E-Mails an diesen Trainer vorausgewählt — im Mail-Dialog jederzeit umschaltbar.",
+  tePrefLangHint:"Wird bei allen E-Mails an diesen Trainer vorausgewählt - im Mail-Dialog jederzeit umschaltbar.",
   teNotes:"Interne Notizen (nur für uns sichtbar)",
   teNotesPh:"z.B. sehr strukturiert, kommt bei Teilnehmern gut an; braucht Vorlauf bei Visa …",
   teHist:"Einsatz-Historie & Bewertung (intern)",
   teHistHint:"Pro Training: Sterne vergeben und kurz notieren, wie es lief. Nur intern sichtbar.",
-  teNoHist:"Noch keine Einsätze — die Historie füllt sich, sobald der Trainer zugesagt hat.",
+  teNoHist:"Noch keine Einsätze - die Historie füllt sich, sobald der Trainer zugesagt hat.",
   teNoteRow:"Wie lief der Einsatz? (kurz)",
   teSaved:"Trainer gespeichert", teDeleted:"Trainer gelöscht",
   teDelete:"Trainer löschen", teDeleteAsk:n=>`${n} wirklich löschen? Anfragen und Historie gehen verloren.`,
-  teTitleNew:"Neuen Trainer anlegen", teTitleEdit:n=>`Trainer bearbeiten — ${n}`,
+  teTitleNew:"Neuen Trainer anlegen", teTitleEdit:n=>`Trainer bearbeiten - ${n}`,
   teIntern:n=>`intern (${n})`,
   workload:"Auslastung",
   load0:"frei", load1:"gering", load2:"mittel", load3:"hoch",
   placeholders:"Platzhalter:",
-  placeholdersHint:"— werden beim Senden automatisch gefüllt.",
+  placeholdersHint:"- werden beim Senden automatisch gefüllt.",
   subjectLbl:"Betreff:", edit:"Bearbeiten", editTitle:"Vorlage bearbeiten",
   name:"Name", subject:"Betreff", text:"Text", cancel:"Abbrechen", save:"Speichern",
   savedTpl:"Vorlage gespeichert", tplLang:"Sprache der Vorlage",
@@ -1529,22 +1534,22 @@ const L={
   statusChanged:s=>`Status geändert: ${s}`,
   cancelSent:n=>`Absage an ${n} Trainer per E-Mail verschickt`,
   quickTitle:"⚡ Schnell-Ersatz",
-  quickDesc:"Kurzfristig einen Ausfall ersetzen — Anfrage an die besten verfügbaren Trainer. Wer zuerst zusagt, bekommt den Platz.",
+  quickDesc:"Kurzfristig einen Ausfall ersetzen - Anfrage an die besten verfügbaren Trainer. Wer zuerst zusagt, bekommt den Platz.",
   trainingLbl:"Training", replCand:"Vorgeschlagene Ersatz-Trainer", reachable:"schnell erreichbar",
-  remove:"Entfernen", quickAdd:"Weiteren Trainer hinzufügen", quickAddPh:"— Trainer wählen —",
-  quickEmpty:"Keine Trainer ausgewählt — bitte mindestens einen hinzufügen.",
+  remove:"Entfernen", quickAdd:"Weiteren Trainer hinzufügen", quickAddPh:"- Trainer wählen -",
+  quickEmpty:"Keine Trainer ausgewählt - bitte mindestens einen hinzufügen.",
   sendBlitz:"Blitz-Anfrage senden", blitzToast:n=>`Blitz-Anfrage an ${n} Trainer raus ⚡`,
   importTitle:"Import", importDesc:"In der Vollversion importierst du hier Trainings & Trainer.",
   source:"Quelle", srcExcel:"Excel / CSV", srcOffer:"Angebot (PDF)", srcAI:"KI aus Lebenslauf",
   previewEx:"Vorschau (Beispiel)", detTrainings:"Erkannte Trainings", detProfiles:"Erkannte Trainer-Profile",
   detSpec:"Spezialisierung erkannt",
-  importAIHint:"Die KI legt Profile automatisch an — du prüfst und bestätigst vor der Übernahme.",
+  importAIHint:"Die KI legt Profile automatisch an - du prüfst und bestätigst vor der Übernahme.",
   close:"Schließen", apply:"Übernehmen", importDemoToast:"Demo: Import ist im Prototyp nur angedeutet",
   nav_automation:"Automatik",
   tp_auto:"Automatik", tp_autoSub:"Erinnerungen & automatisches Nachrücken",
   importPaste:"Text einfügen (Lebenslauf, Excel-Kopie, Angebot …)",
   importAnalyze:"Mit KI analysieren", importAnalyzing:"KI analysiert …",
-  importReview:"Erkannte Profile — prüfen und übernehmen",
+  importReview:"Erkannte Profile - prüfen und übernehmen",
   importApply:n=>`${n} Profile übernehmen`, importFound:n=>`${n} Profile erkannt`,
   importCreated:n=>`${n} Profile angelegt`,
   importNoAI:"Für den echten KI-Import trägst du in config.php einen Claude-API-Key ein. Ohne Key kannst du hier Beispielprofile aus dem Text übernehmen.",
@@ -1554,21 +1559,21 @@ const L={
   autoAdvanceHint:"Bei Absage oder Überfälligkeit automatisch den nächstbesten Trainer anfragen.",
   autoRunNow:"Jetzt prüfen & senden", autoSaved:"Einstellungen gespeichert",
   autoRan:(r,a)=>`${r} Erinnerung(en), ${a} Nachrücker versendet`,
-  autoDesc:"Läuft automatisch per Cron (siehe DEPLOY.md) — hier kannst du es auch manuell auslösen.",
+  autoDesc:"Läuft automatisch per Cron (siehe DEPLOY.md) - hier kannst du es auch manuell auslösen.",
   secTitle:"Sicherheit", secSub:"Login-PIN & Zugriffsschutz",
   secLockInfo:"Nach 5 Fehlversuchen ist der Login für 5 Minuten gesperrt.",
-  secCurPin:"Aktueller PIN", secNewPin:"Neuer PIN (4–8 Ziffern)", secNewPin2:"Neuer PIN wiederholen",
-  secChangeBtn:"PIN ändern", secPinSaved:"PIN geändert — beim nächsten Login gilt der neue PIN.",
+  secCurPin:"Aktueller PIN", secNewPin:"Neuer PIN (4-8 Ziffern)", secNewPin2:"Neuer PIN wiederholen",
+  secChangeBtn:"PIN ändern", secPinSaved:"PIN geändert - beim nächsten Login gilt der neue PIN.",
   secPinMismatch:"Die beiden neuen PINs stimmen nicht überein.",
-  secPinFormat:"Der neue PIN muss aus 4–8 Ziffern bestehen.",
+  secPinFormat:"Der neue PIN muss aus 4-8 Ziffern bestehen.",
   secDemoNote:"PIN-Änderung ist nur in der Live-Version (mit Server) aktiv.",
   reminded:"erinnert",
   // Reisepass je Trainer
-  ppTitle:t=>`Reisepass — ${t}`, ppSection:"Reisepass", ppView:"Reisepass",
-  ppNone:"Kein Pass hinterlegt", ppNoneHint:"Foto hochladen oder Daten eintragen — einmal pro Trainer.",
+  ppTitle:t=>`Reisepass - ${t}`, ppSection:"Reisepass", ppView:"Reisepass",
+  ppNone:"Kein Pass hinterlegt", ppNoneHint:"Foto hochladen oder Daten eintragen - einmal pro Trainer.",
   ppUpload:"Passfoto hochladen", ppScan:"Mit KI auslesen", ppScanning:"KI liest das Foto …",
   ppScanDemo:"KI-Auslesen ist nur in der Live-Version (mit Claude-API-Key) aktiv. Du kannst die Felder manuell ausfüllen.",
-  ppScanErr:"Auslesen fehlgeschlagen", ppScanOk:"Daten erkannt — bitte prüfen.",
+  ppScanErr:"Auslesen fehlgeschlagen", ppScanOk:"Daten erkannt - bitte prüfen.",
   ppNumber:"Passnummer", ppName:"Name (wie im Pass)", ppNat:"Nationalität",
   ppBirth:"Geburtsdatum", ppExpiry:"Gültig bis", ppNotes:"Notiz (optional)",
   ppSaved:"Reisepass gespeichert", ppRemoved:"Reisepass gelöscht",
@@ -1586,27 +1591,27 @@ const L={
   tvHotelAddr:"Hotel-Adresse", tvMeet:"Treffpunkt", tvContact:"Ansprechpartner vor Ort",
   tvContactPhone:"Telefon vor Ort", tvDress:"Dresscode", tvPerDiem:"Per Diem", tvNotes:"Hinweise",
   agTitle:"Agenda / Programm", agAddItem:"+ Programmpunkt", agDay:"Tag", agTime:"Zeit", agWhat:"Titel",
-  tvFlightTitle:n=>`Flug & Zimmer — ${n}`, tvArrival:"Anreise", tvDeparture:"Abreise",
+  tvFlightTitle:n=>`Flug & Zimmer - ${n}`, tvArrival:"Anreise", tvDeparture:"Abreise",
   tvFlightOut:"Hinflug", tvFlightReturn:"Rückflug", tvRoom:"Zimmer", printBtn:"Drucken",
   tvFlightHead:"Deine Reisedaten", tvLogHead:"Reise & Logistik", agFor:"Für",
   visaLbl:"Visum", passportLbl:"Reisepass gültig bis", visaNotesLbl:"Visum-Notizen",
-  visa_none:"—", visa_needed:"benötigt", visa_applied:"beantragt", visa_approved:"genehmigt", visa_rejected:"abgelehnt",
+  visa_none:"-", visa_needed:"benötigt", visa_applied:"beantragt", visa_approved:"genehmigt", visa_rejected:"abgelehnt",
   flSuggest:"Flug-Vorschläge", flSuggestHint:"Automatische Vorschläge nach Route (Region → Ziel). Zum Übernehmen anklicken.", flUse:"Übernehmen",
   nav_emails:"Protokoll", tp_emails:"E-Mail-Protokoll", tp_emailsSub:"Alle versendeten Anfragen, Erinnerungen und Agenden",
   /* ---- Trainingsbericht & Auswertung ---- */
   nav_reports:"Berichte", tp_reports:"Berichte & Auswertung",
   tp_reportsSub:"Trainings bewerten und über Wochen, Monate und Jahre auswerten",
-  dbTitle:"Trainingsbericht", dbTitleFor:tg=>`Trainingsbericht — ${tg}`,
+  dbTitle:"Trainingsbericht", dbTitleFor:tg=>`Trainingsbericht - ${tg}`,
   dbOpen:"Bericht", dbNew:"Bericht ausfüllen", dbEdit:"Bericht bearbeiten",
   dbDone:"bewertet", dbDraft:"Entwurf", dbMissing:"offen",
   dbSaveDraft:"Als Entwurf sichern", dbFinish:"Bericht abschließen", dbReopen:"Wieder öffnen",
   dbDelete:"Bericht löschen", dbDeleteAsk:"Diesen Bericht wirklich löschen?",
   dbSaved:"Bericht gespeichert", dbFinished:"Bericht abgeschlossen",
-  dbIntro:"Kurz nach dem Training ausfüllen — 1 = ungenügend, 5 = ausgezeichnet. Nicht Zutreffendes einfach offen lassen.",
+  dbIntro:"Kurz nach dem Training ausfüllen - 1 = ungenügend, 5 = ausgezeichnet. Nicht Zutreffendes einfach offen lassen.",
   dbNa:"n.z.", dbNaHint:"nicht zutreffend / nicht bewertet",
   dbOverall:"Gesamteindruck", dbRecommend:"Noch einmal so durchführen?",
   dbTrainerHead:"Trainerinnen und Trainer", dbTrainerNote:"Notiz zum Trainer",
-  dbTrainerNone:"Für dieses Training ist noch niemand bestätigt — Bewertung je Trainer erscheint danach.",
+  dbTrainerNone:"Für dieses Training ist noch niemand bestätigt - Bewertung je Trainer erscheint danach.",
   dbFlagsHead:"Vorkommnisse (Mehrfachauswahl)",
   dbActions:"Maßnahmen", dbActionAdd:"Maßnahme hinzufügen",
   dbActionText:"Was ist zu tun?", dbActionOwner:"Wer?", dbActionDue:"Bis wann?",
@@ -1620,55 +1625,56 @@ const L={
   rpKpiAlert:"Handlungsbedarf", rpKpiAlertSub:"Kriterien unter 3,0",
   rpCoverageSub:(a,b)=>`${a} von ${b} gelaufenen Trainings`,
   rpNoData:"Für diesen Zeitraum gibt es noch keinen abgeschlossenen Bericht.",
-  rpNoDataHint:"Berichte entstehen im Training selbst — dort auf „Bericht ausfüllen“.",
+  rpNoDataHint:"Berichte entstehen im Training selbst - dort auf „Bericht ausfüllen“.",
   rpCriteria:"Kriterien im Durchschnitt", rpCriteriaSub:"1 = ungenügend · 5 = ausgezeichnet",
   rpTrend:"Verlauf des Gesamteindrucks", rpTrendGroups:"Verlauf je Bereich",
   rpTrainers:"Trainerinnen und Trainer", rpTrainerSub:"Mittel aus Didaktik, Auftreten, Unterlagen, Pünktlichkeit",
   rpFlags:"Häufigste Vorkommnisse", rpActionsOpen:"Offene Maßnahmen",
   rpRecommend:"Wieder so durchführen?", rpSingles:"Einzelberichte",
   rpPrint:"Bericht drucken", rpCsv:"Als CSV", rpOpenTraining:"Training öffnen",
-  rpBandGood:"gut (ab 4,0)", rpBandMid:"beobachten (3,0–3,9)", rpBandBad:"Handlungsbedarf (unter 3,0)",
-  rpN:n=>`${n} Bewertungen`, rpNoFlags:"Keine Vorkommnisse gemeldet — gut so.",
+  rpBandGood:"gut (ab 4,0)", rpBandMid:"beobachten (3,0-3,9)", rpBandBad:"Handlungsbedarf (unter 3,0)",
+  rpN:n=>`${n} Bewertungen`, rpNoFlags:"Keine Vorkommnisse gemeldet - gut so.",
   rpNoOpen:"Keine offene Maßnahme.", rpMissing:"Trainings ohne Bericht",
   rpMissingSub:"bereits gelaufen, aber noch nicht bewertet",
   rpBest:"Stärkste Werte", rpWorst:"Schwächste Werte",
   rpExportName:"ETAF-Auswertung",
-  rpAllReports:"Alle Trainingsberichte", rpAllReportsSub:"Ausfüllstand je Training — anklicken zum Bearbeiten",
+  rpAllReports:"Alle Trainingsberichte", rpAllReportsSub:"Ausfüllstand je Training - anklicken zum Bearbeiten",
   rpFDue:"fällig", rpFFinal:"abgeschlossen", rpFSoon:"kommt noch", rpFAll:"alle",
   rpNotYet:"läuft noch nicht", rpListEmpty:"Keine Trainings in dieser Auswahl.",
   rpTeamN:n=>`${n} Trainer`,
   dbPrint:"Bericht drucken", dbNothingYet:"In diesem Bericht steht noch nichts.",
   dbNotes:"Anmerkungen", dbNoteShort:"Notiz", dbFlagsShort:"Vorkommnisse",
-  dbDraftNote:"Entwurf — noch nicht abgeschlossen, es fehlen Angaben",
+  dbDraftNote:"Entwurf - noch nicht abgeschlossen, es fehlen Angaben",
   dbMailClient:"Mit eigenem Mailprogramm", dbPickPrint:"Einzelbericht drucken",
   dbPickPh:"Training wählen …",
   rpBatch:"Alle Berichte im Zeitraum", rpBatchBtn:"Sammelmappe drucken",
-  mtCopied:"Kopiert", mtLinkCopied:"Link kopiert — jetzt in deine Mail einfügen",
+  mtCopied:"Kopiert", mtLinkCopied:"Link kopiert - jetzt in deine Mail einfügen",
   mtCopyManual:"Bitte von Hand kopieren:", mtLink:"Link kopieren",
-  mtLong:"Der Text ist lang — manche Mailprogramme kürzen ihn.",
+  mtLong:"Der Text ist lang - manche Mailprogramme kürzen ihn.",
   mtDemo:"Links gibt es erst im Live-Betrieb.",
-  mtHint:"Öffnet einen Entwurf in deinem Mailprogramm. Anhänge kann ein Mail-Link technisch nicht mitgeben — deshalb geht der Agenda-Link mit, der immer den aktuellen Stand zeigt.",
+  mtHint:"Öffnet einen Entwurf in deinem Mailprogramm. Anhänge kann ein Mail-Link technisch nicht mitgeben - deshalb geht der Agenda-Link mit, der immer den aktuellen Stand zeigt.",
   agAllBtn:"Agenda an alle", agAllTo:n=>`Geht an ${n} bestätigte Trainer:`,
   agAllSend:n=>`An ${n} senden`, agAllNone:"Für dieses Training ist noch niemand bestätigt.",
-  agAllHint:"Anrede und Session-Liste werden je Person eingesetzt — {{firstName}} im Text bleibt als Platzhalter stehen.",
+  agAllHint:"Anrede und Session-Liste werden je Person eingesetzt - {{firstName}} im Text bleibt als Platzhalter stehen.",
   agAllDone:n=>`${n} Agenden verschickt`, agAllFail:w=>`nicht zugestellt: ${w}`,
   agNoMail:"keine E-Mail",
   mtNothing:"Hier gibt es noch nichts zum Verschicken.",
   mtMore:n=>`… und ${n} weitere Termine (vollständig im Cockpit)`,
   rpBasis:"Grundlage", rpFinalOnly:"nur abgeschlossene", rpWithDrafts:"Zwischenstand",
-  rpDraftNote:"Zwischenstand — vorläufige Zahlen",
+  rpDraftNote:"Zwischenstand - vorläufige Zahlen",
   rpDraftNoteSub:(d,n)=>`${d} von ${n} Berichten sind noch Entwürfe. Fehlende Angaben zählen nicht mit, deshalb können sich alle Werte noch verschieben.`,
   rpDraftHint:n=>`Es liegen ${n} angefangene Berichte vor. Für einen Zwischenstand kannst du sie mitzählen lassen.`,
-  rpBasisHead:"Datengrundlage", rpBasisSub:"Worauf die Zahlen stehen — und was noch fehlt",
+  rpBasisHead:"Datengrundlage", rpBasisSub:"Worauf die Zahlen stehen - und was noch fehlt",
   rpThin:"Kriterien mit dünner Grundlage", rpThinNone:"Jedes Kriterium wurde in allen Berichten bewertet.",
   rpNever:"Bisher nie bewertet", rpGaps:"Berichte mit Lücken", rpGapsNone:"Alle Berichte im Zeitraum sind vollständig.",
   rpMissingN:n=>`${n} Felder fehlen noch`,
-  rpProvisional:"Zwischenstand — enthält Entwürfe, Zahlen können sich noch ändern",
+  rpOnlyClose:"Vollständig - nur noch abschließen",
+  rpProvisional:"Zwischenstand - enthält Entwürfe, Zahlen können sich noch ändern",
   emNone:"Noch keine E-Mails versendet.", em_sent:"gesendet", em_logged:"protokolliert", em_failed:"fehlgeschlagen",
   agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
   resetToast:"Demo-Daten zurückgesetzt",
   clientAll:"Alle Kunden", clientLbl:"Kunde", clientsWord:"Kunden",
-  pfTitle:"Kunden-Übersicht", pfSub:"Status je Kunde — wo es brennt, was schon steht",
+  pfTitle:"Kunden-Übersicht", pfSub:"Status je Kunde - wo es brennt, was schon steht",
   pf_done:"besetzt", pf_prog:"in Arbeit", pf_crit:"kritisch",
   pfTrainings:n=>`${n} Trainings`, pfShowAll:"Alle Trainings dieses Kunden",
   manageClients:"Kunden verwalten", addClient:"+ Neuer Kunde",
@@ -1679,13 +1685,13 @@ const L={
   exportHint:"Kalender & Export beziehen sich auf die aktuelle Kunden-Auswahl.",
   calTitle:"Trainings-Kalender", calSub:"Alle Einsätze chronologisch · Farbe = Kunde",
   calPrint:"Drucken", calEmpty:"Keine Trainings für diese Auswahl.",
-  icsToast:"Kalenderdatei (.ics) erzeugt — in Google/Apple/Outlook importierbar",
+  icsToast:"Kalenderdatei (.ics) erzeugt - in Google/Apple/Outlook importierbar",
   icsSubHint:"Live-Abo-Link (aktualisiert sich automatisch): backend/ics.php",
   newTraining:"+ Neues Training", editTraining:"Training bearbeiten", createTraining:"Training anlegen",
   fCity:"Stadt", fCountry:"Land (Code, z. B. UAE)", fKw:"Kalenderwoche", fMonth:"Monat / Jahr",
   fStart:"Beginn", fEnd:"Ende", fDateHint:"Datum wählen → KW wird automatisch gesetzt",
   trainingSaved:"Training gespeichert", trainingDeleted:"Training gelöscht",
-  shiftTitle:"Termin verschoben — Trainer benachrichtigen?",
+  shiftTitle:"Termin verschoben - Trainer benachrichtigen?",
   shiftLead:n=>`Der Zeitraum hat sich geändert. ${n} betroffene${n===1?"r":""} Trainer ${n===1?"ist":"sind"} bereits im Prozess.`,
   shiftOld:"Bisher", shiftNew:"Neu",
   shiftHint:"„Nur informieren“ behält den Status. „Neu anfragen“ setzt die Trainer zurück auf „angefragt“ und lässt sie den neuen Termin bestätigen.",
@@ -1703,7 +1709,7 @@ const L={
   matSaved:"Materialliste gespeichert", matNoPreset:"Für diesen Trainingstyp gibt es noch keine Vorlage.",
   matPresetHint:"Intelligent: Trainings mit gleichem Schwerpunkt bekommen diese Liste automatisch beim Anlegen.",
   matPrefilled:n=>`${n} Positionen aus Typ-Vorlage übernommen`,
-  catTitle:"Material-Katalog", catSub:"Materialien zentral pflegen — Kits, Protokolle, Verbrauchsmaterial",
+  catTitle:"Material-Katalog", catSub:"Materialien zentral pflegen - Kits, Protokolle, Verbrauchsmaterial",
   matName:"Bezeichnung", matUnit:"Einheit", matCat:"Kategorie", catAdd:"+ Material im Katalog",
   catSaved:"Katalog gespeichert", matDelCat:"Material aus dem Katalog entfernen?",
   matPrint:"Materialliste", matPrintTitle:"Materialliste / Packliste", matPositions:n=>`${n} Positionen`,
@@ -1723,11 +1729,11 @@ const L={
   // Week plan
   tp_week:"Week plan", tp_weekSub:"Content, sessions & PowerPoints per training week",
   wkAM:"Morning", wkPM:"Afternoon",
-  wkBench:"Bench", wkBenchHint:"Unscheduled sessions — drag or tap to place them",
-  wkAuto:"Auto-distribute", wkAutoAsk:"Distribute all sessions across Mon–Fri automatically? The current arrangement will be replaced.",
+  wkBench:"Bench", wkBenchHint:"Unscheduled sessions - drag or tap to place them",
+  wkAuto:"Auto-distribute", wkAutoAsk:"Distribute all sessions across Mon-Fri automatically? The current arrangement will be replaced.",
   wkNew:"Session", wkEditTitle:"Edit session", wkNewTitle:"New session",
   wkTitle:"Title", wkTitleEn:"Title (EN)", wkType:"Type", wkDur:"Duration (hours)", wkDesc:"Description",
-  wkTrainer:"Trainer for this session", wkTrainerNone:"— open —", wkTeamHint:"(week team first)",
+  wkTrainer:"Trainer for this session", wkTrainerNone:"- open -", wkTeamHint:"(week team first)",
   wkPpt:"PowerPoint status", wkPptBy:"Slides by", wkPptDue:"Due",
   ppt_:"open", ppt_inArbeit:"in progress", ppt_vorhanden:"done",
   wkMove:"Move to", wkDelete:"Delete", wkDeleteAsk:s=>`Really delete session “${s}”?`,
@@ -1736,11 +1742,11 @@ const L={
   wkPptChip:(d,a)=>`${d}/${a} PowerPoints`, wkPptTitle:"PowerPoints of this week",
   wkPptEmpty:"No teaching sessions in this week.",
   wkSessN:n=>`${n} session${n===1?"":"s"}`, wkHrsN:h=>`${h} h`,
-  wkEmpty:"No sessions yet for this week — start with “+ Session” or use auto-distribute.",
+  wkEmpty:"No sessions yet for this week - start with “+ Session” or use auto-distribute.",
   wkNoTrainings:"No trainings yet.",
   wkSaved:"Week plan saved", wkSessSaved:"Session saved", wkSessDeleted:"Session deleted",
-  wkTeam:"Week team", wkNoTeam:"Nobody confirmed yet — open the training to build the team.",
-  wkTrDragHint:"Drag onto a session to assign — multiple trainers per session are fine (click opens the training)",
+  wkTeam:"Week team", wkNoTeam:"Nobody confirmed yet - open the training to build the team.",
+  wkTrDragHint:"Drag onto a session to assign - multiple trainers per session are fine (click opens the training)",
   wkTrAdd:"+ Add trainer …",
   wkUp:"One position up (across the boundary: previous half-day)",
   wkDown:"One position down (across the boundary: next half-day)",
@@ -1749,64 +1755,64 @@ const L={
   wkAlreadyAssigned:n=>`${n} is already assigned to this session.`,
   wkTrCnt:n=> n===1 ? "1 session this week" : `${n} sessions this week`,
   wkAssigned:(s,n)=>`“${s.length>32?s.slice(0,32)+"…":s}” → ${n}`,
-  wkStage:s=>`Stage ${s}`, wkDays:"Mon–Fri",
+  wkStage:s=>`Stage ${s}`, wkDays:"Mon-Fri",
   type_orga:"Orga", type_theorie:"Theory", type_uebung:"Exercise", type_praxis:"Practical",
   type_simulation:"Simulation", type_assessment:"Assessment", type_deliverable:"Deliverable",
   day_mon:"Monday", day_tue:"Tuesday", day_wed:"Wednesday", day_thu:"Thursday", day_fri:"Friday",
   day_sat:"Saturday", day_sun:"Sunday",
   wkCopy:"Copy from …", wkCopyTitle:"Copy week plan", wkCopyDo:"Copy",
-  wkCopyHint:"Copies sessions, arrangement and weekly deliverable from another week into this one (e.g. W11-B from W11-A). Trainer assignments and PowerPoint status are not copied — new week, new team.",
+  wkCopyHint:"Copies sessions, arrangement and weekly deliverable from another week into this one (e.g. W11-B from W11-A). Trainer assignments and PowerPoint status are not copied - new week, new team.",
   wkCopySrc:"Source week",
-  wkCopyAsk:n=>`This week already has ${n} session${n===1?"":"s"} — replace all?`,
+  wkCopyAsk:n=>`This week already has ${n} session${n===1?"":"s"} - replace all?`,
   wkCopied:n=>`${n} session${n===1?"":"s"} copied`,
   icsBtn:"iCal feed", icsHint:"Copy this trainer's personal calendar subscription link",
-  icsCopied:"Calendar link copied — add it in Google/Apple/Outlook as a calendar subscription.",
+  icsCopied:"Calendar link copied - add it in Google/Apple/Outlook as a calendar subscription.",
   dgTitle:"Info mail", dgBtn:"Info mail",
-  dgHint:"Automatic overview email for this person — frequency and content are configurable. Sent in the morning (~7:00) by the automation.",
+  dgHint:"Automatic overview email for this person - frequency and content are configurable. Sent in the morning (~7:00) by the automation.",
   dgFreq:"Frequency", dgOff:"Off", dgDaily:"Daily", dgEvery2:"Every 2 days", dgWeekly:"Weekly",
   dgDay:"Weekday", dgParts:"Content",
-  dgPart_staffing:"Staffing — missing trainers & open requests",
-  dgPart_ppt:"PowerPoints — missing slides per week",
-  dgPart_travel:"Travel & flights — trainers without travel data",
-  dgPart_inbox:"Inbox — feedback & new flight mail",
-  dgPart_week:"Next training — team & weekly deliverable",
-  dgPart_passport:"Passports — expiring documents",
-  dgPart_reports:"Training reports — average, issues & missing reports",
+  dgPart_staffing:"Staffing - missing trainers & open requests",
+  dgPart_ppt:"PowerPoints - missing slides per week",
+  dgPart_travel:"Travel & flights - trainers without travel data",
+  dgPart_inbox:"Inbox - feedback & new flight mail",
+  dgPart_week:"Next training - team & weekly deliverable",
+  dgPart_passport:"Passports - expiring documents",
+  dgPart_reports:"Training reports - average, issues & missing reports",
   dgTest:"Send sample", dgTestSent:"Sample email is on its way", dgTestFail:"Sending failed",
   dgSaved:"Info-mail settings saved", dgLiveOnly:"Available in live mode only.",
-  attNoContent:"Week plan is still empty — plan the content",
+  attNoContent:"Week plan is still empty - plan the content",
   attPptMiss:n=>`${n} PowerPoint${n===1?"":"s"} still missing`,
-  wkAi:"AI suggestion", wkAiAsk:"The AI distributes all sessions sensibly across Mon–Fri (theory before practice, assessment towards the end, ~4 h per half-day). The current arrangement will be replaced — continue?",
+  wkAi:"AI suggestion", wkAiAsk:"The AI distributes all sessions sensibly across Mon-Fri (theory before practice, assessment towards the end, ~4 h per half-day). The current arrangement will be replaced - continue?",
   wkAiRun:"The AI is planning the week … this can take up to a minute.",
   wkAiRunShort:"AI planning …",
-  wkConflict:"Double booking — this trainer is scheduled more than once in the same half-day.",
+  wkConflict:"Double booking - this trainer is scheduled more than once in the same half-day.",
   wkConflictToast:n=>`Note: ${n} is now double-booked in this half-day (⚠ on the tiles).`,
-  agWeekHead:"Week plan (Mon–Fri) — your sessions marked red",
+  agWeekHead:"Week plan (Mon-Fri) - your sessions marked red",
   agWith:"together with",
   agWeekLegend:"Red outline = your sessions · grey tiles = the rest of the week",
   agMineSum:(n,h,p)=>`Your sessions: ${n} · ${h} h`+(p?` · ${p} PowerPoint(s) to prepare`:""),
   agPptMine:"PowerPoint: by you",
-  wkAiDone:"AI week rhythm applied", wkAiDemo:"Demo mode has no AI — using simple auto-distribute instead.",
+  wkAiDone:"AI week rhythm applied", wkAiDemo:"Demo mode has no AI - using simple auto-distribute instead.",
   wkPrint:"Print", wkMat:"Required material", wkMatPh:"e.g. 20× DVI kit, projector, flip chart",
   wkPrintMat:"Material", wkPrintTrainer:"Trainer",
   nav_users:"Users", nav_activity:"Changes",
-  tp_users:"Users", tp_usersSub:"Who can sign in — roles and access",
+  tp_users:"Users", tp_usersSub:"Who can sign in - roles and access",
   tp_activity:"Changes", tp_activitySub:"Who changed what, and when",
   lgSignIn:"Sign in", lgMissing:"Please enter email and password.",
   lgFailed:"Sign-in failed.", lgEnterMail:"Please enter your email address first.",
   lgResetSent:"If an account exists for that address, an email with a link is on its way (valid for 60 minutes).",
   setupHint:"First-time setup: sign in with the PIN and create the accounts under “Users”. The PIN access is disabled automatically afterwards.",
-  setupBadge:"Setup — please create users",
-  setupDone:m=>`Account created. We sent a link to ${m} to set the password — after that you can sign in here.`,
+  setupBadge:"Setup - please create users",
+  setupDone:m=>`Account created. We sent a link to ${m} to set the password - after that you can sign in here.`,
   setupDoneNoMail:m=>`Account ${m} created, but the email could not be sent. Please check the SMTP settings in config.php.`,
   usrCount:n=>`${n} ${n===1?"user":"users"}`,
-  usrHint:"Everyone signs in with their own email — so it is always clear who changed what.",
-  usrNew:"Invite user", usrNewTitle:"Invite user", usrEditTitle:n=>`Edit user — ${n}`,
+  usrHint:"Everyone signs in with their own email - so it is always clear who changed what.",
+  usrNew:"Invite user", usrNewTitle:"Invite user", usrEditTitle:n=>`Edit user - ${n}`,
   usrRole:"Role", roleAdmin:"Administrator", roleEditor:"Editor",
   usrRoleHint:"Editors can do all the planning. Administrators may additionally manage users and change core settings.",
   usrInviteHint:"They receive an email with a link to set their own password (valid for 60 minutes).",
   usrCreate:"Invite", usrSaved:"User saved",
-  usrInvited:n=>`Invitation sent to ${n}`, usrCreatedNoMail:"User created — the email could not be sent.",
+  usrInvited:n=>`Invitation sent to ${n}`, usrCreatedNoMail:"User created - the email could not be sent.",
   usrActive:"Active", usrBlocked:"Blocked", usrBlock:"Block", usrUnblock:"Unblock",
   usrBlockedToast:"User blocked and signed out", usrUnblocked:"User unblocked",
   usrResend:"Resend access link", usrResent:"Link sent", usrResendFail:"Sending failed",
@@ -1826,35 +1832,35 @@ const L={
   "act_request.status":"status changed",
   cfTitle:"Edited at the same time", cfHead:"This entry has been changed in the meantime",
   cfBy:(who,when)=>`Last changed by ${who}${when?" · "+when:""}`,
-  cfExplain:"Nothing was saved yet, so no work is lost. Either reload the current state (your entries in this form will be discarded) — or deliberately overwrite the other change.",
+  cfExplain:"Nothing was saved yet, so no work is lost. Either reload the current state (your entries in this form will be discarded) - or deliberately overwrite the other change.",
   cfReload:"Reload", cfOverwrite:"Overwrite anyway",
-  cfReloaded:"Current state loaded", cfForced:"Saved — the other change was overwritten",
+  cfReloaded:"Current state loaded", cfForced:"Saved - the other change was overwritten",
   // Flight mail
-  fmTitle:"Flight inbox", fmHint:"Flight confirmations from the mailbox — detected automatically, review and apply here.",
+  fmTitle:"Flight inbox", fmHint:"Flight confirmations from the mailbox - detected automatically, review and apply here.",
   fmPoll:"Check mailbox now", fmPolled:(n,f)=>`${n} new mail(s) fetched, ${f} flight booking(s) detected`,
   fmDemo:"Mailbox polling is only active in the live version (mailbox in config.php).",
-  fmEmpty:"No flight mail yet — booking confirmations will appear here.",
-  fmRef:"Booking ref", fmNoExtract:"No flight data could be detected — assign manually below; attachments are linked anyway.",
+  fmEmpty:"No flight mail yet - booking confirmations will appear here.",
+  fmRef:"Booking ref", fmNoExtract:"No flight data could be detected - assign manually below; attachments are linked anyway.",
   fmConfHigh:"Match certain", fmConfLow:"Match uncertain", fmConfNone:"No match",
   fmApplied:"Applied", fmIgnored:"Ignored",
   fmPickTrainer:"Pick trainer …", fmPickTraining:"Pick training …",
   fmPickBoth:"Please pick trainer and training.",
   fmApply:"Apply", fmIgnore:"Ignore",
-  fmAppliedToast:"Travel data applied — the ticket will be attached to the agenda",
+  fmAppliedToast:"Travel data applied - the ticket will be attached to the agenda",
   // Travel readiness
   frFlight:"Flights", frHotel:"Hotel", frVisa:"Visa", frPass:"Passport",
-  frReady:"Travel complete", frAllSet:"Flights, hotel, visa and passport are complete — ready for the agenda.",
+  frReady:"Travel complete", frAllSet:"Flights, hotel, visa and passport are complete - ready for the agenda.",
   frMissing:"Missing",
-  tp_book:"Bookings", tp_bookSub:"Who is booked when and where — filter by trainer",
+  tp_book:"Bookings", tp_bookSub:"Who is booked when and where - filter by trainer",
   bkAllTrainers:"All trainers", bkAllStatus:"All statuses", bkTrainer:"Trainer", bkClient:"Client", bkMonth:"Period",
   bkAllClients:"All clients", bkAllMonths:"All periods", bkGroup:"Group by", bkGrpNone:"No grouping",
   bkNoClient:"No client", bkReset:"Reset filters", bkSearch:"🔎 Search (training, city, trainer …)",
   bkCount:n=>`${n} ${n===1?"booking":"bookings"}`,
   bkStats:(tr,tg)=>`${tr} ${tr===1?"trainer":"trainers"} · ${tg} ${tg===1?"training":"trainings"}`,
   bkConflict:"Clash", bkConflictHint:"This trainer is booked more than once in this calendar week.",
-  bkOpenModule:"Open module — who else is on it?",
+  bkOpenModule:"Open module - who else is on it?",
   bkConflictN:n=>`${n} double booking${n===1?"":"s"}`,
-  ampel_green:"All clear", ampel_amber:"Running — needs attention", ampel_red:"Attention: conflicts",
+  ampel_green:"All clear", ampel_amber:"Running - needs attention", ampel_red:"Attention: conflicts",
   ampelUnder:n=>`${n} understaffed training${n===1?"":"s"}`, ampelOpen:n=>`${n} open request${n===1?"":"s"}`,
   ampelAllGood:"No conflicts, all trainings staffed.", ampelShow:"View conflicts",
   nav_inbox:"Feedback", tp_inbox:"Feedback", tp_inboxSub:"Trainer feedback on the assignment overview",
@@ -1864,12 +1870,12 @@ const L={
   inboxEmpty:"No feedback received yet.",
   inboxResolve:"Resolve & reply", inboxReopen:"Reopen", inboxOpenPlan:"Open & fix plan",
   inboxResolved:"Marked as done", inboxReopened:"Reopened",
-  rsvTitle:n=>`Resolve feedback — ${n}`,
+  rsvTitle:n=>`Resolve feedback - ${n}`,
   rsvOrig:"Trainer's feedback",
   rsvReplyLbl:"Your reply (what was changed?)",
-  rsvMailLbl:n=>`Email the reply to ${n} — with a link to the updated overview`,
+  rsvMailLbl:n=>`Email the reply to ${n} - with a link to the updated overview`,
   rsvBtn:"Resolve",
-  rsvDoneMail:n=>`Done — reply sent to ${n}`,
+  rsvDoneMail:n=>`Done - reply sent to ${n}`,
   undoBtn:"Undo",
   undoStep:"last change",
   undoTip:(what,who)=>`Undo: ${what}${who?" (by "+who+")":""} · Cmd/Ctrl+Z`,
@@ -1882,38 +1888,38 @@ const L={
   kpiFN:n=>`${n} training${n===1?"":"s"} in filter`, kpiFClear:"Clear filter",
   agMailTitle:"Send agenda", agSubjLbl:"Subject", agBodyLbl:"Message",
   agMailInfo:"Added automatically: the trainer's session list (“together with …”), the week plan, the print button and any flight-mail ticket attachments.",
-  snTitle:n=>`Notify trainer — ${n}`,
-  snInfo:s=>`Status manually changed to "${s}". Notify the trainer by email? You can adjust the text before sending — the mail includes the usual confirmation buttons.`,
+  snTitle:n=>`Notify trainer - ${n}`,
+  snInfo:s=>`Status manually changed to "${s}". Notify the trainer by email? You can adjust the text before sending - the mail includes the usual confirmation buttons.`,
   snReplyLbl:"Message to the trainer",
   snSkip:"Don't notify", snSend:"Send email",
   snSent:n=>`Notification sent to ${n}`,
   bkCsvToast:n=>`${n} bookings exported as CSV`,
-  bkHint:"Every assignment across all trainings — filter by trainer or status.",
+  bkHint:"Every assignment across all trainings - filter by trainer or status.",
   bkEmpty:"No bookings for this selection.",
   quickReplace:"Quick replacement", import:"Import",
-  sync:"Refresh", synced:"Refreshed — up to date", syncFail:"Refresh failed",
+  sync:"Refresh", synced:"Refreshed - up to date", syncFail:"Refresh failed",
   syncDemo:"Demo mode has no server to sync with.", lastSync:z=>`updated ${z}`,
   planView:"Assignments", planTitle:"Assignment overview",
   planOk:"Plan confirmed", planIssue:"Reply pending", planSent:"Overview sent",
   planOkMsg:"Trainer confirmed the assignment plan as correct.",
-  planIssueMsg:"Trainer left a note", planSentMsg:"Overview e-mailed — confirmation pending.",
+  planIssueMsg:"Trainer left a note", planSentMsg:"Overview e-mailed - confirmation pending.",
   planColStatus:"Status", planColWhen:"Period", planColWhere:"Location", planColWhat:"Training",
   planEmpty:"No assignments on record for this trainer yet.",
   planFoot:"Generated with the ETAF trainer coordination system · Please verify details before booking.",
   planPrint:"Save as PDF / Print", planSend:"Send by e-mail",
   planNoMail:"No e-mail address on file for this trainer.",
-  planSentToast:n=>`Assignment overview sent to ${n}`, planSubject:"Your assignment overview — please confirm",
+  planSentToast:n=>`Assignment overview sent to ${n}`, planSubject:"Your assignment overview - please confirm",
   travelWin:"Travel window incl. arrival/departure",
   clientContact:"Contact person", clientEmail:"Contact e-mail",
   trfTitle:"Transfer / pickup list", trfBtn:"Transfer list", trfSend:"Send to client",
   trfArr:"Arrival", trfDep:"Departure", trfHotel:"Hotel",
   trfEmpty:"No confirmed trainers for this client yet.",
-  trfFoot:"Arrival/departure & hotel — please arrange pickup/transfer. Details may still change.",
-  trfSent:"Sent to client — receipt confirmation pending.", trfConfirmed:"Client confirmed receipt.",
+  trfFoot:"Arrival/departure & hotel - please arrange pickup/transfer. Details may still change.",
+  trfSent:"Sent to client - receipt confirmation pending.", trfConfirmed:"Client confirmed receipt.",
   trfNoMail:"No contact e-mail on file for this client (see “Manage clients”).",
   trfSentToast:n=>`Transfer list sent to ${n}`,
   trfRemind:"Send reminder", trfRemindToast:n=>`Reminder sent to ${n}`,
-  trfCardOk:"Transfer confirmed", trfCardOpen:"Transfer pending", trfCardOpenHint:"Transfer list sent — confirmation pending. Click to open.",
+  trfCardOk:"Transfer confirmed", trfCardOpen:"Transfer pending", trfCardOpenHint:"Transfer list sent - confirmation pending. Click to open.",
   bkViewList:"List", bkViewCal:"Calendar", bkCalTrainer:"Trainer",
   bkCalEmpty:"No bookings for this selection.",
   bkLegend:"Legend:", bkLegYes:"Confirmed", bkLegMaybe:"Maybe", bkLegAsked:"Requested", bkLegClash:"Double booking",
@@ -1937,34 +1943,34 @@ const L={
   teamStatus:"Team / status", inProcess:n=>`${n} in progress`,
   noneAsked:"Nobody requested yet. Pick from the AI suggestions below.",
   aiTitle:"AI shortlist", aiSub:"by specialty, region, workload & rating",
-  aiHelp:"Suggested trainers — request in order, the next in line moves up automatically",
-  suggReset:"↺ Reset", suggEmpty:"No suggestions — add a trainer below.",
+  aiHelp:"Suggested trainers - request in order, the next in line moves up automatically",
+  suggReset:"↺ Reset", suggEmpty:"No suggestions - add a trainer below.",
   topMatch:"Top match", uaeExp:"UAE-experienced", fit:n=>`${n}% fit`, ask:"Request",
   travelData:"Travel details", nextInLine:"Request next in line",
   simReply:"Simulate reply", simReplyT:"Simulate the trainer's reply",
   noMore:"No more suggestions in the pool",
   poolCount:n=>`${n} trainers in the pool`,
-  poolHint:"Create & edit profiles manually or import via AI from text — with internal notes & ratings per trainer.",
+  poolHint:"Create & edit profiles manually or import via AI from text - with internal notes & ratings per trainer.",
   importProfiles:"AI import", trNew:"New trainer", trEdit:"Edit",
   teName:"Name", teEmail:"Email", tePhone:"Phone", teRegion:"Region",
   teSpec:"Specialties (comma-separated)", teLangs:"Languages (comma-separated, e.g. DE, EN, AR)",
-  teUae:"UAE / international experience", teRating:"Base rating (4.0–5.0)",
+  teUae:"UAE / international experience", teRating:"Base rating (4.0-5.0)",
   tePrefLang:"Preferred email language",
-  tePrefLangHint:"Pre-selected for all emails to this trainer — switchable in every mail dialog.",
+  tePrefLangHint:"Pre-selected for all emails to this trainer - switchable in every mail dialog.",
   teNotes:"Internal notes (visible to us only)",
   teNotesPh:"e.g. very structured, well received by participants; needs lead time for visas …",
   teHist:"Assignment history & rating (internal)",
   teHistHint:"Per training: give stars and jot down how it went. Internal only.",
-  teNoHist:"No assignments yet — the history fills up once the trainer has confirmed.",
+  teNoHist:"No assignments yet - the history fills up once the trainer has confirmed.",
   teNoteRow:"How did it go? (short)",
   teSaved:"Trainer saved", teDeleted:"Trainer deleted",
   teDelete:"Delete trainer", teDeleteAsk:n=>`Really delete ${n}? Requests and history will be lost.`,
-  teTitleNew:"Create new trainer", teTitleEdit:n=>`Edit trainer — ${n}`,
+  teTitleNew:"Create new trainer", teTitleEdit:n=>`Edit trainer - ${n}`,
   teIntern:n=>`internal (${n})`,
   workload:"Workload",
   load0:"free", load1:"low", load2:"medium", load3:"high",
   placeholders:"Placeholders:",
-  placeholdersHint:"— filled automatically when sending.",
+  placeholdersHint:"- filled automatically when sending.",
   subjectLbl:"Subject:", edit:"Edit", editTitle:"Edit template",
   name:"Name", subject:"Subject", text:"Text", cancel:"Cancel", save:"Save",
   savedTpl:"Template saved", tplLang:"Template language",
@@ -1979,22 +1985,22 @@ const L={
   statusChanged:s=>`Status changed: ${s}`,
   cancelSent:n=>`Cancellation e-mailed to ${n} trainer${n>1?'s':''}`,
   quickTitle:"⚡ Quick replacement",
-  quickDesc:"Replace a drop-out at short notice — request the best available trainers. First to accept gets the slot.",
+  quickDesc:"Replace a drop-out at short notice - request the best available trainers. First to accept gets the slot.",
   trainingLbl:"Training", replCand:"Suggested replacement trainers", reachable:"quickly reachable",
-  remove:"Remove", quickAdd:"Add another trainer", quickAddPh:"— select trainer —",
-  quickEmpty:"No trainers selected — please add at least one.",
+  remove:"Remove", quickAdd:"Add another trainer", quickAddPh:"- select trainer -",
+  quickEmpty:"No trainers selected - please add at least one.",
   sendBlitz:"Send instant request", blitzToast:n=>`Instant request sent to ${n} trainers ⚡`,
   importTitle:"Import", importDesc:"In the full version you import trainings & trainers here.",
   source:"Source", srcExcel:"Excel / CSV", srcOffer:"Offer (PDF)", srcAI:"AI from CV",
   previewEx:"Preview (example)", detTrainings:"Detected trainings", detProfiles:"Detected trainer profiles",
   detSpec:"Specialisation detected",
-  importAIHint:"The AI creates profiles automatically — you review and confirm before import.",
+  importAIHint:"The AI creates profiles automatically - you review and confirm before import.",
   close:"Close", apply:"Apply", importDemoToast:"Demo: import is only indicated in the prototype",
   nav_automation:"Automation",
   tp_auto:"Automation", tp_autoSub:"Reminders & automatic backfill",
   importPaste:"Paste text (CV, Excel copy, offer …)",
   importAnalyze:"Analyse with AI", importAnalyzing:"AI analysing …",
-  importReview:"Detected profiles — review and import",
+  importReview:"Detected profiles - review and import",
   importApply:n=>`Import ${n} profiles`, importFound:n=>`${n} profiles detected`,
   importCreated:n=>`${n} profiles created`,
   importNoAI:"For real AI import, set a Claude API key in config.php. Without a key you can import the sample profiles derived from the text here.",
@@ -2004,21 +2010,21 @@ const L={
   autoAdvanceHint:"On decline or overdue, automatically request the next-best trainer.",
   autoRunNow:"Check & send now", autoSaved:"Settings saved",
   autoRan:(r,a)=>`${r} reminder(s), ${a} backfill request(s) sent`,
-  autoDesc:"Runs automatically via cron (see DEPLOY.md) — you can also trigger it manually here.",
+  autoDesc:"Runs automatically via cron (see DEPLOY.md) - you can also trigger it manually here.",
   secTitle:"Security", secSub:"Login PIN & access protection",
   secLockInfo:"After 5 failed attempts the login is locked for 5 minutes.",
-  secCurPin:"Current PIN", secNewPin:"New PIN (4–8 digits)", secNewPin2:"Repeat new PIN",
-  secChangeBtn:"Change PIN", secPinSaved:"PIN changed — the new PIN applies at your next login.",
+  secCurPin:"Current PIN", secNewPin:"New PIN (4-8 digits)", secNewPin2:"Repeat new PIN",
+  secChangeBtn:"Change PIN", secPinSaved:"PIN changed - the new PIN applies at your next login.",
   secPinMismatch:"The two new PINs do not match.",
-  secPinFormat:"The new PIN must be 4–8 digits.",
+  secPinFormat:"The new PIN must be 4-8 digits.",
   secDemoNote:"Changing the PIN is only active in the live version (with a server).",
   reminded:"reminded",
   // Passport per trainer
-  ppTitle:t=>`Passport — ${t}`, ppSection:"Passport", ppView:"Passport",
-  ppNone:"No passport on file", ppNoneHint:"Upload a photo or enter the data — once per trainer.",
+  ppTitle:t=>`Passport - ${t}`, ppSection:"Passport", ppView:"Passport",
+  ppNone:"No passport on file", ppNoneHint:"Upload a photo or enter the data - once per trainer.",
   ppUpload:"Upload passport photo", ppScan:"Read with AI", ppScanning:"AI is reading the photo …",
   ppScanDemo:"AI reading is only active in the live version (with a Claude API key). You can fill in the fields manually.",
-  ppScanErr:"Reading failed", ppScanOk:"Data detected — please review.",
+  ppScanErr:"Reading failed", ppScanOk:"Data detected - please review.",
   ppNumber:"Passport no.", ppName:"Name (as in passport)", ppNat:"Nationality",
   ppBirth:"Date of birth", ppExpiry:"Valid until", ppNotes:"Note (optional)",
   ppSaved:"Passport saved", ppRemoved:"Passport removed",
@@ -2036,27 +2042,27 @@ const L={
   tvHotelAddr:"Hotel address", tvMeet:"Meeting point", tvContact:"On-site contact",
   tvContactPhone:"On-site phone", tvDress:"Dress code", tvPerDiem:"Per diem", tvNotes:"Notes",
   agTitle:"Agenda / programme", agAddItem:"+ Item", agDay:"Day", agTime:"Time", agWhat:"Title",
-  tvFlightTitle:n=>`Flight & room — ${n}`, tvArrival:"Arrival", tvDeparture:"Departure",
+  tvFlightTitle:n=>`Flight & room - ${n}`, tvArrival:"Arrival", tvDeparture:"Departure",
   tvFlightOut:"Outbound flight", tvFlightReturn:"Return flight", tvRoom:"Room", printBtn:"Print",
   tvFlightHead:"Your travel details", tvLogHead:"Travel & logistics", agFor:"For",
   visaLbl:"Visa", passportLbl:"Passport valid until", visaNotesLbl:"Visa notes",
-  visa_none:"—", visa_needed:"needed", visa_applied:"applied", visa_approved:"approved", visa_rejected:"rejected",
+  visa_none:"-", visa_needed:"needed", visa_applied:"applied", visa_approved:"approved", visa_rejected:"rejected",
   flSuggest:"Flight suggestions", flSuggestHint:"Auto suggestions by route (region → destination). Click to use.", flUse:"Use",
   nav_emails:"Log", tp_emails:"Email log", tp_emailsSub:"All sent requests, reminders and agendas",
   /* ---- Training debrief & report ---- */
   nav_reports:"Reports", tp_reports:"Reports & analysis",
   tp_reportsSub:"Rate trainings and analyse them across weeks, months and years",
-  dbTitle:"Training report", dbTitleFor:tg=>`Training report — ${tg}`,
+  dbTitle:"Training report", dbTitleFor:tg=>`Training report - ${tg}`,
   dbOpen:"Report", dbNew:"Fill in report", dbEdit:"Edit report",
   dbDone:"rated", dbDraft:"draft", dbMissing:"open",
   dbSaveDraft:"Save as draft", dbFinish:"Complete report", dbReopen:"Reopen",
   dbDelete:"Delete report", dbDeleteAsk:"Really delete this report?",
   dbSaved:"Report saved", dbFinished:"Report completed",
-  dbIntro:"Fill in right after the training — 1 = poor, 5 = excellent. Simply leave anything that does not apply blank.",
+  dbIntro:"Fill in right after the training - 1 = poor, 5 = excellent. Simply leave anything that does not apply blank.",
   dbNa:"n/a", dbNaHint:"not applicable / not rated",
   dbOverall:"Overall impression", dbRecommend:"Run it the same way again?",
   dbTrainerHead:"Trainers", dbTrainerNote:"Note on this trainer",
-  dbTrainerNone:"Nobody is confirmed for this training yet — per-trainer ratings appear once they are.",
+  dbTrainerNone:"Nobody is confirmed for this training yet - per-trainer ratings appear once they are.",
   dbFlagsHead:"Incidents (multiple choice)",
   dbActions:"Actions", dbActionAdd:"Add action",
   dbActionText:"What needs doing?", dbActionOwner:"Who?", dbActionDue:"By when?",
@@ -2070,55 +2076,56 @@ const L={
   rpKpiAlert:"Needs action", rpKpiAlertSub:"criteria below 3.0",
   rpCoverageSub:(a,b)=>`${a} of ${b} trainings already run`,
   rpNoData:"There is no completed report for this period yet.",
-  rpNoDataHint:"Reports are written from the training itself — use “Fill in report” there.",
+  rpNoDataHint:"Reports are written from the training itself - use “Fill in report” there.",
   rpCriteria:"Criteria on average", rpCriteriaSub:"1 = poor · 5 = excellent",
   rpTrend:"Overall impression over time", rpTrendGroups:"Trend per area",
   rpTrainers:"Trainers", rpTrainerSub:"Average of teaching, conduct, materials, punctuality",
   rpFlags:"Most frequent incidents", rpActionsOpen:"Open actions",
   rpRecommend:"Run it the same way again?", rpSingles:"Individual reports",
   rpPrint:"Print report", rpCsv:"As CSV", rpOpenTraining:"Open training",
-  rpBandGood:"good (4.0 and up)", rpBandMid:"watch (3.0–3.9)", rpBandBad:"needs action (below 3.0)",
-  rpN:n=>`${n} ratings`, rpNoFlags:"No incidents reported — good.",
+  rpBandGood:"good (4.0 and up)", rpBandMid:"watch (3.0-3.9)", rpBandBad:"needs action (below 3.0)",
+  rpN:n=>`${n} ratings`, rpNoFlags:"No incidents reported - good.",
   rpNoOpen:"No open action.", rpMissing:"Trainings without a report",
   rpMissingSub:"already run but not yet rated",
   rpBest:"Strongest scores", rpWorst:"Weakest scores",
   rpExportName:"ETAF-report",
-  rpAllReports:"All training reports", rpAllReportsSub:"Completion per training — click to edit",
+  rpAllReports:"All training reports", rpAllReportsSub:"Completion per training - click to edit",
   rpFDue:"due", rpFFinal:"completed", rpFSoon:"upcoming", rpFAll:"all",
   rpNotYet:"not started", rpListEmpty:"No trainings in this selection.",
   rpTeamN:n=>`${n} trainer${n===1?"":"s"}`,
   dbPrint:"Print report", dbNothingYet:"This report is still empty.",
   dbNotes:"Notes", dbNoteShort:"Note", dbFlagsShort:"Incidents",
-  dbDraftNote:"Draft — not completed yet, entries are missing",
+  dbDraftNote:"Draft - not completed yet, entries are missing",
   dbMailClient:"Use my email app", dbPickPrint:"Print a single report",
   dbPickPh:"Choose a training …",
   rpBatch:"All reports in this period", rpBatchBtn:"Print as one document",
-  mtCopied:"Copied", mtLinkCopied:"Link copied — paste it into your email",
+  mtCopied:"Copied", mtLinkCopied:"Link copied - paste it into your email",
   mtCopyManual:"Please copy manually:", mtLink:"Copy link",
-  mtLong:"The text is long — some email apps will truncate it.",
+  mtLong:"The text is long - some email apps will truncate it.",
   mtDemo:"Links are only available in live mode.",
-  mtHint:"Opens a draft in your own email app. A mail link cannot carry attachments — so the agenda link travels instead and always shows the current state.",
+  mtHint:"Opens a draft in your own email app. A mail link cannot carry attachments - so the agenda link travels instead and always shows the current state.",
   agAllBtn:"Agenda to all", agAllTo:n=>`Goes to ${n} confirmed trainers:`,
   agAllSend:n=>`Send to ${n}`, agAllNone:"Nobody is confirmed for this training yet.",
-  agAllHint:"Salutation and session list are filled in per person — {{firstName}} stays as a placeholder.",
+  agAllHint:"Salutation and session list are filled in per person - {{firstName}} stays as a placeholder.",
   agAllDone:n=>`${n} agendas sent`, agAllFail:w=>`not delivered: ${w}`,
   agNoMail:"no email",
   mtNothing:"There is nothing to send here yet.",
   mtMore:n=>`… and ${n} more dates (full list in the cockpit)`,
   rpBasis:"Basis", rpFinalOnly:"completed only", rpWithDrafts:"interim",
-  rpDraftNote:"Interim status — provisional figures",
+  rpDraftNote:"Interim status - provisional figures",
   rpDraftNoteSub:(d,n)=>`${d} of ${n} reports are still drafts. Missing entries are not counted, so every figure can still move.`,
   rpDraftHint:n=>`There are ${n} reports in progress. You can include them for an interim view.`,
-  rpBasisHead:"Data basis", rpBasisSub:"What the figures rest on — and what is still missing",
+  rpBasisHead:"Data basis", rpBasisSub:"What the figures rest on - and what is still missing",
   rpThin:"Criteria with a thin basis", rpThinNone:"Every criterion was rated in all reports.",
   rpNever:"Never rated so far", rpGaps:"Reports with gaps", rpGapsNone:"All reports in this period are complete.",
   rpMissingN:n=>`${n} fields still missing`,
-  rpProvisional:"Interim status — includes drafts, figures may still change",
+  rpOnlyClose:"Complete - just needs finishing",
+  rpProvisional:"Interim status - includes drafts, figures may still change",
   emNone:"No emails sent yet.", em_sent:"sent", em_logged:"logged", em_failed:"failed",
   agendaHint:"The trainer receives this overview by email (print link) and can print it.",
   resetToast:"Demo data reset",
   clientAll:"All clients", clientLbl:"Client", clientsWord:"Clients",
-  pfTitle:"Client overview", pfSub:"Status per client — what's on fire, what's done",
+  pfTitle:"Client overview", pfSub:"Status per client - what's on fire, what's done",
   pf_done:"staffed", pf_prog:"in progress", pf_crit:"critical",
   pfTrainings:n=>`${n} trainings`, pfShowAll:"All trainings for this client",
   manageClients:"Manage clients", addClient:"+ New client",
@@ -2129,13 +2136,13 @@ const L={
   exportHint:"Calendar & export refer to the current client selection.",
   calTitle:"Trainings calendar", calSub:"All assignments chronologically · colour = client",
   calPrint:"Print", calEmpty:"No trainings for this selection.",
-  icsToast:"Calendar file (.ics) created — importable into Google/Apple/Outlook",
+  icsToast:"Calendar file (.ics) created - importable into Google/Apple/Outlook",
   icsSubHint:"Live subscription link (auto-updating): backend/ics.php",
   newTraining:"+ New training", editTraining:"Edit training", createTraining:"Create training",
   fCity:"City", fCountry:"Country (code, e.g. UAE)", fKw:"Calendar week", fMonth:"Month / year",
   fStart:"Start", fEnd:"End", fDateHint:"Pick a date → calendar week is set automatically",
   trainingSaved:"Training saved", trainingDeleted:"Training deleted",
-  shiftTitle:"Date changed — notify trainers?",
+  shiftTitle:"Date changed - notify trainers?",
   shiftLead:n=>`The period changed. ${n} affected trainer${n===1?" is":"s are"} already in the process.`,
   shiftOld:"Was", shiftNew:"Now",
   shiftHint:"“Info only” keeps their status. “Re-request” resets trainers to “requested” and asks them to confirm the new date.",
@@ -2153,7 +2160,7 @@ const L={
   matSaved:"Material list saved", matNoPreset:"No preset yet for this training type.",
   matPresetHint:"Smart: trainings with the same focus get this list automatically on creation.",
   matPrefilled:n=>`${n} items taken from type preset`,
-  catTitle:"Material catalog", catSub:"Maintain materials centrally — kits, protocols, consumables",
+  catTitle:"Material catalog", catSub:"Maintain materials centrally - kits, protocols, consumables",
   matName:"Name", matUnit:"Unit", matCat:"Category", catAdd:"+ Material in catalog",
   catSaved:"Catalog saved", matDelCat:"Remove material from the catalog?",
   matPrint:"Material list", matPrintTitle:"Material / packing list", matPositions:n=>`${n} items`,
@@ -2190,22 +2197,22 @@ function seedTrainers(){
     };
   });
 }
-/* Kunden / Projekte — mehrere Auftraggeber parallel, je eigene Farbe.
-   Aktuell aktiv: Abu Dhabi Police (DVI Elite Team Programme 2026–2027).
+/* Kunden / Projekte - mehrere Auftraggeber parallel, je eigene Farbe.
+   Aktuell aktiv: Abu Dhabi Police (DVI Elite Team Programme 2026-2027).
    Weitere Kunden lassen sich jederzeit über „Kunden verwalten“ ergänzen. */
 function seedClients(){
   return [
-    {id:"cl-adp", name:"Abu Dhabi Police — DVI", short:"ADP", color:"#B23A42", cal:"firebrick", country:"UAE"}
+    {id:"cl-adp", name:"Abu Dhabi Police - DVI", short:"ADP", color:"#B23A42", cal:"firebrick", country:"UAE"}
   ];
 }
-/* Material-Katalog (zentral, editierbar) — DVI/Forensik */
+/* Material-Katalog (zentral, editierbar) - DVI/Forensik */
 function seedMaterials(){
   return [
     {id:"m-dvi",  name:"DVI-Kit (pre-coded)",     unit:"Set", cat:"Kits"},
     {id:"m-bag",  name:"Leichensack",             unit:"Stk", cat:"Verbrauch"},
     {id:"m-cbrn", name:"CBRN-Kit",                unit:"Set", cat:"Kits"},
-    {id:"m-am",   name:"Protokoll — Ante Mortem", unit:"Stk", cat:"Protokolle"},
-    {id:"m-pm",   name:"Protokoll — Post Mortem", unit:"Stk", cat:"Protokolle"},
+    {id:"m-am",   name:"Protokoll - Ante Mortem", unit:"Stk", cat:"Protokolle"},
+    {id:"m-pm",   name:"Protokoll - Post Mortem", unit:"Stk", cat:"Protokolle"},
     {id:"m-dna",  name:"DNA-Probenset",           unit:"Set", cat:"Proben"},
     {id:"m-fp",   name:"Fingerprint-Set",         unit:"Set", cat:"Proben"},
     {id:"m-dent", name:"Zahnstatus-Formular (Odontologie)", unit:"Stk", cat:"Protokolle"},
@@ -2223,7 +2230,7 @@ function seedMatPresets(){
     "Simulation":[{matId:"m-dvi",qty:10},{matId:"m-bag",qty:40},{matId:"m-am",qty:40},{matId:"m-pm",qty:40},{matId:"m-glove",qty:15}]
   };
 }
-/* Verbindlicher Programmkalender (ETAF Operational DVI Elite Team Programme 2026–2027, V3.2) */
+/* Verbindlicher Programmkalender (ETAF Operational DVI Elite Team Programme 2026-2027, V3.2) */
 function isoWeekNum(d){
   const t=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));
   const day=t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-day);
@@ -2237,16 +2244,16 @@ function seedTrainings(){
   const P=[
     ["W1","2026-09-14","2026-09-18","INTERPOL DVI Principles, Governance & Elite-Team-Struktur",AD,"DVI-Grundlagen",5,40],
     ["W2","2026-09-28","2026-10-02","DVI Data Management & Reporting (PlassData)",AD,"Data Management",5,40],
-    ["W3","2026-10-12","2026-10-16","Ante Mortem — Family Liaison & Informationsgewinnung",AD,"Ante Mortem",5,40],
+    ["W3","2026-10-12","2026-10-16","Ante Mortem - Family Liaison & Informationsgewinnung",AD,"Ante Mortem",5,40],
     ["W4","2026-10-26","2026-10-30","Kommunikation: Family Coordination & Media",AD,"Kommunikation & FCC",5,40],
     ["W5","2026-11-09","2026-11-13","Logistik & Kapazitätsplanung",AD,"Logistik",5,40],
-    ["W6","2026-11-23","2026-11-27","Post Mortem — Prozesse & Qualität",AD,"Post Mortem",5,40],
+    ["W6","2026-11-23","2026-11-27","Post Mortem - Prozesse & Qualität",AD,"Post Mortem",5,40],
     ["W7","2026-12-07","2026-12-11","Reconciliation & Identifizierungs-Entscheidungen",AD,"Reconciliation",5,40],
     ["W8","2027-01-11","2027-01-15","Scene Management & Recovery",AD,"Scene & Recovery",5,40],
-    ["W9 ★","2027-01-25","2027-01-29","Full Simulation I (MCI) — End-to-End",AD,"Simulation",8,40],
+    ["W9 ★","2027-01-25","2027-01-29","Full Simulation I (MCI) - End-to-End",AD,"Simulation",8,40],
     ["W10","2027-02-01","2027-02-05","Stage I Final Assessment & Operational Readiness · TtT-Auswahl",AD,"Assessment & Readiness",5,40],
-    ["W11-A","2027-03-22","2027-03-26","PM Practical Module — Kohorte A (Körperspender)",WZ,"Post Mortem",8,20],
-    ["W11-B","2027-04-12","2027-04-16","PM Practical Module — Kohorte B (Körperspender)",WZ,"Post Mortem",8,20],
+    ["W11-A","2027-03-22","2027-03-26","PM Practical Module - Kohorte A (Körperspender)",WZ,"Post Mortem",8,20],
+    ["W11-B","2027-04-12","2027-04-16","PM Practical Module - Kohorte B (Körperspender)",WZ,"Post Mortem",8,20],
     ["W12","2027-04-26","2027-04-30","Public Venues: Shopping Centres",AD,"Site-Folder",5,40],
     ["W13","2027-05-10","2027-05-14","Transport Hubs: International Airport",AD,"Site-Folder",5,40],
     ["W14","2027-05-24","2027-05-28","Major Events: Circuit / Arena / Events",AD,"Site-Folder",5,40],
@@ -2265,7 +2272,7 @@ function seedTrainings(){
     const [code,start,end,topic,loc,spec,need,part]=r;
     const sd=new Date(start+"T00:00:00Z"); const yy=String(sd.getUTCFullYear()).slice(2);
     const travel={venue:"",hotel:"",hotelAddr:"",meetingPoint:"",contactName:"",contactPhone:"",dresscode:"",perDiem:"",notes:"",agenda:[]};
-    if(i===0){ travel.venue="Abu Dhabi Police — DVI Training Facility"; travel.hotel="Rosewood Abu Dhabi";
+    if(i===0){ travel.venue="Abu Dhabi Police - DVI Training Facility"; travel.hotel="Rosewood Abu Dhabi";
       travel.hotelAddr="Al Maryah Island, Abu Dhabi, UAE"; travel.meetingPoint="Hotel-Lobby, 07:45 Uhr";
       travel.contactName="Lt. Col. Adil Al Ali (Head of DVI)"; travel.contactPhone="+971 2 000 0000";
       travel.dresscode="Field/OP-Kleidung wird gestellt"; travel.perDiem="nach ETAF-Reiserichtlinie";
@@ -2273,7 +2280,7 @@ function seedTrainings(){
       travel.agenda=[
         {day:"Tag 1",time:"08:30",title:"Registrierung & Kick-off"},
         {day:"Tag 1",time:"09:00",title:"INTERPOL DVI Principles & Governance"},
-        {day:"Tag 1",time:"14:00",title:"Elite-Team-Struktur — 8 funktionale Zellen"},
+        {day:"Tag 1",time:"14:00",title:"Elite-Team-Struktur - 8 funktionale Zellen"},
         {day:"Tag 5",time:"11:00",title:"Baseline-Competency-Assessment"}];
     }
     return {
@@ -2290,25 +2297,25 @@ function seedTrainings(){
 /* Bilinguale Vorlagen (de/en) */
 const TEMPLATES=[
   {id:"t1",
-   de:{name:"Verfügbarkeits-Anfrage", subject:"Anfrage Verfügbarkeit — {{topic}} ({{city}}, {{kw}})",
+   de:{name:"Verfügbarkeits-Anfrage", subject:"Anfrage Verfügbarkeit - {{topic}} ({{city}}, {{kw}})",
      body:`Hallo {{firstName}},\n\nwir planen das Training „{{topic}}“ in {{city}} ({{kw}}) und würden dich sehr gern als Trainer dabei haben.\n\n• Training: {{topic}}\n• Ort: {{city}}, {{country}}\n• Zeitraum: {{kw}} / {{month}}\n• Team: {{teamSize}} Trainer\n\nBitte gib uns über die Buttons unten kurz Bescheid, ob du zu diesem Zeitpunkt verfügbar bist. Deine Antwort landet automatisch in unserer Planung.\n\n[ ✅ Ja, verfügbar ]   [ 🤔 Vielleicht ]   [ ❌ Nein ]\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam`},
-   en:{name:"Availability request", subject:"Availability request — {{topic}} ({{city}}, {{kw}})",
+   en:{name:"Availability request", subject:"Availability request - {{topic}} ({{city}}, {{kw}})",
      body:`Hi {{firstName}},\n\nwe're planning the training "{{topic}}" in {{city}} ({{kw}}) and would love to have you on the team.\n\n• Training: {{topic}}\n• Location: {{city}}, {{country}}\n• Period: {{kw}} / {{month}}\n• Team: {{teamSize}} trainers\n\nPlease let us know via the buttons below whether you're available at this time. Your reply lands automatically in our planning.\n\n[ ✅ Yes, available ]   [ 🤔 Maybe ]   [ ❌ No ]\n\nBest regards\nYour ETAF coordination team`}},
   {id:"t2",
-   de:{name:"Zusage-Bestätigung + Reisedaten", subject:"Bestätigung & Reisedaten — {{topic}} in {{city}}",
-     body:`Hallo {{firstName}},\n\nsuper, danke für deine Zusage zu „{{topic}}“ in {{city}}!\n\nHier die wichtigsten Eckdaten:\n• Anreise: 1 Tag vor Trainingsbeginn ({{kw}})\n• Flug/Hotel: Vorschlag folgt separat zur Bestätigung\n• Ansprechpartner vor Ort: wird nachgereicht\n\nBitte prüfe deine Reisepass-Gültigkeit (mind. 6 Monate) — wichtig für die Einreise UAE.\n\nHerzliche Grüße\nETAF-Koordination`},
-   en:{name:"Confirmation + travel details", subject:"Confirmation & travel details — {{topic}} in {{city}}",
-     body:`Hi {{firstName}},\n\ngreat, thanks for accepting "{{topic}}" in {{city}}!\n\nKey details:\n• Arrival: 1 day before the training starts ({{kw}})\n• Flight/hotel: proposal to follow separately for confirmation\n• On-site contact: to be provided\n\nPlease check your passport validity (min. 6 months) — important for entry to the UAE.\n\nBest regards\nETAF Coordination`}},
+   de:{name:"Zusage-Bestätigung + Reisedaten", subject:"Bestätigung & Reisedaten - {{topic}} in {{city}}",
+     body:`Hallo {{firstName}},\n\nsuper, danke für deine Zusage zu „{{topic}}“ in {{city}}!\n\nHier die wichtigsten Eckdaten:\n• Anreise: 1 Tag vor Trainingsbeginn ({{kw}})\n• Flug/Hotel: Vorschlag folgt separat zur Bestätigung\n• Ansprechpartner vor Ort: wird nachgereicht\n\nBitte prüfe deine Reisepass-Gültigkeit (mind. 6 Monate) - wichtig für die Einreise UAE.\n\nHerzliche Grüße\nETAF-Koordination`},
+   en:{name:"Confirmation + travel details", subject:"Confirmation & travel details - {{topic}} in {{city}}",
+     body:`Hi {{firstName}},\n\ngreat, thanks for accepting "{{topic}}" in {{city}}!\n\nKey details:\n• Arrival: 1 day before the training starts ({{kw}})\n• Flight/hotel: proposal to follow separately for confirmation\n• On-site contact: to be provided\n\nPlease check your passport validity (min. 6 months) - important for entry to the UAE.\n\nBest regards\nETAF Coordination`}},
   {id:"t3",
-   de:{name:"Kurzfristiger Ersatz", subject:"Kurzfristig: Einspringen möglich? — {{topic}} ({{city}})",
+   de:{name:"Kurzfristiger Ersatz", subject:"Kurzfristig: Einspringen möglich? - {{topic}} ({{city}})",
      body:`Hallo {{firstName}},\n\nbei „{{topic}}“ in {{city}} ({{kw}}) ist kurzfristig ein Trainer ausgefallen. Könntest du eventuell einspringen?\n\nWer zuerst über „✅ Ja“ zusagt, bekommt den Platz. Jede Rückmeldung hilft uns enorm.\n\n[ ✅ Ich springe ein ]   [ ❌ Diesmal nicht ]\n\nDanke dir!\nETAF-Koordination`},
-   en:{name:"Short-notice replacement", subject:"Short notice: able to step in? — {{topic}} ({{city}})",
+   en:{name:"Short-notice replacement", subject:"Short notice: able to step in? - {{topic}} ({{city}})",
      body:`Hi {{firstName}},\n\na trainer has dropped out of "{{topic}}" in {{city}} ({{kw}}) at short notice. Could you possibly step in?\n\nWhoever accepts first via "✅ Yes" gets the slot. Every reply helps us enormously.\n\n[ ✅ I'll step in ]   [ ❌ Not this time ]\n\nThank you!\nETAF Coordination`}},
   {id:"t4",
-   de:{name:"Absage / Planänderung", subject:"Planänderung — {{topic}} in {{city}} ({{kw}})",
-     body:`Hallo {{firstName}},\n\nvielen Dank für deine Zusage zu „{{topic}}“ in {{city}} ({{kw}}). Leider müssen wir kurzfristig umplanen und können dich für diesen Einsatz doch nicht einsetzen — die Voraussetzungen haben sich geändert.\n\nDas hat nichts mit dir persönlich zu tun. Wir kommen bei der nächsten passenden Gelegenheit sehr gern wieder auf dich zu. Danke für dein Verständnis!\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam`},
-   en:{name:"Cancellation / change of plan", subject:"Change of plan — {{topic}} in {{city}} ({{kw}})",
-     body:`Hi {{firstName}},\n\nthank you for accepting "{{topic}}" in {{city}} ({{kw}}). Unfortunately we have to reschedule at short notice and won't be able to assign you to this session after all — the requirements have changed.\n\nThis is not related to you personally. We'll gladly get back in touch for the next suitable opportunity. Thank you for your understanding!\n\nBest regards\nYour ETAF coordination team`}}
+   de:{name:"Absage / Planänderung", subject:"Planänderung - {{topic}} in {{city}} ({{kw}})",
+     body:`Hallo {{firstName}},\n\nvielen Dank für deine Zusage zu „{{topic}}“ in {{city}} ({{kw}}). Leider müssen wir kurzfristig umplanen und können dich für diesen Einsatz doch nicht einsetzen - die Voraussetzungen haben sich geändert.\n\nDas hat nichts mit dir persönlich zu tun. Wir kommen bei der nächsten passenden Gelegenheit sehr gern wieder auf dich zu. Danke für dein Verständnis!\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam`},
+   en:{name:"Cancellation / change of plan", subject:"Change of plan - {{topic}} in {{city}} ({{kw}})",
+     body:`Hi {{firstName}},\n\nthank you for accepting "{{topic}}" in {{city}} ({{kw}}). Unfortunately we have to reschedule at short notice and won't be able to assign you to this session after all - the requirements have changed.\n\nThis is not related to you personally. We'll gladly get back in touch for the next suitable opportunity. Thank you for your understanding!\n\nBest regards\nYour ETAF coordination team`}}
 ];
 
 /* ---------- STATE ---------- */
@@ -2525,7 +2532,7 @@ async function doEmailLogin(){
   }catch(e){ lgError(e.message||t("lgFailed")); }
   finally{ if(b){b.disabled=false;b.textContent=t("lgSignIn");} }
 }
-/* Passwort vergessen: Link anfordern (Antwort ist immer gleich — keine Auskunft
+/* Passwort vergessen: Link anfordern (Antwort ist immer gleich - keine Auskunft
    darüber, ob es die Adresse gibt). */
 async function openForgot(){
   const email=($("#lgEmail")?.value||"").trim();
@@ -2551,7 +2558,7 @@ function inboxAll(){ return (S.trainers||[]).filter(tr=>tr.plan&&tr.plan.status=
   .sort((a,b)=>(a.resolvedAt?1:0)-(b.resolvedAt?1:0) || String(b.at||"").localeCompare(String(a.at||""))); }
 function inboxCount(){ return inboxItems().length + (S.flightMailNew||0); }
 let route="dash";
-/* Auf dem Handy nur die wichtigsten Ziele in der Leiste — der Rest liegt hinter „Mehr“.
+/* Auf dem Handy nur die wichtigsten Ziele in der Leiste - der Rest liegt hinter „Mehr“.
    Acht Einträge nebeneinander bräuchten ~560px und würden das Layout sprengen. */
 const NAV_MOBILE=["dash","trainings","bookings","trainers","inbox"];
 function buildNav(){
@@ -2707,7 +2714,7 @@ function renderDash(){
     <div class="kpi c" style="cursor:pointer" onclick="kpiGo('crit')" title="${t("kpiGoHint")}"><span class="rail"></span><div class="lab">${t("kpiUnder")}</div><div class="val tnum">${crit}</div></div>
   </div>`;
 
-  /* Kunden-Übersicht (Leitstand) — nur bei „Alle Kunden“ */
+  /* Kunden-Übersicht (Leitstand) - nur bei „Alle Kunden“ */
   let portfolio="";
   if(!S.clientFilter && (S.clients||[]).length){
     const cards=(S.clients||[]).map(c=>{const cs=clientStats(c.id);
@@ -2832,8 +2839,8 @@ function renderTrainings(){
       <span class="pill ${st.cls}">${t(st.key)}</span>
       ${(tgIsPast(tg)||tg.debrief) ? `<span class="dbringwrap sm" title="${esc(t("dbFilled",dbFilledOf(tg),dbTotalOf(tg)))}"
           onclick="event.stopPropagation();openDebrief('${tg.id}')" style="cursor:pointer">
-          ${dbRing(dbPctOf(tg),30,tg.debrief&&tg.debrief.status==="final")}
-          <b class="${tg.debrief&&tg.debrief.status==="final"?"g":dbPctOf(tg)?"i":"f"}">${dbPctOf(tg)}<i>%</i></b></span>` : ""}
+          ${dbRing(dbPctOf(tg),36,tg.debrief&&tg.debrief.status==="final")}
+          <b class="${tg.debrief&&tg.debrief.status==="final"?"g":dbPctOf(tg)?"i":"f"}${dbPctOf(tg)>=100?" full":""}">${dbPctOf(tg)}<i>%</i></b></span>` : ""}
       <button class="btn sm primary" onclick="openDetail('${tg.id}')">${t("plan")}</button>
     </div>`;
   }).join("");
@@ -2948,7 +2955,7 @@ function renderDetail(){
     </div>
   </div>`;
 
-  /* Den bereits gezeichneten Wochenplan über den Neuaufbau retten — sonst
+  /* Den bereits gezeichneten Wochenplan über den Neuaufbau retten - sonst
      flackert er bei jedem 8-Sekunden-Abgleich (asynchrones Nachladen). */
   const keepWk=(typeof wkEmbedKey!=="undefined" && wkEmbedKey===String(tg.id)) ? $("#wkDetail") : null;
   $("#v-detail").innerHTML=`<button class="btn sm" onclick="go('trainings')" style="margin-bottom:14px">${ic("back")}${t("back")}</button>
@@ -3011,14 +3018,14 @@ function statusNotifyTemplate(tr,tg,status,lang){
   const head=lang==="de"?`Hallo ${first},`:`Hi ${first},`;
   const foot=lang==="de"?"Herzliche Grüße\nETAF-Koordination":"Best regards\nETAF Coordination";
   const mid = lang==="de" ? {
-    yes:`kurze Info: Wir haben dich für „${tg.topic}“ in ${where} (${when}) fest eingeplant (Status: Zugesagt).\n\nBitte bestätige über die Buttons unten kurz, dass das für dich passt — oder gib uns Bescheid, falls nicht.`,
+    yes:`kurze Info: Wir haben dich für „${tg.topic}“ in ${where} (${when}) fest eingeplant (Status: Zugesagt).\n\nBitte bestätige über die Buttons unten kurz, dass das für dich passt - oder gib uns Bescheid, falls nicht.`,
     maybe:`kurze Info: Wir haben dich für „${tg.topic}“ in ${where} (${when}) auf „Vielleicht“ gesetzt.\n\nSobald du sicher weißt, ob es klappt, gib uns bitte über die Buttons unten Bescheid.`,
     no:`kurze Info: Wir haben dich für „${tg.topic}“ in ${where} (${when}) ausgetragen (Status: Abgesagt).\n\nFalls das nicht stimmt oder du doch kannst, gib uns über die Buttons unten kurz Bescheid.`,
     asked:`wir würden dich gern für „${tg.topic}“ in ${where} (${when}) anfragen.\n\nBist du verfügbar? Ein Klick auf die Buttons unten genügt.`,
   } : {
-    yes:`quick update: We have scheduled you for "${tg.topic}" in ${where} (${when}) — status: Confirmed.\n\nPlease confirm via the buttons below that this works for you — or let us know if it doesn't.`,
+    yes:`quick update: We have scheduled you for "${tg.topic}" in ${where} (${when}) - status: Confirmed.\n\nPlease confirm via the buttons below that this works for you - or let us know if it doesn't.`,
     maybe:`quick update: We have set you to "Maybe" for "${tg.topic}" in ${where} (${when}).\n\nOnce you know for sure, please let us know via the buttons below.`,
-    no:`quick update: We have removed you from "${tg.topic}" in ${where} (${when}) — status: Declined.\n\nIf that's not right or you can make it after all, just let us know via the buttons below.`,
+    no:`quick update: We have removed you from "${tg.topic}" in ${where} (${when}) - status: Declined.\n\nIf that's not right or you can make it after all, just let us know via the buttons below.`,
     asked:`we would like to request your availability for "${tg.topic}" in ${where} (${when}).\n\nAre you available? One click on the buttons below is enough.`,
   };
   return `${head}\n\n${mid[status]||mid.asked}\n\n${foot}`;
@@ -3073,7 +3080,7 @@ function visaChip(x){
   const cls={approved:'good',rejected:'crit',needed:'warn',applied:'warn',none:'neutral'}[vs]||'neutral';
   return `<span class="pill ${cls}">${t("visaLbl")}: ${t("visa_"+vs)}</span>`;
 }
-/* Reise-Checkliste je Zusage: Flug, Hotel, ggf. Visum, Pass — alles da = grüner Haken. */
+/* Reise-Checkliste je Zusage: Flug, Hotel, ggf. Visum, Pass - alles da = grüner Haken. */
 function travelReadiness(tg,x){
   const fl=x.flight||{};
   const items=[
@@ -3170,7 +3177,7 @@ function internalRatingLine(tr){
 }
 
 /* ============================================================
-   TRAINER-EDITOR — manuell anlegen/bearbeiten (KI füllt nur vor),
+   TRAINER-EDITOR - manuell anlegen/bearbeiten (KI füllt nur vor),
    interne Notizen + Bewertungs-Historie (5 Sterne + Notiz je Training)
    ============================================================ */
 let trEditId=null, trEditStars={}, teLang="de";
@@ -3303,7 +3310,7 @@ async function deleteTrainerEdit(){
 }
 
 /* ============================================================
-   REISEPASS je Trainer — einmal hinterlegt, mit Verfallsdatum, Ampel,
+   REISEPASS je Trainer - einmal hinterlegt, mit Verfallsdatum, Ampel,
    Foto-Upload + KI-Auslesen. Erinnerung läuft über die Automatik.
    ============================================================ */
 function ppLeadDays(){ return (S.settings&&S.settings.passport_lead_days)||180; }
@@ -3450,7 +3457,7 @@ function downscaleImage(file, maxDim, quality){
 }
 
 /* ============================================================
-   BELEGUNG / BUCHUNGEN — Steuerzentrale: Filter (Trainer/Kunde/Status/
+   BELEGUNG / BUCHUNGEN - Steuerzentrale: Filter (Trainer/Kunde/Status/
    Monat/Suche), Gruppierung, Doppelbuchungs-Warnung, CSV-Export
    ============================================================ */
 let bookingTr="all", bookingStatus="all", bookingClient="all", bookingMonth="all",
@@ -3499,7 +3506,7 @@ function bkRow(x,conf){
   return `<tr class="clickrow" title="${t("bkOpenModule")}" onclick="openDetail('${tg.id}')">
     <td><div class="bktr"><span class="av xs" style="background:${x.tr.color}">${initials(x.tr.name)}</span><b>${esc(x.tr.name)}</b></div></td>
     <td class="nowrap"><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span>${dbl}</td>
-    <td class="nowrap">${esc(when||"—")}${kwSub?`<div class="meta">${esc(kwSub)}</div>`:""}</td>
+    <td class="nowrap">${esc(when||"-")}${kwSub?`<div class="meta">${esc(kwSub)}</div>`:""}</td>
     <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
     <td>${clientChip}<b>${esc(tg.topic)}</b>${trav?`<div class="meta travrow">${ic("bag")}${trav}</div>`:""}</td>
     <td class="nowrap"><div style="display:flex;gap:6px;justify-content:flex-end">
@@ -3512,7 +3519,7 @@ function groupBookings(list){
   if(bookingGroup==="none") return [["",list]];
   const keyFn = bookingGroup==="trainer" ? x=>x.tr.name
     : bookingGroup==="client" ? x=>{const c=clientOf(x.tg);return c?c.name:t("bkNoClient");}
-    : x=>bookingMonthKey(x.tg)||"—";
+    : x=>bookingMonthKey(x.tg)||"-";
   const g={}, order=[];
   list.forEach(x=>{const k=keyFn(x); if(!(k in g)){g[k]=[];order.push(k);} g[k].push(x);});
   if(bookingGroup!=="month") order.sort((a,b)=>a.localeCompare(b));
@@ -3601,13 +3608,13 @@ function renderCalendar(list){
   if(!list.length) return `<div class="panel"><div class="panel-b"><div class="meta" style="padding:12px">${t("bkCalEmpty")}</div></div></div>`;
   // Wochen-Spalten (KW) mit frühestem Datum als Sortier-/Anzeigehilfe
   const wk={};
-  list.forEach(x=>{ const k=x.tg.kw||"—"; if(!wk[k])wk[k]={kw:k,minDate:x.tg.date||""};
+  list.forEach(x=>{ const k=x.tg.kw||"-"; if(!wk[k])wk[k]={kw:k,minDate:x.tg.date||""};
     if(x.tg.date && (!wk[k].minDate || x.tg.date<wk[k].minDate)) wk[k].minDate=x.tg.date; });
   const weeks=Object.values(wk).sort((a,b)=>
     (a.minDate&&b.minDate) ? a.minDate.localeCompare(b.minDate) : kwNum(a.kw)-kwNum(b.kw));
   const trs=[...new Map(list.map(x=>[x.tr.id,x.tr])).values()].sort((a,b)=>a.name.localeCompare(b.name));
   const cell={};
-  list.forEach(x=>{ const k=x.tr.id+"|"+(x.tg.kw||"—"); (cell[k]=cell[k]||[]).push(x); });
+  list.forEach(x=>{ const k=x.tr.id+"|"+(x.tg.kw||"-"); (cell[k]=cell[k]||[]).push(x); });
   const head=`<tr><th class="calcorner">${t("bkCalTrainer")}</th>`+
     weeks.map(w=>`<th class="calh"><div>${esc(kwLabel(w.kw))}</div>${w.minDate?`<div class="calhd">${esc(shortDay(w.minDate))}</div>`:""}</th>`).join("")+`</tr>`;
   const rows=trs.map(tr=>{
@@ -3637,7 +3644,7 @@ function planBadge(tr){
 }
 
 /* ============================================================
-   RÜCKMELDUNGEN — Posteingang für „Da stimmt etwas nicht“-Meldungen
+   RÜCKMELDUNGEN - Posteingang für „Da stimmt etwas nicht“-Meldungen
    der Trainer zur Einsatzübersicht (landen direkt hier statt im Mail-Postfach).
    ============================================================ */
 function fmtWhen(s){
@@ -3687,8 +3694,8 @@ function renderInbox(){
 }
 
 /* ============================================================
-   WOCHENPLAN — Sessions je Trainingswoche (aus dem ETAF Dashboard
-   zusammengeführt): Mo–Fr × Vormittag/Nachmittag, Auswechselbank,
+   WOCHENPLAN - Sessions je Trainingswoche (aus dem ETAF Dashboard
+   zusammengeführt): Mo-Fr × Vormittag/Nachmittag, Auswechselbank,
    Trainer-Zuordnung aus der echten Besetzung, PowerPoint-Status.
    ============================================================ */
 const WK_SLOTKEYS=["mon_am","mon_pm","tue_am","tue_pm","wed_am","wed_pm","thu_am","thu_pm","fri_am","fri_pm"];
@@ -3698,7 +3705,7 @@ const SESS_COL={orga:"#8A939A",theorie:"#4E6E8E",uebung:"#3F7A5E",praxis:"#2E9E6
                 simulation:"#B23A42",assessment:"#C77E1E",deliverable:"#6E5A86"};
 let curWeekId=null, WKD=null, wkEditSid=null;
 /* Wohin der Wochenplan zeichnet: eigener Reiter (#wkBody) oder eingebettet
-   in der Trainings-Detailansicht (#wkDetail) — gleiche Daten, gleiche Logik. */
+   in der Trainings-Detailansicht (#wkDetail) - gleiche Daten, gleiche Logik. */
 let wkTarget="#wkBody";
 
 function wkTrainings(){ return curTrainings().slice()
@@ -3713,7 +3720,7 @@ function wkDelivText(){ return (S.lang==="en" && WKD.deliverableEn) ? WKD.delive
 function wkSess(id){ return (WKD&&WKD.sessions||[]).find(s=>String(s.id)===String(id)); }
 function wkCurTg(){ return S.trainings.find(x=>String(x.id)===String(curWeekId)); }
 
-/* Daten je Woche laden — live aus der DB, im Demo-Modus aus dem Browser-Speicher */
+/* Daten je Woche laden - live aus der DB, im Demo-Modus aus dem Browser-Speicher */
 async function loadWeekData(tgId){
   if(!LIVE){
     S.weekData=S.weekData||{};
@@ -3831,7 +3838,7 @@ function drawWeekBody(){
     <div class="wkhead" style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
       <div class="rowgrow" style="min-width:220px">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <b style="font-size:17px">${esc(tg.code||"")}${tg.star?" ★":""} — ${esc(tg.topic)}</b>
+          <b style="font-size:17px">${esc(tg.code||"")}${tg.star?" ★":""} - ${esc(tg.topic)}</b>
           ${cl?`<span class="tag" style="border-color:${cl.color};color:${cl.color}">${esc(cl.short||cl.name)}</span>`:""}
           ${WKD.stage?`<span class="tag">${t("wkStage",WKD.stage)}</span>`:""}
         </div>
@@ -3839,7 +3846,7 @@ function drawWeekBody(){
         <div class="wkteam" style="margin-top:10px"><span class="meta" style="font-weight:700">${t("wkTeam")}: ${r.yes}/${r.need}</span>${teamHtml}</div>
       </div>
       <div style="flex:1 1 260px;min-width:240px">
-        <div class="wkdeliv"><b>${t("wkDeliverable")}</b>${esc(wkDelivText()||"—")}
+        <div class="wkdeliv"><b>${t("wkDeliverable")}</b>${esc(wkDelivText()||"-")}
           <div style="margin-top:6px"><button class="btn sm" onclick="openDelivEdit()">${ic("pen",13)}${t("edit")}</button></div>
         </div>
       </div>
@@ -3847,7 +3854,7 @@ function drawWeekBody(){
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
       <button class="btn sm" onclick="openPptSheet()">${ic("clip",14)}${t("wkPptChip",done,rel.length)}</button>
       ${wkTarget==="#wkBody"
-        ? `<button class="btn sm" onclick="openDetail('${tg.id}')">${ic("users",14)}${t("open")} — ${t("nav_trainings")}</button>`
+        ? `<button class="btn sm" onclick="openDetail('${tg.id}')">${ic("users",14)}${t("open")} - ${t("nav_trainings")}</button>`
         : `<button class="btn sm" onclick="openWeek('${tg.id}')">${ic("week",14)}${t("nav_week")}</button>`}
       <button class="btn sm" onclick="printWeek()">${ic("printer",14)}${t("wkPrint")}</button>
       <button class="btn sm" onclick="openWeekCopy()">${ic("grid",14)}${t("wkCopy")}</button>
@@ -3874,21 +3881,21 @@ function drawWeekBody(){
   const benchHtml=`<div class="panel wkbench" style="margin-top:14px">
     <div class="panel-h"><h3>${t("wkBench")}</h3><div class="sub">${t("wkBenchHint")}</div></div>
     <div class="panel-b"><div class="zone" data-slot="bench" ondragover="wkDragOver(event)" ondragleave="wkDragLeave(event)" ondrop="wkDrop(event)">
-      ${bench.length?bench.map(wkTile).join(""):`<div class="meta" style="padding:6px 4px">${(WKD.sessions||[]).length?"—":t("wkEmpty")}</div>`}
+      ${bench.length?bench.map(wkTile).join(""):`<div class="meta" style="padding:6px 4px">${(WKD.sessions||[]).length?"-":t("wkEmpty")}</div>`}
     </div></div></div>`;
 
   const tgt=$(wkTarget); if(tgt) tgt.innerHTML=head+grid+benchHtml;
   wkDrawnSig=wkSig();
 }
 
-/* Wochenplan in die Trainings-Detailansicht einbetten (gleiche Datenbasis —
+/* Wochenplan in die Trainings-Detailansicht einbetten (gleiche Datenbasis -
    Änderungen hier und im Reiter „Wochenplan“ sind automatisch dasselbe).
-   Wird auch vom 8-Sekunden-Hintergrundabgleich aufgerufen — deshalb:
+   Wird auch vom 8-Sekunden-Hintergrundabgleich aufgerufen - deshalb:
    nie den Platzhalter zeigen, wenn die Woche schon dasteht, und nur neu
    zeichnen, wenn sich die Daten wirklich geändert haben (kein Flackern). */
 let wkEmbedKey=null, wkDragBusy=false, wkDrawnSig="";
 /* Fingerabdruck dessen, was der Wochenplan darstellt: Sessions/Platzierung
-   PLUS Besetzung (Team der Woche) und UI-Sprache — ändert sich davon nichts,
+   PLUS Besetzung (Team der Woche) und UI-Sprache - ändert sich davon nichts,
    muss auch nichts neu gezeichnet werden. */
 function wkSig(){
   const tg=wkCurTg();
@@ -3911,7 +3918,7 @@ async function renderWeekEmbed(tgId){
 }
 
 /* ---- Ziehen & Ablegen (Desktop); Antippen öffnet den Editor mit „Verschieben nach“ ---- */
-/* Ziehen wird komplett auf Ebene des Halbtags (.zone) ausgewertet — so ist die
+/* Ziehen wird komplett auf Ebene des Halbtags (.zone) ausgewertet - so ist die
    ganze Fläche inklusive der Kacheln ein Ablageziel (kein Zielen mehr nötig),
    und die Einfügestelle ergibt sich aus der Mausposition. */
 let wkDragId=null, wkDragTr=null;
@@ -3985,7 +3992,7 @@ async function wkDrop(ev){
   if(!id || !wkSess(id)) return;
   wkMoveTo(id, slot, idx);
 }
-/* Pfeile an der Kachel: eine Position höher/tiefer — über die Halbtags-Grenze
+/* Pfeile an der Kachel: eine Position höher/tiefer - über die Halbtags-Grenze
    hinaus landet die Kachel im Nachbar-Halbtag. Auch am Handy nutzbar. */
 async function wkNudge(id,dir,ev){
   if(ev){ ev.stopPropagation(); ev.preventDefault(); }
@@ -4006,7 +4013,7 @@ async function assignTrainerToSess(sid,trId){
   const s=wkSess(sid); if(!s) return;
   const tr=S.trainers.find(x=>String(x.id)===String(trId));
   const ids=sessTrIds(s);
-  // Co-Teaching: Hinzufügen statt Ersetzen — mehrere Trainer je Session sind normal.
+  // Co-Teaching: Hinzufügen statt Ersetzen - mehrere Trainer je Session sind normal.
   if(ids.includes(String(trId))){ toast(t("wkAlreadyAssigned", tr?tr.name:"?"),"warn"); return; }
   ids.push(String(trId)); s.trainerIds=ids;
   if(LIVE){
@@ -4032,7 +4039,7 @@ async function wkMoveTo(id,slot,index){
   await persistWeekPlan();
 }
 
-/* ---- Auto-Verteilung: Sessions der Reihe nach auf Mo–Fr füllen (~4 h je Halbtag) ---- */
+/* ---- Auto-Verteilung: Sessions der Reihe nach auf Mo-Fr füllen (~4 h je Halbtag) ---- */
 async function wkAutofill(){
   if(!(WKD.sessions||[]).length){ toast(t("wkEmpty"),"warn"); return; }
   if(!confirm(t("wkAutoAsk"))) return;
@@ -4198,12 +4205,12 @@ async function wkAiSuggest(){
     toast(t("wkAiDone")+(d.unplaced?` (${d.unplaced} → ${t("wkBench")})`:""),"good");
   }catch(e){
     drawWeekBody();
-    // Fehler deutlich zeigen — ein kurzer Toast reicht hier nicht (KI-Läufe dauern).
+    // Fehler deutlich zeigen - ein kurzer Toast reicht hier nicht (KI-Läufe dauern).
     alert(t("wkAi")+": "+e.message);
   }
 }
 
-/* ---- Wochenplan drucken (A4 quer): Raster Mo–Fr mit Sessions, Trainer, Material ---- */
+/* ---- Wochenplan drucken (A4 quer): Raster Mo-Fr mit Sessions, Trainer, Material ---- */
 function printWeek(){
   const tg=wkCurTg(); if(!tg||!WKD) return;
   const {slots,bench}=wkPlacement();
@@ -4216,7 +4223,7 @@ function printWeek(){
       <div class="wkp-t" style="font-weight:650">${esc(sessTitle(s))}</div>
       <div class="wkp-m" style="font-size:8pt;color:#5c666e">${t("type_"+(s.type||"theorie"))} · ${esc(String(s.dur||1))} h${trNames.length?" · <b>"+esc(trNames.join(", "))+"</b>":""}${s.mat?" · 📦 "+esc(s.mat):""}</div>
     </div>`;
-  }).join("")||'<span style="color:#b9c0c6">—</span>';
+  }).join("")||'<span style="color:#b9c0c6">-</span>';
   const rel=(WKD.sessions||[]).filter(wkPptRelevant);
   const done=rel.filter(s=>s.ppt==="vorhanden").length;
   const team=(tg.roster||[]).filter(x=>["yes","confirmed"].includes(x.status))
@@ -4225,7 +4232,7 @@ function printWeek(){
     <div class="wkp-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">
       <div style="min-width:0">
         <div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8a939a">${t("nav_week")}${cl?" · "+esc(cl.name):""}</div>
-        <h2 style="margin:2px 0 3px;font-size:19px">${esc(tg.code||"")}${tg.star?" ★":""} — ${esc(tg.topic)}</h2>
+        <h2 style="margin:2px 0 3px;font-size:19px">${esc(tg.code||"")}${tg.star?" ★":""} - ${esc(tg.topic)}</h2>
         <div style="color:#5c666e;font-size:12.5px">${esc(tg.city||"")} · ${whenLabel(tg)} · ${(WKD.sessions||[]).length} Sessions · ${t("wkPptChip",done,rel.length)}${team.length?" · "+t("wkTeam")+": "+esc(team.join(", ")):""}</div>
       </div>
       <span style="color:#3e4852;display:inline-flex;flex:none">${etafLogo(26)}</span>
@@ -4252,7 +4259,7 @@ function printWeek(){
 function closeWeekPrint(){ $("#weekPrint").classList.remove("on"); clearSheetTitle(); }
 
 /* ---- Dokumenttitel der Druckbögen: wird zum Dateinamen der PDF und steht in
-       der Kopfzeile des Ausdrucks — deshalb Woche und Zeitraum hineinnehmen. ---- */
+       der Kopfzeile des Ausdrucks - deshalb Woche und Zeitraum hineinnehmen. ---- */
 let docTitleOld=null;
 function setSheetTitle(txt){
   if(docTitleOld===null) docTitleOld=document.title;
@@ -4263,12 +4270,12 @@ function clearSheetTitle(){
   if(docTitleOld!==null){ document.title=docTitleOld; docTitleOld=null; }
   document.body.classList.remove("sheetprint");
 }
-/* Kurzer Zeitraum „09.11.–13.11.2026“ für Titel und Dateinamen. */
+/* Kurzer Zeitraum „09.11.-13.11.2026“ für Titel und Dateinamen. */
 function dateSpan(tg){
   if(!tg||!tg.date) return "";
   const f=s=>{const d=new Date(s+"T00:00:00");return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+".";};
   const y=(tg.dateEnd||tg.date).slice(0,4);
-  return (tg.dateEnd&&tg.dateEnd!==tg.date) ? `${f(tg.date)}–${f(tg.dateEnd)}${y}` : `${f(tg.date)}${y}`;
+  return (tg.dateEnd&&tg.dateEnd!==tg.date) ? `${f(tg.date)}-${f(tg.dateEnd)}${y}` : `${f(tg.date)}${y}`;
 }
 
 /* ---- Wochenplan aus einer anderen Woche übernehmen (z.B. W11-B aus W11-A) ---- */
@@ -4279,7 +4286,7 @@ function openWeekCopy(){
   $("#sheetBody").innerHTML=`<div class="meta" style="margin-bottom:12px">${t("wkCopyHint")}</div>
     <label class="fld">${t("wkCopySrc")}</label>
     <select class="inp" id="wcFrom">${list.map(x=>
-      `<option value="${x.id}">${esc(x.code||x.kw||"?")} — ${esc((x.topic||"").slice(0,48))}${x.week&&x.week.sessions?` · ${t("wkSessN",x.week.sessions)}`:""}</option>`).join("")}</select>`;
+      `<option value="${x.id}">${esc(x.code||x.kw||"?")} - ${esc((x.topic||"").slice(0,48))}${x.week&&x.week.sessions?` · ${t("wkSessN",x.week.sessions)}`:""}</option>`).join("")}</select>`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
     <button class="btn primary" onclick="doWeekCopy()">${ic("check",15)}${t("wkCopyDo")}</button>`;
   openSheet();
@@ -4357,7 +4364,7 @@ async function saveDeliv(){
 }
 
 /* ============================================================
-   FLUGPOST — erkannte Flugbuchungen prüfen & übernehmen
+   FLUGPOST - erkannte Flugbuchungen prüfen & übernehmen
    ============================================================ */
 async function loadFlightMails(){
   let mails=[];
@@ -4384,7 +4391,7 @@ async function loadFlightMails(){
       <div class="panel-b">
         <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
           <div class="rowgrow">
-            <div style="font-weight:650">${esc(m.subject||"—")}</div>
+            <div style="font-weight:650">${esc(m.subject||"-")}</div>
             <div class="meta">${esc(m.from||"")} · ${fmtWhen(m.at)}</div>
           </div>
           ${conf}${st}
@@ -4442,7 +4449,7 @@ async function resolveMsg(trId,resolved){
   toast(resolved?t("inboxResolved"):t("inboxReopened"),"good");
 }
 /* ============================================================
-   BENUTZER (nur Admin) — Konten anlegen, Rolle ändern, sperren
+   BENUTZER (nur Admin) - Konten anlegen, Rolle ändern, sperren
    ============================================================ */
 let usersCache=[];
 function meUser(){ return S.me||null; }
@@ -4456,7 +4463,7 @@ function openDigestEdit(uid){
   digestEditId=uid;
   const parts=u.digestParts&&u.digestParts.length?u.digestParts:["staffing","ppt","inbox"];
   const freq=u.digestFreq||"off";
-  $("#sheetTitle").textContent=t("dgTitle")+" — "+(u.name||u.email);
+  $("#sheetTitle").textContent=t("dgTitle")+" - "+(u.name||u.email);
   $("#sheetBody").innerHTML=`
     <div class="meta" style="margin-bottom:12px">${t("dgHint")}</div>
     <label class="fld">${t("dgFreq")}</label>
@@ -4511,7 +4518,7 @@ async function renderUsers(){
     <div class="row">
       <div class="av" style="background:${u.role==='admin'?'var(--brand-solid)':'#6E7A82'}">${initials(u.name||u.email)}</div>
       <div class="rowgrow">
-        <div class="nm">${esc(u.name||"—")}${me&&me.id===u.id?` <span class="tag">${t("usrYou")}</span>`:""}</div>
+        <div class="nm">${esc(u.name||"-")}${me&&me.id===u.id?` <span class="tag">${t("usrYou")}</span>`:""}</div>
         <div class="meta">${esc(u.email)} · ${roleLabel(u.role)}${u.lastLogin?` · ${t("usrLast")} ${fmtWhen(u.lastLogin)}`:` · ${t("usrNever")}`}</div>
       </div>
       <div class="rowacts">
@@ -4529,7 +4536,7 @@ async function renderUsers(){
         <div class="meta">${t("usrHint")}</div></div>
       <button class="btn primary" onclick="openUserEdit(null)">${ic("plus")}${t("usrNew")}</button>
     </div></div>
-    <div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">—</div>`}</div></div>
+    <div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">-</div>`}</div></div>
     <div class="panel">
       <div class="panel-h"><h3>${ic("lock",18)} ${t("usrOwnPw")}</h3></div>
       <div class="panel-b">
@@ -4576,7 +4583,7 @@ async function saveUser(uid){
     const d=await apiCall("user.save", uid?{id:uid,name,email,role}:{name,email,role});
     closeSheet();
     if(wasSetup){
-      // Ab jetzt gilt die E-Mail-Anmeldung — die PIN-Sitzung endet hier bewusst.
+      // Ab jetzt gilt die E-Mail-Anmeldung - die PIN-Sitzung endet hier bewusst.
       finishSetup(email, !!d.invited);
       return;
     }
@@ -4612,7 +4619,7 @@ async function changeOwnPassword(){
 }
 
 /* ============================================================
-   ÄNDERUNGSPROTOKOLL — wer hat wann was geändert
+   ÄNDERUNGSPROTOKOLL - wer hat wann was geändert
    ============================================================ */
 const ACT_ICON={login:"lock","user.create":"users","user.update":"users","user.invite":"send",
   "user.activate":"users","user.deactivate":"users","password.set":"lock","password.reset":"lock",
@@ -4626,7 +4633,7 @@ async function renderActivity(){
     <div class="row">
       <div class="av" style="width:30px;height:30px;background:var(--panel-2);color:var(--muted)">${ic(ACT_ICON[a.action]||"log",15)}</div>
       <div class="rowgrow">
-        <div class="nm">${esc(a.user_name||"—")} <span class="meta" style="font-weight:500">· ${esc(t("act_"+a.action)!=="act_"+a.action?t("act_"+a.action):a.action)}</span></div>
+        <div class="nm">${esc(a.user_name||"-")} <span class="meta" style="font-weight:500">· ${esc(t("act_"+a.action)!=="act_"+a.action?t("act_"+a.action):a.action)}</span></div>
         <div class="meta">${esc(a.summary||"")}</div>
       </div>
       <span class="meta nowrap">${fmtWhen(a.created_at)}</span>
@@ -4640,7 +4647,7 @@ async function renderActivity(){
 }
 
 /* ============================================================
-   ÜBERSCHREIB-SCHUTZ — Dialog bei veralteter Fassung
+   ÜBERSCHREIB-SCHUTZ - Dialog bei veralteter Fassung
    ============================================================ */
 /* Zeigt: „X hat den Eintrag inzwischen geändert“ + Neu laden / Trotzdem speichern. */
 function conflictDialog(info, onReload, onForce){
@@ -4648,7 +4655,7 @@ function conflictDialog(info, onReload, onForce){
   $("#sheetBody").innerHTML=`
     <div class="ampel a-red" style="margin:0 0 16px"><span class="lamp"></span>
       <div class="rowgrow"><b>${t("cfHead")}</b>
-        <div class="meta">${t("cfBy", esc(info.by||"—"), info.at?fmtWhen(info.at):"")}</div></div></div>
+        <div class="meta">${t("cfBy", esc(info.by||"-"), info.at?fmtWhen(info.at):"")}</div></div></div>
     <div class="meta">${t("cfExplain")}</div>`;
   $("#sheetFoot").innerHTML=`
     <button class="btn" onclick="closeSheet()">${t("cancel")}</button>
@@ -4688,8 +4695,8 @@ function openResolve(trId){
 function resolveTemplate(tr,lang){
   const first=(tr.name||"").replace(/^Dr\.\s*/,"").split(" ")[0];
   return lang==="de"
-    ? `Hallo ${first},\n\ndanke für deinen Hinweis! Wir haben das geprüft und Folgendes angepasst:\n\n– …\n\nBitte wirf kurz einen Blick auf deine aktualisierte Einsatzübersicht (Button unten) und bestätige sie noch einmal.\n\nHerzliche Grüße\nETAF-Koordination`
-    : `Hi ${first},\n\nthanks for flagging this! We looked into it and made the following changes:\n\n– …\n\nPlease take a quick look at your updated assignment overview (button below) and confirm it once more.\n\nBest regards\nETAF Coordination`;
+    ? `Hallo ${first},\n\ndanke für deinen Hinweis! Wir haben das geprüft und Folgendes angepasst:\n\n- …\n\nBitte wirf kurz einen Blick auf deine aktualisierte Einsatzübersicht (Button unten) und bestätige sie noch einmal.\n\nHerzliche Grüße\nETAF-Koordination`
+    : `Hi ${first},\n\nthanks for flagging this! We looked into it and made the following changes:\n\n- …\n\nPlease take a quick look at your updated assignment overview (button below) and confirm it once more.\n\nBest regards\nETAF Coordination`;
 }
 function drawResolve(){
   const tr=S.trainers.find(x=>x.id===rsvTrId); if(!tr||!tr.plan) return;
@@ -4708,7 +4715,7 @@ function drawResolve(){
     <textarea id="rsvText" style="min-height:180px">${esc(resolveTemplate(tr,rsvLang))}</textarea>
     <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
       <label class="sw"><input type="checkbox" id="rsvMail" checked><span></span></label>
-      <span style="font-size:14px" class="rowgrow">${t("rsvMailLbl",tr.name)}${tr.email?"":" — "+t("planNoMail")}</span>
+      <span style="font-size:14px" class="rowgrow">${t("rsvMailLbl",tr.name)}${tr.email?"":" - "+t("planNoMail")}</span>
     </div>`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
     <button class="btn primary" onclick="doResolve('${tr.id}')">${ic("check",15)}${t("rsvBtn")}</button>`;
@@ -4773,8 +4780,8 @@ function fmtDateRange(s,e,lang){
   const Q=pdate(e);
   const dm=x=> lang==='de' ? `${x.d}. ${mon[x.mo]}` : `${x.d} ${mon[x.mo]}`;
   if(!Q || (P.y===Q.y&&P.mo===Q.mo&&P.d===Q.d)) return `${dm(P)} ${P.y}`;
-  if(P.y===Q.y&&P.mo===Q.mo) return lang==='de' ? `${P.d}.–${Q.d}. ${mon[P.mo]} ${P.y}` : `${P.d}–${Q.d} ${mon[P.mo]} ${P.y}`;
-  return `${dm(P)} – ${dm(Q)} ${Q.y}`;
+  if(P.y===Q.y&&P.mo===Q.mo) return lang==='de' ? `${P.d}.-${Q.d}. ${mon[P.mo]} ${P.y}` : `${P.d}-${Q.d} ${mon[P.mo]} ${P.y}`;
+  return `${dm(P)} - ${dm(Q)} ${Q.y}`;
 }
 /* Reisefenster: ein Tag vor Beginn bis ein Tag nach Ende (An-/Abreise-Puffer). */
 function fmtTravelWindow(s,e,lang){
@@ -4809,7 +4816,7 @@ function renderPlan(){
     const twin=fmtTravelWindow(tg.date,tg.dateEnd);
     return `<tr class="clickrow" title="${t("bkOpenModule")}" onclick="openDetail('${tg.id}')">
       <td><span class="pill ${spCls(x.status)}">${spLabel(x.status)}</span></td>
-      <td class="nowrap">${esc(when||"—")}${kwSub?`<div class="meta">${esc(kwSub)}</div>`:""}</td>
+      <td class="nowrap">${esc(when||"-")}${kwSub?`<div class="meta">${esc(kwSub)}</div>`:""}</td>
       <td>${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}</td>
       <td><b>${esc(tg.topic)}</b>${sub?`<div class="meta">${esc(sub)}</div>`:""}${twin?`<div class="meta">${ic("plane")}${t("travelWin")}: ${esc(twin)}</div>`:""}${trav?`<div class="meta travrow">${ic("bag")}${trav}</div>`:""}</td>
     </tr>`;
@@ -4822,7 +4829,7 @@ function renderPlan(){
         <div>
           <div class="planlogo">ETAF<span>.</span></div>
           <h2 style="margin:6px 0 2px">${t("planTitle")}</h2>
-          <div class="meta">${esc(tr.name)} · ✉︎ ${esc(tr.email||"—")}${tr.phone?" · ☎ "+esc(tr.phone):""}</div>
+          <div class="meta">${esc(tr.name)} · ✉︎ ${esc(tr.email||"-")}${tr.phone?" · ☎ "+esc(tr.phone):""}</div>
         </div>
         <div class="plansum">
           <span class="pill good">${t("sp_yes")}: ${cnt.yes}</span>
@@ -4875,7 +4882,7 @@ function renderTransfer(){
   const cl=curTransferCl; if(!cl){go("bookings");return;}
   const rows=clientTransferRows(cl.id); const tr=cl.transfer;
   const conf = tr&&tr.confirmedAt
-    ? `<div class="planconf ok">${ic("check")}${t("trfConfirmed")} <span class="meta">(${esc((tr.confirmedAt||"").slice(0,16).replace("T"," "))})</span>${tr.note?` — „${esc(tr.note)}“`:""}</div>`
+    ? `<div class="planconf ok">${ic("check")}${t("trfConfirmed")} <span class="meta">(${esc((tr.confirmedAt||"").slice(0,16).replace("T"," "))})</span>${tr.note?` - „${esc(tr.note)}“`:""}</div>`
     : (tr&&tr.sentAt ? `<div class="planconf sent">${ic("send")}${t("trfSent")} <span class="meta">(${esc((tr.sentAt||"").slice(0,16).replace("T"," "))})</span></div>` : "");
   const body=rows.length?rows.map(x=>{
     const fl=x.flight||{}, tg=x.tg;
@@ -4884,7 +4891,7 @@ function renderTransfer(){
     const hotel=[(tg.travel&&tg.travel.hotel)||"",fl.room||""].filter(Boolean).join(" · ");
     return `<tr>
       <td><div class="bktr"><span class="av xs" style="background:${x.tr.color}">${initials(x.tr.name)}</span><b>${esc(x.tr.name)}</b></div>${x.tr.phone?`<div class="meta">☎ ${esc(x.tr.phone)}</div>`:""}</td>
-      <td>${esc(arr||"—")}</td><td>${esc(dep||"—")}</td><td>${esc(hotel||"—")}</td>
+      <td>${esc(arr||"-")}</td><td>${esc(dep||"-")}</td><td>${esc(hotel||"-")}</td>
       <td><b>${esc(tg.topic)}</b><div class="meta">${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""}${tg.date?" · "+esc(fmtDateRange(tg.date,tg.dateEnd)):""}</div></td>
     </tr>`;
   }).join(""):`<tr><td colspan="5" class="meta" style="padding:16px 8px">${t("trfEmpty")}</td></tr>`;
@@ -4977,7 +4984,7 @@ async function saveTpl(){
 }
 
 /* ============================================================
-   COMPOSER (E-Mail slide-over) — mit Sprachwahl DE/EN
+   COMPOSER (E-Mail slide-over) - mit Sprachwahl DE/EN
    ============================================================ */
 let compose={tgId:null,recips:[],tplId:"t1",lang:"en"};
 function fillTpl(str,tg,tr){
@@ -5121,7 +5128,7 @@ function drawQuick(){
   $("#sheetBody").innerHTML=`
     <div class="meta" style="margin-bottom:12px">${t("quickDesc")}</div>
     <label class="fld">${t("trainingLbl")}</label>
-    <select id="qTg" onchange="quickPickTraining(this.value)">${S.trainings.map(x=>`<option value="${x.id}" ${x.id===quick.tgId?'selected':''}>${esc(x.topic)} — ${esc(x.city)} (${esc(x.kw)})</option>`).join("")}</select>
+    <select id="qTg" onchange="quickPickTraining(this.value)">${S.trainings.map(x=>`<option value="${x.id}" ${x.id===quick.tgId?'selected':''}>${esc(x.topic)} - ${esc(x.city)} (${esc(x.kw)})</option>`).join("")}</select>
     <label class="fld">${t("replCand")} (${quick.recips.length})</label>
     <div id="quickRows">${rows||`<div class="meta">${t("quickEmpty")}</div>`}</div>
     <label class="fld">${t("quickAdd")}</label>
@@ -5150,7 +5157,7 @@ async function sendQuick(){
     return;
   }
   recips.forEach(id=>setStatus(tgId,id,"asked"));
-  recips.forEach(id=>{const tr=S.trainers.find(t=>t.id===id); if(tr)demoLog(tr.email,(S.lang==='de'?'Kurzfristig: Einspringen? — ':'Short notice: step in? — ')+tg.topic,S.emailLang,"logged");});
+  recips.forEach(id=>{const tr=S.trainers.find(t=>t.id===id); if(tr)demoLog(tr.email,(S.lang==='de'?'Kurzfristig: Einspringen? - ':'Short notice: step in? - ')+tg.topic,S.emailLang,"logged");});
   closeSheet();toast(t("blitzToast",recips.length),"good");
   buildNav();if(route==="detail"){curTg=tg;renderDetail();}if(route==="dash")renderDash();
 }
@@ -5192,7 +5199,7 @@ function drawAgendaItems(){
       <input class="inp" style="flex:0 0 74px" placeholder="${t("agTime")}" value="${esc(it.time||"")}" oninput="agSet(${i},'time',this.value)">
       <input class="inp" style="flex:1" placeholder="${t("agWhat")}" value="${esc(it.title||"")}" oninput="agSet(${i},'title',this.value)">
       <button class="btn sm" onclick="agRm(${i})">✕</button>
-    </div>`).join("")||`<div class="meta">—</div>`;
+    </div>`).join("")||`<div class="meta">-</div>`;
 }
 function agAdd(){tvGet(travelTg).travel.agenda.push({day:"",time:"",title:""});drawAgendaItems();}
 function agRm(i){tvGet(travelTg).travel.agenda.splice(i,1);drawAgendaItems();}
@@ -5266,7 +5273,7 @@ async function openAgenda(tgId,trId){
   setSheetTitle(`ETAF ${t("travelAgenda")} ${tr?tr.name:""} ${tg.code||""}${dateSpan(tg)?" ("+dateSpan(tg)+")":""}`);
   $("#agendaPrint").classList.add("on");
 }
-/* Kompakte Wochenübersicht für die Agenda: alle Sessions Mo–Fr,
+/* Kompakte Wochenübersicht für die Agenda: alle Sessions Mo-Fr,
    die des Trainers rot umrandet + mit Kürzel (wie im Wochenplan). */
 function agWeekGrid(sessions,plan,tg,trId){
   const sess=id=>sessions.find(s=>String(s.id)===String(id));
@@ -5286,12 +5293,12 @@ function agWeekGrid(sessions,plan,tg,trId){
       +(mine&&tr?` · <b style="color:var(--crit)">${initials(tr.name)}</b>`:"")
       +(mine&&others.length?`<br><span style="color:var(--good);font-weight:650">👥 ${esc(t("agWith")+" "+others.join(", "))}</span>`
         :(!mine&&others.length?`<br>${esc(others.join(", "))}`:""))
-      // Vorbereitung nur an den eigenen Kacheln — sonst wird das Raster unruhig
+      // Vorbereitung nur an den eigenen Kacheln - sonst wird das Raster unruhig
       +(pptMine?`<br><span style="color:var(--crit);font-weight:650">${t("agPptMine")}</span>`:"")
       +(mine&&s.mat?`<br>📦 ${esc(s.mat)}`:"");
     return `<div style="border:1.5px solid ${mine?'var(--crit)':'var(--line)'};border-left:4px solid ${mine?'var(--crit)':(SESS_COL[s.type]||'#8A939A')};border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:11px;line-height:1.35;${mine?'background:rgba(216,31,38,.07);font-weight:650':''}">${esc(sessTitle(s))}
       <div style="color:var(--faint);font-size:10px">${sub}</div></div>`;
-  }).join("")||`<div style="color:var(--faint);font-size:11px">—</div>`;
+  }).join("")||`<div style="color:var(--faint);font-size:11px">-</div>`;
   // Kacheln zuerst bauen, damit die Zusammenfassung die gezählten Werte kennt
   const grid=WK_DAYS.map((d,i)=>`<div style="min-width:0">
       <div style="text-align:center;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${t("day_"+d)}<span style="color:var(--faint);font-weight:600"> ${dayDate(i)}</span></div>
@@ -5306,7 +5313,7 @@ function agWeekGrid(sessions,plan,tg,trId){
 }
 function closeAgenda(){$("#agendaPrint").classList.remove("on");clearSheetTitle();}
 function buildAgendaHTML(tg,tr,fl,weekHtml=""){
-  const v=tg.travel||{}; const na=`<span style="color:var(--faint)">—</span>`;
+  const v=tg.travel||{}; const na=`<span style="color:var(--faint)">-</span>`;
   const row=(k,val)=>`<div class="ag-k">${k}</div><div class="ag-v">${val?esc(val):na}</div>`;
   const rowH=(k,val)=>`<div class="ag-k">${k}</div><div class="ag-v">${val||na}</div>`;
   const items=(v.agenda||[]).filter(a=>a.title).map(a=>
@@ -5333,17 +5340,17 @@ function buildAgendaHTML(tg,tr,fl,weekHtml=""){
    (wie bei allen anderen Mails), inkl. DE/EN-Umschalter. */
 let agMail={tg:null,tr:null,lang:"de"};
 function agMailTexts(tg,tr,lang,batch){
-  // Beim Serienversand bleibt {{firstName}} stehen — das Backend füllt es je Trainer
+  // Beim Serienversand bleibt {{firstName}} stehen - das Backend füllt es je Trainer
   const first=batch ? "{{firstName}}" : (tr.name||"").replace(/^Dr\.\s*/,"").split(" ")[0];
   const kw=kwLabel(tg.kw||"");
   return lang==="de"
-    ? { subject:`Deine Reise-Agenda — ${tg.topic} in ${tg.city}`,
+    ? { subject:`Deine Reise-Agenda - ${tg.topic} in ${tg.city}`,
         body:`Hallo ${first},\n\nanbei deine persönliche Reise-Agenda für „${tg.topic}“ in ${tg.city} (${kw}). Über den Button kannst du sie öffnen und ausdrucken.` }
-    : { subject:`Your travel agenda — ${tg.topic} in ${tg.city}`,
+    : { subject:`Your travel agenda - ${tg.topic} in ${tg.city}`,
         body:`Hi ${first},\n\nhere is your personal travel agenda for "${tg.topic}" in ${tg.city} (${(tg.kw||"").replace(/^\s*KW\s*/,"Week ")}). Open and print it via the button below.` };
 }
 /* Serienversand: derselbe Kontroll-Dialog, nur mit Empfängerliste.
-   Betreff und Text dürfen Platzhalter enthalten — {{firstName}} wird je
+   Betreff und Text dürfen Platzhalter enthalten - {{firstName}} wird je
    Trainer gefüllt, sonst stünde in allen Mails dieselbe Anrede. */
 function sendAgendaAll(tgId){
   const tg=S.trainings.find(x=>String(x.id)===String(tgId)); if(!tg) return;
@@ -5365,11 +5372,11 @@ function drawAgendaMail(first){
   const {tg,tr,lang,all}=agMail;
   const tx=agMailTexts(tg,tr,lang,!!all);
   if(first){
-    $("#sheetTitle").textContent=t("agMailTitle")+" — "+(all?tg.code||tg.topic:tr.name);
+    $("#sheetTitle").textContent=t("agMailTitle")+" - "+(all?tg.code||tg.topic:tr.name);
     const who = all
       ? `<div class="meta rowgrow">${esc(t("agAllTo",all.length))}<br>${all.map(x=>
            esc(x.name)+(x.email?"":` <b style="color:var(--crit)">${esc(t("agNoMail"))}</b>`)).join(" · ")}</div>`
-      : `<span class="meta rowgrow">${esc(tr.email||"—")}</span>`;
+      : `<span class="meta rowgrow">${esc(tr.email||"-")}</span>`;
     $("#sheetBody").innerHTML=`
       <div class="fldrow" style="align-items:flex-start;margin-bottom:10px">
         ${who}
@@ -5439,8 +5446,8 @@ function flightSuggestions(tr,tg){
   const al=AIRLINES[seed%AIRLINES.length], al2=AIRLINES[(seed+3)%AIRLINES.length];
   const n1=100+(seed*7)%800, n2=200+(seed*5)%700;
   return [
-    {out:`${al} ${n1} ${o[0]}→${d[0]} 21:55–06:40 (+1)`, ret:`${al} ${n1+1} ${d[0]}→${o[0]} 02:35–07:10`},
-    {out:`${al2} ${n2} ${o[0]}→${d[0]} 10:20–19:15`,      ret:`${al2} ${n2+1} ${d[0]}→${o[0]} 08:45–13:20`}
+    {out:`${al} ${n1} ${o[0]}→${d[0]} 21:55-06:40 (+1)`, ret:`${al} ${n1+1} ${d[0]}→${o[0]} 02:35-07:10`},
+    {out:`${al2} ${n2} ${o[0]}→${d[0]} 10:20-19:15`,      ret:`${al2} ${n2+1} ${d[0]}→${o[0]} 08:45-13:20`}
   ];
 }
 function showFlightSuggestions(tgId,trId){
@@ -5513,8 +5520,8 @@ function whenLabel(tg){
     const e=/^\d{4}-\d{2}-\d{2}$/.test(tg.dateEnd||"")?new Date(tg.dateEnd+"T00:00:00Z"):s;
     const kw=tg.kw?` · ${kwLabel(tg.kw)}`:"";  // KW immer mit anzeigen
     if(s.getUTCMonth()===e.getUTCMonth()&&s.getUTCFullYear()===e.getUTCFullYear())
-      return s.getUTCDate()+".–"+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear()+kw;
-    return s.getUTCDate()+". "+M[s.getUTCMonth()]+" – "+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear()+kw;
+      return s.getUTCDate()+".-"+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear()+kw;
+    return s.getUTCDate()+". "+M[s.getUTCMonth()]+" - "+e.getUTCDate()+". "+M[e.getUTCMonth()]+" "+e.getUTCFullYear()+kw;
   }
   return kwLabel(tg.kw)+(tg.month?" · "+tg.month:"");
 }
@@ -5535,7 +5542,7 @@ function buildICS(){
       "LOCATION:"+icsEsc(tg.city+", "+tg.country),
       "CATEGORIES:"+icsEsc(cl?cl.name:"ETAF"));
     if(cl&&cl.cal)lines.push("COLOR:"+cl.cal);
-    lines.push("DESCRIPTION:"+icsEsc(tg.spec+" — "+r.yes+"/"+r.need+" "+t("confirmedShort")+" · "+t(st.key)+(cl?" · "+cl.name:"")),"END:VEVENT");
+    lines.push("DESCRIPTION:"+icsEsc(tg.spec+" - "+r.yes+"/"+r.need+" "+t("confirmedShort")+" · "+t(st.key)+(cl?" · "+cl.name:"")),"END:VEVENT");
   });
   lines.push("END:VCALENDAR");
   return lines.join("\r\n");
@@ -5582,7 +5589,7 @@ function calWeekDetail(tg){
       +sTitle(s)
       +`<i> · ${esc(String(s.dur||1))} h${trs.length?" · "+esc(trs.join(", ")):""}</i></div>`;
   };
-  // Ohne Tageszuordnung reicht der Titel — als Fließzeile statt einer Zeile je Session,
+  // Ohne Tageszuordnung reicht der Titel - als Fließzeile statt einer Zeile je Session,
   // sonst wächst der Wandkalender im Ausdruck auf ein Vielfaches an.
   const inl=s=>{ const trs=sTr(s); return sTitle(s)+(trs.length?` <i>(${esc(trs.join(", "))})</i>`:""); };
   const del0=(S.lang==="en"&&tg.deliverableEn)?tg.deliverableEn:(tg.deliverable||"");
@@ -5641,10 +5648,10 @@ function openCalendar(){
     <div class="cal-legend">${legend}</div>${body}
     <div class="meta" style="text-align:center;margin-top:22px">ETAF · Trainer-Koordination</div></div>`;
   setPageOrient("landscape"); $("#agPrintLbl2")&&($("#agPrintLbl2").textContent=t("calPrint"));
-  // Titel mit Kunde und Zeitraum — so ist die PDF schon am Dateinamen erkennbar
+  // Titel mit Kunde und Zeitraum - so ist die PDF schon am Dateinamen erkennbar
   const first=list[0], last=list[list.length-1];
-  const span=(first&&last)?`${(first.date||"").slice(0,7).split("-").reverse().join(".")}–${(last.dateEnd||last.date||"").slice(0,7).split("-").reverse().join(".")}`:"";
-  setSheetTitle(`ETAF ${t("calTitle")} ${activeClient()?activeClient().name:t("clientAll")}${span?" ("+span+")":""}${calDetail?" – "+t("calDetailOn"):""}`);
+  const span=(first&&last)?`${(first.date||"").slice(0,7).split("-").reverse().join(".")}-${(last.dateEnd||last.date||"").slice(0,7).split("-").reverse().join(".")}`:"";
+  setSheetTitle(`ETAF ${t("calTitle")} ${activeClient()?activeClient().name:t("clientAll")}${span?" ("+span+")":""}${calDetail?" - "+t("calDetailOn"):""}`);
   $("#calPrint").classList.add("on");
 }
 function closeCalendar(){$("#calPrint").classList.remove("on");clearSheetTitle();}
@@ -5785,14 +5792,14 @@ async function saveTrainingEditor(){
     const tg=S.trainings.find(x=>x.id===newId);
     const affected=(tg&&tg.roster||[]).filter(r=>["yes","confirmed","maybe","asked"].includes(r.status));
     if(affected.length){
-      const oldTxt=(oldStart?fmtDateRange(oldStart,oldEnd):oldKw)||"—";
+      const oldTxt=(oldStart?fmtDateRange(oldStart,oldEnd):oldKw)||"-";
       setTimeout(()=>promptShiftNotify(newId, oldTxt, affected.length), 500);
     }
   }
 }
 function promptShiftNotify(tgId, oldTxt, n){
   const tg=S.trainings.find(x=>x.id===tgId); if(!tg)return;
-  const newTxt=fmtDateRange(tg.date,tg.dateEnd)||tg.kw||"—";
+  const newTxt=fmtDateRange(tg.date,tg.dateEnd)||tg.kw||"-";
   $("#sheetTitle").textContent=t("shiftTitle");
   $("#sheetBody").innerHTML=`
     <p>${t("shiftLead",n)}</p>
@@ -5840,7 +5847,7 @@ function openMaterials(tgId){
     <div class="divider"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" onclick="loadMatPreset()">${t("matLoadPreset")}</button>
-      <button class="btn sm" onclick="saveMatPreset()">${t("matSavePreset",tg.spec||"—")}</button>
+      <button class="btn sm" onclick="saveMatPreset()">${t("matSavePreset",tg.spec||"-")}</button>
     </div>
     <div class="meta" style="margin-top:8px">${t("matPresetHint")}</div>`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
@@ -5935,7 +5942,7 @@ function printMaterials(tgId){
    IMPORT (mock)
    ============================================================ */
 let importProfiles=[];
-const IMPORT_SAMPLE="Dr. Amir Haddad — Implantologie, Guided Surgery. Sprachen: DE, EN, AR. Region: UAE. Viel Erfahrung in Abu Dhabi.\nDr. Lena Vogt, DNA-Diagnostik & Prothetik, DE-West, DE/EN, Bewertung 4.7\nDr. Youssef Karim, Fingerprint Dental, UAE, EN/AR";
+const IMPORT_SAMPLE="Dr. Amir Haddad - Implantologie, Guided Surgery. Sprachen: DE, EN, AR. Region: UAE. Viel Erfahrung in Abu Dhabi.\nDr. Lena Vogt, DNA-Diagnostik & Prothetik, DE-West, DE/EN, Bewertung 4.7\nDr. Youssef Karim, Fingerprint Dental, UAE, EN/AR";
 function openImport(){
   importProfiles=[];
   $("#sheetTitle").textContent=t("importTitle");
@@ -5962,7 +5969,7 @@ async function runImportAnalyze(){
 function demoExtract(text){
   const SP=["Implantologie","DNA-Diagnostik","Fingerprint Dental","Prothetik","Guided Surgery","Parodontologie","Chirurgie"];
   return text.split(/\n+/).map(l=>l.trim()).filter(Boolean).slice(0,8).map(line=>{
-    const name=(line.match(/Dr\.?\s+[A-Za-zÄÖÜäöü'\-]+\s+[A-Za-zÄÖÜäöü'\-]+/)||[line.split(/[,—-]/)[0].trim()])[0];
+    const name=(line.match(/Dr\.?\s+[A-Za-zÄÖÜäöü'\-]+\s+[A-Za-zÄÖÜäöü'\-]+/)||[line.split(/[,--]/)[0].trim()])[0];
     const spec=SP.filter(s=>line.toLowerCase().includes(s.toLowerCase().slice(0,6)));
     const langs=(line.match(/\b(DE|EN|AR)\b/g)||[]).filter((v,i,a)=>a.indexOf(v)===i);
     const uae=/uae|abu dhabi|dubai/i.test(line);
@@ -5978,7 +5985,7 @@ function drawImportReview(){
     ${importProfiles.map((p,i)=>`
       <div class="row">
         <div class="av" style="background:var(--brand-solid)">${initials(p.name||"?")}</div>
-        <div class="rowgrow"><div class="nm">${esc(p.name||"—")}</div>
+        <div class="rowgrow"><div class="nm">${esc(p.name||"-")}</div>
           <div class="meta">${(p.spec||[]).join(", ")} · ${esc(p.region||"")} · ${(p.langs||[]).join("/")}${p.uae?" · UAE":""} · ⭐ ${esc(p.rating||"4.5")}</div></div>
         <button class="btn sm" onclick="rmImport(${i})">✕</button>
       </div>`).join("")}`;
@@ -5996,7 +6003,7 @@ async function applyImport(){
     return;
   }
   const COL=["#3E4852","#B23A42","#4E6E8E","#6E5A86","#3F7A5E","#A6642E","#557088","#8A5A52"];
-  profs.forEach((p,i)=>S.trainers.push({id:uid("tr"),name:p.name||"—",email:p.email||"",phone:p.phone||"",
+  profs.forEach((p,i)=>S.trainers.push({id:uid("tr"),name:p.name||"-",email:p.email||"",phone:p.phone||"",
     spec:p.spec||[],region:p.region||"",langs:p.langs||[],uae:!!p.uae,load:0,
     color:COL[i%COL.length],rating:String(p.rating||"4.5")}));
   save();closeSheet();if(route==="trainers")renderTrainers();toast(t("importCreated",n),"good");
@@ -6096,7 +6103,7 @@ function esc(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replac
    TRAININGSBERICHT (DEBRIEF) + AUSWERTUNG
    Der Kriterienkatalog steht hier für die Anzeige; das Backend hat
    denselben Katalog als Prüfliste (backend/lib.php → debrief_catalog).
-   Skala 1–5, fehlender Wert = nicht bewertet und zählt nirgends mit.
+   Skala 1-5, fehlender Wert = nicht bewertet und zählt nirgends mit.
    ============================================================ */
 const DB_GROUPS=[
   {key:"training", de:"Training & Teilnehmer", en:"Training & participants", items:[
@@ -6147,9 +6154,9 @@ const DB_TEXTS=[["wentWell","Was lief gut?","What went well?"],
   ["toImprove","Was muss sich ändern?","What needs to change?"],
   ["adp","Anmerkungen zum Kunden","Notes on the client"],
   ["incidents","Besondere Vorkommnisse","Notable incidents"]];
-const DB_REC=[["yes","Ja — unverändert wieder so","Yes — run it again unchanged"],
+const DB_REC=[["yes","Ja - unverändert wieder so","Yes - run it again unchanged"],
   ["partly","Mit Anpassungen","With adjustments"],
-  ["no","Nein — so nicht wieder","No — not like this again"]];
+  ["no","Nein - so nicht wieder","No - not like this again"]];
 const DB_SCALE=[[1,"ungenügend","poor"],[2,"ausbaufähig","weak"],[3,"in Ordnung","okay"],
   [4,"gut","good"],[5,"ausgezeichnet","excellent"]];
 
@@ -6168,9 +6175,9 @@ function dbGroupOf(key){
 }
 function dbAllKeys(){ return DB_GROUPS.flatMap(g=>g.items.map(i=>i[0])); }
 
-/* Ampelband eines Mittelwerts — dieselbe Sprache wie überall im Cockpit. */
+/* Ampelband eines Mittelwerts - dieselbe Sprache wie überall im Cockpit. */
 function dbBand(v){ return v==null?"":(v>=4?"good":(v>=3?"warn":"crit")); }
-function dbNum(v){ return v==null?"—":Number(v).toFixed(1).replace(".",S.lang==="en"?".":","); }
+function dbNum(v){ return v==null?"-":Number(v).toFixed(1).replace(".",S.lang==="en"?".":","); }
 
 /* ---------- Formular ---------- */
 let dbCur=null, dbTg=null;
@@ -6208,7 +6215,7 @@ function dbScale(kind,key,val){
     <button class="na${cur==null?" on":""}" data-v="0" title="${esc(t("dbNaHint"))}"
       onclick="dbPick('${kind}','${key}',0)">${esc(t("dbNa"))}</button></span>`;
 }
-/* Klick auf die Skala: nur die betroffene Zeile umschalten — sonst verlöre
+/* Klick auf die Skala: nur die betroffene Zeile umschalten - sonst verlöre
    ein offenes Textfeld beim Neuzeichnen den Fokus. */
 function dbPick(kind,key,v){
   if(kind==="sc"){ if(v) dbCur.scores[key]=v; else delete dbCur.scores[key]; }
@@ -6233,7 +6240,7 @@ function dbCount(){
   const tot=dbTotalOf(dbTg), fil=dbFilledOfObj(dbCur);
   const pct=tot?Math.min(100,Math.round(fil/tot*100)):0;
   el.innerHTML=`<span class="dbringwrap">${dbRing(pct,38,dbCur.status==="final"&&pct>=100)}
-      <b class="${pct>=100?"g":pct?"i":"f"}">${pct}<i>%</i></b></span>
+      <b class="${pct>=100?"g":pct?"i":"f"}${pct>=100?" full":""}">${pct}<i>%</i></b></span>
     <span class="meta">${esc(t("dbFilled",fil,tot))}</span>`;
 }
 function dbActAdd(){ dbCur.actions.push({text:"",owner:"",due:"",done:false}); drawDbActions(); }
@@ -6254,7 +6261,7 @@ function drawDbActions(){
 
 function drawDebrief(){
   const tg=dbTg;
-  $("#sheetTitle").textContent=t("dbTitleFor",(tg.code?tg.code+" — ":"")+tg.topic);
+  $("#sheetTitle").textContent=t("dbTitleFor",(tg.code?tg.code+" - ":"")+tg.topic);
   const trs=dbTrainersOf(tg);
   const groups=DB_GROUPS.map(g=>`
     <div class="dbsec"><h4>${esc(dbGroupLabel(g))}</h4>
@@ -6353,7 +6360,7 @@ function dbTeamOf(tg){
   return [...ids].filter(id=>S.trainers.some(x=>String(x.id)===id));
 }
 function dbTotalOf(tg){ return dbAllKeys().length + 2 + 4*dbTeamOf(tg).length; }
-/* Beantwortete Felder — live kommt der Wert aus dem Backend, im Demo-Modus
+/* Beantwortete Felder - live kommt der Wert aus dem Backend, im Demo-Modus
    wird er aus dem lokal gespeicherten Bericht gezählt. */
 function dbFilledOf(tg){
   if(tg.debrief && typeof tg.debrief.filled==="number") return tg.debrief.filled;
@@ -6372,7 +6379,7 @@ function dbPctOf(tg){
   const tot=dbTotalOf(tg); if(!tot) return 0;
   return Math.min(100, Math.round(dbFilledOf(tg)/tot*100));
 }
-/* Ring: ein Kreis, ein Wert — die Zahl steht immer daneben, damit der
+/* Ring: ein Kreis, ein Wert - die Zahl steht immer daneben, damit der
    Fortschritt nicht allein an der Farbe hängt. */
 function dbRing(pct,size,done){
   const S0=size||34, r=S0/2-3, c=2*Math.PI*r;
@@ -6404,7 +6411,7 @@ function tgIsPast(tg){
 
 
 /* ============================================================
-   AUSWERTUNG — Woche / Monat / Jahr / Gesamt
+   AUSWERTUNG - Woche / Monat / Jahr / Gesamt
    Diagramme sind bewusst reines HTML+SVG: keine Fremdbibliothek, damit
    auch der Ausdruck und der Offline-Betrieb sicher funktionieren.
    ============================================================ */
@@ -6523,11 +6530,11 @@ async function rpLoad(){
 }
 
 /* ---------- Diagramm-Bausteine ---------- */
-/* Waagerechte Balken 1–5 mit Ampelband, Wert immer als Zahl daneben
+/* Waagerechte Balken 1-5 mit Ampelband, Wert immer als Zahl daneben
    (Farbe allein trägt nie die Aussage). */
 function chBars(rows,opts){
   const o=opts||{}, max=o.max||5;
-  if(!rows.length) return `<div class="meta">${esc(o.empty||"—")}</div>`;
+  if(!rows.length) return `<div class="meta">${esc(o.empty||"-")}</div>`;
   return `<div class="rpbars">${rows.map(r=>{
     const v=r.value==null?0:r.value;
     const band=o.plain?"":dbBand(r.value);
@@ -6540,12 +6547,12 @@ function chBars(rows,opts){
       <span class="rpn">${r.n!=null?"n="+r.n:""}</span>
     </div>`;}).join("")}</div>`;
 }
-/* Liniendiagramm 1–5 über die Perioden. Eine Reihe → keine Legende nötig,
+/* Liniendiagramm 1-5 über die Perioden. Eine Reihe → keine Legende nötig,
    der Titel sagt, was gezeigt wird. Endwert wird direkt beschriftet. */
 function chLine(points,opts){
   const o=opts||{}, W=520, H=o.h||170, PL=26, PR=40, PT=10, PB=24;
   const pts=points.filter(p=>p.v!=null);
-  if(pts.length<1) return `<div class="meta">${esc(o.empty||"—")}</div>`;
+  if(pts.length<1) return `<div class="meta">${esc(o.empty||"-")}</div>`;
   const n=pts.length;
   const x=i=> n===1 ? PL+(W-PL-PR)/2 : PL+i*(W-PL-PR)/(n-1);
   const y=v=> PT+(5-v)/4*(H-PT-PB);
@@ -6651,7 +6658,7 @@ async function renderReports(){
     <div class="kpi ${kpiBand==="good"?"g":kpiBand==="warn"?"w":kpiBand==="crit"?"c":"i"}"><span class="rail"></span>
       <div class="lab">${esc(t("rpKpiOverall"))}</div><div class="val tnum">${dbNum(R.overall)}</div></div>
     <div class="kpi i"><span class="rail"></span><div class="lab">${esc(t("rpKpiCoverage"))}</div>
-      <div class="val tnum">${cov==null?"—":cov+"%"}</div>
+      <div class="val tnum">${cov==null?"-":cov+"%"}</div>
       <div class="meta">${cov==null?"":esc(t("rpCoverageSub",R.dueDone||0,R.due))}</div></div>
     <div class="kpi ${alerts.length?"c":"g"}" style="${alerts.length?"cursor:pointer":""}"
       ${alerts.length?'onclick="rpJumpAlert()"':""}><span class="rail"></span>
@@ -6695,18 +6702,18 @@ async function renderReports(){
   const actRows=(R.actions||[]).length ? (R.actions||[]).map(a=>`
     <div class="row">
       <div class="rowgrow"><div class="nm">${esc(a.text)}</div>
-        <div class="meta">${a.code?esc(a.code)+" · ":""}${a.owner?esc(a.owner):"—"}${a.due?" · "+fmtDate(a.due):""}</div></div>
+        <div class="meta">${a.code?esc(a.code)+" · ":""}${a.owner?esc(a.owner):"-"}${a.due?" · "+fmtDate(a.due):""}</div></div>
       <button class="btn sm" onclick="rpActDone('${esc(a.id)}')">✓</button>
     </div>`).join("") : `<div class="meta">${esc(t("rpNoOpen"))}</div>`;
 
   const single=(R.items||[]).slice().reverse().map(i=>`
     <div class="row" style="cursor:pointer" onclick="openDetail('${esc(i.training)}')">
-      <div class="rowgrow"><div class="nm">${esc(i.code?i.code+" — ":"")}${esc(i.topic)}</div>
+      <div class="rowgrow"><div class="nm">${esc(i.code?i.code+" - ":"")}${esc(i.topic)}</div>
         <div class="meta">${esc(i.city||"")}${i.date?" · "+fmtDate(i.date):""}${i.flags?" · "+i.flags+" ⚑":""}</div></div>
       <span class="pill ${dbBand(i.overall)}">${dbNum(i.overall)}</span>
     </div>`).join("");
 
-  // Zwischenstand deutlich kennzeichnen — eine vorläufige Zahl darf nie
+  // Zwischenstand deutlich kennzeichnen - eine vorläufige Zahl darf nie
   // wie eine endgültige aussehen.
   const note = R.withDrafts
     ? `<div class="rpnote">${ic("bell",15)}<div><b>${esc(t("rpDraftNote"))}</b>
@@ -6733,7 +6740,7 @@ async function renderReports(){
       <div class="panel-b" style="overflow-x:auto">${trRows?`<table class="rptable">
         <tr><th>${esc(t("rpTrainers"))}</th><th style="text-align:right">Ø</th>
           ${DB_TRK.map(k=>`<th style="text-align:right">${esc(dbL(k))}</th>`).join("")}
-          <th style="text-align:right">n</th></tr>${trRows}</table>`:`<div class="meta">—</div>`}</div></div>
+          <th style="text-align:right">n</th></tr>${trRows}</table>`:`<div class="meta">-</div>`}</div></div>
     <div class="rpgrid2">
       <div class="panel"><div class="panel-h"><h3>${esc(t("rpFlags"))}</h3></div>
         <div class="panel-b">${flagRows.length?chBars(flagRows,{plain:true,max:maxFlag}):`<div class="meta">${esc(t("rpNoFlags"))}</div>`}</div></div>
@@ -6744,7 +6751,7 @@ async function renderReports(){
       <div class="panel"><div class="panel-h"><h3>${esc(t("rpActionsOpen"))}</h3></div>
         <div class="panel-b">${actRows}</div></div>
       <div class="panel"><div class="panel-h"><h3>${esc(t("rpSingles"))}</h3></div>
-        <div class="panel-b">${single||`<div class="meta">—</div>`}</div></div>
+        <div class="panel-b">${single||`<div class="meta">-</div>`}</div></div>
     </div>
     `+rpBasisPanel(R)+rpListPanel();
   drawRpList();
@@ -6759,7 +6766,7 @@ function rpDraftCount(){
 
 /* ---------- Datengrundlage: woran hakt es noch? ----------
    Zwei Fragen, die vor jeder Interpretation stehen: Auf wie vielen
-   Bewertungen steht ein Kriterium — und welche Berichte haben Lücken. */
+   Bewertungen steht ein Kriterium - und welche Berichte haben Lücken. */
 function rpBasisPanel(R){
   const n=R.n||0;
   // Kriterien, die deutlich weniger Bewertungen haben als es Berichte gibt
@@ -6788,9 +6795,10 @@ function rpBasisPanel(R){
           const tot=dbTotalOfId(i.training), miss=Math.max(0,tot-(i.filled||0));
           const pct=tot?Math.round((i.filled||0)/tot*100):0;
           return `<div class="row dbrow-l" onclick="openDebrief('${esc(i.training)}')">
-            <span class="dbringwrap sm">${dbRing(pct,30,false)}<b class="${pct?"i":"f"}">${pct}<i>%</i></b></span>
-            <div class="rowgrow"><div class="nm">${esc(i.code?i.code+" — ":"")}${esc(i.topic)}</div>
-              <div class="meta">${esc(t("rpMissingN",miss))}${i.status==="draft"?" · "+esc(t("dbDraft")):""}</div></div>
+            <span class="dbringwrap sm">${dbRing(pct,36,false)}<b class="${pct?"i":"f"}${pct>=100?" full":""}">${pct}<i>%</i></b></span>
+            <div class="rowgrow"><div class="nm">${esc(i.code?i.code+" - ":"")}${esc(i.topic)}</div>
+              <div class="meta">${miss ? esc(t("rpMissingN",miss))+(i.status==="draft"?" · "+esc(t("dbDraft")):"")
+                : esc(t("rpOnlyClose"))}</div></div>
             <button class="btn sm" onclick="event.stopPropagation();openDebrief('${esc(i.training)}')">${esc(t("dbEdit"))}</button>
           </div>`;}).join("") : `<div class="meta">${esc(t("rpGapsNone"))}</div>`}
       </div>
@@ -6807,17 +6815,17 @@ function rpPickOptions(){
   return S.trainings
     .filter(tg=>tg.debrief && !(S.clientFilter && tg.clientId!==S.clientFilter))
     .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")))
-    .map(tg=>`<option value="${esc(String(tg.id))}">${esc(tg.code?tg.code+" — ":"")}${esc(tg.topic)}`
+    .map(tg=>`<option value="${esc(String(tg.id))}">${esc(tg.code?tg.code+" - ":"")}${esc(tg.topic)}`
       +`${tg.date?" · "+fmtDate(tg.date):""}${tg.debrief.status==="draft"?" ("+esc(t("dbDraft"))+")":""}</option>`).join("");
 }
 
-/* Sprung zur Kriterienliste — die Kachel „Handlungsbedarf" zeigt dorthin. */
+/* Sprung zur Kriterienliste - die Kachel „Handlungsbedarf" zeigt dorthin. */
 function rpJumpAlert(){
   const el=$("#v-reports .rpbars"); if(el) el.scrollIntoView({behavior:"smooth",block:"center"});
 }
 
 /* ---------- Alle Berichte auf einen Blick ----------
-   Jedes Training bekommt hier eine Zeile — auch ohne angelegten Bericht.
+   Jedes Training bekommt hier eine Zeile - auch ohne angelegten Bericht.
    Eine Datenbankzeile entsteht erst beim ersten Speichern, damit keine
    leeren Berichte herumliegen; der Ring steht so lange auf 0 %. */
 let rpListFilter="due";
@@ -6865,9 +6873,9 @@ function drawRpList(){
     const past=tgIsPast(tg);
     const team=dbTeamOf(tg).length;
     return `<div class="row dbrow-l" onclick="openDebrief('${esc(String(tg.id))}')">
-      <span class="dbringwrap">${dbRing(pct,38,done)}<b class="${done?"g":pct?"i":"f"}">${pct}<i>%</i></b></span>
+      <span class="dbringwrap">${dbRing(pct,38,done)}<b class="${done?"g":pct?"i":"f"}${pct>=100?" full":""}">${pct}<i>%</i></b></span>
       <div class="rowgrow">
-        <div class="nm">${esc(tg.code?tg.code+" — ":"")}${esc(tg.topic)}</div>
+        <div class="nm">${esc(tg.code?tg.code+" - ":"")}${esc(tg.topic)}</div>
         <div class="meta">${esc(tg.city||"")}${tg.date?" · "+fmtDate(tg.date):""}
           · ${dbFilledOf(tg)}/${dbTotalOf(tg)}${team?" · "+t("rpTeamN",team):""}</div>
       </div>
@@ -6882,7 +6890,7 @@ function drawRpList(){
         ${esc(tg.debrief?t("dbEdit"):t("dbNew"))}</button>`:""}
     </div>`;}).join("") : `<div class="empty">${esc(t("rpListEmpty"))}</div>`;
 }
-/* Gerüst der Liste — der Inhalt kommt aus drawRpList(). */
+/* Gerüst der Liste - der Inhalt kommt aus drawRpList(). */
 function rpListPanel(){
   return `<div class="panel" id="rpListPanel">
     <div class="panel-h"><h3>${esc(t("rpAllReports"))}</h3>
@@ -6929,7 +6937,7 @@ async function repCsv(){
       i.status==="draft"?t("dbDraft"):t("rpFFinal"),
       ...keys.map(k=>d&&d.scores&&d.scores[k]!=null?d.scores[k]:"")]);
   });
-  // Zusammenfassung unten anhängen — der häufigste Grund, warum man exportiert
+  // Zusammenfassung unten anhängen - der häufigste Grund, warum man exportiert
   lines.push([]);
   lines.push([S.lang==="en"?"Average":"Durchschnitt","","","",dbNum(R.overall),"","","",
     ...keys.map(k=>{const c=(R.criteria||[]).find(x=>x.key===k); return c?dbNum(c.avg):"";})]);
@@ -6947,11 +6955,11 @@ async function repCsv(){
 function openRepPrint(){
   const R=rpState.data; if(!R||!R.n) return;
   const {from,to}=rpRange();
-  // Ohne gesetzten Zeitraum den tatsächlich abgedeckten Bereich aus den Daten zeigen —
-  // „… – heute“ wäre im Titel und im Dateinamen wertlos.
+  // Ohne gesetzten Zeitraum den tatsächlich abgedeckten Bereich aus den Daten zeigen -
+  // „… - heute“ wäre im Titel und im Dateinamen wertlos.
   const dates=(R.items||[]).map(i=>i.date).filter(Boolean).sort();
   const f0=from||dates[0]||"", t0=to||dates[dates.length-1]||"";
-  const span=(f0?fmtDate(f0):"—")+" – "+(t0?fmtDate(t0):"—");
+  const span=(f0?fmtDate(f0):"-")+" - "+(t0?fmtDate(t0):"-");
   const cl=activeClient();
   const crit=(R.criteria||[]).slice().sort((a,b)=>(a.avg||0)-(b.avg||0));
   const worst=crit.slice(0,5), best=crit.slice(-5).reverse();
@@ -6974,7 +6982,7 @@ function openRepPrint(){
     <div class="rpkv">
       ${kv(t("rpKpiOverall"),`<b style="color:var(--${dbBand(R.overall)||"ink"})">${dbNum(R.overall)}</b> / 5`)}
       ${kv(t("rpRecommend"),DB_REC.map(r=>esc(dbL(r))+": "+((R.recommend||{})[r[0]]||0)).join(" · "))}
-      ${kv(t("rpKpiAlert"),String(crit.filter(c=>c.avg<3).length)+" — "+esc(t("rpKpiAlertSub")))}
+      ${kv(t("rpKpiAlert"),String(crit.filter(c=>c.avg<3).length)+" - "+esc(t("rpKpiAlertSub")))}
     </div>
     <div class="ag-h2">${esc(t("rpWorst"))}</div>${barList(worst)}
     <div class="ag-h2">${esc(t("rpBest"))}</div>${barList(best)}
@@ -6990,11 +6998,11 @@ function openRepPrint(){
     ${(R.flags||[]).length?`<div class="ag-h2">${esc(t("rpFlags"))}</div>
       <div class="rpflags">${(R.flags||[]).map(f=>`<span>${esc(dbLabelOf(f.key))} <b>${f.n}×</b></span>`).join("")}</div>`:""}
     ${(R.actions||[]).length?`<div class="ag-h2">${esc(t("rpActionsOpen"))}</div>
-      <ul class="rpacts">${(R.actions||[]).map(a=>`<li>${esc(a.text)}<i> — ${a.owner?esc(a.owner):"?"}${a.due?", "+fmtDate(a.due):""}${a.code?" ("+esc(a.code)+")":""}</i></li>`).join("")}</ul>`:""}
+      <ul class="rpacts">${(R.actions||[]).map(a=>`<li>${esc(a.text)}<i> - ${a.owner?esc(a.owner):"?"}${a.due?", "+fmtDate(a.due):""}${a.code?" ("+esc(a.code)+")":""}</i></li>`).join("")}</ul>`:""}
     <div class="meta" style="margin-top:14px">ETAF · Trainer-Koordination · ${esc(new Date().toLocaleDateString(S.lang==="en"?"en-GB":"de-DE"))}</div>
   </div>`;
   setPageOrient("portrait");
-  setSheetTitle(`ETAF ${t("tp_reports")}${cl?" "+cl.name:""} (${span})${R.withDrafts?" – "+t("rpWithDrafts"):""}`);
+  setSheetTitle(`ETAF ${t("tp_reports")}${cl?" "+cl.name:""} (${span})${R.withDrafts?" - "+t("rpWithDrafts"):""}`);
   $("#repPrint").classList.add("on");
 }
 function closeRepPrint(){ $("#repPrint").classList.remove("on"); clearSheetTitle(); }
@@ -7004,7 +7012,7 @@ function closeRepPrint(){ $("#repPrint").classList.remove("on"); clearSheetTitle
    EINZELBERICHT: DRUCKEN UND WEITERGEBEN
    ============================================================ */
 
-/* Bericht eines Trainings holen — live vom Server, im Demo aus dem Speicher. */
+/* Bericht eines Trainings holen - live vom Server, im Demo aus dem Speicher. */
 async function dbFetch(tgId){
   if(LIVE){ const d=await apiCall("debrief.get",{training:tgId}); return d.debrief||null; }
   return (S.debriefs||{})[String(tgId)]||null;
@@ -7029,20 +7037,20 @@ function debriefSheet(tg,d){
     const vals=DB_TRK.map(k=>tv[k[0]]).filter(x=>x>=1);
     return `<tr><td>${esc(tr?tr.name:"#"+tid)}</td>
       <td class="num"><b class="${dbBand(debriefAvgOf(vals))}">${dbNum(debriefAvgOf(vals))}</b></td>
-      ${DB_TRK.map(k=>`<td class="num">${tv[k[0]]>=1?tv[k[0]]:"—"}</td>`).join("")}
+      ${DB_TRK.map(k=>`<td class="num">${tv[k[0]]>=1?tv[k[0]]:"-"}</td>`).join("")}
       <td class="nt">${esc(tv.note||"")}</td></tr>`;}).join("");
   const flags=(d.flags||[]).map(f=>`<span>${esc(dbLabelOf(f))}</span>`).join("");
   const texts=DB_TEXTS.filter(x=>(d.texts||{})[x[0]]).map(x=>
     `<div class="dstx"><b>${esc(dbL(x))}</b><div>${esc(d.texts[x[0]])}</div></div>`).join("");
   const acts=(d.actions||[]).filter(a=>(a.text||"").trim()).map(a=>
-    `<li${a.done?' class="done"':""}>${esc(a.text)}<i> — ${a.owner?esc(a.owner):"?"}${a.due?", "+fmtDate(a.due):""}${a.done?" ✓":""}</i></li>`).join("");
+    `<li${a.done?' class="done"':""}>${esc(a.text)}<i> - ${a.owner?esc(a.owner):"?"}${a.due?", "+fmtDate(a.due):""}${a.done?" ✓":""}</i></li>`).join("");
   const rec=DB_REC.find(r=>r[0]===d.recommend);
   const tot=dbTotalOf(tg), fil=dbFilledOfObj(d);
 
   return `<div class="cal-sheet dsheet">
     <div class="ag-top"><div>
       <div class="ag-eyebrow">${esc(t("dbTitle"))}${cl?" · "+esc(cl.name):""}</div>
-      <div class="ag-h1">${esc(tg.code?tg.code+" — ":"")}${esc(tg.topic)}</div>
+      <div class="ag-h1">${esc(tg.code?tg.code+" - ":"")}${esc(tg.topic)}</div>
       <div class="meta">${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""} · ${whenLabel(tg)}
         · ${esc(t("dbFilled",fil,tot))}</div></div>
       <span style="color:var(--brand);display:inline-flex">${etafLogo(34)}</span></div>
@@ -7050,9 +7058,9 @@ function debriefSheet(tg,d){
     ${d.status==="draft"?`<div class="rpprov">${esc(t("dbDraftNote"))}</div>`:""}
     <div class="dstop">
       <div class="dsbig"><span>${esc(t("dbOverall"))}</span>
-        <b class="${dbBand(d.overall)}">${d.overall>=1?dbNum(d.overall):"—"}</b><i>/5</i></div>
+        <b class="${dbBand(d.overall)}">${d.overall>=1?dbNum(d.overall):"-"}</b><i>/5</i></div>
       <div class="dsrec"><span>${esc(t("dbRecommend"))}</span>
-        <b>${rec?esc(dbL(rec)):"—"}</b></div>
+        <b>${rec?esc(dbL(rec)):"-"}</b></div>
     </div>
     ${groups||`<div class="meta">${esc(t("dbUnrated"))}</div>`}
     ${trs?`<div class="ag-h2">${esc(t("dbTrainerHead"))}</div>
@@ -7084,7 +7092,7 @@ async function printDebrief(tgId){
   $("#repPrint").classList.add("on");
 }
 
-/* Sammelmappe: alle Berichte des gewählten Zeitraums hintereinander —
+/* Sammelmappe: alle Berichte des gewählten Zeitraums hintereinander -
    praktisch für Quartals- und Jahresdurchsprachen. */
 async function printDebriefBatch(){
   const R=rpState.data; if(!R||!R.items||!R.items.length){ toast(t("rpNoData"),"warn"); return; }
@@ -7104,14 +7112,14 @@ async function printDebriefBatch(){
   setPageOrient("portrait");
   const {from,to}=rpRange();
   const dates=R.items.map(i=>i.date).filter(Boolean).sort();
-  const span=(from||dates[0]||"")+" – "+(to||dates[dates.length-1]||"");
+  const span=(from||dates[0]||"")+" - "+(to||dates[dates.length-1]||"");
   setSheetTitle(`ETAF ${t("rpBatch")} (${span})`);
   $("#repPrint").classList.add("on");
 }
 
 /* ---------- Weitergabe über das eigene Mailprogramm ----------
    Anhänge kann ein mailto-Link technisch nicht mitgeben (Browser-Grenze).
-   Deshalb: Betreff und Text vorbereiten und — wo es einen Token-Link gibt —
+   Deshalb: Betreff und Text vorbereiten und - wo es einen Token-Link gibt -
    diesen Link mitschicken. Der Empfänger sieht damit immer den aktuellen
    Stand, nicht eine veraltete Datei. */
 function mailtoOpen(to,subject,body){
@@ -7128,11 +7136,11 @@ async function copyText(txt,msg){
   catch(e){ prompt(t("mtCopyManual"),txt); }
 }
 
-/* Wochenplan als Text ins eigene Mailprogramm — Tag für Tag mit Trainern. */
+/* Wochenplan als Text ins eigene Mailprogramm - Tag für Tag mit Trainern. */
 function weekToMailClient(){
   const tg=wkCurTg(); if(!tg||!WKD){ toast(t("mtNothing"),"warn"); return; }
   const {slots,bench}=wkPlacement();
-  const L=[(tg.code?tg.code+" — ":"")+tg.topic, (tg.city||"")+" · "+whenLabel(tg), ""];
+  const L=[(tg.code?tg.code+" - ":"")+tg.topic, (tg.city||"")+" · "+whenLabel(tg), ""];
   WK_DAYS.forEach((d,i)=>{
     const day=["am","pm"].map(h=>{
       const items=slots[d+"_"+h].map(id=>{
@@ -7146,7 +7154,7 @@ function weekToMailClient(){
   });
   if(bench.length) L.push(t("wkBench")+": "+bench.map(id=>sessTitle(wkSess(id))).join(", "));
   if(wkDelivText()) L.push("\n"+t("wkDeliverable")+": "+wkDelivText());
-  L.push("\n— ETAF Trainer-Koordination");
+  L.push("\n- ETAF Trainer-Koordination");
   mailtoOpen("", t("nav_week")+" "+(tg.code?tg.code+" ":"")+tg.topic, L.join("\n"));
 }
 /* Wandkalender als Terminliste ins eigene Mailprogramm. */
@@ -7154,18 +7162,18 @@ function calToMailClient(){
   const list=sortedForCal();
   if(!list.length){ toast(t("mtNothing"),"warn"); return; }
   const cl=activeClient();
-  const L=[t("calTitle")+(cl?" — "+cl.name:""),""];
-  // mailto-Adressen sind längenbegrenzt — deshalb kürzen und ehrlich sagen,
+  const L=[t("calTitle")+(cl?" - "+cl.name:""),""];
+  // mailto-Adressen sind längenbegrenzt - deshalb kürzen und ehrlich sagen,
   // wie viele Termine nicht mehr in die Mail passen.
   const MAX=22;
   list.slice(0,MAX).forEach(tg=>{
     const r=rosterStats(tg);
-    L.push((tg.date?fmtDate(tg.date):"")+(tg.dateEnd&&tg.dateEnd!==tg.date?"–"+fmtDate(tg.dateEnd):"")
+    L.push((tg.date?fmtDate(tg.date):"")+(tg.dateEnd&&tg.dateEnd!==tg.date?"-"+fmtDate(tg.dateEnd):"")
       +" · "+(tg.code?tg.code+" ":"")+tg.topic+" · "+(tg.city||"")+" · "+r.yes+"/"+r.need);
   });
   if(list.length>MAX) L.push(t("mtMore",list.length-MAX));
-  L.push("\n— ETAF Trainer-Koordination");
-  mailtoOpen("", t("calTitle")+(cl?" — "+cl.name:""), L.join("\n"));
+  L.push("\n- ETAF Trainer-Koordination");
+  mailtoOpen("", t("calTitle")+(cl?" - "+cl.name:""), L.join("\n"));
 }
 
 /* Agenda an das eigene Mailprogramm übergeben (Link statt Anhang). */
@@ -7188,7 +7196,7 @@ async function agendaCopyLink(){
   catch(e){ toast(e.message,"crit"); }
 }
 
-/* Kurzfassung eines Berichts ins eigene Mailprogramm — bewusst als Text:
+/* Kurzfassung eines Berichts ins eigene Mailprogramm - bewusst als Text:
    ein Bericht enthält Trainerbewertungen und bekommt deshalb keinen
    offenen Link, den man weiterleiten kann. */
 function debriefToMailClient(tgId){
@@ -7196,7 +7204,7 @@ function debriefToMailClient(tgId){
   dbFetch(tgId).then(d=>{
     if(!d||!dbFilledOfObj(d)){ toast(t("dbNothingYet"),"warn"); return; }
     const L=[];
-    L.push((tg.code?tg.code+" — ":"")+tg.topic);
+    L.push((tg.code?tg.code+" - ":"")+tg.topic);
     L.push((tg.city||"")+" · "+whenLabel(tg));
     L.push("");
     if(d.overall>=1) L.push(t("dbOverall")+": "+dbNum(d.overall)+"/5");
@@ -7213,8 +7221,8 @@ function debriefToMailClient(tgId){
     const acts=(d.actions||[]).filter(a=>(a.text||"").trim()&&!a.done);
     if(acts.length){ L.push(""); L.push(t("dbActions")+":");
       acts.forEach(a=>L.push("- "+a.text+(a.owner?" ("+a.owner+")":"")+(a.due?", "+fmtDate(a.due):""))); }
-    L.push(""); L.push("— ETAF Trainer-Koordination");
-    mailtoOpen("", t("dbTitle")+" — "+(tg.code?tg.code+" ":"")+tg.topic, L.join("\n"));
+    L.push(""); L.push("- ETAF Trainer-Koordination");
+    mailtoOpen("", t("dbTitle")+" - "+(tg.code?tg.code+" ":"")+tg.topic, L.join("\n"));
   }).catch(e=>toast(e.message,"crit"));
 }
 
@@ -7234,7 +7242,7 @@ function toggleTheme(){
 
 /* ---------- BOOT ---------- */
 buildKeys();drawDots();applyStatic();
-/* Live-Modus: gültiges Login aus dem Browser-Speicher fortsetzen — kein
+/* Live-Modus: gültiges Login aus dem Browser-Speicher fortsetzen - kein
    erneutes PIN-Eingeben nach „Seite aktualisieren“, und die zuletzt
    geöffnete Ansicht (z. B. ein Training) wird wiederhergestellt. */
 (async function resumeSession(){

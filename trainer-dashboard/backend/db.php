@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — Datenschicht (PDO, MySQL + SQLite kompatibel)
+ * ETAF - Datenschicht (PDO, MySQL + SQLite kompatibel)
  * Self-provisioning: legt Tabellen bei Bedarf an und seedet Demo-Daten.
  */
 
@@ -41,8 +41,8 @@ function now(): string { return gmdate('Y-m-d H:i:s'); }
 /**
  * Zeitstempel aus der Datenbank in Unix-Zeit umrechnen.
  * WICHTIG: now() schreibt UTC (gmdate). strtotime() würde den Wert dagegen in der
- * Zeitzone des Servers lesen — auf einem Server in Europe/Berlin wären alle
- * Zeitstempel dadurch 1–2 Stunden „zu alt“. Deshalb hier immer explizit als UTC.
+ * Zeitzone des Servers lesen - auf einem Server in Europe/Berlin wären alle
+ * Zeitstempel dadurch 1-2 Stunden „zu alt“. Deshalb hier immer explizit als UTC.
  */
 function ts(?string $s): int {
   if(!$s) return 0;
@@ -138,7 +138,7 @@ function ensure_schema(): void {
     created_at VARCHAR(20), sent_at VARCHAR(20),
     confirmed_at VARCHAR(20), confirm_status VARCHAR(16), note TEXT)$eng");
 
-  // PIN einmalig setzen. Fehlende config-Einträge dürfen den Start nie verhindern —
+  // PIN einmalig setzen. Fehlende config-Einträge dürfen den Start nie verhindern -
   // check.php zeigt sie als klare Liste an, hier greifen sichere Standardwerte.
   if(!config_get('pin_hash')){
     config_set('pin_hash', password_hash((string)(cfg()['default_pin'] ?? '481509'), PASSWORD_DEFAULT));
@@ -247,7 +247,7 @@ function ensure_schema(): void {
     stars INT DEFAULT 0, note TEXT, updated_at VARCHAR(20))$eng");
 
   /* ---- Wochenplan (aus dem ETAF Dashboard zusammengeführt): Sessions je
-         Training, Platzierung Mo–Fr × Vormittag/Nachmittag, Weekly Deliverable.
+         Training, Platzierung Mo-Fr × Vormittag/Nachmittag, Weekly Deliverable.
          ppt: '' = offen | 'inArbeit' | 'vorhanden'; ppt_by = Trainer-ID;
          trainer_id an der Session = wer sie hält (aus der Besetzung). ---- */
   $d->exec("CREATE TABLE IF NOT EXISTS training_sessions (
@@ -264,7 +264,7 @@ function ensure_schema(): void {
   // Benötigtes Material je Session (Freitext, z.B. "20× DVI-Kit, Beamer")
   try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN mat TEXT"); }catch(Throwable $e){}
   // Co-Teaching: MEHRERE Trainer je Session (JSON-Liste). Alt-Bestand aus der
-  // früheren Einzelspalte trainer_id einmalig übernehmen (nur solange NULL —
+  // früheren Einzelspalte trainer_id einmalig übernehmen (nur solange NULL -
   // eine bewusst geleerte Liste '[]' wird nie wieder überschrieben).
   try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN trainer_ids TEXT"); }catch(Throwable $e){}
   try{
@@ -278,9 +278,9 @@ function ensure_schema(): void {
   }
 
   /* ---- Trainingsbericht (Debrief): eine Bewertung je Training.
-         scores  = JSON {kriterium: 1..5}  — fehlende Schlüssel = „nicht bewertet"
+         scores  = JSON {kriterium: 1..5}  - fehlende Schlüssel = „nicht bewertet"
          trainers= JSON {trainerId: {teaching,behaviour,ppt,punctuality,note}}
-         flags   = JSON [chip-schlüssel] — Vorkommnisse zum Ankreuzen
+         flags   = JSON [chip-schlüssel] - Vorkommnisse zum Ankreuzen
          texts   = JSON {wentWell,toImprove,adp,incidents}
          status  = 'draft' (weiter bearbeitbar) | 'final' (im Bericht gezählt) ---- */
   $d->exec("CREATE TABLE IF NOT EXISTS debriefs (
@@ -290,7 +290,7 @@ function ensure_schema(): void {
     author_id INT, author_name VARCHAR(190),
     created_at VARCHAR(20), updated_at VARCHAR(20), version INT DEFAULT 1)$eng");
   try{ $d->exec("CREATE INDEX idx_debriefs_tg ON debriefs(training_id)"); }catch(Throwable $e){}
-  // Maßnahmen aus einem Bericht — mit Verantwortlichem und Termin, abhakbar
+  // Maßnahmen aus einem Bericht - mit Verantwortlichem und Termin, abhakbar
   $d->exec("CREATE TABLE IF NOT EXISTS debrief_actions (
     id $pk, debrief_id INT, training_id INT,
     text TEXT, owner VARCHAR(190), due VARCHAR(12),
@@ -360,38 +360,38 @@ function config_set(string $k,string $v): void {
 function seed_templates(): void {
   $T=[
    ['t1',
-    'Verfügbarkeits-Anfrage','Anfrage Verfügbarkeit — {{topic}} ({{city}}, {{kw}})',
+    'Verfügbarkeits-Anfrage','Anfrage Verfügbarkeit - {{topic}} ({{city}}, {{kw}})',
     "Hallo {{firstName}},\n\nwir planen das Training „{{topic}}“ in {{city}} ({{kw}}) und würden dich sehr gern als Trainer dabei haben.\n\n• Training: {{topic}}\n• Ort: {{city}}, {{country}}\n• Zeitraum: {{kw}} / {{month}}\n• Team: {{teamSize}} Trainer\n\nBitte gib uns über die Buttons unten kurz Bescheid, ob du verfügbar bist. Deine Antwort landet automatisch in unserer Planung.\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam",
-    'Availability request','Availability request — {{topic}} ({{city}}, {{kw}})',
+    'Availability request','Availability request - {{topic}} ({{city}}, {{kw}})',
     "Hi {{firstName}},\n\nwe're planning the training \"{{topic}}\" in {{city}} ({{kw}}) and would love to have you on the team.\n\n• Training: {{topic}}\n• Location: {{city}}, {{country}}\n• Period: {{kw}} / {{month}}\n• Team: {{teamSize}} trainers\n\nPlease let us know via the buttons below whether you're available. Your reply lands automatically in our planning.\n\nBest regards\nYour ETAF coordination team"],
    ['t2',
-    'Zusage-Bestätigung + Reisedaten','Bestätigung & Reisedaten — {{topic}} in {{city}}',
-    "Hallo {{firstName}},\n\nsuper, danke für deine Zusage zu „{{topic}}“ in {{city}}!\n\n• Anreise: 1 Tag vor Trainingsbeginn ({{kw}})\n• Flug/Hotel: Vorschlag folgt separat\n• Ansprechpartner vor Ort: wird nachgereicht\n\nBitte prüfe deine Reisepass-Gültigkeit (mind. 6 Monate) — wichtig für die Einreise UAE.\n\nHerzliche Grüße\nETAF-Koordination",
-    'Confirmation + travel details','Confirmation & travel details — {{topic}} in {{city}}',
-    "Hi {{firstName}},\n\ngreat, thanks for accepting \"{{topic}}\" in {{city}}!\n\n• Arrival: 1 day before the training starts ({{kw}})\n• Flight/hotel: proposal to follow separately\n• On-site contact: to be provided\n\nPlease check your passport validity (min. 6 months) — important for entry to the UAE.\n\nBest regards\nETAF Coordination"],
+    'Zusage-Bestätigung + Reisedaten','Bestätigung & Reisedaten - {{topic}} in {{city}}',
+    "Hallo {{firstName}},\n\nsuper, danke für deine Zusage zu „{{topic}}“ in {{city}}!\n\n• Anreise: 1 Tag vor Trainingsbeginn ({{kw}})\n• Flug/Hotel: Vorschlag folgt separat\n• Ansprechpartner vor Ort: wird nachgereicht\n\nBitte prüfe deine Reisepass-Gültigkeit (mind. 6 Monate) - wichtig für die Einreise UAE.\n\nHerzliche Grüße\nETAF-Koordination",
+    'Confirmation + travel details','Confirmation & travel details - {{topic}} in {{city}}',
+    "Hi {{firstName}},\n\ngreat, thanks for accepting \"{{topic}}\" in {{city}}!\n\n• Arrival: 1 day before the training starts ({{kw}})\n• Flight/hotel: proposal to follow separately\n• On-site contact: to be provided\n\nPlease check your passport validity (min. 6 months) - important for entry to the UAE.\n\nBest regards\nETAF Coordination"],
    ['t3',
-    'Kurzfristiger Ersatz','Kurzfristig: Einspringen möglich? — {{topic}} ({{city}})',
+    'Kurzfristiger Ersatz','Kurzfristig: Einspringen möglich? - {{topic}} ({{city}})',
     "Hallo {{firstName}},\n\nbei „{{topic}}“ in {{city}} ({{kw}}) ist kurzfristig ein Trainer ausgefallen. Könntest du eventuell einspringen?\n\nWer zuerst zusagt, bekommt den Platz. Jede Rückmeldung hilft uns enorm.\n\nDanke dir!\nETAF-Koordination",
-    'Short-notice replacement','Short notice: able to step in? — {{topic}} ({{city}})',
+    'Short-notice replacement','Short notice: able to step in? - {{topic}} ({{city}})',
     "Hi {{firstName}},\n\na trainer has dropped out of \"{{topic}}\" in {{city}} ({{kw}}) at short notice. Could you possibly step in?\n\nWhoever accepts first gets the slot. Every reply helps us enormously.\n\nThank you!\nETAF Coordination"],
    ['t4',
-    'Absage / Planänderung','Planänderung — {{topic}} in {{city}} ({{kw}})',
-    "Hallo {{firstName}},\n\nvielen Dank für deine Zusage zu „{{topic}}“ in {{city}} ({{kw}}). Leider müssen wir kurzfristig umplanen und können dich für diesen Einsatz doch nicht einsetzen — die Voraussetzungen haben sich geändert.\n\nDas hat nichts mit dir persönlich zu tun. Wir kommen bei der nächsten passenden Gelegenheit sehr gern wieder auf dich zu. Danke für dein Verständnis!\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam",
-    'Cancellation / change of plan','Change of plan — {{topic}} in {{city}} ({{kw}})',
-    "Hi {{firstName}},\n\nthank you for accepting \"{{topic}}\" in {{city}} ({{kw}}). Unfortunately we have to reschedule at short notice and won't be able to assign you to this session after all — the requirements have changed.\n\nThis is not related to you personally. We'll gladly get back in touch for the next suitable opportunity. Thank you for your understanding!\n\nBest regards\nYour ETAF coordination team"],
+    'Absage / Planänderung','Planänderung - {{topic}} in {{city}} ({{kw}})',
+    "Hallo {{firstName}},\n\nvielen Dank für deine Zusage zu „{{topic}}“ in {{city}} ({{kw}}). Leider müssen wir kurzfristig umplanen und können dich für diesen Einsatz doch nicht einsetzen - die Voraussetzungen haben sich geändert.\n\nDas hat nichts mit dir persönlich zu tun. Wir kommen bei der nächsten passenden Gelegenheit sehr gern wieder auf dich zu. Danke für dein Verständnis!\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam",
+    'Cancellation / change of plan','Change of plan - {{topic}} in {{city}} ({{kw}})',
+    "Hi {{firstName}},\n\nthank you for accepting \"{{topic}}\" in {{city}} ({{kw}}). Unfortunately we have to reschedule at short notice and won't be able to assign you to this session after all - the requirements have changed.\n\nThis is not related to you personally. We'll gladly get back in touch for the next suitable opportunity. Thank you for your understanding!\n\nBest regards\nYour ETAF coordination team"],
   ];
   foreach($T as $r){
-    // Nur fehlende Vorlagen anlegen — bestehende (evtl. angepasste) Texte nicht überschreiben.
+    // Nur fehlende Vorlagen anlegen - bestehende (evtl. angepasste) Texte nicht überschreiben.
     if((int)q("SELECT COUNT(*) c FROM templates WHERE id=?",[$r[0]])->fetch()['c']===0){
       q("INSERT INTO templates(id,de_name,de_subject,de_body,en_name,en_subject,en_body) VALUES(?,?,?,?,?,?,?)",$r);
     }
   }
 }
 
-/** Standard-Kunde: Abu Dhabi Police — DVI (idempotent). */
+/** Standard-Kunde: Abu Dhabi Police - DVI (idempotent). */
 function seed_clients(): void {
   $clients=[
-    ['cl-adp','Abu Dhabi Police — DVI','ADP','#B23A42','firebrick','UAE',1],
+    ['cl-adp','Abu Dhabi Police - DVI','ADP','#B23A42','firebrick','UAE',1],
   ];
   foreach($clients as $c){
     if((int)q("SELECT COUNT(*) c FROM clients WHERE id=?",[$c[0]])->fetch()['c']===0){
@@ -406,8 +406,8 @@ function seed_materials(): void {
     ['m-dvi','DVI-Kit (pre-coded)','Set','Kits',1],
     ['m-bag','Leichensack','Stk','Verbrauch',2],
     ['m-cbrn','CBRN-Kit','Set','Kits',3],
-    ['m-am','Protokoll — Ante Mortem','Stk','Protokolle',4],
-    ['m-pm','Protokoll — Post Mortem','Stk','Protokolle',5],
+    ['m-am','Protokoll - Ante Mortem','Stk','Protokolle',4],
+    ['m-pm','Protokoll - Post Mortem','Stk','Protokolle',5],
     ['m-dna','DNA-Probenset','Set','Proben',6],
     ['m-fp','Fingerprint-Set','Set','Proben',7],
     ['m-dent','Zahnstatus-Formular (Odontologie)','Stk','Protokolle',8],
@@ -433,7 +433,7 @@ function mat_presets(): array {
 }
 
 function seed_demo(): void {
-  // Internationale DVI-Faculty (Demo-Pool) — Schwerpunkte = INTERPOL-DVI-Phasen
+  // Internationale DVI-Faculty (Demo-Pool) - Schwerpunkte = INTERPOL-DVI-Phasen
   $SPEC=["DVI-Grundlagen","Data Management","Ante Mortem","Kommunikation & FCC","Logistik","Post Mortem","Reconciliation","Scene & Recovery","CBRN","Simulation","Site-Folder","Train-the-Trainer","Assessment & Readiness","Zertifizierung"];
   $REG=["DE-Süd","DE-West","DE-Nord","AT","CH","UAE","UK"];
   $COL=["#3E4852","#B23A42","#4E6E8E","#6E5A86","#3F7A5E","#A6642E","#557088","#8A5A52"];
@@ -457,22 +457,22 @@ function seed_demo(): void {
     foreach($lines as $l){ q("INSERT INTO material_presets(spec,material_id,qty) VALUES(?,?,?)",[$spec,$l[0],$l[1]]); }
   }
 
-  // Verbindlicher Programmkalender (ETAF Operational DVI Elite Team Programme 2026–2027, V3.2)
+  // Verbindlicher Programmkalender (ETAF Operational DVI Elite Team Programme 2026-2027, V3.2)
   $MON=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
   $AD=["Abu Dhabi","UAE"]; $WZ=["Weeze","DE"];
   $P=[
     ["W1","2026-09-14","2026-09-18","INTERPOL DVI Principles, Governance & Elite-Team-Struktur",$AD,"DVI-Grundlagen",5,40],
     ["W2","2026-09-28","2026-10-02","DVI Data Management & Reporting (PlassData)",$AD,"Data Management",5,40],
-    ["W3","2026-10-12","2026-10-16","Ante Mortem — Family Liaison & Informationsgewinnung",$AD,"Ante Mortem",5,40],
+    ["W3","2026-10-12","2026-10-16","Ante Mortem - Family Liaison & Informationsgewinnung",$AD,"Ante Mortem",5,40],
     ["W4","2026-10-26","2026-10-30","Kommunikation: Family Coordination & Media",$AD,"Kommunikation & FCC",5,40],
     ["W5","2026-11-09","2026-11-13","Logistik & Kapazitätsplanung",$AD,"Logistik",5,40],
-    ["W6","2026-11-23","2026-11-27","Post Mortem — Prozesse & Qualität",$AD,"Post Mortem",5,40],
+    ["W6","2026-11-23","2026-11-27","Post Mortem - Prozesse & Qualität",$AD,"Post Mortem",5,40],
     ["W7","2026-12-07","2026-12-11","Reconciliation & Identifizierungs-Entscheidungen",$AD,"Reconciliation",5,40],
     ["W8","2027-01-11","2027-01-15","Scene Management & Recovery",$AD,"Scene & Recovery",5,40],
-    ["W9 ★","2027-01-25","2027-01-29","Full Simulation I (MCI) — End-to-End",$AD,"Simulation",8,40],
+    ["W9 ★","2027-01-25","2027-01-29","Full Simulation I (MCI) - End-to-End",$AD,"Simulation",8,40],
     ["W10","2027-02-01","2027-02-05","Stage I Final Assessment & Operational Readiness · TtT-Auswahl",$AD,"Assessment & Readiness",5,40],
-    ["W11-A","2027-03-22","2027-03-26","PM Practical Module — Kohorte A (Körperspender)",$WZ,"Post Mortem",8,20],
-    ["W11-B","2027-04-12","2027-04-16","PM Practical Module — Kohorte B (Körperspender)",$WZ,"Post Mortem",8,20],
+    ["W11-A","2027-03-22","2027-03-26","PM Practical Module - Kohorte A (Körperspender)",$WZ,"Post Mortem",8,20],
+    ["W11-B","2027-04-12","2027-04-16","PM Practical Module - Kohorte B (Körperspender)",$WZ,"Post Mortem",8,20],
     ["W12","2027-04-26","2027-04-30","Public Venues: Shopping Centres",$AD,"Site-Folder",5,40],
     ["W13","2027-05-10","2027-05-14","Transport Hubs: International Airport",$AD,"Site-Folder",5,40],
     ["W14","2027-05-24","2027-05-28","Major Events: Circuit / Arena / Events",$AD,"Site-Folder",5,40],
@@ -504,11 +504,11 @@ function seed_demo(): void {
   $agenda=json_encode([
     ['day'=>'Tag 1','time'=>'08:30','title'=>'Registrierung & Kick-off'],
     ['day'=>'Tag 1','time'=>'09:00','title'=>'INTERPOL DVI Principles & Governance'],
-    ['day'=>'Tag 1','time'=>'14:00','title'=>'Elite-Team-Struktur — 8 funktionale Zellen'],
+    ['day'=>'Tag 1','time'=>'14:00','title'=>'Elite-Team-Struktur - 8 funktionale Zellen'],
     ['day'=>'Tag 5','time'=>'11:00','title'=>'Baseline-Competency-Assessment'],
   ], JSON_UNESCAPED_UNICODE);
   q("UPDATE trainings SET venue=?,hotel=?,hotel_addr=?,meeting_point=?,contact_name=?,contact_phone=?,dresscode=?,per_diem=?,travel_notes=?,agenda=? WHERE code=?",[
-    'Abu Dhabi Police — DVI Training Facility','Rosewood Abu Dhabi','Al Maryah Island, Abu Dhabi, UAE',
+    'Abu Dhabi Police - DVI Training Facility','Rosewood Abu Dhabi','Al Maryah Island, Abu Dhabi, UAE',
     'Hotel-Lobby, 07:45 Uhr','Lt. Col. Adil Al Ali (Head of DVI)','+971 2 000 0000','Field/OP-Kleidung wird gestellt',
     'nach ETAF-Reiserichtlinie','Reisepass mind. 6 Monate gültig. Flughafen-Transfer organisiert.',
     $agenda,'W1'

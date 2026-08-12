@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF Trainer-Koordination — Konfiguration
+ * ETAF Trainer-Koordination - Konfiguration
  * ------------------------------------------------------------------
  * Kopiere diese Datei nach `config.php` und trage deine Werte ein.
  * `config.php` wird NICHT ins Git eingecheckt (siehe .gitignore) und
@@ -55,7 +55,7 @@ return [
   // Die Automatik ruft dieses Postfach per POP3 ab (Mails BLEIBEN liegen),
   // erkennt Flugbuchungen per KI und schlägt die Zuordnung zu Trainer +
   // Training vor. Empfehlung: eigene Adresse anlegen (z.B. fluege@…) und
-  // Buchungsbestätigungen dorthin weiterleiten — dann liest die KI nicht
+  // Buchungsbestätigungen dorthin weiterleiten - dann liest die KI nicht
   // das ganze Hauptpostfach. Leer lassen = Funktion aus.
   'mailbox' => [
     'host' => 'pop3.artfiles.de',
@@ -82,7 +82,7 @@ return [
   // ---- Kalender-Abo (iCal-Feed) -----------------------------------
   // Schlüssel für den abonnierbaren Kalender-Link:
   //   backend/ics.php?key=<ics_key>[&client=<client_id>]
-  // Diesen Link in Google/Apple/Outlook als "Kalender abonnieren" eintragen —
+  // Diesen Link in Google/Apple/Outlook als "Kalender abonnieren" eintragen -
   // er aktualisiert sich automatisch. Leer lassen = Feed deaktiviert.
   'ics_key' => 'CHANGE_ME_kalender_schluessel',
 

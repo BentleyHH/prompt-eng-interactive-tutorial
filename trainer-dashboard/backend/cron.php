@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — Cron-Endpunkt für die Automatik (Erinnerungen + Nachrücken).
+ * ETAF - Cron-Endpunkt für die Automatik (Erinnerungen + Nachrücken).
  * Auf artfiles als Cronjob einrichten, z.B. stündlich:
  *   curl -s "https://deine-domain.de/dashboard/backend/cron.php?key=DEIN_CRON_KEY"
  * Der Schlüssel steht in config.php (cron_key).

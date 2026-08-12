@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — Einsatzübersicht + Gesamtbestätigung (zweistufig, scanner-sicher)
+ * ETAF - Einsatzübersicht + Gesamtbestätigung (zweistufig, scanner-sicher)
  * ---------------------------------------------------------------
  * GET  plan.php?token=<tok>  → zeigt den kompletten Einsatzplan des Trainers
  *      und zwei POST-Buttons. Ändert NICHTS (E-Mail-Scanner rufen nur GET auf).
@@ -30,7 +30,7 @@ if($isCommit && $row && in_array($act,['ok','issue'],true)){
   if($act==='issue'){
     $notify = trim((string)(cfg()['notify_email'] ?? cfg()['from_email'] ?? ''));
     if($notify!==''){
-      $subj = 'Rückmeldung zur Einsatzübersicht — '.$row['name'];
+      $subj = 'Rückmeldung zur Einsatzübersicht - '.$row['name'];
       $body = $row['name']." hat bei der Einsatzübersicht „Da stimmt etwas nicht“ gemeldet.\n\n"
         ."Anmerkung:\n".($note!==''?$note:'(keine Anmerkung)')."\n\n"
         ."Diese Rückmeldung liegt jetzt im Dashboard unter „Rückmeldungen“ zur Bearbeitung bereit.";
@@ -50,7 +50,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 <!doctype html><html lang="de"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>ETAF — Einsatzübersicht</title>
+<title>ETAF - Einsatzübersicht</title>
 <style>
   body{margin:0;min-height:100vh;background:#f4f5f6;padding:24px;box-sizing:border-box;
     font:16px/1.6 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#242b31}
@@ -98,7 +98,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       <h1>Dieser Link ist ungültig oder abgelaufen.</h1>
       <p class="sub">This link is invalid or has expired.</p>
     <?php else: ?>
-      <h1>Einsatzübersicht — <?=esc($row['name'])?></h1>
+      <h1>Einsatzübersicht - <?=esc($row['name'])?></h1>
       <p class="sub">Bitte prüfe deine Einsätze. · Please review your assignments.</p>
 
       <?php if(!$sched): ?>
@@ -128,7 +128,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
           <?php if($result==='ok'): ?>
             <?=stroke_icon('check',18)?><b>Danke!</b> Du hast deinen Einsatzplan als korrekt bestätigt.
           <?php else: ?>
-            <?=stroke_icon('alert',18)?><b>Notiert.</b> Du hast eine Rückmeldung hinterlassen — wir kümmern uns darum.
+            <?=stroke_icon('alert',18)?><b>Notiert.</b> Du hast eine Rückmeldung hinterlassen - wir kümmern uns darum.
           <?php endif; ?>
         </div>
       <?php else: ?>
@@ -136,7 +136,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
           <form method="post" action="<?=$action?>">
             <input type="hidden" name="token" value="<?=$etok?>">
             <input type="hidden" name="act" value="ok">
-            <button type="submit" class="ok"><?=stroke_icon('check')?>Alles korrekt — bestätigen</button>
+            <button type="submit" class="ok"><?=stroke_icon('check')?>Alles korrekt - bestätigen</button>
           </form>
           <form method="post" action="<?=$action?>">
             <input type="hidden" name="token" value="<?=$etok?>">

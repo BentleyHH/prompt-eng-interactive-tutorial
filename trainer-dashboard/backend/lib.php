@@ -1,5 +1,5 @@
 <?php
-/** ETAF — gemeinsame Helfer: JSON-IO, Auth, State-Shaping */
+/** ETAF - gemeinsame Helfer: JSON-IO, Auth, State-Shaping */
 
 require_once __DIR__.'/db.php';
 
@@ -72,7 +72,7 @@ function do_login_email(string $email, string $pass): array {
   login_guard_check();
   $email=strtolower(trim($email));
   $u=$email!=='' ? q("SELECT * FROM users WHERE email=?",[$email])->fetch() : null;
-  // Immer dieselbe Meldung — verrät nicht, ob die Adresse existiert.
+  // Immer dieselbe Meldung - verrät nicht, ob die Adresse existiert.
   if(!$u || !$u['pass_hash'] || !password_verify($pass, $u['pass_hash']) || (int)$u['active']!==1){
     login_guard_fail();
     fail('E-Mail oder Passwort ist nicht korrekt.',401);
@@ -84,7 +84,7 @@ function do_login_email(string $email, string $pass): array {
   return ['ok'=>true,'token'=>$tok,'user'=>user_public($u)];
 }
 
-/** Login mit PIN — nur zur Ersteinrichtung, solange noch kein Konto existiert. */
+/** Login mit PIN - nur zur Ersteinrichtung, solange noch kein Konto existiert. */
 function do_login(string $pin): array {
   if(user_count()>0){
     fail('Der PIN-Zugang ist deaktiviert, seit Benutzerkonten eingerichtet sind. Bitte mit E-Mail und Passwort anmelden.',403);
@@ -134,7 +134,7 @@ function require_auth(): void {
   // Sitzung ohne Benutzer ist nur gültig, solange noch kein Konto existiert (Ersteinrichtung).
   if(!$row['user_id'] && user_count()>0){
     q("DELETE FROM sessions WHERE token=?",[$tok]);
-    fail('Bitte neu anmelden — es gibt jetzt Benutzerkonten.',401);
+    fail('Bitte neu anmelden - es gibt jetzt Benutzerkonten.',401);
   }
   if($row['user_id'] && !current_user()){
     q("DELETE FROM sessions WHERE token=?",[$tok]);
@@ -160,7 +160,7 @@ function is_admin(): bool {
    RÜCKGÄNGIG / WIEDERHOLEN
    Vor jeder Änderung wird der betroffene Datenstand gesichert, danach der
    neue. „Rückgängig“ schreibt den alten Stand zurück, „Wiederholen“ den
-   neuen. Das funktioniert für alle Vorgänge gleich — ohne dass für jede
+   neuen. Das funktioniert für alle Vorgänge gleich - ohne dass für jede
    Aktion eine eigene Umkehrfunktion nötig wäre.
    ============================================================ */
 const UNDO_TABLES=['trainings','trainers','clients','requests','travel','training_sessions',
@@ -189,7 +189,7 @@ function snap_restore(array $snap): void {
       $cols=array_keys($r);
       foreach($cols as $c){ if(!preg_match('/^[A-Za-z0-9_]+$/',$c)) continue 2; }
       // Zeile könnte inzwischen woandershin verschoben worden sein (z.B. anderer
-      // Kunde) — dann steckt sie nicht mehr im gelöschten Bereich und würde beim
+      // Kunde) - dann steckt sie nicht mehr im gelöschten Bereich und würde beim
       // Einfügen mit dem Schlüssel kollidieren. Deshalb zusätzlich per id räumen.
       if(array_key_exists('id',$r)) { try{ q("DELETE FROM $tbl WHERE id=?",[$r['id']]); }catch(Throwable $e){} }
       q("INSERT INTO $tbl (".implode(',',$cols).") VALUES (".implode(',',array_fill(0,count($cols),'?')).")",
@@ -286,7 +286,7 @@ function undo_commit(): void {
   if(json_encode($u['before'])===json_encode($after)) return;   // nichts verändert
   // Ein neuer Schritt beendet die Wiederholen-Kette
   try{ q("UPDATE activity SET undo_before=NULL, undo_after=NULL WHERE undone_at IS NOT NULL AND undo_before IS NOT NULL"); }catch(Throwable $e){}
-  // An die Protokollzeile dieses Vorgangs hängen — hat die Aktion selbst keine
+  // An die Protokollzeile dieses Vorgangs hängen - hat die Aktion selbst keine
   // geschrieben, legen wir eine an (sonst hinge der Stand an einer fremden Zeile).
   $row=q("SELECT id FROM activity ORDER BY id DESC LIMIT 1")->fetch();
   if(!$row || (int)$row['id'] <= (int)($u['maxId']??0)){
@@ -382,7 +382,7 @@ function get_state(): array {
       'stars'=>(int)$rv['stars'], 'note'=>$rv['note']??'', 'at'=>$rv['updated_at']??'' ];
   }
   $trainers=array_map(function($r) use ($planBy,$revBy){
-    // Reisepass-Metadaten (ohne das Foto selbst — das lädt passport.image bei Bedarf)
+    // Reisepass-Metadaten (ohne das Foto selbst - das lädt passport.image bei Bedarf)
     $pp=null;
     if( ($r['passport_expiry']??'')!=='' || ($r['passport_number']??'')!=='' || !empty($r['passport_file']) ){
       $pp=[
@@ -559,7 +559,7 @@ function next_candidate(int $tgId): ?array {
 }
 
 /** Sessions eines Trainers in einer Trainingswoche (aus dem Wochenplan),
- *  in Wochenreihenfolge — für Agenda-Seite und Agenda-E-Mail. */
+ *  in Wochenreihenfolge - für Agenda-Seite und Agenda-E-Mail. */
 function trainer_week_sessions(int $tgId, int $trId): array {
   $tg=q("SELECT start_date,plan_slots FROM trainings WHERE id=?",[$tgId])->fetch();
   if(!$tg) return [];
@@ -607,7 +607,7 @@ function trainer_schedule(int $trId): array {
 }
 /** Datum "YYYY-MM-DD" in Teile zerlegen. */
 function fmt_parse(?string $s){ if($s && preg_match('/^(\d{4})-(\d{2})-(\d{2})/',$s,$m)) return ['y'=>(int)$m[1],'mo'=>(int)$m[2],'d'=>(int)$m[3]]; return null; }
-/** Zeitraum als echtes Datum: "13.–20. März 2026" (de) / "13–20 March 2026" (en). */
+/** Zeitraum als echtes Datum: "13.-20. März 2026" (de) / "13-20 March 2026" (en). */
 function fmt_date_range(?string $s, ?string $e, string $lang): string {
   $mon = $lang==='de'
     ? ['','Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
@@ -616,8 +616,8 @@ function fmt_date_range(?string $s, ?string $e, string $lang): string {
   $Q=fmt_parse($e);
   $dm=function($x) use($mon,$lang){ return $lang==='de' ? $x['d'].'. '.$mon[$x['mo']] : $x['d'].' '.$mon[$x['mo']]; };
   if(!$Q || ($P['y']==$Q['y']&&$P['mo']==$Q['mo']&&$P['d']==$Q['d'])) return $dm($P).' '.$P['y'];
-  if($P['y']==$Q['y']&&$P['mo']==$Q['mo']) return $lang==='de' ? $P['d'].'.–'.$Q['d'].'. '.$mon[$P['mo']].' '.$P['y'] : $P['d'].'–'.$Q['d'].' '.$mon[$P['mo']].' '.$P['y'];
-  return $dm($P).' – '.$dm($Q).' '.$Q['y'];
+  if($P['y']==$Q['y']&&$P['mo']==$Q['mo']) return $lang==='de' ? $P['d'].'.-'.$Q['d'].'. '.$mon[$P['mo']].' '.$P['y'] : $P['d'].'-'.$Q['d'].' '.$mon[$P['mo']].' '.$P['y'];
+  return $dm($P).' - '.$dm($Q).' '.$Q['y'];
 }
 /** Reisefenster (ein Tag vor Beginn bis ein Tag nach Ende) als Datumsbereich. */
 function travel_window(?string $s, ?string $e, string $lang): string {
@@ -672,7 +672,7 @@ function status_word(string $st, string $lang): string {
   $m=$lang==='de'?$de:$en; return $m[$st] ?? $st;
 }
 
-/** ETAF-Wortmarke als Vektor — direkt aus ETAF_Logo.png nachgezeichnet
+/** ETAF-Wortmarke als Vektor - direkt aus ETAF_Logo.png nachgezeichnet
  *  (identisch mit dem Dashboard-Logo). Buchstaben = currentColor, Punkt im Logo-Rot. */
 const ETAF_LOGO_PATH='M0 0 349 0 349 110 143 110 143 159 323 159 323 264 143 264 143 320 357 320 357 429 0 429Z'
   .'M362 0 757 0 757 113 632 113 632 429 487 429 487 113 362 113Z'
@@ -696,7 +696,7 @@ function base_url(): string {
 
 /* ============================================================
    TRAININGSBERICHT (DEBRIEF)
-   Ein Bericht je Training. Der Kriterienkatalog steht bewusst NUR hier —
+   Ein Bericht je Training. Der Kriterienkatalog steht bewusst NUR hier -
    Frontend und Auswertung holen ihn über die API, damit ein neues Kriterium
    an genau einer Stelle ergänzt wird.
    Skala: 1 = ungenügend … 5 = ausgezeichnet. Fehlender Schlüssel = nicht
@@ -754,7 +754,7 @@ function debrief_catalog(): array {
       $I('ppt','Qualität der Unterlagen','Quality of materials'),
       $I('punctuality','Pünktlichkeit & Verlässlichkeit','Punctuality & reliability'),
     ],
-    // Vorkommnisse zum Anklicken — kurz, damit der Bericht in zwei Minuten steht
+    // Vorkommnisse zum Anklicken - kurz, damit der Bericht in zwei Minuten steht
     'flags'=>[
       $I('shuttle_late','Shuttle verspätet','Shuttle late'),
       $I('flight_delay','Flugverspätung/-ausfall','Flight delayed/cancelled'),
@@ -776,15 +776,15 @@ function debrief_catalog(): array {
       $I('incidents','Besondere Vorkommnisse','Notable incidents'),
     ],
     'recommend'=>[
-      $I('yes','Ja — unverändert wieder so','Yes — run it again unchanged'),
+      $I('yes','Ja - unverändert wieder so','Yes - run it again unchanged'),
       $I('partly','Mit Anpassungen','With adjustments'),
-      $I('no','Nein — so nicht wieder','No — not like this again'),
+      $I('no','Nein - so nicht wieder','No - not like this again'),
     ],
   ];
 }
 
 /** Wie viele Felder eines Berichts sind beantwortet? Zählt Kriterien,
- *  Gesamteindruck, Empfehlung und die Werte je Trainer — daraus entsteht
+ *  Gesamteindruck, Empfehlung und die Werte je Trainer - daraus entsteht
  *  der Fortschrittsring in der Berichtsliste. */
 function debrief_filled(array $r): int {
   $keys=debrief_keys();
@@ -863,7 +863,7 @@ function debrief_period(string $date, string $mode): string {
  * $bucket: 'week'|'month'|'year' für die Trendachse.
  */
 function debrief_report(string $from, string $to, string $client, string $bucket='month', bool $withDrafts=false): array {
-  // Zwischenstand: Entwürfe zählen mit. Die Zahlen sind dann vorläufig —
+  // Zwischenstand: Entwürfe zählen mit. Die Zahlen sind dann vorläufig -
   // das Frontend weist darauf hin und der Bogen trägt den Vermerk.
   $sql="SELECT d.*, t.start_date, t.end_date, t.code, t.topic, t.city, t.client_id
         FROM debriefs d JOIN trainings t ON t.id=d.training_id
@@ -1003,7 +1003,7 @@ function send_agenda_mail(int $tgId, int $trId, string $lang='', string $subject
     q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?,'yes',?,?,?)",
       [$tgId,$trId,$lg,$tok,now()]); }
   $link=base_url().'/agenda.php?token='.$tok;
-  $subj=fill_tpl($lg==='de'?'Deine Reise-Agenda — {{topic}} in {{city}}':'Your travel agenda — {{topic}} in {{city}}',$tg,$tr);
+  $subj=fill_tpl($lg==='de'?'Deine Reise-Agenda - {{topic}} in {{city}}':'Your travel agenda - {{topic}} in {{city}}',$tg,$tr);
   $intro=fill_tpl($lg==='de'
     ? "Hallo {{firstName}},\n\nanbei deine persönliche Reise-Agenda für „{{topic}}“ in {{city}} ({{kw}}). Über den Button kannst du sie öffnen und ausdrucken."
     : "Hi {{firstName}},\n\nhere is your personal travel agenda for \"{{topic}}\" in {{city}} ({{kw}}). Open and print it via the button below.",

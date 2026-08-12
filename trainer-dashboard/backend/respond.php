@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — Magic-Link-Landeseite (zweistufig, scanner-sicher)
+ * ETAF - Magic-Link-Landeseite (zweistufig, scanner-sicher)
  * ---------------------------------------------------------------
  * GET  respond.php?token=<tok>&answer=yes|maybe|no
  *      → zeigt NUR eine Bestätigungsseite. Ändert NICHTS, sendet NICHTS.
@@ -37,7 +37,7 @@ if($isCommit && $req && $validAns){
   $changed = ($req['status'] ?? '') !== $map[$ans];
   q("UPDATE requests SET status=?, responded_at=? WHERE id=?",[$map[$ans], now(), $req['id']]);
 
-  /* Bestätigungs-E-Mail — nur bei tatsächlicher Änderung, also genau einmal. */
+  /* Bestätigungs-E-Mail - nur bei tatsächlicher Änderung, also genau einmal. */
   $tr = $changed ? q("SELECT * FROM trainers WHERE id=?",[$req['trainer_id']])->fetch() : null;
   if($tr && !empty($tr['email'])){
     $tg=['topic'=>$req['topic'],'city'=>$req['city'],'country'=>$req['country']??'',
@@ -46,11 +46,11 @@ if($isCommit && $req && $validAns){
       ? ['yes'=>'zugesagt (verfügbar)','maybe'=>'mit „vielleicht“ geantwortet','no'=>'abgesagt']
       : ['yes'=>'confirmed (available)','maybe'=>'answered “maybe”','no'=>'declined'];
     $subj = fill_tpl($lang==='de'
-      ? 'Bestätigung deiner Antwort — {{topic}} ({{city}})'
-      : 'Confirmation of your reply — {{topic}} ({{city}})', $tg, $tr);
+      ? 'Bestätigung deiner Antwort - {{topic}} ({{city}})'
+      : 'Confirmation of your reply - {{topic}} ({{city}})', $tg, $tr);
     $intro = fill_tpl($lang==='de'
-      ? "Hallo {{firstName}},\n\nvielen Dank! Für „{{topic}}“ in {{city}} ({{kw}}) haben wir notiert, dass du ".$word[$map[$ans]].".\n\nFalls sich etwas ändert oder etwas dazwischenkommt, kannst du deine Antwort jederzeit über die Buttons unten anpassen — die neue Antwort ersetzt automatisch die alte."
-      : "Hi {{firstName}},\n\nthank you! For \"{{topic}}\" in {{city}} ({{kw}}) we noted that you ".$word[$map[$ans]].".\n\nIf anything changes, you can update your answer any time via the buttons below — the new answer automatically replaces the old one.",
+      ? "Hallo {{firstName}},\n\nvielen Dank! Für „{{topic}}“ in {{city}} ({{kw}}) haben wir notiert, dass du ".$word[$map[$ans]].".\n\nFalls sich etwas ändert oder etwas dazwischenkommt, kannst du deine Antwort jederzeit über die Buttons unten anpassen - die neue Antwort ersetzt automatisch die alte."
+      : "Hi {{firstName}},\n\nthank you! For \"{{topic}}\" in {{city}} ({{kw}}) we noted that you ".$word[$map[$ans]].".\n\nIf anything changes, you can update your answer any time via the buttons below - the new answer automatically replaces the old one.",
       $tg, $tr);
     $html = email_html($intro, response_buttons($tok, $lang));
     $sent = send_email($tr['email'], $tr['name'], $subj, $html);
@@ -63,23 +63,23 @@ if($isCommit && $req && $validAns){
 
 $L = $lang==='de' ? [
   'confirmTitle'=>'Kurz bestätigen',
-  'confirmLead'=>'Bitte tippe auf deine Antwort — erst dann wird sie gespeichert.',
+  'confirmLead'=>'Bitte tippe auf deine Antwort - erst dann wird sie gespeichert.',
   'yesBtn'=>'Ja, verfügbar','maybeBtn'=>'Vielleicht','noBtn'=>'Nein',
   'thanks'=>'Danke für deine Rückmeldung!',
-  'yes'=>'Klasse — wir haben notiert, dass du <b>verfügbar</b> bist.',
+  'yes'=>'Klasse - wir haben notiert, dass du <b>verfügbar</b> bist.',
   'maybe'=>'Notiert: <b>vielleicht</b>. Wir melden uns.',
-  'no'=>'Schade — notiert, dass du <b>nicht</b> kannst. Danke trotzdem!',
+  'no'=>'Schade - notiert, dass du <b>nicht</b> kannst. Danke trotzdem!',
   'change'=>'Du kannst deine Antwort jederzeit über die Buttons in der E-Mail ändern.',
   'err'=>'Dieser Link ist ungültig oder abgelaufen.',
   're'=>'Training',
 ] : [
   'confirmTitle'=>'Please confirm',
-  'confirmLead'=>'Tap your answer — it is only saved after you confirm.',
+  'confirmLead'=>'Tap your answer - it is only saved after you confirm.',
   'yesBtn'=>'Yes, available','maybeBtn'=>'Maybe','noBtn'=>'No',
   'thanks'=>'Thanks for your reply!',
-  'yes'=>'Great — we noted that you are <b>available</b>.',
+  'yes'=>'Great - we noted that you are <b>available</b>.',
   'maybe'=>'Noted: <b>maybe</b>. We\'ll be in touch.',
-  'no'=>'Too bad — noted that you <b>can\'t</b> make it. Thanks anyway!',
+  'no'=>'Too bad - noted that you <b>can\'t</b> make it. Thanks anyway!',
   'change'=>'You can change your answer any time via the buttons in the email.',
   'err'=>'This link is invalid or has expired.',
   're'=>'Training',

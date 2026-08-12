@@ -1,9 +1,9 @@
 <?php
 /**
- * ETAF — iCal-Feed (Abo-Link) für Google/Apple/Outlook.
+ * ETAF - iCal-Feed (Abo-Link) für Google/Apple/Outlook.
  * Aufruf:  ics.php?key=<ics_key>[&client=<client_id>]
  * Liefert einen abonnierbaren, sich automatisch aktualisierenden Kalender.
- * Farbe/Kategorie je Kunde. Kein Login — durch den Schlüssel geschützt.
+ * Farbe/Kategorie je Kunde. Kein Login - durch den Schlüssel geschützt.
  */
 require_once __DIR__.'/lib.php';
 ensure_schema();
@@ -75,7 +75,7 @@ foreach($rows as $tg){
   $cl    = ($tg['client_id']!==null && isset($clients[$tg['client_id']])) ? $clients[$tg['client_id']] : null;
   $yes   = (int)q("SELECT COUNT(*) c FROM requests WHERE training_id=? AND status IN('yes','confirmed')",[$tg['id']])->fetch()['c'];
   $summary = ($cl ? $cl['short'].' · ' : '').$tg['topic'];
-  $desc = $tg['spec'].' — '.$yes.'/'.$tg['need_cnt'].($cl ? ' · '.$cl['name'] : '');
+  $desc = $tg['spec'].' - '.$yes.'/'.$tg['need_cnt'].($cl ? ' · '.$cl['name'] : '');
 
   $out[] = "BEGIN:VEVENT";
   $out[] = "UID:tg".$tg['id']."@etaf-trainer";

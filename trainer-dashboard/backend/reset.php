@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — Passwort festlegen / zurücksetzen (zweistufig, scanner-sicher)
+ * ETAF - Passwort festlegen / zurücksetzen (zweistufig, scanner-sicher)
  * ---------------------------------------------------------------
  * GET  reset.php?token=<tok>  → zeigt NUR das Formular. Ändert nichts.
  *      (E-Mail-Scanner rufen nur GET auf → der Link wird nicht „verbraucht“.)
@@ -48,7 +48,7 @@ $etok   = esc($tok);
 <!doctype html><html lang="de"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>ETAF — Passwort</title>
+<title>ETAF - Passwort</title>
 <style>
   body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:auto;
     background:#f4f5f6;box-sizing:border-box;
@@ -88,7 +88,7 @@ $etok   = esc($tok);
         Du kannst dich jetzt mit <?=esc($row['email'])?> anmelden.</div>
       <p class="hint">Diese Seite kannst du nun schließen.</p>
     <?php else: ?>
-      <h1><?= $invite ? 'Willkommen — Passwort festlegen' : 'Neues Passwort vergeben' ?></h1>
+      <h1><?= $invite ? 'Willkommen - Passwort festlegen' : 'Neues Passwort vergeben' ?></h1>
       <p class="sub">Für <b><?=esc($row['email'])?></b></p>
       <?php if($err): ?><div class="err"><?=esc($err)?></div><?php endif; ?>
       <form method="post" action="<?=$action?>">

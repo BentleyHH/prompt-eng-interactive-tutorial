@@ -1,10 +1,10 @@
 <?php
 /**
- * ETAF — Datensicherung (automatisch + manuell)
+ * ETAF - Datensicherung (automatisch + manuell)
  * ---------------------------------------------------------------
  * Die Automatik (cron.php bzw. der Automatik-Button) legt einmal täglich
  * einen kompletten Datenbank-Dump als .sql.gz in backend/backups/ ab und
- * behält die letzten 14 Stände. Der Ordner ist per .htaccess gesperrt —
+ * behält die letzten 14 Stände. Der Ordner ist per .htaccess gesperrt -
  * Download nur über diese Seite mit Schlüssel.
  *
  * Aufruf:   backend/backup.php?key=<cron_key>            → Übersicht
@@ -37,7 +37,7 @@ function backup_list(): array {
 
 /** Kompletten Datenbank-Dump als SQL schreiben ($w = Schreib-Callback). */
 function backup_dump(callable $w): void {
-  $w("-- ETAF Trainer-Koordination — Datensicherung\n-- Erstellt: ".gmdate('Y-m-d H:i:s')." UTC\n\n");
+  $w("-- ETAF Trainer-Koordination - Datensicherung\n-- Erstellt: ".gmdate('Y-m-d H:i:s')." UTC\n\n");
   if(is_sqlite()){
     $tables=array_column(q("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")->fetchAll(),'name');
   } else {
@@ -75,14 +75,14 @@ function backup_run(int $keep=14): array {
   try{ backup_dump(fn(string $s)=>gzwrite($gz,$s)); }
   catch(Throwable $e){ gzclose($gz); @unlink($file); return ['ok'=>false,'error'=>$e->getMessage()]; }
   gzclose($gz);
-  // Integritätsprüfung: die Datei muss sich entpacken lassen und unseren Kopf tragen —
+  // Integritätsprüfung: die Datei muss sich entpacken lassen und unseren Kopf tragen -
   // eine kaputte Sicherung wäre schlimmer als keine, weil sie falsche Sicherheit gibt.
   $chk=@gzopen($file,'rb');
   $head=$chk?(string)gzread($chk,64):'';
   if($chk) gzclose($chk);
   if(strpos($head,'ETAF')===false || filesize($file)<200){
     @unlink($file);
-    return ['ok'=>false,'error'=>'Sicherung ließ sich nicht zurücklesen — Datei verworfen.'];
+    return ['ok'=>false,'error'=>'Sicherung ließ sich nicht zurücklesen - Datei verworfen.'];
   }
   // Aufbewahrung: nur die letzten $keep Stände behalten
   $all=backup_list();
@@ -101,7 +101,7 @@ if(basename($_SERVER['SCRIPT_NAME']??'')==='backup.php'){
   if($need==='' || $need==='CHANGE_ME_zufälliger_wert' || !hash_equals($need,$key)){
     http_response_code(403);
     echo '<meta charset="utf-8"><body style="font:15px system-ui;padding:30px;color:#242b31">'
-       .'<h2>ETAF — Datensicherung</h2>'
+       .'<h2>ETAF - Datensicherung</h2>'
        .'<p>Zugriff nur mit gültigem <code>?key=</code> (entspricht <code>cron_key</code> aus config.php).</p></body>';
     exit;
   }
@@ -128,7 +128,7 @@ if(basename($_SERVER['SCRIPT_NAME']??'')==='backup.php'){
   $fmtSize=function($b){ return $b>=1048576 ? round($b/1048576,1).' MB' : round($b/1024).' KB'; };
 ?>
 <!doctype html><html lang="de"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>ETAF — Datensicherung</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>ETAF - Datensicherung</title>
 <style>
  body{font:15px/1.55 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#242b31;background:#f4f5f6;margin:0;padding:26px}
  .wrap{max-width:720px;margin:auto}

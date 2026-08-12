@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — Automatik: Erinnerungen nach X Stunden + automatisches Nachrücken.
+ * ETAF - Automatik: Erinnerungen nach X Stunden + automatisches Nachrücken.
  * Wird per Cron (cron.php) oder Button (api.php?action=automation.run) ausgelöst.
  */
 require_once __DIR__.'/lib.php';
@@ -24,7 +24,7 @@ function digest_build(array $parts): string {
     foreach($upcoming as $tg){
       $yes=(int)q("SELECT COUNT(*) c FROM requests WHERE training_id=? AND status IN('yes','confirmed')",[$tg['id']])->fetch()['c'];
       $ask=(int)q("SELECT COUNT(*) c FROM requests WHERE training_id=? AND status='asked'",[$tg['id']])->fetch()['c'];
-      if($yes<(int)$tg['need_cnt']) $rows[]=$li(htmlspecialchars($fmt($tg))." — <b>$yes/{$tg['need_cnt']}</b> zugesagt".($ask?", $ask angefragt":""));
+      if($yes<(int)$tg['need_cnt']) $rows[]=$li(htmlspecialchars($fmt($tg))." - <b>$yes/{$tg['need_cnt']}</b> zugesagt".($ask?", $ask angefragt":""));
       if(count($rows)>=8) break;
     }
     $out.=$H('Besetzung').($rows?implode('',$rows):$li('Alle kommenden Trainings sind voll besetzt ✓'));
@@ -37,7 +37,7 @@ function digest_build(array $parts): string {
               FROM training_sessions WHERE training_id=? AND stype NOT IN('orga','deliverable')",[$tg['id']])->fetch();
       }catch(Throwable $e){ break; }
       $miss=(int)$a['n']-(int)$a['d'];
-      if((int)$a['n']>0 && $miss>0) $rows[]=$li(htmlspecialchars($fmt($tg))." — <b>$miss</b> PowerPoint".($miss===1?'':'s')." fehlen");
+      if((int)$a['n']>0 && $miss>0) $rows[]=$li(htmlspecialchars($fmt($tg))." - <b>$miss</b> PowerPoint".($miss===1?'':'s')." fehlen");
       if(count($rows)>=8) break;
     }
     $out.=$H('PowerPoints').($rows?implode('',$rows):$li('Alle PowerPoints der kommenden Wochen sind da ✓'));
@@ -49,7 +49,7 @@ function digest_build(array $parts): string {
                  LEFT JOIN travel tv ON tv.training_id=r.training_id AND tv.trainer_id=r.trainer_id
                  WHERE r.training_id=? AND r.status IN('yes','confirmed')
                    AND (tv.id IS NULL OR ((tv.flight_out IS NULL OR tv.flight_out='') AND (tv.arrival IS NULL OR tv.arrival='')))",[$tg['id']])->fetch()['c'];
-      if($n>0) $rows[]=$li(htmlspecialchars($fmt($tg))." — <b>$n</b> Trainer ohne Reisedaten");
+      if($n>0) $rows[]=$li(htmlspecialchars($fmt($tg))." - <b>$n</b> Trainer ohne Reisedaten");
       if(count($rows)>=8) break;
     }
     $out.=$H('Reisen & Flüge').($rows?implode('',$rows):$li('Reisedaten der zugesagten Trainer sind vollständig ✓'));
@@ -68,9 +68,9 @@ function digest_build(array $parts): string {
       $team=q("SELECT tr.name FROM requests r JOIN trainers tr ON tr.id=r.trainer_id
                WHERE r.training_id=? AND r.status IN('yes','confirmed')",[$nx['id']])->fetchAll(PDO::FETCH_COLUMN);
       $out.=$H('Nächstes Training')
-        .$li('<b>'.htmlspecialchars((($nx['code']??'')?$nx['code'].' — ':'').$nx['topic']).'</b>')
+        .$li('<b>'.htmlspecialchars((($nx['code']??'')?$nx['code'].' - ':'').$nx['topic']).'</b>')
         .$li(htmlspecialchars(($nx['city']??'').' · '.fmt_date_range($nx['start_date']??null,$nx['end_date']??null,'de')))
-        .$li('Team: '.($team?htmlspecialchars(implode(', ',$team)):'— noch niemand zugesagt —'))
+        .$li('Team: '.($team?htmlspecialchars(implode(', ',$team)):'- noch niemand zugesagt -'))
         .((($nx['deliverable']??'')!=='')?$li('Wochenergebnis: '.htmlspecialchars($nx['deliverable'])):'');
     }
   }
@@ -83,7 +83,7 @@ function digest_build(array $parts): string {
       $weak=array_values(array_filter($rep['criteria'], fn($c)=>$c['avg']!==null && $c['avg']<3));
       usort($weak, fn($a,$b)=>$a['avg']<=>$b['avg']);
       foreach(array_slice($weak,0,4) as $c){
-        $rows[]=$li('Handlungsbedarf: <b>'.htmlspecialchars(debrief_label($c['key'])).'</b> — '
+        $rows[]=$li('Handlungsbedarf: <b>'.htmlspecialchars(debrief_label($c['key'])).'</b> - '
           .number_format((float)$c['avg'],1,',','').' (n='.$c['n'].')');
       }
       $openA=count($rep['actions']??[]);
@@ -101,7 +101,7 @@ function digest_build(array $parts): string {
     foreach(q("SELECT name,passport_expiry FROM trainers WHERE passport_expiry IS NOT NULL AND passport_expiry<>''")->fetchAll() as $trr){
       $exp=strtotime((string)$trr['passport_expiry']); if($exp===false) continue;
       $days=(int)floor(($exp-strtotime($today))/86400);
-      if($days<=$lead) $rows[]=$li(htmlspecialchars($trr['name']).' — Reisepass '.($days<0?'<b>abgelaufen</b>':'läuft in <b>'.$days.' Tagen</b> ab'));
+      if($days<=$lead) $rows[]=$li(htmlspecialchars($trr['name']).' - Reisepass '.($days<0?'<b>abgelaufen</b>':'läuft in <b>'.$days.' Tagen</b> ab'));
     }
     if($rows) $out.=$H('Reisepässe').implode('',array_slice($rows,0,8));
   }
@@ -115,7 +115,7 @@ function digest_send(array $u): bool {
   $dash=preg_replace('#/backend$#','',base_url());
   $html=email_html("Guten Morgen".($first?" $first":"").",\n\nhier dein aktueller ETAF-Überblick.",
     digest_build($parts).cta_button($dash,'Zum Cockpit'));
-  $subj='ETAF Info — '.date('d.m.Y');
+  $subj='ETAF Info - '.date('d.m.Y');
   $ok=send_email($u['email'],$u['name']??'',$subj,$html);
   $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
   q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
@@ -124,14 +124,14 @@ function digest_send(array $u): bool {
 }
 
 
-/** HTML-Block einer Auswertung für die Mail — kompakt, ohne Bilder,
+/** HTML-Block einer Auswertung für die Mail - kompakt, ohne Bilder,
  *  damit er in jedem Mailprogramm lesbar bleibt und sich drucken lässt. */
 function report_mail_html(array $rep, string $title): string {
   $H=fn($t)=>'<div style="font-weight:800;font-size:15px;margin:18px 0 6px;color:#3e4852">'.$t.'</div>';
   $band=fn($v)=>$v===null?'#8a939a':($v>=4?'#2E9E6B':($v>=3?'#C77E1E':'#D81F26'));
-  $num=fn($v)=>$v===null?'—':number_format((float)$v,1,',','');
+  $num=fn($v)=>$v===null?'-':number_format((float)$v,1,',','');
   $out='<div style="font-family:Arial,Helvetica,sans-serif">'.$H($title);
-  $cov = !empty($rep['due']) ? round(($rep['dueDone']??0)/$rep['due']*100).'%' : '—';
+  $cov = !empty($rep['due']) ? round(($rep['dueDone']??0)/$rep['due']*100).'%' : '-';
   $out.='<div style="font-size:14px;margin-bottom:4px">Ø Gesamteindruck: '
       .'<b style="color:'.$band($rep['overall']??null).';font-size:19px">'.$num($rep['overall']??null).'</b> / 5'
       .' · '.(int)($rep['n']??0).' Bericht'.(((int)($rep['n']??0))===1?'':'e').' · Abdeckung '.$cov.'</div>';
@@ -177,7 +177,7 @@ function report_mail_html(array $rep, string $title): string {
     $a='';
     foreach(array_slice($rep['actions'],0,10) as $x){
       $a.='<div style="font-size:13px;padding:2px 0">• '.htmlspecialchars($x['text'])
-        .' <span style="color:#8a939a">— '.htmlspecialchars($x['owner']?:'?')
+        .' <span style="color:#8a939a">- '.htmlspecialchars($x['owner']?:'?')
         .($x['due']?', '.date('d.m.Y',strtotime($x['due'])):'').($x['code']?' ('.htmlspecialchars($x['code']).')':'').'</span></div>';
     }
     $out.=$H('Offene Maßnahmen').$a;
@@ -213,9 +213,9 @@ function send_period_report(): int {
     $first=explode(' ',trim((string)($a['name']??'')))[0]?:'';
     $html=email_html("Hallo".($first?" $first":"").",\n\n"
       ."hier die Auswertung aller Trainingsberichte aus dem Quartal "
-      .date('d.m.Y',strtotime($from)).' – '.date('d.m.Y',strtotime($to)).".",
+      .date('d.m.Y',strtotime($from)).' - '.date('d.m.Y',strtotime($to)).".",
       report_mail_html($rep,$title).cta_button($dash,'Auswertung im Cockpit öffnen'));
-    $subj='ETAF — '.$title;
+    $subj='ETAF - '.$title;
     $ok=send_email($a['email'],$a['name']??'',$subj,$html);
     q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
        VALUES(?,?,?,?,?,?,?,?)",[null,null,$a['email'],$subj,$title,'de',
@@ -249,8 +249,8 @@ function run_automation(): array {
            'kw'=>kw_label($r['kw'],$lang),'month'=>$r['month'],'need_cnt'=>$r['need_cnt']];
       $tr=['name'=>$r['tname']];
       $subj=fill_tpl($lang==='de'
-        ? 'Erinnerung: Verfügbarkeit — {{topic}} ({{city}})'
-        : 'Reminder: availability — {{topic}} ({{city}})', $tg,$tr);
+        ? 'Erinnerung: Verfügbarkeit - {{topic}} ({{city}})'
+        : 'Reminder: availability - {{topic}} ({{city}})', $tg,$tr);
       $bodyText=fill_tpl($lang==='de'
         ? "Hallo {{firstName}},\n\nkurze Erinnerung zu unserer Anfrage für „{{topic}}“ in {{city}} ({{kw}}). Bist du verfügbar? Ein Klick unten genügt."
         : "Hi {{firstName}},\n\njust a quick reminder about our request for \"{{topic}}\" in {{city}} ({{kw}}). Are you available? One click below is enough.",
@@ -281,10 +281,10 @@ function run_automation(): array {
     $lang=($r['lang']==='de')?'de':'en';
     $tg=['topic'=>$r['topic'],'city'=>$r['city'],'country'=>$r['country'],'kw'=>kw_label($r['kw'],$lang),'month'=>$r['month'],'need_cnt'=>$r['need_cnt']];
     $tr=['name'=>$r['tname']];
-    $subj=fill_tpl($lang==='de'?'Visum & Reisepass — {{topic}} in {{city}}':'Visa & passport — {{topic}} in {{city}}',$tg,$tr);
+    $subj=fill_tpl($lang==='de'?'Visum & Reisepass - {{topic}} in {{city}}':'Visa & passport - {{topic}} in {{city}}',$tg,$tr);
     $bodyText=fill_tpl($lang==='de'
-      ? "Hallo {{firstName}},\n\nfür „{{topic}}“ in {{city}} ({{kw}}) benötigen wir für dein Visum bitte eine Kopie deines Reisepasses (mind. 6 Monate gültig). Schick sie uns möglichst bald — wir kümmern uns dann um den Rest."
-      : "Hi {{firstName}},\n\nfor \"{{topic}}\" in {{city}} ({{kw}}) we need a copy of your passport (valid at least 6 months) for your visa. Please send it to us soon — we'll take care of the rest.",
+      ? "Hallo {{firstName}},\n\nfür „{{topic}}“ in {{city}} ({{kw}}) benötigen wir für dein Visum bitte eine Kopie deines Reisepasses (mind. 6 Monate gültig). Schick sie uns möglichst bald - wir kümmern uns dann um den Rest."
+      : "Hi {{firstName}},\n\nfor \"{{topic}}\" in {{city}} ({{kw}}) we need a copy of your passport (valid at least 6 months) for your visa. Please send it to us soon - we'll take care of the rest.",
       $tg,$tr);
     $ok=send_email($r['temail'],$r['tname'],$subj,email_html($bodyText,''));
     q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
@@ -322,25 +322,25 @@ function run_automation(): array {
     if($lang==='de'){
       $expNice=date('d.m.Y',$exp);
       if($daysLeft<0){
-        $subj='Reisepass abgelaufen — bitte erneuern';
+        $subj='Reisepass abgelaufen - bitte erneuern';
         $lead1="dein Reisepass ist am $expNice abgelaufen.";
-        $lead2="Bitte beantrage zeitnah einen neuen Pass und schick uns anschließend ein Foto der Datenseite — wir hinterlegen es dann in deinem Profil.";
+        $lead2="Bitte beantrage zeitnah einen neuen Pass und schick uns anschließend ein Foto der Datenseite - wir hinterlegen es dann in deinem Profil.";
       } else {
-        $subj='Reisepass läuft bald ab — rechtzeitig erneuern';
+        $subj='Reisepass läuft bald ab - rechtzeitig erneuern';
         $lead1="dein Reisepass läuft am $expNice ab (in $daysLeft Tagen).";
-        $lead2="Für Einsätze im Ausland (z.B. UAE) sollte der Pass bei der Einreise noch mindestens 6 Monate gültig sein. Bitte beantrage rechtzeitig einen neuen Pass und schick uns danach ein Foto der Datenseite — wir hinterlegen es dann in deinem Profil.";
+        $lead2="Für Einsätze im Ausland (z.B. UAE) sollte der Pass bei der Einreise noch mindestens 6 Monate gültig sein. Bitte beantrage rechtzeitig einen neuen Pass und schick uns danach ein Foto der Datenseite - wir hinterlegen es dann in deinem Profil.";
       }
       $bodyText="Hallo $fn,\n\n$lead1\n\n$lead2\n\nVielen Dank!\nETAF-Koordination";
     } else {
       $expNice=date('d M Y',$exp);
       if($daysLeft<0){
-        $subj='Passport expired — please renew';
+        $subj='Passport expired - please renew';
         $lead1="your passport expired on $expNice.";
-        $lead2="Please apply for a new passport soon and send us a photo of the data page afterwards — we'll store it in your profile.";
+        $lead2="Please apply for a new passport soon and send us a photo of the data page afterwards - we'll store it in your profile.";
       } else {
-        $subj='Passport expiring soon — please renew in time';
+        $subj='Passport expiring soon - please renew in time';
         $lead1="your passport expires on $expNice (in $daysLeft days).";
-        $lead2="For assignments abroad (e.g. UAE) the passport should be valid for at least 6 more months on entry. Please apply for a new passport in time and send us a photo of the data page afterwards — we'll store it in your profile.";
+        $lead2="For assignments abroad (e.g. UAE) the passport should be valid for at least 6 more months on entry. Please apply for a new passport in time and send us a photo of the data page afterwards - we'll store it in your profile.";
       }
       $bodyText="Hi $fn,\n\n$lead1\n\n$lead2\n\nThank you!\nETAF Coordination";
     }
@@ -376,7 +376,7 @@ function run_automation(): array {
         $tok=token(40);
         q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?, 'asked',?,?,?)",
           [$tgId,$cand['id'],$lang,$tok,now()]);
-        $subj=fill_tpl('Availability request — {{topic}} ({{city}}, {{kw}})',$tg,$cand);
+        $subj=fill_tpl('Availability request - {{topic}} ({{city}}, {{kw}})',$tg,$cand);
         $bodyText=fill_tpl(
           "Hi {{firstName}},\n\nwe're planning \"{{topic}}\" in {{city}} ({{kw}}) and would love to have you on the team. Are you available? One click below is enough.",
           $tg,$cand);
@@ -407,7 +407,7 @@ function run_automation(): array {
     }
   }catch(Throwable $e){ /* Sicherung darf den Rest der Automatik nicht stoppen */ }
 
-  /* 6b) Info-Mails (Digest) je Benutzer — morgens, gemäß eingestelltem Rhythmus */
+  /* 6b) Info-Mails (Digest) je Benutzer - morgens, gemäß eingestelltem Rhythmus */
   $digestSent=0;
   try{
     if((int)gmdate('H')>=5){                       // frühestens ~07:00 deutscher Zeit
@@ -436,13 +436,13 @@ function run_automation(): array {
       foreach($missing as $m){
         $flag='debrief_ping_'.(int)$m['id'];
         if(config_get($flag)!==null) continue;              // schon erinnert
-        $title=(($m['code']??'')?$m['code'].' — ':'').$m['topic'];
+        $title=(($m['code']??'')?$m['code'].' - ':'').$m['topic'];
         foreach($admins as $a){
           $html=email_html("Hallo ".(explode(' ',trim((string)($a['name']??'')))[0]?:'')."\n\n"
-            ."„".$title."\" in ".($m['city']??'')." ist beendet — ein Trainingsbericht fehlt noch. "
+            ."„".$title."\" in ".($m['city']??'')." ist beendet - ein Trainingsbericht fehlt noch. "
             ."Er dauert nur zwei Minuten und ist die Grundlage für die Wochen-, Monats- und Jahresauswertung.",
             cta_button($dash,'Bericht ausfüllen'));
-          $subj='ETAF — Trainingsbericht offen: '.$title;
+          $subj='ETAF - Trainingsbericht offen: '.$title;
           $ok=send_email($a['email'],$a['name']??'',$subj,$html);
           q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
              VALUES(?,?,?,?,?,?,?,?)",[(int)$m['id'],null,$a['email'],$subj,'Erinnerung Trainingsbericht','de',
@@ -464,7 +464,7 @@ function run_automation(): array {
     q("DELETE FROM sessions WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-$maxDays*86400)]);
     q("DELETE FROM reset_tokens WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-86400)]);
     q("DELETE FROM login_attempts WHERE window_start < ?",[gmdate('Y-m-d H:i:s', $now-3600)]);
-    // Rückgängig-Stände nur für die jüngsten 300 Änderungen vorhalten — die
+    // Rückgängig-Stände nur für die jüngsten 300 Änderungen vorhalten - die
     // Protokollzeilen selbst bleiben vollständig erhalten.
     $keep=q("SELECT id FROM activity WHERE undo_before IS NOT NULL ORDER BY id DESC LIMIT 300")->fetchAll(PDO::FETCH_COLUMN);
     if(count($keep)>=300){

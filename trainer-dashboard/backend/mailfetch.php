@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — „Flugpost“: Postfach-Abruf + Erkennung von Flugbestätigungen
+ * ETAF - „Flugpost“: Postfach-Abruf + Erkennung von Flugbestätigungen
  * -------------------------------------------------------------------
  * Ablauf (poll_mailbox, läuft per Cron oder Button):
  *   1. POP3S-Abruf: neue Mails holen (UIDL-basiert, Mails BLEIBEN im Postfach)
@@ -15,7 +15,7 @@ require_once __DIR__.'/lib.php';
 require_once __DIR__.'/ai.php';
 
 /* ============================================================
-   1) POP3S — minimaler Client. Mails bleiben auf dem Server,
+   1) POP3S - minimaler Client. Mails bleiben auf dem Server,
       bereits Geholtes wird über die UIDL wiedererkannt.
    ============================================================ */
 function pop3_fetch_new(array $cfg, int $limit=15): array {
@@ -32,7 +32,7 @@ function pop3_fetch_new(array $cfg, int $limit=15): array {
   $greet=$line();
   if(!$ok($greet)){
     fclose($fp);
-    // Häufigster Fall: IMAP-Port erwischt (993/143) — IMAP grüßt mit "* OK".
+    // Häufigster Fall: IMAP-Port erwischt (993/143) - IMAP grüßt mit "* OK".
     $hint=strpos($greet,'* OK')===0
       ? "Auf Port $port antwortet IMAP, nicht POP3. Bitte in config.php beim mailbox-Block 'port' => 995 eintragen (POP3 über SSL)."
       : 'POP3-Server meldet Fehler beim Verbinden.';
@@ -67,7 +67,7 @@ function pop3_fetch_new(array $cfg, int $limit=15): array {
 }
 
 /* ============================================================
-   2) MIME — Header, Text/HTML, Anhänge (rekursiv über multipart)
+   2) MIME - Header, Text/HTML, Anhänge (rekursiv über multipart)
    ============================================================ */
 function mime_decode_header(string $s): string {
   $d=@mb_decode_mimeheader($s);
@@ -149,7 +149,7 @@ function mime_walk(string $ctype, string $enc, string $disp, string $body, array
 }
 
 /* ============================================================
-   3) Erkennung — KI (falls Key vorhanden), sonst Muster-Fallback
+   3) Erkennung - KI (falls Key vorhanden), sonst Muster-Fallback
    ============================================================ */
 function extract_flight_info(array $mail): array {
   $text=trim($mail['text']);
@@ -189,7 +189,7 @@ function regex_extract_flight(string $text, string $subject): array {
 }
 
 /* ============================================================
-   4) Zuordnung — Passagier → Trainer, Flugdatum → Training
+   4) Zuordnung - Passagier → Trainer, Flugdatum → Training
    ============================================================ */
 function match_flight(array $ex): array {
   $res=['trainerId'=>null,'trainingId'=>null,'confidence'=>'none'];
@@ -249,7 +249,7 @@ function flight_fields(array $segments): array {
 }
 
 /* ============================================================
-   5) Poll — kompletter Durchlauf (Cron oder Button „Jetzt abrufen“)
+   5) Poll - kompletter Durchlauf (Cron oder Button „Jetzt abrufen“)
    ============================================================ */
 function poll_mailbox(): array {
   $cfg=cfg()['mailbox']??[];

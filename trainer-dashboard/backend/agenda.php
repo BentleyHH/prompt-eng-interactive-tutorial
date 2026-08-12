@@ -1,6 +1,6 @@
 <?php
 /**
- * ETAF — Druckbare persönliche Reise-Agenda.
+ * ETAF - Druckbare persönliche Reise-Agenda.
  * Aufruf per Token-Link aus der E-Mail: agenda.php?token=<tok>
  * Kein Login nötig; zeigt Training, Reisedaten, Flug/Zimmer und Agenda.
  */
@@ -23,28 +23,28 @@ $L = $lang==='de' ? [
   'dress'=>'Dresscode','perdiem'=>'Per Diem','arr'=>'Anreise','dep'=>'Abreise','fout'=>'Hinflug',
   'fret'=>'Rückflug','room'=>'Zimmer','notes'=>'Hinweise','travel'=>'Reise & Logistik',
   'flight'=>'Deine Reisedaten','program'=>'Programm','print'=>'Drucken','err'=>'Dieser Link ist ungültig oder abgelaufen.',
-  'nodata'=>'— noch nicht hinterlegt —','passport'=>'Reisepass gültig bis','visa'=>'Visum',
-  'visa_none'=>'—','visa_needed'=>'benötigt','visa_applied'=>'beantragt','visa_approved'=>'genehmigt','visa_rejected'=>'abgelehnt'
+  'nodata'=>'- noch nicht hinterlegt -','passport'=>'Reisepass gültig bis','visa'=>'Visum',
+  'visa_none'=>'-','visa_needed'=>'benötigt','visa_applied'=>'beantragt','visa_approved'=>'genehmigt','visa_rejected'=>'abgelehnt'
 ] : [
   'title'=>'Travel agenda','training'=>'Training','for'=>'For','when'=>'Period','where'=>'Location',
   'venue'=>'Venue','hotel'=>'Hotel','meet'=>'Meeting point','contact'=>'On-site contact',
   'dress'=>'Dress code','perdiem'=>'Per diem','arr'=>'Arrival','dep'=>'Departure','fout'=>'Outbound flight',
   'fret'=>'Return flight','room'=>'Room','notes'=>'Notes','travel'=>'Travel & logistics',
   'flight'=>'Your travel details','program'=>'Programme','print'=>'Print','err'=>'This link is invalid or has expired.',
-  'nodata'=>'— not set yet —','passport'=>'Passport valid until','visa'=>'Visa',
-  'visa_none'=>'—','visa_needed'=>'needed','visa_applied'=>'applied','visa_approved'=>'approved','visa_rejected'=>'rejected'
+  'nodata'=>'- not set yet -','passport'=>'Passport valid until','visa'=>'Visa',
+  'visa_none'=>'-','visa_needed'=>'needed','visa_applied'=>'applied','visa_approved'=>'approved','visa_rejected'=>'rejected'
 ];
 function e($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 $na = $L['nodata'];
 
-/* Zeitraum kurz („09.11.–13.11.2026“) — steht im Dokumenttitel und wird damit
+/* Zeitraum kurz („09.11.-13.11.2026“) - steht im Dokumenttitel und wird damit
    zum Dateinamen, wenn der Trainer die Seite als PDF sichert. */
 $dSpan = '';
 if($req && !empty($req['start_date'])){
   $f = function($s){ $t=strtotime($s); return $t? date('d.m.',$t) : ''; };
   $y = substr((string)($req['end_date'] ?: $req['start_date']),0,4);
   $dSpan = (!empty($req['end_date']) && $req['end_date']!==$req['start_date'])
-    ? $f($req['start_date']).'–'.$f($req['end_date']).$y
+    ? $f($req['start_date']).'-'.$f($req['end_date']).$y
     : $f($req['start_date']).$y;
 }
 $docTitle = $req
@@ -136,16 +136,16 @@ $docTitle = trim(preg_replace('/\s+/',' ', str_replace(['/','\\',':','*','?','"'
       <div class="k"><?=e($L['room'])?></div><div class="v"><?=e($tv['room']??'') ?: $na?></div>
       <?php if(in_array($req['country'],['UAE','KSA']) || !empty($tv['passport_expiry']) || (($tv['visa_status']??'none')!=='none')): ?>
         <div class="k"><?=e($L['passport'])?></div><div class="v"><?=e($tv['passport_expiry']??'') ?: $na?></div>
-        <div class="k"><?=e($L['visa'])?></div><div class="v"><?=e($L['visa_'.($tv['visa_status'] ?? 'none')] ?? '—')?></div>
+        <div class="k"><?=e($L['visa'])?></div><div class="v"><?=e($L['visa_'.($tv['visa_status'] ?? 'none')] ?? '-')?></div>
       <?php endif; ?>
       <?php if(!empty($tv['visa_notes'])): ?><div class="k"><?=e($L['visa'])?></div><div class="v"><?=e($tv['visa_notes'])?></div><?php endif; ?>
       <?php if(!empty($tv['notes'])): ?><div class="k"><?=e($L['notes'])?></div><div class="v"><?=e($tv['notes'])?></div><?php endif; ?>
     </div>
 
     <?php
-    /* Wochenplan: entweder das Kachelraster Mo–Fr (eigene Sessions rot, mit
-       PowerPoint- und Materialhinweis) ODER — falls die Woche noch nicht auf
-       Tage verteilt ist — die reine Liste der eigenen Sessions. Beides
+    /* Wochenplan: entweder das Kachelraster Mo-Fr (eigene Sessions rot, mit
+       PowerPoint- und Materialhinweis) ODER - falls die Woche noch nicht auf
+       Tage verteilt ist - die reine Liste der eigenen Sessions. Beides
        zusammen wäre dieselbe Information zweimal im Ausdruck. */
     $mySess = trainer_week_sessions((int)$req['training_id'], (int)$req['trid']);
     $allSess=[]; $planW=[];
@@ -174,19 +174,19 @@ $docTitle = trim(preg_replace('/\s+/',' ', str_replace(['/','\\',':','*','?','"'
             .($mine?' · <b style="color:#D81F26">'.e($ini).'</b>':'')
             .($mine&&$others?'<br><span style="color:#3F7A5E;font-weight:600">👥 '.e(($lang==='de'?'mit ':'with ').implode(', ',$others)).'</span>'
               :(!$mine&&$others?'<br>'.e(implode(', ',$others)):''));
-          // Vorbereitungs-Hinweise nur bei den eigenen Sessions — der Rest bleibt schlank
+          // Vorbereitungs-Hinweise nur bei den eigenen Sessions - der Rest bleibt schlank
           if($mine && (string)($s2['ppt_by']??'')===(string)$req['trid'])
             $sub.='<br><span style="color:#B23A42;font-weight:600">'.e($lang==='de'?'PowerPoint: von dir':'PowerPoint: by you').'</span>';
           if($mine && !empty($s2['mat'])) $sub.='<br>📦 '.e($s2['mat']);
           $out.='<div style="border:1.5px solid '.($mine?'#D81F26':'#e2e5e8').';border-left:4px solid '.($mine?'#D81F26':'#8A939A').';border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:10.5px;line-height:1.35;'.($mine?'background:#fdf1f1;font-weight:600':'').'">'
             .e($title).'<div style="color:#8a939a;font-size:9.5px">'.$sub.'</div></div>';
         }
-        return $out?:'<div style="color:#c2c8cd;font-size:11px">—</div>';
+        return $out?:'<div style="color:#c2c8cd;font-size:11px">-</div>';
       };
       $myH=0; foreach($mySess as $s) $myH+=(float)$s['dur'];
       $myPpt=0; foreach($mySess as $s) if($s['pptMine']) $myPpt++;
     ?>
-    <h2><?=e($lang==='de'?'Wochenplan (Mo–Fr) — deine Sessions rot markiert':'Week plan (Mon–Fri) — your sessions marked red')?></h2>
+    <h2><?=e($lang==='de'?'Wochenplan (Mo-Fr) - deine Sessions rot markiert':'Week plan (Mon-Fri) - your sessions marked red')?></h2>
     <div class="mine"><?=e($lang==='de'
         ? 'Deine Einsätze: '.count($mySess).' Sessions · '.rtrim(rtrim(number_format($myH,1,',',''),'0'),',').' h'.($myPpt?' · '.$myPpt.'× PowerPoint von dir vorzubereiten':'')
         : 'Your sessions: '.count($mySess).' · '.rtrim(rtrim(number_format($myH,1,'.',''),'0'),'.').' h'.($myPpt?' · '.$myPpt.' PowerPoint(s) to prepare':''))?></div>

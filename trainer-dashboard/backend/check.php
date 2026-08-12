@@ -1,10 +1,10 @@
 <?php
 /**
- * ETAF — Basis-Check (bewusst OHNE Abhängigkeiten)
+ * ETAF - Basis-Check (bewusst OHNE Abhängigkeiten)
  * ---------------------------------------------------------------
  * Wenn andere Seiten nur „weiß“ bleiben, zeigt diese Seite, woran es
  * liegt: Tippfehler in config.php, fehlende Dateien, DB-Verbindung,
- * falsche base_url. Sie lädt NICHTS aus lib/db — kann also selbst
+ * falsche base_url. Sie lädt NICHTS aus lib/db - kann also selbst
  * dann laufen, wenn der Rest kaputt ist. Zeigt keine Passwörter.
  * Aufruf: backend/check.php
  */
@@ -17,7 +17,7 @@ function row($label,$ok,$detail=''){
 }
 ?>
 <!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ETAF — Basis-Check</title>
+<title>ETAF - Basis-Check</title>
 <body style="font:15px/1.6 system-ui,Arial,sans-serif;color:#242b31;background:#f4f5f6;margin:0;padding:26px">
 <div style="max-width:760px;margin:auto">
 <div style="color:#3e4852;margin:0 0 10px;display:flex"><svg viewBox="0 0 1752 657" height="26" role="img" aria-label="ETAF" style="display:block;overflow:visible"><path fill="currentColor" fill-rule="evenodd" d="M0 0 349 0 349 110 143 110 143 159 323 159 323 264 143 264 143 320 357 320 357 429 0 429ZM362 0 757 0 757 113 632 113 632 429 487 429 487 113 362 113ZM834 0 977 0 1164 429 1014 429 985 354 823 354 794 429 647 429ZM1181 0 1529 0 1529 110 1326 110 1326 183 1505 183 1505 292 1326 292 1326 429 1181 429ZM905 144 863 250 945 250Z"/><circle cx="1648" cy="552" r="104" fill="#CD1719"/></svg></div>
@@ -27,7 +27,7 @@ function row($label,$ok,$detail=''){
 <table style="border-collapse:collapse;width:100%" cellpadding="6">
 <?php
 /* 1) PHP-Version */
-row('PHP-Version '.PHP_VERSION, version_compare(PHP_VERSION,'8.0','>='), version_compare(PHP_VERSION,'8.0','>=')?'':'PHP 8 nötig — im artfiles-Menü umstellen.');
+row('PHP-Version '.PHP_VERSION, version_compare(PHP_VERSION,'8.0','>='), version_compare(PHP_VERSION,'8.0','>=')?'':'PHP 8 nötig - im artfiles-Menü umstellen.');
 
 /* 2) Dateien vollständig? */
 $need=['config.php','db.php','lib.php','mailer.php','api.php','ai.php','automation.php',
@@ -36,13 +36,13 @@ $need=['config.php','db.php','lib.php','mailer.php','api.php','ai.php','automati
 $missing=[];
 foreach($need as $f){ if(!is_file(__DIR__.'/'.$f)) $missing[]=$f; }
 row('Alle Backend-Dateien vorhanden', count($missing)===0,
-    $missing?'<b>Fehlt:</b> '.esc(implode(', ',$missing)).' — bitte das komplette ZIP hochladen.':'');
+    $missing?'<b>Fehlt:</b> '.esc(implode(', ',$missing)).' - bitte das komplette ZIP hochladen.':'');
 
 /* 2b) Zugriffsschutz da? (.htaccess ist am Mac/im FTP-Programm oft unsichtbar,
        weil Dateien mit Punkt am Anfang standardmäßig ausgeblendet werden) */
 row('Zugriffsschutz backend/.htaccess vorhanden', is_file(__DIR__.'/.htaccess'),
     is_file(__DIR__.'/.htaccess')?'':'<b>Fehlt!</b> Ohne diese Datei ist config.php (mit Passwörtern) ungeschützt. '
-    .'Die Datei heißt exakt <code>.htaccess</code> — sie ist im FTP-Programm oft nur versteckt '
+    .'Die Datei heißt exakt <code>.htaccess</code> - sie ist im FTP-Programm oft nur versteckt '
     .'(FileZilla: Server → „Auflistung versteckter Dateien erzwingen“; Finder: Cmd+Shift+Punkt). '
     .'Notfalls als <code>htaccess.txt</code> hochladen und auf dem Server in <code>.htaccess</code> umbenennen.');
 
@@ -56,7 +56,7 @@ if(is_file(__DIR__.'/config.php')){
 row('config.php lesbar (keine Tippfehler)', $cfgErr==='', $cfgErr!==''?'<b>'.esc($cfgErr).'</b>':'');
 
 /* 3b) Sind alle nötigen Einträge vorhanden? (erkennt eine fremde/alte config.php,
-       z.B. die des früheren ETAF Dashboards — anderes Format!) */
+       z.B. die des früheren ETAF Dashboards - anderes Format!) */
 if(is_array($cfg)){
   $reqKeys=['driver','db_host','db_name','db_user','db_pass','default_pin','session_days',
             'org_name','from_email','from_name','base_url','mail_mode','smtp','mailbox',
@@ -68,13 +68,13 @@ if(is_array($cfg)){
   }
   row('config.php vollständig (richtiges Format)', count($missK)===0,
       $missK?'<b>Fehlende Einträge:</b> '.esc(implode(', ',$missK))
-            .' — das sieht nach einer fremden oder alten config.php aus. Bitte config.sample.php aus dem ZIP als Vorlage nehmen '
+            .' - das sieht nach einer fremden oder alten config.php aus. Bitte config.sample.php aus dem ZIP als Vorlage nehmen '
             .'oder die funktionierende config.php der bestehenden Installation kopieren und nur base_url anpassen.':'');
 }
 
 /* Sensible Details (DB-Status, Konfiguration) nur mit ?key=<cron_key> zeigen.
    Ist config.php kaputt/leer (der eigentliche Rettungsfall), gibt es keinen
-   Key zum Prüfen — dann bleibt die Fehlermeldung oben trotzdem sichtbar. */
+   Key zum Prüfen - dann bleibt die Fehlermeldung oben trotzdem sichtbar. */
 $needKey = is_array($cfg) && !empty($cfg['cron_key']) && $cfg['cron_key']!=='CHANGE_ME_zufälliger_wert';
 $authed  = !$needKey || hash_equals((string)$cfg['cron_key'], (string)($_GET['key'] ?? ''));
 
@@ -109,7 +109,7 @@ if(is_array($cfg) && $authed){
         try{ $pdo->query("SELECT 1 FROM $t LIMIT 1"); }catch(\Throwable $e){ $missT[]=$t; }
       }
       row('Datenbank-Schema aktuell', count($missT)===0,
-          $missT?'<b>Fehlende Tabellen:</b> '.esc(implode(', ',$missT)).' — meist ist backend/db.php veraltet. '
+          $missT?'<b>Fehlende Tabellen:</b> '.esc(implode(', ',$missT)).' - meist ist backend/db.php veraltet. '
                 .'Aktuelle db.php hochladen und diese Seite neu laden (die Tabellen werden dann automatisch angelegt).':'');
     }catch(\Throwable $e){ /* DB-Verbindung wurde oben schon bewertet */ }
   }
@@ -121,20 +121,20 @@ if(is_array($cfg) && $authed){
     $bh=(time()-$blast)/3600;
     row('Tägliche Datensicherung', $bh<=36,
         'Letzte Sicherung vor '.round($bh).' Std. · '.count($bfiles).' Stände vorhanden'
-        .($bh>36?' — <b>läuft der Cron-Job noch?</b> (backend/cron.php?key=…)':'')
+        .($bh>36?' - <b>läuft der Cron-Job noch?</b> (backend/cron.php?key=…)':'')
         .' · <a href="backup.php?key='.esc($_GET['key']??'').'">Übersicht & Download</a>');
   } else {
     row('Tägliche Datensicherung', false,
         'Noch keine Sicherung vorhanden. Der stündliche Cron-Job (backend/cron.php?key=…) legt automatisch '
-        .'täglich eine an — oder sofort manuell: <a href="backup.php?key='.esc($_GET['key']??'').'&amp;run=1">jetzt sichern</a>.');
+        .'täglich eine an - oder sofort manuell: <a href="backup.php?key='.esc($_GET['key']??'').'&amp;run=1">jetzt sichern</a>.');
   }
 
   /* 5) base_url passt zur aufgerufenen Domain? (wichtig für alle Links in E-Mails) */
   $bu=(string)($cfg['base_url']??''); $host=$_SERVER['HTTP_HOST']??'';
   $buOk = $bu==='' ? null : (stripos($bu,$host)!==false);
   row('base_url passt zur Domain', $buOk,
-      $bu===''?'base_url ist leer (wird automatisch ermittelt — ok).':
-      ($buOk?esc($bu):'<b>'.esc($bu).'</b> — die Seite läuft aber auf <b>'.esc($host).'</b>. Bitte base_url in config.php anpassen, sonst zeigen alle Buttons in E-Mails auf die falsche Adresse!'));
+      $bu===''?'base_url ist leer (wird automatisch ermittelt - ok).':
+      ($buOk?esc($bu):'<b>'.esc($bu).'</b> - die Seite läuft aber auf <b>'.esc($host).'</b>. Bitte base_url in config.php anpassen, sonst zeigen alle Buttons in E-Mails auf die falsche Adresse!'));
 
   /* 6) Kernkonfiguration gesetzt? (nur ob, nie was) */
   row('SMTP-Passwort gesetzt', !empty($cfg['smtp']['pass']), '');

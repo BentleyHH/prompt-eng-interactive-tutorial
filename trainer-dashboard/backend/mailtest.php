@@ -1,9 +1,9 @@
 <?php
 /**
- * ETAF — E-Mail-Diagnose
+ * ETAF - E-Mail-Diagnose
  * ---------------------------------------------------------------
  * Zeigt die aktuelle Mail-Konfiguration, verschickt eine Test-Mail
- * und protokolliert den kompletten SMTP-Dialog — damit man sofort
+ * und protokolliert den kompletten SMTP-Dialog - damit man sofort
  * sieht, WO es klemmt (Verbindung, Login, Empfänger, Zustellung).
  *
  * Aufruf:  backend/mailtest.php?key=<cron_key>&to=deine@mail.de
@@ -29,7 +29,7 @@ $need = (string)($c['cron_key'] ?? '');
 if($need==='' || !hash_equals($need,(string)$key)){
   http_response_code(403);
   echo '<meta charset="utf-8"><body style="font:15px system-ui;padding:30px;color:#242b31">'
-     .'<h2>ETAF — E-Mail-Diagnose</h2>'
+     .'<h2>ETAF - E-Mail-Diagnose</h2>'
      .'<p>Zugriff nur mit gültigem <code>?key=</code> (entspricht <code>cron_key</code> aus config.php).</p>'
      .'<p>Beispiel: <code>backend/mailtest.php?key=DEIN_CRON_KEY&amp;to=deine@mail.de</code></p>'
      .'</body>';
@@ -55,7 +55,7 @@ $did=false; $ok=false; $err=''; $trace=[];
 if($to!==''){
   $did=true;
   $html = email_html("Dies ist eine Test-Mail aus der ETAF-Diagnose.\n\nWenn du das liest, funktioniert der Versand technisch.", '');
-  $ok   = send_email($to, 'Test', 'ETAF — Test-Mail (Diagnose)', $html);
+  $ok   = send_email($to, 'Test', 'ETAF - Test-Mail (Diagnose)', $html);
   $err  = $GLOBALS['__mail_err'] ?? '';
   $trace= $GLOBALS['__smtp_trace'] ?? [];
 }
@@ -66,7 +66,7 @@ try { ensure_schema(); $log=q("SELECT to_email,subject,status,created_at FROM em
 catch(Throwable $e){ $log=[]; }
 ?>
 <!doctype html><html lang="de"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>ETAF — E-Mail-Diagnose</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>ETAF - E-Mail-Diagnose</title>
 <style>
  body{font:15px/1.55 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#242b31;background:#f4f5f6;margin:0;padding:26px}
  .wrap{max-width:760px;margin:auto}
@@ -91,7 +91,7 @@ catch(Throwable $e){ $log=[]; }
      <tr><td><?=esc($k)?></td><td><?= $v==='⚠ LEER' ? '<span class="bad">'.esc($v).'</span>' : esc($v) ?></td></tr>
    <?php endforeach; ?></table>
    <?php if($mode==='log'): ?>
-     <p class="hint" style="margin-top:12px">⚠ <b>mail_mode ist <code>log</code></b> — es wird gar nichts versendet, nur protokolliert.
+     <p class="hint" style="margin-top:12px">⚠ <b>mail_mode ist <code>log</code></b> - es wird gar nichts versendet, nur protokolliert.
         In <code>config.php</code> auf <code>'smtp'</code> stellen.</p>
    <?php elseif($mode==='smtp' && empty($smtp['pass'])): ?>
      <p class="hint" style="margin-top:12px">⚠ <b>SMTP-Passwort ist leer.</b> Trage in <code>config.php</code> unter <code>'smtp' =&gt; ['pass' =&gt; '…']</code> das Passwort des Postfachs <code><?=esc($smtp['user']??'')?></code> ein.</p>
@@ -120,7 +120,7 @@ catch(Throwable $e){ $log=[]; }
  $mbTest=null;
  if($mbConfigured){
    if(!is_file(__DIR__.'/mailfetch.php')){
-     $mbTest=['ok'=>false,'error'=>'Datei backend/mailfetch.php fehlt auf dem Server — bitte das komplette ZIP hochladen.'];
+     $mbTest=['ok'=>false,'error'=>'Datei backend/mailfetch.php fehlt auf dem Server - bitte das komplette ZIP hochladen.'];
    } else {
      require_once __DIR__.'/mailfetch.php';
      try{ $mbTest=pop3_fetch_new($mb,0); }catch(Throwable $e){ $mbTest=['ok'=>false,'error'=>$e->getMessage()]; }
@@ -136,13 +136,13 @@ catch(Throwable $e){ $log=[]; }
      <tr><td>Postfach-User</td><td><?=esc($mb['user']??'(leer)')?></td></tr>
      <tr><td>Passwort</td><td><?= !empty($mb['pass']) ? '••• gesetzt' : '<span class="bad">⚠ LEER</span>' ?></td></tr>
      <tr><td>Verbindung</td><td><?php
-       if(!$mbConfigured) echo '<span class="warn">nicht konfiguriert — mailbox-Block in config.php ergänzen</span>';
-       elseif($mbTest['ok']) echo '<span class="ok">✓ Login ok — '.(int)($mbTest['total_new']??0).' neue Mail(s) warten</span>';
+       if(!$mbConfigured) echo '<span class="warn">nicht konfiguriert - mailbox-Block in config.php ergänzen</span>';
+       elseif($mbTest['ok']) echo '<span class="ok">✓ Login ok - '.(int)($mbTest['total_new']??0).' neue Mail(s) warten</span>';
        else echo '<span class="bad">✗ '.esc($mbTest['error']??'Fehler').'</span>';
      ?></td></tr>
      <tr><td>KI-Erkennung</td><td><?php
        $aiKey=trim($c['anthropic_key']??'');
-       if($aiKey==='') echo '<span class="warn">kein anthropic_key — es greift nur die einfache Muster-Erkennung</span>';
+       if($aiKey==='') echo '<span class="warn">kein anthropic_key - es greift nur die einfache Muster-Erkennung</span>';
        else echo '<span class="ok">✓ Key gesetzt</span> · Modell: '.esc($c['anthropic_model']??'');
      ?></td></tr>
    </table>
@@ -153,7 +153,7 @@ catch(Throwable $e){ $log=[]; }
            <td><?=esc($r['subject'])?><br><span class="sub" style="font-size:12px"><?=esc($r['created_at'])?><?= $r['confidence']?' · Zuordnung: '.esc($r['confidence']):''?></span></td></tr>
      <?php endforeach; ?></table>
    <?php elseif($mbConfigured): ?>
-     <p class="sub" style="margin-top:10px">Noch keine Mails verarbeitet — im Dashboard unter <b>Antworten → Flugpost → „Postfach jetzt abrufen“</b> anstoßen (oder auf den Cron warten).</p>
+     <p class="sub" style="margin-top:10px">Noch keine Mails verarbeitet - im Dashboard unter <b>Antworten → Flugpost → „Postfach jetzt abrufen“</b> anstoßen (oder auf den Cron warten).</p>
    <?php endif; ?>
  </div>
 
