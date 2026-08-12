@@ -129,11 +129,17 @@
 
   /* ============ APP SHELL ============ */
   #app{display:none;min-height:100vh;grid-template-columns:236px 1fr}
+  /* Tablet hoch: schmalere Seitenleiste — der Inhalt braucht die Breite mehr */
+  @media(max-width:1100px){#app{grid-template-columns:206px 1fr} .side{padding:18px 10px}
+    .nav button{padding:9px 9px;gap:9px} .brand{padding:4px 4px 14px}}
   @media(max-width:820px){#app{grid-template-columns:1fr}}
   .side{background:var(--panel);border-right:1px solid var(--line);
     padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
   @media(max-width:820px){.side{display:none}}
-  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 16px}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 16px;
+    border:none;background:transparent;cursor:pointer;width:100%;border-radius:9px}
+  .brand:hover{opacity:.72}
+  .brand:focus-visible{outline:2px solid var(--brand-solid);outline-offset:2px}
   .nav{display:flex;flex-direction:column;gap:2px}
   .nav button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
     padding:9px 11px;border:none;background:transparent;border-radius:9px;color:var(--muted);
@@ -153,17 +159,36 @@
     background:var(--panel-2);border:1px solid var(--line);border-radius:9px}
 
   main{min-width:0;padding:0 0 60px}
+  /* Kopfzeile bricht IMMER um — so kann rechts nie etwas abgeschnitten werden,
+     egal ob Handy, iPad im Hoch- oder Querformat oder schmales Fenster. */
   .topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);
     backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
-    padding:calc(14px + env(safe-area-inset-top,0px)) 30px 14px;display:flex;align-items:center;gap:14px}
-  @media(max-width:820px){
-    .topbar{padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;flex-wrap:wrap;gap:8px 10px}
-    .topbar>div:first-child{flex:1 1 100%}          /* Titelblock volle Breite → Steuerelemente umbrechen */
+    padding:calc(14px + env(safe-area-inset-top,0px)) 30px 14px;
+    display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap}
+  .topbar>*{min-width:0}
+  .topbar>div:first-child{min-width:0;flex:1 1 220px}
+  .topbar h2,.topbar .sub{overflow-wrap:anywhere}
+  /* Bedienelemente als geschlossene Gruppe: sie brechen gemeinsam um und
+     bleiben rechtsbündig — so steht nie ein einzelner Knopf verloren da. */
+  .tbacts{display:flex;align-items:center;justify-content:flex-end;
+    gap:8px 10px;flex-wrap:wrap;min-width:0;flex:0 1 auto}
+  /* Tablet: Titel bekommt eine eigene Zeile, die Steuerelemente die zweite */
+  @media(max-width:1240px){
+    .topbar{padding-left:20px;padding-right:20px}
+    .topbar>div:first-child{flex:1 1 100%}
     .topbar .spacer{display:none}
+    .tbacts{flex:1 1 100%}
+    .synct{display:none}                            /* Uhrzeit ist der erste Verzicht */
+    #clientBar select{max-width:190px}
+  }
+  @media(max-width:900px){ #clientBar select{max-width:150px} }
+  @media(max-width:820px){
+    .topbar{padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;gap:8px 10px}
     .topbar h2{font-size:16px} .topbar .sub{font-size:12px}
     /* Kundenauswahl teilt sich die Zeile mit dem Aktualisieren-Knopf */
-    #clientBar{flex:1 1 180px;min-width:0}
+    #clientBar{flex:1 1 180px}
     #clientBar select{width:100%;max-width:none}
+    .tbacts{justify-content:stretch}
     #syncBtn{flex:0 0 auto}                         /* kompakt statt leerer Balken */
     .topbar .btn{flex:1 1 auto;justify-content:center;padding:9px 12px}
   }
@@ -184,7 +209,8 @@
   #syncBtn.spin svg{animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .synct{margin-right:2px;white-space:nowrap;opacity:.85}
-  @media(max-width:680px){.synclbl{display:none} .synct{display:none!important}}
+  @media(max-width:1240px){.synclbl{display:none}}
+  @media(max-width:680px){.synct{display:none!important}}
 
   .wrap{padding:24px 30px;max-width:1200px}
   @media(max-width:820px){.wrap{padding:18px 16px}}
@@ -594,7 +620,7 @@
   .undogrp .btn{font-size:15px;line-height:1;padding:9px 11px}
   .undogrp .btn[disabled]{opacity:.4;cursor:default}
   .undolbl{margin-left:7px;font-size:13px}
-  @media(max-width:900px){ .undolbl{display:none} }
+  @media(max-width:1240px){ .undolbl{display:none} }
   .btnspin{width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;
     display:inline-block;animation:wkrot .8s linear infinite;vertical-align:-2px;margin-right:8px;flex:none}
   @keyframes wkrot{to{transform:rotate(360deg)}}
@@ -857,7 +883,8 @@
 <!-- ===================== APP ===================== -->
 <div id="app">
   <aside class="side">
-    <div class="brand"><span id="brandLogo" style="color:var(--ink)"></span></div>
+    <button class="brand" onclick="go('dash')" id="brandBtn" title="Übersicht" aria-label="Übersicht">
+      <span id="brandLogo" style="color:var(--ink)"></span></button>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot">
       <div id="meBox"></div>
@@ -874,20 +901,22 @@
         <div class="sub" id="ts"></div>
       </div>
       <div class="spacer"></div>
-      <span class="undogrp">
-        <button class="btn" id="undoBtn" onclick="doUndo()" disabled>↶<span class="undolbl">Rückgängig</span></button>
-        <button class="btn" id="redoBtn" onclick="doRedo()" disabled>↷</button>
-      </span>
-      <span class="sub synct" id="syncTime"></span>
-      <button class="btn" id="syncBtn" onclick="syncNow()" title="Aktualisieren">
-        <span id="syncIcon"></span><span id="syncLbl" class="synclbl">Aktualisieren</span>
-      </button>
-      <span id="clientBar"></span>
-      <button class="btn amber" onclick="openQuick()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-        <span id="qrLabel">Schnell-Ersatz</span>
-      </button>
-      <button class="btn primary" onclick="openImport()" id="impBtn">＋ Import</button>
+      <div class="tbacts">
+        <span class="undogrp">
+          <button class="btn" id="undoBtn" onclick="doUndo()" disabled>↶<span class="undolbl">Rückgängig</span></button>
+          <button class="btn" id="redoBtn" onclick="doRedo()" disabled>↷</button>
+        </span>
+        <span class="sub synct" id="syncTime"></span>
+        <button class="btn" id="syncBtn" onclick="syncNow()" title="Aktualisieren">
+          <span id="syncIcon"></span><span id="syncLbl" class="synclbl">Aktualisieren</span>
+        </button>
+        <span id="clientBar"></span>
+        <button class="btn amber" onclick="openQuick()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+          <span id="qrLabel">Schnell-Ersatz</span>
+        </button>
+        <button class="btn primary" onclick="openImport()" id="impBtn">＋ Import</button>
+      </div>
     </div>
 
     <div class="wrap">
