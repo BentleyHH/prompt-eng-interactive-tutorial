@@ -714,6 +714,31 @@
   .chips.rpchips button b{font-variant-numeric:tabular-nums;margin-left:3px;opacity:.75}
   .chips.rpchips button.on{background:var(--brand-solid);border-color:var(--brand-solid);color:#fff}
   .chips.rpchips button.on b{opacity:.9}
+  /* Einzelner Trainingsbericht als Druckbogen */
+  .dsheet .ag-top{flex-wrap:nowrap;gap:16px}
+  .dsheet .ag-top>div:first-child{min-width:0;flex:1 1 auto}
+  .dsheet .ag-top>span{flex:none}
+  .dsheet .ag-h1{font-size:20px;line-height:1.2}
+  .dsheet .dstop{display:flex;gap:26px;flex-wrap:wrap;align-items:baseline;margin:2px 0 6px}
+  .dsheet .dsbig,.dsheet .dsrec{display:flex;gap:9px;align-items:baseline}
+  .dsheet .dsbig span,.dsheet .dsrec span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+  .dsheet .dsbig b{font-size:26px;line-height:1}
+  .dsheet .dsbig i,.dsheet .dsrec i{font-style:normal;color:var(--faint)}
+  .dsheet .dsrec b{font-size:14px}
+  .dsheet b.good{color:var(--good)} .dsheet b.warn{color:var(--warn)} .dsheet b.crit{color:var(--crit)}
+  .dsgrp{margin:11px 0 0;break-inside:avoid;page-break-inside:avoid}
+  .dsgrp h4{margin:0 0 5px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);
+    border-bottom:1px solid var(--line);padding-bottom:4px;display:flex;justify-content:space-between}
+  .dsgrp h4 span{color:var(--muted);letter-spacing:0}
+  .dskv{display:grid;grid-template-columns:1fr auto 1fr auto;gap:3px 12px;font-size:12.5px;align-items:baseline}
+  .dskv .k{color:var(--muted);min-width:0;overflow-wrap:anywhere}
+  .dskv .v{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .dstx{margin:0 0 8px;font-size:12.5px;break-inside:avoid}
+  .dstx b{display:block;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+  .rptable td.nt{color:var(--muted);font-size:12px}
+  .rpacts li.done{color:var(--faint);text-decoration:line-through}
+  .dspage{height:0}
+  @media(max-width:560px){ .dskv{grid-template-columns:1fr auto} }
   .rpbars{display:flex;flex-direction:column;gap:7px}
   .rprow{display:grid;grid-template-columns:minmax(120px,1.45fr) minmax(70px,2fr) 42px 40px;
     gap:10px;align-items:center;font-size:13px}
@@ -842,6 +867,21 @@
     .rpsheet .rptable td,.rpsheet .rptable th{padding:3px 6px;font-size:9pt}
     .rpsheet .rpflags{font-size:9pt} .rpsheet .rpacts{font-size:9.5pt}
     .rpsheet .ag-h2{break-after:avoid;page-break-after:avoid}
+    /* Sammelmappe: jeder Bericht auf einer eigenen Seite */
+    .dspage{break-after:page;page-break-after:always;height:0}
+    .dsheet{break-inside:auto}
+    .dsheet .ag-h2{break-after:avoid;page-break-after:avoid}
+    .dsheet .dskv,.dsheet .rptable,.dsheet .dsgrp{break-inside:avoid;page-break-inside:avoid}
+    .dskv{font-size:9pt;gap:1px 12px;line-height:1.35}
+    .dsgrp{margin-top:7px} .dsgrp h4{margin-bottom:3px;padding-bottom:2px;font-size:8pt}
+    .dsheet .ag-h1{font-size:15pt}
+    .dsheet .dstop{margin:1px 0 3px;gap:20px}
+    .dsheet .dsbig b{font-size:17pt}
+    .dstx{font-size:9pt;margin-bottom:5px}
+    .dsheet .ag-h2{margin:9px 0 4px}
+    .dsheet .rptable td,.dsheet .rptable th{padding:2px 5px;font-size:8.5pt}
+    .dsheet .rpflags{font-size:8.5pt} .dsheet .rpflags span{padding:2px 8px}
+    .dsheet .rpacts{font-size:9pt}
     .rpsheet .rpbars,.rpsheet .rptable{break-inside:avoid;page-break-inside:avoid}
   }
 </style>
@@ -1577,6 +1617,16 @@ const L={
   rpFDue:"fällig", rpFFinal:"abgeschlossen", rpFSoon:"kommt noch", rpFAll:"alle",
   rpNotYet:"läuft noch nicht", rpListEmpty:"Keine Trainings in dieser Auswahl.",
   rpTeamN:n=>`${n} Trainer`,
+  dbPrint:"Bericht drucken", dbNothingYet:"In diesem Bericht steht noch nichts.",
+  dbNotes:"Anmerkungen", dbNoteShort:"Notiz", dbFlagsShort:"Vorkommnisse",
+  dbMailClient:"Mit eigenem Mailprogramm", dbPickPrint:"Einzelbericht drucken",
+  dbPickPh:"Training wählen …",
+  rpBatch:"Alle Berichte im Zeitraum", rpBatchBtn:"Sammelmappe drucken",
+  mtCopied:"Kopiert", mtLinkCopied:"Link kopiert — jetzt in deine Mail einfügen",
+  mtCopyManual:"Bitte von Hand kopieren:", mtLink:"Link kopieren",
+  mtLong:"Der Text ist lang — manche Mailprogramme kürzen ihn.",
+  mtDemo:"Links gibt es erst im Live-Betrieb.",
+  mtHint:"Öffnet einen Entwurf in deinem Mailprogramm. Anhänge kann ein Mail-Link technisch nicht mitgeben — deshalb geht der Agenda-Link mit, der immer den aktuellen Stand zeigt.",
   emNone:"Noch keine E-Mails versendet.", em_sent:"gesendet", em_logged:"protokolliert", em_failed:"fehlgeschlagen",
   agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
   resetToast:"Demo-Daten zurückgesetzt",
@@ -2000,6 +2050,16 @@ const L={
   rpFDue:"due", rpFFinal:"completed", rpFSoon:"upcoming", rpFAll:"all",
   rpNotYet:"not started", rpListEmpty:"No trainings in this selection.",
   rpTeamN:n=>`${n} trainer${n===1?"":"s"}`,
+  dbPrint:"Print report", dbNothingYet:"This report is still empty.",
+  dbNotes:"Notes", dbNoteShort:"Note", dbFlagsShort:"Incidents",
+  dbMailClient:"Use my email app", dbPickPrint:"Print a single report",
+  dbPickPh:"Choose a training …",
+  rpBatch:"All reports in this period", rpBatchBtn:"Print as one document",
+  mtCopied:"Copied", mtLinkCopied:"Link copied — paste it into your email",
+  mtCopyManual:"Please copy manually:", mtLink:"Copy link",
+  mtLong:"The text is long — some email apps will truncate it.",
+  mtDemo:"Links are only available in live mode.",
+  mtHint:"Opens a draft in your own email app. A mail link cannot carry attachments — so the agenda link travels instead and always shows the current state.",
   emNone:"No emails sent yet.", em_sent:"sent", em_logged:"logged", em_failed:"failed",
   agendaHint:"The trainer receives this overview by email (print link) and can print it.",
   resetToast:"Demo data reset",
@@ -5247,8 +5307,12 @@ function drawAgendaMail(first){
       <input class="inp" id="agSubj">
       <label class="fld">${t("agBodyLbl")}</label>
       <textarea id="agBody" style="min-height:150px"></textarea>
-      <div class="meta" style="margin-top:10px">${ic("clip",13)}${t("agMailInfo")}</div>`;
-    $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button><div class="spacer"></div>
+      <div class="meta" style="margin-top:10px">${ic("clip",13)}${t("agMailInfo")}</div>
+      <div class="meta" style="margin-top:8px">${ic("mail",13)}${t("mtHint")}</div>`;
+    $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+      <button class="btn sm" onclick="agendaCopyLink()">${ic("clip",14)}${t("mtLink")}</button>
+      <button class="btn sm" onclick="agendaToMailClient()">${ic("mail",14)}${t("dbMailClient")}</button>
+      <div class="spacer"></div>
       <button class="btn primary" onclick="doSendAgenda()">${ic("send",15)}${t("agendaSend")}</button>`;
   }
   $("#agSubj").value=tx.subject;
@@ -6139,8 +6203,11 @@ function drawDebrief(){
     </div>
     ${dbCur.author?`<div class="meta" style="margin-top:12px">${esc(t("dbAuthor",dbCur.author))}${dbCur.updatedAt?" · "+esc(fmtWhen(dbCur.updatedAt)):""}</div>`:""}`;
 
+  const hasSaved=dbCur.version>0;
   $("#sheetFoot").innerHTML=`
-    ${dbCur.version?`<button class="btn sm" onclick="deleteDebrief()">${ic("trash",14)}${esc(t("dbDelete"))}</button>`:""}
+    ${hasSaved?`<button class="btn sm" onclick="deleteDebrief()">${ic("trash",14)}${esc(t("dbDelete"))}</button>
+      <button class="btn sm" onclick="printDebrief('${esc(String(tg.id))}')">${ic("printer",14)}${esc(t("dbPrint"))}</button>
+      <button class="btn sm" onclick="debriefToMailClient('${esc(String(tg.id))}')" title="${esc(t("mtHint"))}">${ic("mail",14)}${esc(t("dbMailClient"))}</button>`:""}
     <div class="spacer"></div>
     <button class="btn" onclick="saveDebrief('draft')">${esc(t("dbSaveDraft"))}</button>
     <button class="btn primary" onclick="saveDebrief('final')">${ic("chart",15)}${esc(t("dbFinish"))}</button>`;
@@ -6445,10 +6512,20 @@ async function renderReports(){
     <div><label class="fld">${esc(t("rpBucket"))}</label>
       ${seg("rpBuc",rpState.bucket,[["week",t("rpWeek")],["month",t("rpMonth")],["year",t("rpYear")]],"rpSetBucket")}</div>
     <div class="spacer"></div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" onclick="repCsv()">${ic("down",15)}${esc(t("rpCsv"))}</button>
       <button class="btn primary" onclick="openRepPrint()">${ic("printer",15)}${esc(t("rpPrint"))}</button>
     </div>
+  </div>
+  <div class="panel-b" style="border-top:1px solid var(--line);display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+    <div style="min-width:0;flex:1 1 260px">
+      <label class="fld">${esc(t("dbPickPrint"))}</label>
+      <select class="inp" id="rpPick" onchange="if(this.value){printDebrief(this.value);this.value='';}">
+        <option value="">${esc(t("dbPickPh"))}</option>
+        ${rpPickOptions()}
+      </select>
+    </div>
+    <button class="btn" onclick="printDebriefBatch()">${ic("printer",15)}${esc(t("rpBatchBtn"))}</button>
   </div></div>`;
 
   if(!R.n){
@@ -6555,6 +6632,15 @@ async function renderReports(){
   drawRpList();
 }
 
+/* Auswahlfeld: nur Trainings, zu denen wirklich ein Bericht existiert. */
+function rpPickOptions(){
+  return S.trainings
+    .filter(tg=>tg.debrief && !(S.clientFilter && tg.clientId!==S.clientFilter))
+    .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")))
+    .map(tg=>`<option value="${esc(String(tg.id))}">${esc(tg.code?tg.code+" — ":"")}${esc(tg.topic)}`
+      +`${tg.date?" · "+fmtDate(tg.date):""}${tg.debrief.status==="draft"?" ("+esc(t("dbDraft"))+")":""}</option>`).join("");
+}
+
 /* Sprung zur Kriterienliste — die Kachel „Handlungsbedarf" zeigt dorthin. */
 function rpJumpAlert(){
   const el=$("#v-reports .rpbars"); if(el) el.scrollIntoView({behavior:"smooth",block:"center"});
@@ -6619,6 +6705,8 @@ function drawRpList(){
         :tg.debrief?`<span class="dbbadge dr">${esc(t("dbDraft"))}</span>`
         :past?`<span class="dbbadge no">${esc(t("dbMissing"))}</span>`
         :`<span class="dbbadge no">${esc(t("rpNotYet"))}</span>`}
+      ${tg.debrief?`<button class="btn sm" title="${esc(t("dbPrint"))}"
+        onclick="event.stopPropagation();printDebrief('${esc(String(tg.id))}')">${ic("printer",14)}</button>`:""}
       ${(past||tg.debrief)?`<button class="btn sm${past&&!done?" primary":""}"
         onclick="event.stopPropagation();openDebrief('${esc(String(tg.id))}')">
         ${esc(tg.debrief?t("dbEdit"):t("dbNew"))}</button>`:""}
@@ -6734,6 +6822,184 @@ function openRepPrint(){
   $("#repPrint").classList.add("on");
 }
 function closeRepPrint(){ $("#repPrint").classList.remove("on"); clearSheetTitle(); }
+
+
+/* ============================================================
+   EINZELBERICHT: DRUCKEN UND WEITERGEBEN
+   ============================================================ */
+
+/* Bericht eines Trainings holen — live vom Server, im Demo aus dem Speicher. */
+async function dbFetch(tgId){
+  if(LIVE){ const d=await apiCall("debrief.get",{training:tgId}); return d.debrief||null; }
+  return (S.debriefs||{})[String(tgId)]||null;
+}
+
+/* Ein Bericht als Druckbogen. Aufbau folgt dem Formular, damit man beim
+   Gegenlesen nicht suchen muss: Kopf, Gesamturteil, Kriterien je Bereich,
+   Trainer, Vorkommnisse, Texte, Maßnahmen. */
+function debriefSheet(tg,d){
+  const cl=clientOf(tg);
+  const val=v=>v>=1&&v<=5 ? `<b class="${dbBand(v)}">${v}</b><i>/5</i>` : `<i>${esc(t("dbNa"))}</i>`;
+  const groups=DB_GROUPS.map(g=>{
+    const rows=g.items.filter(it=>d.scores&&d.scores[it[0]]);
+    if(!rows.length) return "";
+    const gv=debriefAvgOf(g.items.map(it=>d.scores[it[0]]).filter(Boolean));
+    return `<div class="dsgrp"><h4>${esc(dbGroupLabel(g))}<span>${dbNum(gv)}</span></h4>
+      <div class="dskv">${rows.map(it=>`<span class="k">${esc(dbL(it))}</span>
+        <span class="v">${val(d.scores[it[0]])}</span>`).join("")}</div></div>`;
+  }).join("");
+  const trs=Object.entries(d.trainers||{}).map(([tid,tv])=>{
+    const tr=S.trainers.find(x=>String(x.id)===String(tid));
+    const vals=DB_TRK.map(k=>tv[k[0]]).filter(x=>x>=1);
+    return `<tr><td>${esc(tr?tr.name:"#"+tid)}</td>
+      <td class="num"><b class="${dbBand(debriefAvgOf(vals))}">${dbNum(debriefAvgOf(vals))}</b></td>
+      ${DB_TRK.map(k=>`<td class="num">${tv[k[0]]>=1?tv[k[0]]:"—"}</td>`).join("")}
+      <td class="nt">${esc(tv.note||"")}</td></tr>`;}).join("");
+  const flags=(d.flags||[]).map(f=>`<span>${esc(dbLabelOf(f))}</span>`).join("");
+  const texts=DB_TEXTS.filter(x=>(d.texts||{})[x[0]]).map(x=>
+    `<div class="dstx"><b>${esc(dbL(x))}</b><div>${esc(d.texts[x[0]])}</div></div>`).join("");
+  const acts=(d.actions||[]).filter(a=>(a.text||"").trim()).map(a=>
+    `<li${a.done?' class="done"':""}>${esc(a.text)}<i> — ${a.owner?esc(a.owner):"?"}${a.due?", "+fmtDate(a.due):""}${a.done?" ✓":""}</i></li>`).join("");
+  const rec=DB_REC.find(r=>r[0]===d.recommend);
+  const tot=dbTotalOf(tg), fil=dbFilledOfObj(d);
+
+  return `<div class="cal-sheet dsheet">
+    <div class="ag-top"><div>
+      <div class="ag-eyebrow">${esc(t("dbTitle"))}${cl?" · "+esc(cl.name):""}</div>
+      <div class="ag-h1">${esc(tg.code?tg.code+" — ":"")}${esc(tg.topic)}</div>
+      <div class="meta">${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""} · ${whenLabel(tg)}
+        · ${esc(t("dbFilled",fil,tot))}${d.status==="draft"?" · "+esc(t("dbDraft")):""}</div></div>
+      <span style="color:var(--brand);display:inline-flex">${etafLogo(34)}</span></div>
+    <div class="ag-bar"></div>
+    <div class="dstop">
+      <div class="dsbig"><span>${esc(t("dbOverall"))}</span>
+        <b class="${dbBand(d.overall)}">${d.overall>=1?dbNum(d.overall):"—"}</b><i>/5</i></div>
+      <div class="dsrec"><span>${esc(t("dbRecommend"))}</span>
+        <b>${rec?esc(dbL(rec)):"—"}</b></div>
+    </div>
+    ${groups||`<div class="meta">${esc(t("dbUnrated"))}</div>`}
+    ${trs?`<div class="ag-h2">${esc(t("dbTrainerHead"))}</div>
+      <table class="rptable"><tr><th>${esc(t("dbTrainerHead"))}</th><th style="text-align:right">Ø</th>
+        ${DB_TRK.map(k=>`<th style="text-align:right">${esc(dbL(k))}</th>`).join("")}
+        <th>${esc(t("dbNoteShort"))}</th></tr>${trs}</table>`:""}
+    ${flags?`<div class="ag-h2">${esc(t("dbFlagsShort"))}</div><div class="rpflags">${flags}</div>`:""}
+    ${texts?`<div class="ag-h2">${esc(t("dbNotes"))}</div>${texts}`:""}
+    ${acts?`<div class="ag-h2">${esc(t("dbActions"))}</div><ul class="rpacts">${acts}</ul>`:""}
+    <div class="meta" style="margin-top:14px">ETAF · Trainer-Koordination
+      ${d.author?" · "+esc(t("dbAuthor",d.author)):""}
+      ${d.updatedAt?" · "+esc(fmtWhen(d.updatedAt)):""}</div>
+  </div>`;
+}
+function debriefAvgOf(a){
+  const v=(a||[]).filter(x=>x>=1&&x<=5);
+  return v.length?Math.round(v.reduce((s,x)=>s+x,0)/v.length*100)/100:null;
+}
+
+/* Einzelnen Bericht drucken (aus Liste, Formular oder Auswahlfeld). */
+async function printDebrief(tgId){
+  const tg=S.trainings.find(x=>String(x.id)===String(tgId)); if(!tg) return;
+  let d;
+  try{ d=await dbFetch(tgId); }catch(e){ toast(e.message,"crit"); return; }
+  if(!d || !dbFilledOfObj(d)){ toast(t("dbNothingYet"),"warn"); return; }
+  $("#repPrintBody").innerHTML=debriefSheet(tg,d);
+  setPageOrient("portrait");
+  setSheetTitle(`ETAF ${t("dbTitle")} ${tg.code||""} ${tg.topic}${dateSpan(tg)?" ("+dateSpan(tg)+")":""}`);
+  $("#repPrint").classList.add("on");
+}
+
+/* Sammelmappe: alle Berichte des gewählten Zeitraums hintereinander —
+   praktisch für Quartals- und Jahresdurchsprachen. */
+async function printDebriefBatch(){
+  const R=rpState.data; if(!R||!R.items||!R.items.length){ toast(t("rpNoData"),"warn"); return; }
+  let all={};
+  if(LIVE){
+    try{ const d=await apiCall("debriefs.list",{});
+      (d.debriefs||[]).forEach(x=>all[String(x.training)]=x); }
+    catch(e){ toast(e.message,"crit"); return; }
+  } else all=S.debriefs||{};
+  const sheets=R.items.map(i=>{
+    const tg=S.trainings.find(x=>String(x.id)===String(i.training));
+    const d=all[String(i.training)];
+    return (tg&&d)?debriefSheet(tg,d):"";
+  }).filter(Boolean);
+  if(!sheets.length){ toast(t("rpNoData"),"warn"); return; }
+  $("#repPrintBody").innerHTML=sheets.join('<div class="dspage"></div>');
+  setPageOrient("portrait");
+  const {from,to}=rpRange();
+  const dates=R.items.map(i=>i.date).filter(Boolean).sort();
+  const span=(from||dates[0]||"")+" – "+(to||dates[dates.length-1]||"");
+  setSheetTitle(`ETAF ${t("rpBatch")} (${span})`);
+  $("#repPrint").classList.add("on");
+}
+
+/* ---------- Weitergabe über das eigene Mailprogramm ----------
+   Anhänge kann ein mailto-Link technisch nicht mitgeben (Browser-Grenze).
+   Deshalb: Betreff und Text vorbereiten und — wo es einen Token-Link gibt —
+   diesen Link mitschicken. Der Empfänger sieht damit immer den aktuellen
+   Stand, nicht eine veraltete Datei. */
+function mailtoOpen(to,subject,body){
+  const u="mailto:"+encodeURIComponent(to||"")
+    +"?subject="+encodeURIComponent(subject||"")
+    +"&body="+encodeURIComponent(body||"");
+  if(u.length>1900) toast(t("mtLong"),"warn");
+  // Ein verstecktes <a> statt location.href: so bleibt die Seite garantiert stehen
+  const a=document.createElement("a"); a.href=u; a.style.display="none";
+  document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),500);
+}
+async function copyText(txt,msg){
+  try{ await navigator.clipboard.writeText(txt); toast(msg||t("mtCopied"),"good"); }
+  catch(e){ prompt(t("mtCopyManual"),txt); }
+}
+
+/* Agenda an das eigene Mailprogramm übergeben (Link statt Anhang). */
+async function agendaToMailClient(){
+  const {tg,tr,lang}=agMail;
+  let link="";
+  if(LIVE){
+    try{ const d=await apiCall("travel.agendaLink",{training:tg.id,trainer:tr.id,lang}); link=d.link||""; }
+    catch(e){ toast(e.message,"crit"); return; }
+  } else link=location.origin+location.pathname.replace(/[^/]*$/,"")+"backend/agenda.php?token=DEMO";
+  const subject=val("agSubj").trim()||agMailTexts(tg,tr,lang).subject;
+  const body=val("agBody")+"\n\n"+(lang==="de"?"Agenda öffnen: ":"Open the agenda: ")+link+"\n";
+  mailtoOpen(tr.email||"",subject,body);
+}
+async function agendaCopyLink(){
+  const {tg,tr,lang}=agMail;
+  if(!LIVE){ toast(t("mtDemo"),"warn"); return; }
+  try{ const d=await apiCall("travel.agendaLink",{training:tg.id,trainer:tr.id,lang});
+    await copyText(d.link,t("mtLinkCopied")); }
+  catch(e){ toast(e.message,"crit"); }
+}
+
+/* Kurzfassung eines Berichts ins eigene Mailprogramm — bewusst als Text:
+   ein Bericht enthält Trainerbewertungen und bekommt deshalb keinen
+   offenen Link, den man weiterleiten kann. */
+function debriefToMailClient(tgId){
+  const tg=S.trainings.find(x=>String(x.id)===String(tgId)); if(!tg) return;
+  dbFetch(tgId).then(d=>{
+    if(!d||!dbFilledOfObj(d)){ toast(t("dbNothingYet"),"warn"); return; }
+    const L=[];
+    L.push((tg.code?tg.code+" — ":"")+tg.topic);
+    L.push((tg.city||"")+" · "+whenLabel(tg));
+    L.push("");
+    if(d.overall>=1) L.push(t("dbOverall")+": "+dbNum(d.overall)+"/5");
+    const rec=DB_REC.find(r=>r[0]===d.recommend);
+    if(rec) L.push(t("dbRecommend")+" "+dbL(rec));
+    DB_GROUPS.forEach(g=>{
+      const vals=g.items.map(it=>(d.scores||{})[it[0]]).filter(x=>x>=1);
+      if(vals.length) L.push("· "+dbGroupLabel(g)+": "+dbNum(debriefAvgOf(vals)));
+    });
+    const weak=Object.entries(d.scores||{}).filter(([,v])=>v<3)
+      .map(([k,v])=>dbLabelOf(k)+" ("+v+")");
+    if(weak.length){ L.push(""); L.push(t("rpKpiAlert")+": "+weak.join(", ")); }
+    if((d.flags||[]).length){ L.push(t("dbFlagsHead")+": "+d.flags.map(dbLabelOf).join(", ")); }
+    const acts=(d.actions||[]).filter(a=>(a.text||"").trim()&&!a.done);
+    if(acts.length){ L.push(""); L.push(t("dbActions")+":");
+      acts.forEach(a=>L.push("- "+a.text+(a.owner?" ("+a.owner+")":"")+(a.due?", "+fmtDate(a.due):""))); }
+    L.push(""); L.push("— ETAF Trainer-Koordination");
+    mailtoOpen("", t("dbTitle")+" — "+(tg.code?tg.code+" ":"")+tg.topic, L.join("\n"));
+  }).catch(e=>toast(e.message,"crit"));
+}
 
 function openSheet(){$("#scrim").classList.add("on");$("#sheet").classList.add("on");}
 function closeSheet(){$("#scrim").classList.remove("on");$("#sheet").classList.remove("on");}

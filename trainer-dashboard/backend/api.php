@@ -400,6 +400,21 @@ switch($action){
     }
     out(['ok'=>true]);
 
+  /* ---- Nur den Agenda-Link holen (ohne zu senden) — für „mit eigenem
+         Mailprogramm verschicken" und zum Kopieren in eine laufende Mail ---- */
+  case 'travel.agendaLink':
+    require_auth();
+    $tgId=(int)($in['training']??0); $trId=(int)($in['trainer']??0);
+    if(!q("SELECT id FROM trainings WHERE id=?",[$tgId])->fetch()) fail('Training nicht gefunden.',404);
+    if(!q("SELECT id FROM trainers WHERE id=?",[$trId])->fetch()) fail('Trainer nicht gefunden.',404);
+    $rq=q("SELECT * FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+    $lang=in_array($in['lang']??'',['de','en'],true) ? $in['lang'] : (($rq['lang']??'en')==='de'?'de':'en');
+    $tok=$rq['tok']??'';
+    if(!$tok){ $tok=token(40);
+      q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?,'yes',?,?,?)",
+        [$tgId,$trId,$lang,$tok,now()]); }
+    out(['ok'=>true,'link'=>base_url().'/agenda.php?token='.$tok]);
+
   /* ---- Kalender-Abo-Link je Trainer (iCal) ---- */
   case 'trainer.icsLink':
     require_auth();
