@@ -545,7 +545,7 @@ switch($action){
     $ymd=function($s){ $s=trim((string)$s); return preg_match('/^\d{4}-\d{2}-\d{2}$/',$s)?$s:''; };
     $bucket=in_array($in['bucket']??'',['week','month','year'],true)?$in['bucket']:'month';
     out(['ok'=>true,'report'=>debrief_report($ymd($in['from']??''),$ymd($in['to']??''),
-      trim((string)($in['client']??'')),$bucket)]);
+      trim((string)($in['client']??'')),$bucket, !empty($in['drafts']))]);
 
   /* ---- Wochenplan aus einer anderen Woche übernehmen (Vorlage kopieren) ---- */
   case 'weekplan.copy':

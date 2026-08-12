@@ -740,6 +740,16 @@
   .rpacts li.done{color:var(--faint);text-decoration:line-through}
   .dspage{height:0}
   @media(max-width:560px){ .dskv{grid-template-columns:1fr auto} }
+  /* Hinweisband über der Auswertung — muss auffallen, ohne zu schreien */
+  .rpnote{display:flex;align-items:flex-start;gap:11px;padding:12px 16px;margin-bottom:14px;
+    border:1px solid var(--warn);border-left-width:4px;border-radius:var(--radius-sm);
+    background:var(--warn-bg);color:var(--ink);font-size:13.5px}
+  .rpnote.soft{border-color:var(--line);border-left-color:var(--info);background:var(--panel);color:var(--muted)}
+  .rpnote b{color:var(--warn)} .rpnote.soft b{color:var(--ink)}
+  .rpnote .btn{flex:none}
+  .rpnote svg{flex:none;margin-top:1px;color:var(--warn)}
+  .rpnote.soft svg{color:var(--info)}
+  .rpval .rpn{font-weight:400;color:var(--faint)}
   .rpbars{display:flex;flex-direction:column;gap:7px}
   .rprow{display:grid;grid-template-columns:minmax(120px,1.45fr) minmax(70px,2fr) 42px 40px;
     gap:10px;align-items:center;font-size:13px}
@@ -750,6 +760,9 @@
   .rpn{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
   /* Zwei gleich breite Spalten — .grid2 füllt mit auto-fill auch 4 Spuren auf */
   .rpgrid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;align-items:start}
+  /* Tablet hochkant: eine Spalte — zwei Spalten drücken sonst die Knöpfe
+     in den Zeilen über den Rand */
+  @media(max-width:900px){ .rpgrid2{grid-template-columns:1fr} }
   .rpcols .rpbars{display:block;columns:2;column-gap:34px}
   .rpcols .rprow{break-inside:avoid;margin-bottom:7px}
   @media(max-width:900px){ .rpcols .rpbars{columns:1} }
@@ -761,6 +774,8 @@
   .rpgrp b{font-size:16px}
   .rpflags{display:flex;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
   .rpflags span{border:1px solid var(--line);border-radius:20px;padding:3px 11px}
+  .rpprov{border:1px solid var(--warn);border-left-width:4px;border-radius:8px;background:var(--warn-bg);
+    color:var(--warn);font-weight:650;font-size:12px;padding:7px 12px;margin:0 0 10px}
   .rpacts{margin:0;padding-left:19px;font-size:13px}
   .rpacts i{color:var(--muted);font-style:normal}
   @media(max-width:560px){
@@ -867,6 +882,8 @@
     .rpsheet .rpgrp>div{padding:5px 9px;font-size:9pt} .rpsheet .rpgrp b{font-size:12pt}
     .rpsheet .rptable td,.rpsheet .rptable th{padding:3px 6px;font-size:9pt}
     .rpsheet .rpflags{font-size:9pt} .rpsheet .rpacts{font-size:9.5pt}
+    .rpprov{font-size:9pt;padding:5px 10px;margin-bottom:8px;break-inside:avoid}
+    .rpnote{display:none!important}
     .rpsheet .ag-h2{break-after:avoid;page-break-after:avoid}
     /* Sammelmappe: jeder Bericht auf einer eigenen Seite */
     .dspage{break-after:page;page-break-after:always;height:0}
@@ -1622,6 +1639,7 @@ const L={
   rpTeamN:n=>`${n} Trainer`,
   dbPrint:"Bericht drucken", dbNothingYet:"In diesem Bericht steht noch nichts.",
   dbNotes:"Anmerkungen", dbNoteShort:"Notiz", dbFlagsShort:"Vorkommnisse",
+  dbDraftNote:"Entwurf — noch nicht abgeschlossen, es fehlen Angaben",
   dbMailClient:"Mit eigenem Mailprogramm", dbPickPrint:"Einzelbericht drucken",
   dbPickPh:"Training wählen …",
   rpBatch:"Alle Berichte im Zeitraum", rpBatchBtn:"Sammelmappe drucken",
@@ -1637,6 +1655,15 @@ const L={
   agNoMail:"keine E-Mail",
   mtNothing:"Hier gibt es noch nichts zum Verschicken.",
   mtMore:n=>`… und ${n} weitere Termine (vollständig im Cockpit)`,
+  rpBasis:"Grundlage", rpFinalOnly:"nur abgeschlossene", rpWithDrafts:"Zwischenstand",
+  rpDraftNote:"Zwischenstand — vorläufige Zahlen",
+  rpDraftNoteSub:(d,n)=>`${d} von ${n} Berichten sind noch Entwürfe. Fehlende Angaben zählen nicht mit, deshalb können sich alle Werte noch verschieben.`,
+  rpDraftHint:n=>`Es liegen ${n} angefangene Berichte vor. Für einen Zwischenstand kannst du sie mitzählen lassen.`,
+  rpBasisHead:"Datengrundlage", rpBasisSub:"Worauf die Zahlen stehen — und was noch fehlt",
+  rpThin:"Kriterien mit dünner Grundlage", rpThinNone:"Jedes Kriterium wurde in allen Berichten bewertet.",
+  rpNever:"Bisher nie bewertet", rpGaps:"Berichte mit Lücken", rpGapsNone:"Alle Berichte im Zeitraum sind vollständig.",
+  rpMissingN:n=>`${n} Felder fehlen noch`,
+  rpProvisional:"Zwischenstand — enthält Entwürfe, Zahlen können sich noch ändern",
   emNone:"Noch keine E-Mails versendet.", em_sent:"gesendet", em_logged:"protokolliert", em_failed:"fehlgeschlagen",
   agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
   resetToast:"Demo-Daten zurückgesetzt",
@@ -2062,6 +2089,7 @@ const L={
   rpTeamN:n=>`${n} trainer${n===1?"":"s"}`,
   dbPrint:"Print report", dbNothingYet:"This report is still empty.",
   dbNotes:"Notes", dbNoteShort:"Note", dbFlagsShort:"Incidents",
+  dbDraftNote:"Draft — not completed yet, entries are missing",
   dbMailClient:"Use my email app", dbPickPrint:"Print a single report",
   dbPickPh:"Choose a training …",
   rpBatch:"All reports in this period", rpBatchBtn:"Print as one document",
@@ -2077,6 +2105,15 @@ const L={
   agNoMail:"no email",
   mtNothing:"There is nothing to send here yet.",
   mtMore:n=>`… and ${n} more dates (full list in the cockpit)`,
+  rpBasis:"Basis", rpFinalOnly:"completed only", rpWithDrafts:"interim",
+  rpDraftNote:"Interim status — provisional figures",
+  rpDraftNoteSub:(d,n)=>`${d} of ${n} reports are still drafts. Missing entries are not counted, so every figure can still move.`,
+  rpDraftHint:n=>`There are ${n} reports in progress. You can include them for an interim view.`,
+  rpBasisHead:"Data basis", rpBasisSub:"What the figures rest on — and what is still missing",
+  rpThin:"Criteria with a thin basis", rpThinNone:"Every criterion was rated in all reports.",
+  rpNever:"Never rated so far", rpGaps:"Reports with gaps", rpGapsNone:"All reports in this period are complete.",
+  rpMissingN:n=>`${n} fields still missing`,
+  rpProvisional:"Interim status — includes drafts, figures may still change",
   emNone:"No emails sent yet.", em_sent:"sent", em_logged:"logged", em_failed:"failed",
   agendaHint:"The trainer receives this overview by email (print link) and can print it.",
   resetToast:"Demo data reset",
@@ -6373,7 +6410,7 @@ function tgIsPast(tg){
    ============================================================ */
 /* Einstieg bewusst auf „Gesamt": ein Programm läuft über Jahre, und ein
    voreingestelltes Fenster würde beim ersten Öffnen eine leere Seite zeigen. */
-let rpState={period:"all",from:"",to:"",bucket:"month",client:"",data:null,loading:false};
+let rpState={period:"all",from:"",to:"",bucket:"month",client:"",drafts:false,data:null,loading:false};
 
 /* Zeitraum-Schnellwahl in konkrete Daten übersetzen. */
 function rpRange(){
@@ -6392,11 +6429,16 @@ function rpSetPeriod(p){ rpState.period=p; rpState.data=null;
   rpState.bucket = p==="week"?"week" : (p==="month"||p==="quarter")?"week" : "month";
   renderReports(); }
 function rpSetBucket(b){ rpState.bucket=b; rpState.data=null; renderReports(); }
+/* Zwischenstand ein/aus: Entwürfe zählen mit. Alles, was danach gezeigt
+   oder gedruckt wird, trägt den Vermerk „vorläufig". */
+function rpSetDrafts(v){ const on=(v==="on"); if(rpState.drafts===on) return;
+  rpState.drafts=on; rpState.data=null; renderReports(); }
 function rpSetDate(which,v){ rpState[which]=v; rpState.period="custom"; rpState.data=null; renderReports(); }
 
 /* Auswertung im Demo-Modus: dieselbe Rechnung wie im Backend, nur lokal. */
-function rpLocal(from,to,client,bucket){
-  const all=Object.values(S.debriefs||{}).filter(d=>d.status==="final");
+function rpLocal(from,to,client,bucket,withDrafts){
+  const all=Object.values(S.debriefs||{})
+    .filter(d=>d.status==="final"||(withDrafts&&d.status==="draft"));
   const tgOf=d=>S.trainings.find(x=>String(x.id)===String(d.training));
   const rows=all.map(d=>({d,tg:tgOf(d)})).filter(x=>x.tg)
     .filter(({tg})=>{
@@ -6434,7 +6476,8 @@ function rpLocal(from,to,client,bucket){
         if(x>=1&&x<=5){ trs[tid]=trs[tid]||{all:[]}; (trs[tid][k]=trs[tid][k]||[]).push(x); trs[tid].all.push(x); } });
     });
     items.push({id:d.training,training:String(tg.id),code:tg.code||"",topic:tg.topic||"",city:tg.city||"",
-      date:tg.date||"",overall:d.overall||avg(vals)||0,recommend:d.recommend||"",flags:(d.flags||[]).length});
+      date:tg.date||"",overall:d.overall||avg(vals)||0,recommend:d.recommend||"",flags:(d.flags||[]).length,
+      status:d.status||"final",filled:dbFilledOfObj(d)});
   });
 
   const past=S.trainings.filter(tg=>{
@@ -6450,7 +6493,8 @@ function rpLocal(from,to,client,bucket){
       code:tg.code||"",training:String(tg.id)})));
 
   return {
-    n:rows.length, due:past.length,
+    n:rows.length, nDraft:rows.filter(x=>x.d.status==="draft").length, withDrafts:!!withDrafts,
+    due:past.length,
     dueDone:past.filter(tg=>(S.debriefs||{})[String(tg.id)]?.status==="final").length,
     overall:avg(overall) ?? avg(items.map(i=>i.overall)),
     recommend:rec,
@@ -6471,10 +6515,11 @@ function rpLocal(from,to,client,bucket){
 async function rpLoad(){
   const {from,to}=rpRange();
   if(LIVE){
-    const d=await apiCall("report.build",{from,to,client:S.clientFilter||"",bucket:rpState.bucket});
+    const d=await apiCall("report.build",{from,to,client:S.clientFilter||"",
+      bucket:rpState.bucket,drafts:rpState.drafts?1:0});
     return d.report;
   }
-  return rpLocal(from,to,S.clientFilter||"",rpState.bucket);
+  return rpLocal(from,to,S.clientFilter||"",rpState.bucket,rpState.drafts);
 }
 
 /* ---------- Diagramm-Bausteine ---------- */
@@ -6566,6 +6611,8 @@ async function renderReports(){
       <input class="inp" type="date" style="width:auto" value="${esc(to)}" onchange="rpSetDate('to',this.value)"></div>
     <div><label class="fld">${esc(t("rpBucket"))}</label>
       ${seg("rpBuc",rpState.bucket,[["week",t("rpWeek")],["month",t("rpMonth")],["year",t("rpYear")]],"rpSetBucket")}</div>
+    <div><label class="fld">${esc(t("rpBasis"))}</label>
+      ${seg("rpDrafts",rpState.drafts?"on":"off",[["off",t("rpFinalOnly")],["on",t("rpWithDrafts")]],"rpSetDrafts")}</div>
     <div class="spacer"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" onclick="repCsv()">${ic("down",15)}${esc(t("rpCsv"))}</button>
@@ -6584,7 +6631,11 @@ async function renderReports(){
   </div></div>`;
 
   if(!R.n){
-    box.innerHTML=filter+`<div class="panel"><div class="panel-b">
+    const hint = !rpState.drafts && rpDraftCount()>0
+      ? `<div class="rpnote soft">${ic("chart",15)}<div>${esc(t("rpDraftHint",rpDraftCount()))}</div>
+         <div class="spacer"></div>
+         <button class="btn sm primary" onclick="rpSetDrafts('on')">${esc(t("rpWithDrafts"))}</button></div>` : "";
+    box.innerHTML=filter+hint+`<div class="panel"><div class="panel-b">
       <div class="empty"><b>${esc(t("rpNoData"))}</b><div class="meta" style="margin-top:6px">${esc(t("rpNoDataHint"))}</div></div>
     </div></div>`+rpListPanel();
     drawRpList();
@@ -6655,7 +6706,19 @@ async function renderReports(){
       <span class="pill ${dbBand(i.overall)}">${dbNum(i.overall)}</span>
     </div>`).join("");
 
-  box.innerHTML = filter + kpi + `
+  // Zwischenstand deutlich kennzeichnen — eine vorläufige Zahl darf nie
+  // wie eine endgültige aussehen.
+  const note = R.withDrafts
+    ? `<div class="rpnote">${ic("bell",15)}<div><b>${esc(t("rpDraftNote"))}</b>
+        <div class="meta">${esc(t("rpDraftNoteSub",R.nDraft||0,R.n||0))}</div></div>
+        <div class="spacer"></div>
+        <button class="btn sm" onclick="rpSetDrafts('off')">${esc(t("rpFinalOnly"))}</button></div>`
+    : (R.nDraft===0 && rpDraftCount()>0
+        ? `<div class="rpnote soft">${ic("chart",15)}<div>${esc(t("rpDraftHint",rpDraftCount()))}</div>
+           <div class="spacer"></div>
+           <button class="btn sm" onclick="rpSetDrafts('on')">${esc(t("rpWithDrafts"))}</button></div>` : "");
+
+  box.innerHTML = filter + note + kpi + `
     <div class="panel"><div class="panel-h"><h3>${esc(t("rpCriteria"))}</h3>
       <span class="meta">${esc(t("rpCriteriaSub"))}</span></div>
       <div class="panel-b"><div class="rpcols">${chBars(critRows,{})}</div>${legend}</div></div>
@@ -6683,8 +6746,60 @@ async function renderReports(){
       <div class="panel"><div class="panel-h"><h3>${esc(t("rpSingles"))}</h3></div>
         <div class="panel-b">${single||`<div class="meta">—</div>`}</div></div>
     </div>
-    `+rpListPanel();
+    `+rpBasisPanel(R)+rpListPanel();
   drawRpList();
+}
+
+/* Wie viele Entwürfe liegen überhaupt vor? (für den Hinweis, wenn gerade
+   nur abgeschlossene Berichte gezählt werden) */
+function rpDraftCount(){
+  return S.trainings.filter(tg=>tg.debrief&&tg.debrief.status==="draft"
+    &&(!S.clientFilter||tg.clientId===S.clientFilter)).length;
+}
+
+/* ---------- Datengrundlage: woran hakt es noch? ----------
+   Zwei Fragen, die vor jeder Interpretation stehen: Auf wie vielen
+   Bewertungen steht ein Kriterium — und welche Berichte haben Lücken. */
+function rpBasisPanel(R){
+  const n=R.n||0;
+  // Kriterien, die deutlich weniger Bewertungen haben als es Berichte gibt
+  const thin=(R.criteria||[]).filter(c=>c.n<n).sort((a,b)=>a.n-b.n).slice(0,8);
+  const never=dbAllKeys().filter(k=>!(R.criteria||[]).some(c=>c.key===k));
+  const gaps=(R.items||[]).filter(i=>i.status==="draft"||(i.filled!=null&&i.filled<dbTotalOfId(i.training)))
+    .sort((a,b)=>(a.filled||0)-(b.filled||0)).slice(0,10);
+  if(!thin.length && !never.length && !gaps.length) return "";
+  return `<div class="panel"><div class="panel-h"><h3>${esc(t("rpBasisHead"))}</h3>
+      <span class="meta">${esc(t("rpBasisSub"))}</span></div>
+    <div class="panel-b"><div class="rpgrid2">
+      <div>
+        <div class="fld" style="margin-top:0">${esc(t("rpThin"))}</div>
+        ${thin.length||never.length ? `<div class="rpbars">
+          ${thin.map(c=>`<div class="rprow">
+            <span class="rplbl">${esc(dbLabelOf(c.key))}</span>
+            <span class="rpbar"><i style="width:${Math.max(3,c.n/Math.max(1,n)*100).toFixed(1)}%;background:var(--info)"></i></span>
+            <span class="rpval">${c.n}<span class="rpn">/${n}</span></span><span class="rpn"></span></div>`).join("")}
+          ${never.length?`<div class="meta" style="margin-top:8px">${esc(t("rpNever"))}: ${
+            never.map(k=>esc(dbLabelOf(k))).join(" · ")}</div>`:""}
+          </div>` : `<div class="meta">${esc(t("rpThinNone"))}</div>`}
+      </div>
+      <div>
+        <div class="fld" style="margin-top:0">${esc(t("rpGaps"))}</div>
+        ${gaps.length ? gaps.map(i=>{
+          const tot=dbTotalOfId(i.training), miss=Math.max(0,tot-(i.filled||0));
+          const pct=tot?Math.round((i.filled||0)/tot*100):0;
+          return `<div class="row dbrow-l" onclick="openDebrief('${esc(i.training)}')">
+            <span class="dbringwrap sm">${dbRing(pct,30,false)}<b class="${pct?"i":"f"}">${pct}<i>%</i></b></span>
+            <div class="rowgrow"><div class="nm">${esc(i.code?i.code+" — ":"")}${esc(i.topic)}</div>
+              <div class="meta">${esc(t("rpMissingN",miss))}${i.status==="draft"?" · "+esc(t("dbDraft")):""}</div></div>
+            <button class="btn sm" onclick="event.stopPropagation();openDebrief('${esc(i.training)}')">${esc(t("dbEdit"))}</button>
+          </div>`;}).join("") : `<div class="meta">${esc(t("rpGapsNone"))}</div>`}
+      </div>
+    </div></div></div>`;
+}
+/* Nenner eines Trainings über seine ID (die Auswertung liefert nur IDs). */
+function dbTotalOfId(id){
+  const tg=S.trainings.find(x=>String(x.id)===String(id));
+  return tg?dbTotalOf(tg):dbAllKeys().length+2;
 }
 
 /* Auswahlfeld: nur Trainings, zu denen wirklich ein Bericht existiert. */
@@ -6795,7 +6910,8 @@ async function repCsv(){
   const keys=dbAllKeys();
   const head=[S.lang==="en"?"Code":"Code",S.lang==="en"?"Topic":"Thema",S.lang==="en"?"City":"Ort",
     S.lang==="en"?"Date":"Datum",S.lang==="en"?"Overall":"Gesamt",S.lang==="en"?"Recommend":"Empfehlung",
-    S.lang==="en"?"Incidents":"Vorkommnisse", ...keys.map(k=>dbLabelOf(k))];
+    S.lang==="en"?"Incidents":"Vorkommnisse", S.lang==="en"?"Status":"Status",
+    ...keys.map(k=>dbLabelOf(k))];
   // Einzelwerte je Bericht: im Live-Betrieb einmal nachladen, sonst stünden
   // in der Tabelle nur die Kopfzahlen und man könnte nicht weiterrechnen.
   let src={};
@@ -6804,22 +6920,26 @@ async function repCsv(){
       (d.debriefs||[]).forEach(x=>src[String(x.training)]=x); }
     catch(e){ toast(e.message,"crit"); return; }
   } else src=S.debriefs||{};
-  const lines=[head];
+  const lines=[];
+  if(R.withDrafts) lines.push([t("rpProvisional")]);   // steht ganz oben in der Datei
+  lines.push(head);
   (R.items||[]).forEach(i=>{
     const d=src[String(i.training)];
     lines.push([i.code,i.topic,i.city,i.date,dbNum(i.overall),i.recommend,i.flags,
+      i.status==="draft"?t("dbDraft"):t("rpFFinal"),
       ...keys.map(k=>d&&d.scores&&d.scores[k]!=null?d.scores[k]:"")]);
   });
   // Zusammenfassung unten anhängen — der häufigste Grund, warum man exportiert
   lines.push([]);
-  lines.push([S.lang==="en"?"Average":"Durchschnitt","","","",dbNum(R.overall),"","",
+  lines.push([S.lang==="en"?"Average":"Durchschnitt","","","",dbNum(R.overall),"","","",
     ...keys.map(k=>{const c=(R.criteria||[]).find(x=>x.key===k); return c?dbNum(c.avg):"";})]);
   const csv="﻿"+lines.map(r=>r.map(c=>{
     const s=String(c==null?"":c);
     return /[";\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
   }).join(";")).join("\r\n");
   const {from,to}=rpRange();
-  download(`${t("rpExportName")}${from?"-"+from:""}${to?"-"+to:""}.csv`,csv,"text/csv;charset=utf-8");
+  download(`${t("rpExportName")}${R.withDrafts?"-"+t("rpWithDrafts"):""}${from?"-"+from:""}${to?"-"+to:""}.csv`,
+    csv,"text/csv;charset=utf-8");
   toast(t("rpCsv"),"good");
 }
 
@@ -6850,6 +6970,7 @@ function openRepPrint(){
       <div class="meta">${esc(t("rpN",R.n))}${cov!=null?" · "+esc(t("rpKpiCoverage"))+" "+cov+"%":""}</div></div>
       <span style="color:var(--brand);display:inline-flex">${etafLogo(34)}</span></div>
     <div class="ag-bar"></div>
+    ${R.withDrafts?`<div class="rpprov">${esc(t("rpProvisional"))}${R.nDraft?" · "+esc(t("rpDraftNoteSub",R.nDraft,R.n)):""}</div>`:""}
     <div class="rpkv">
       ${kv(t("rpKpiOverall"),`<b style="color:var(--${dbBand(R.overall)||"ink"})">${dbNum(R.overall)}</b> / 5`)}
       ${kv(t("rpRecommend"),DB_REC.map(r=>esc(dbL(r))+": "+((R.recommend||{})[r[0]]||0)).join(" · "))}
@@ -6873,7 +6994,7 @@ function openRepPrint(){
     <div class="meta" style="margin-top:14px">ETAF · Trainer-Koordination · ${esc(new Date().toLocaleDateString(S.lang==="en"?"en-GB":"de-DE"))}</div>
   </div>`;
   setPageOrient("portrait");
-  setSheetTitle(`ETAF ${t("tp_reports")}${cl?" "+cl.name:""} (${span})`);
+  setSheetTitle(`ETAF ${t("tp_reports")}${cl?" "+cl.name:""} (${span})${R.withDrafts?" – "+t("rpWithDrafts"):""}`);
   $("#repPrint").classList.add("on");
 }
 function closeRepPrint(){ $("#repPrint").classList.remove("on"); clearSheetTitle(); }
@@ -6923,9 +7044,10 @@ function debriefSheet(tg,d){
       <div class="ag-eyebrow">${esc(t("dbTitle"))}${cl?" · "+esc(cl.name):""}</div>
       <div class="ag-h1">${esc(tg.code?tg.code+" — ":"")}${esc(tg.topic)}</div>
       <div class="meta">${esc(tg.city||"")}${tg.country?", "+esc(tg.country):""} · ${whenLabel(tg)}
-        · ${esc(t("dbFilled",fil,tot))}${d.status==="draft"?" · "+esc(t("dbDraft")):""}</div></div>
+        · ${esc(t("dbFilled",fil,tot))}</div></div>
       <span style="color:var(--brand);display:inline-flex">${etafLogo(34)}</span></div>
     <div class="ag-bar"></div>
+    ${d.status==="draft"?`<div class="rpprov">${esc(t("dbDraftNote"))}</div>`:""}
     <div class="dstop">
       <div class="dsbig"><span>${esc(t("dbOverall"))}</span>
         <b class="${dbBand(d.overall)}">${d.overall>=1?dbNum(d.overall):"—"}</b><i>/5</i></div>

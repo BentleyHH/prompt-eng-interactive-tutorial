@@ -862,10 +862,12 @@ function debrief_period(string $date, string $mode): string {
  * $from/$to: 'YYYY-MM-DD' (leer = offen), $client: Kunden-ID (leer = alle),
  * $bucket: 'week'|'month'|'year' für die Trendachse.
  */
-function debrief_report(string $from, string $to, string $client, string $bucket='month'): array {
+function debrief_report(string $from, string $to, string $client, string $bucket='month', bool $withDrafts=false): array {
+  // Zwischenstand: Entwürfe zählen mit. Die Zahlen sind dann vorläufig —
+  // das Frontend weist darauf hin und der Bogen trägt den Vermerk.
   $sql="SELECT d.*, t.start_date, t.end_date, t.code, t.topic, t.city, t.client_id
         FROM debriefs d JOIN trainings t ON t.id=d.training_id
-        WHERE d.status='final'";
+        WHERE ".($withDrafts ? "d.status IN('final','draft')" : "d.status='final'");
   $p=[];
   if($from!==''){ $sql.=" AND COALESCE(t.end_date,t.start_date)>=?"; $p[]=$from; }
   if($to!==''){   $sql.=" AND t.start_date<=?";                      $p[]=$to; }
@@ -907,7 +909,8 @@ function debrief_report(string $from, string $to, string $client, string $bucket
     $items[]=['id'=>(string)$r['id'],'training'=>(string)$r['training_id'],
       'code'=>$r['code']??'','topic'=>$r['topic']??'','city'=>$r['city']??'',
       'date'=>$date,'overall'=>$ov?:(debrief_avg($rowVals)??0),'recommend'=>$rc,
-      'flags'=>count((array)(json_decode(($r['flags']??'')?:'[]',true)?:[]))];
+      'flags'=>count((array)(json_decode(($r['flags']??'')?:'[]',true)?:[])),
+      'status'=>$r['status']??'final','filled'=>debrief_filled($r)];
   }
 
   // Kriterien mit Mittelwert, nach Schwachstellen sortierbar im Frontend
@@ -962,8 +965,10 @@ function debrief_report(string $from, string $to, string $client, string $bucket
     }
   }
 
+  $nDraft=0; foreach($rows as $r) if(($r['status']??'')==='draft') $nDraft++;
   return [
-    'n'=>count($rows), 'due'=>$due, 'dueDone'=>$dueDone,
+    'n'=>count($rows), 'nDraft'=>$nDraft, 'withDrafts'=>$withDrafts,
+    'due'=>$due, 'dueDone'=>$dueDone,
     'overall'=>debrief_avg($overall) ?? debrief_avg(array_map(fn($i)=>(float)$i['overall'],$items)),
     'recommend'=>$rec,
     'criteria'=>$crit, 'groups'=>$grp, 'trend'=>$tr,
