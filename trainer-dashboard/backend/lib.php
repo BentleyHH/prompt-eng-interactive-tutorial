@@ -470,9 +470,10 @@ function get_state(): array {
   // Trainingsbericht je Training (nur Kurzstand für Liste und Ampel)
   $dbBy=[];
   try{
-    foreach(q("SELECT training_id,status,overall,updated_at FROM debriefs")->fetchAll() as $d){
+    foreach(q("SELECT training_id,status,overall,updated_at,scores,trainers,recommend FROM debriefs")->fetchAll() as $d){
       $dbBy[(string)$d['training_id']]=['status'=>$d['status']??'draft',
-        'overall'=>(int)($d['overall']??0),'at'=>$d['updated_at']??''];
+        'overall'=>(int)($d['overall']??0),'at'=>$d['updated_at']??'',
+        'filled'=>debrief_filled($d)];
     }
   }catch(Throwable $e){}
 
@@ -782,6 +783,24 @@ function debrief_catalog(): array {
   ];
 }
 
+/** Wie viele Felder eines Berichts sind beantwortet? Zählt Kriterien,
+ *  Gesamteindruck, Empfehlung und die Werte je Trainer — daraus entsteht
+ *  der Fortschrittsring in der Berichtsliste. */
+function debrief_filled(array $r): int {
+  $keys=debrief_keys();
+  $sc=json_decode(($r['scores']??'')?:'{}',true)?:[];
+  $n=0;
+  foreach($sc as $k=>$v) if(in_array((string)$k,$keys,true) && is_numeric($v) && $v>=1 && $v<=5) $n++;
+  if((int)($r['overall']??0)>=1) $n++;
+  if(trim((string)($r['recommend']??''))!=='') $n++;
+  foreach((array)(json_decode(($r['trainers']??'')?:'{}',true)?:[]) as $tv){
+    if(!is_array($tv)) continue;
+    foreach(['teaching','behaviour','ppt','punctuality'] as $tk)
+      if(isset($tv[$tk]) && is_numeric($tv[$tk]) && $tv[$tk]>=1 && $tv[$tk]<=5) $n++;
+  }
+  return $n;
+}
+
 /** Klartext eines Kriteriums (für Mails und Auswertungen). */
 function debrief_label(string $key, string $lang='de'): string {
   $c=debrief_catalog();
@@ -819,7 +838,7 @@ function debrief_public(array $r): array {
     'flags'=>json_decode(($r['flags']??'')?:'[]',true)?:[],
     'texts'=>json_decode(($r['texts']??'')?:'{}',true)?:[],
     'author'=>$r['author_name']??'','createdAt'=>$r['created_at']??'','updatedAt'=>$r['updated_at']??'',
-    'version'=>(int)($r['version']??1),'actions'=>$acts,
+    'version'=>(int)($r['version']??1),'actions'=>$acts,'filled'=>debrief_filled($r),
   ];
 }
 

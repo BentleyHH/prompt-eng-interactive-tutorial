@@ -671,6 +671,23 @@
   .sparkbox{border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;background:var(--panel)}
   .sparkbox .sh{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
   .sparkbox .sv{font-size:21px;font-weight:700;color:var(--ink);line-height:1.2}
+  /* Ausfüllstand: Ring + Prozentzahl (die Zahl trägt die Aussage, nicht die Farbe) */
+  .dbringwrap{position:relative;flex:none;width:38px;height:38px;display:inline-block}
+  .dbring{display:block}
+  .dbringwrap b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .dbringwrap b i{font-style:normal;font-size:8px;font-weight:600;margin-left:1px}
+  .dbringwrap b.g{color:var(--good)} .dbringwrap b.i{color:var(--info)} .dbringwrap b.f{color:var(--faint)}
+  .dbringwrap b.g{display:none}   /* fertig = Haken, keine Zahl */
+  .dbprog{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .dbringwrap.sm{width:30px;height:30px}
+  .dbringwrap.sm b{font-size:9.5px}
+  .dbringwrap.sm b i{font-size:7px}
+  .row.dbrow-l{cursor:pointer}
+  .row.dbrow-l:hover{background:var(--panel-2)}
+  .chips.rpchips button b{font-variant-numeric:tabular-nums;margin-left:3px;opacity:.75}
+  .chips.rpchips button.on{background:var(--brand-solid);border-color:var(--brand-solid);color:#fff}
+  .chips.rpchips button.on b{opacity:.9}
   .rpbars{display:flex;flex-direction:column;gap:7px}
   .rprow{display:grid;grid-template-columns:minmax(120px,1.45fr) minmax(70px,2fr) 42px 40px;
     gap:10px;align-items:center;font-size:13px}
@@ -1506,7 +1523,7 @@ const L={
   dbActionText:"Was ist zu tun?", dbActionOwner:"Wer?", dbActionDue:"Bis wann?",
   dbActionDone:"erledigt", dbNoActions:"Noch keine Maßnahme festgehalten.",
   dbAuthor:a=>`Erfasst von ${a}`, dbUnrated:"noch nicht bewertet",
-  dbFilled:(n,m)=>`${n} von ${m} Kriterien bewertet`,
+  dbFilled:(n,m)=>`${n} von ${m} Feldern ausgefüllt`,
   dbNeedSome:"Bitte mindestens ein Kriterium bewerten, bevor der Bericht abgeschlossen wird.",
   rpPeriod:"Zeitraum", rpWeek:"Woche", rpMonth:"Monat", rpQuarter:"Quartal", rpYear:"Jahr", rpAll:"Gesamt",
   rpFrom:"von", rpTo:"bis", rpBucket:"Achse",
@@ -1527,6 +1544,10 @@ const L={
   rpMissingSub:"bereits gelaufen, aber noch nicht bewertet",
   rpBest:"Stärkste Werte", rpWorst:"Schwächste Werte",
   rpExportName:"ETAF-Auswertung",
+  rpAllReports:"Alle Trainingsberichte", rpAllReportsSub:"Ausfüllstand je Training — anklicken zum Bearbeiten",
+  rpFDue:"fällig", rpFFinal:"abgeschlossen", rpFSoon:"kommt noch", rpFAll:"alle",
+  rpNotYet:"läuft noch nicht", rpListEmpty:"Keine Trainings in dieser Auswahl.",
+  rpTeamN:n=>`${n} Trainer`,
   emNone:"Noch keine E-Mails versendet.", em_sent:"gesendet", em_logged:"protokolliert", em_failed:"fehlgeschlagen",
   agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
   resetToast:"Demo-Daten zurückgesetzt",
@@ -1925,7 +1946,7 @@ const L={
   dbActionText:"What needs doing?", dbActionOwner:"Who?", dbActionDue:"By when?",
   dbActionDone:"done", dbNoActions:"No action recorded yet.",
   dbAuthor:a=>`Recorded by ${a}`, dbUnrated:"not rated yet",
-  dbFilled:(n,m)=>`${n} of ${m} criteria rated`,
+  dbFilled:(n,m)=>`${n} of ${m} fields completed`,
   dbNeedSome:"Please rate at least one criterion before completing the report.",
   rpPeriod:"Period", rpWeek:"Week", rpMonth:"Month", rpQuarter:"Quarter", rpYear:"Year", rpAll:"All time",
   rpFrom:"from", rpTo:"to", rpBucket:"Axis",
@@ -1946,6 +1967,10 @@ const L={
   rpMissingSub:"already run but not yet rated",
   rpBest:"Strongest scores", rpWorst:"Weakest scores",
   rpExportName:"ETAF-report",
+  rpAllReports:"All training reports", rpAllReportsSub:"Completion per training — click to edit",
+  rpFDue:"due", rpFFinal:"completed", rpFSoon:"upcoming", rpFAll:"all",
+  rpNotYet:"not started", rpListEmpty:"No trainings in this selection.",
+  rpTeamN:n=>`${n} trainer${n===1?"":"s"}`,
   emNone:"No emails sent yet.", em_sent:"sent", em_logged:"logged", em_failed:"failed",
   agendaHint:"The trainer receives this overview by email (print link) and can print it.",
   resetToast:"Demo data reset",
@@ -2660,9 +2685,10 @@ function renderTrainings(){
         <div class="tags"><span class="tag">${tg.spec}</span><span class="tag">${t("trainersC",r.yes,r.need)}</span></div>
       </div>
       <span class="pill ${st.cls}">${t(st.key)}</span>
-      ${dbBadge(tg)}
-      ${(tgIsPast(tg)&&!(tg.debrief&&tg.debrief.status==="final"))
-        ? `<button class="btn sm" onclick="event.stopPropagation();openDebrief('${tg.id}')" title="${esc(t("dbNew"))}">${ic("chart",14)}${esc(t("dbOpen"))}</button>` : ""}
+      ${(tgIsPast(tg)||tg.debrief) ? `<span class="dbringwrap sm" title="${esc(t("dbFilled",dbFilledOf(tg),dbTotalOf(tg)))}"
+          onclick="event.stopPropagation();openDebrief('${tg.id}')" style="cursor:pointer">
+          ${dbRing(dbPctOf(tg),30,tg.debrief&&tg.debrief.status==="final")}
+          <b class="${tg.debrief&&tg.debrief.status==="final"?"g":dbPctOf(tg)?"i":"f"}">${dbPctOf(tg)}<i>%</i></b></span>` : ""}
       <button class="btn sm primary" onclick="openDetail('${tg.id}')">${t("plan")}</button>
     </div>`;
   }).join("");
@@ -6018,8 +6044,12 @@ function dbRec(v){ dbCur.recommend=v;
   $$("#dbRec button").forEach(b=>b.classList.toggle("on",b.dataset.v===v)); }
 function dbText(k,el){ dbCur.texts[k]=el.value; }
 function dbCount(){
-  const el=$("#dbCount"); if(!el) return;
-  el.textContent=t("dbFilled",Object.keys(dbCur.scores).length,dbAllKeys().length);
+  const el=$("#dbCount"); if(!el||!dbTg) return;
+  const tot=dbTotalOf(dbTg), fil=dbFilledOfObj(dbCur);
+  const pct=tot?Math.min(100,Math.round(fil/tot*100)):0;
+  el.innerHTML=`<span class="dbringwrap">${dbRing(pct,38,dbCur.status==="final"&&pct>=100)}
+      <b class="${pct>=100?"g":pct?"i":"f"}">${pct}<i>%</i></b></span>
+    <span class="meta">${esc(t("dbFilled",fil,tot))}</span>`;
 }
 function dbActAdd(){ dbCur.actions.push({text:"",owner:"",due:"",done:false}); drawDbActions(); }
 function dbActDel(i){ dbCur.actions.splice(i,1); drawDbActions(); }
@@ -6064,7 +6094,7 @@ function drawDebrief(){
       <div class="dbrow"><span class="lbl">${esc(t("dbRecommend"))}</span>
         <span class="chips" id="dbRec">${DB_REC.map(r=>`<button data-v="${r[0]}"${dbCur.recommend===r[0]?' class="on"':""}
           onclick="dbRec('${r[0]}')">${esc(dbL(r))}</button>`).join("")}</span></div>
-      <div class="meta" id="dbCount" style="margin-top:6px"></div>
+      <div class="dbprog" id="dbCount"></div>
     </div>
     ${groups}
     ${trBlock}
@@ -6098,7 +6128,8 @@ async function saveDebrief(status){
     const ok=await saveGuarded("debrief.save",payload,d=>{
       dbCur=d.debrief;
       const tg=S.trainings.find(x=>String(x.id)===String(dbCur.training));
-      if(tg) tg.debrief={status:dbCur.status,overall:dbCur.overall,at:dbCur.updatedAt};
+      if(tg) tg.debrief={status:dbCur.status,overall:dbCur.overall,at:dbCur.updatedAt,
+                         filled:(typeof dbCur.filled==="number"?dbCur.filled:dbFilledOfObj(dbCur))};
     });
     if(!ok) return;
   } else {
@@ -6121,6 +6152,53 @@ async function deleteDebrief(){
   else { if(S.debriefs) delete S.debriefs[String(id)]; save(); }
   const tg=S.trainings.find(x=>String(x.id)===String(id)); if(tg) tg.debrief=null;
   closeSheet(); render(); toast(t("dbDelete"),"good");
+}
+
+/* ---------- Ausfüllstand ----------
+   Nenner: 22 Kriterien + Gesamteindruck + Empfehlung + 4 Werte je eingesetztem
+   Trainer. So bleibt die Prozentzahl über alle Trainings vergleichbar und
+   wächst nur, wenn wirklich mehr zu bewerten ist. */
+function dbTeamOf(tg){
+  const ids=new Set((tg.roster||[]).filter(r=>["yes","confirmed"].includes(r.status)).map(r=>String(r.trainerId)));
+  const wd=(S.weekData||{})[tg.id];
+  if(wd) (wd.sessions||[]).forEach(s=>(s.trainerIds||[]).forEach(x=>ids.add(String(x))));
+  return [...ids].filter(id=>S.trainers.some(x=>String(x.id)===id));
+}
+function dbTotalOf(tg){ return dbAllKeys().length + 2 + 4*dbTeamOf(tg).length; }
+/* Beantwortete Felder — live kommt der Wert aus dem Backend, im Demo-Modus
+   wird er aus dem lokal gespeicherten Bericht gezählt. */
+function dbFilledOf(tg){
+  if(tg.debrief && typeof tg.debrief.filled==="number") return tg.debrief.filled;
+  const d=(S.debriefs||{})[String(tg.id)];
+  if(!d) return 0;
+  return dbFilledOfObj(d);
+}
+function dbFilledOfObj(d){
+  let n=Object.keys(d.scores||{}).filter(k=>dbAllKeys().includes(k)).length;
+  if(d.overall>=1) n++;
+  if(d.recommend) n++;
+  Object.values(d.trainers||{}).forEach(tv=>DB_TRK.forEach(([k])=>{ if(tv&&tv[k]>=1) n++; }));
+  return n;
+}
+function dbPctOf(tg){
+  const tot=dbTotalOf(tg); if(!tot) return 0;
+  return Math.min(100, Math.round(dbFilledOf(tg)/tot*100));
+}
+/* Ring: ein Kreis, ein Wert — die Zahl steht immer daneben, damit der
+   Fortschritt nicht allein an der Farbe hängt. */
+function dbRing(pct,size,done){
+  const S0=size||34, r=S0/2-3, c=2*Math.PI*r;
+  const shown=done?100:Math.max(0,Math.min(100,pct));
+  const off=c*(1-shown/100);
+  const col=done||shown>=100?"var(--good)":shown>0?"var(--info)":"var(--line)";
+  return `<svg class="dbring" viewBox="0 0 ${S0} ${S0}" width="${S0}" height="${S0}" aria-hidden="true">
+    <circle cx="${S0/2}" cy="${S0/2}" r="${r}" fill="none" stroke="var(--brand-050)" stroke-width="3"/>
+    ${shown>0?`<circle cx="${S0/2}" cy="${S0/2}" r="${r}" fill="none" stroke="${col}" stroke-width="3"
+      stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
+      transform="rotate(-90 ${S0/2} ${S0/2})"/>`:""}
+    ${done?`<path d="M${(S0*0.33).toFixed(1)} ${(S0*0.51).toFixed(1)} l${(S0*0.11).toFixed(1)} ${(S0*0.12).toFixed(1)} l${(S0*0.23).toFixed(1)} -${(S0*0.26).toFixed(1)}" fill="none"
+      stroke="var(--good)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`:""}
+  </svg>`;
 }
 
 /* Statusabzeichen für Listen und Detailkopf. */
@@ -6345,11 +6423,10 @@ async function renderReports(){
   </div></div>`;
 
   if(!R.n){
-    const miss=rpMissingList();
     box.innerHTML=filter+`<div class="panel"><div class="panel-b">
       <div class="empty"><b>${esc(t("rpNoData"))}</b><div class="meta" style="margin-top:6px">${esc(t("rpNoDataHint"))}</div></div>
-    </div></div>`+(miss?`<div class="panel"><div class="panel-h"><h3>${esc(t("rpMissing"))}</h3>
-      <span class="meta">${esc(t("rpMissingSub"))}</span></div><div class="panel-b">${miss}</div></div>`:"");
+    </div></div>`+rpListPanel();
+    drawRpList();
     return;
   }
 
@@ -6445,9 +6522,8 @@ async function renderReports(){
       <div class="panel"><div class="panel-h"><h3>${esc(t("rpSingles"))}</h3></div>
         <div class="panel-b">${single||`<div class="meta">—</div>`}</div></div>
     </div>
-    ${rpMissingList()?`<div class="panel"><div class="panel-h"><h3>${esc(t("rpMissing"))}</h3>
-      <span class="meta">${esc(t("rpMissingSub"))}</span></div>
-      <div class="panel-b">${rpMissingList()}</div></div>`:""}`;
+    `+rpListPanel();
+  drawRpList();
 }
 
 /* Sprung zur Kriterienliste — die Kachel „Handlungsbedarf" zeigt dorthin. */
@@ -6455,18 +6531,79 @@ function rpJumpAlert(){
   const el=$("#v-reports .rpbars"); if(el) el.scrollIntoView({behavior:"smooth",block:"center"});
 }
 
-/* Trainings, die vorbei sind und noch keinen abgeschlossenen Bericht haben. */
-function rpMissingList(){
-  const rows=S.trainings.filter(tg=>tgIsPast(tg) && (!tg.debrief || tg.debrief.status!=="final"))
+/* ---------- Alle Berichte auf einen Blick ----------
+   Jedes Training bekommt hier eine Zeile — auch ohne angelegten Bericht.
+   Eine Datenbankzeile entsteht erst beim ersten Speichern, damit keine
+   leeren Berichte herumliegen; der Ring steht so lange auf 0 %. */
+let rpListFilter="due";
+function rpSetList(f){ rpListFilter=f; drawRpList(); }
+
+function rpListRows(){
+  const st=tg=>tg.debrief ? tg.debrief.status : "";
+  return S.trainings
     .filter(tg=>!S.clientFilter||tg.clientId===S.clientFilter)
-    .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
-  if(!rows.length) return "";
-  return rows.map(tg=>`<div class="row">
-    <div class="rowgrow"><div class="nm">${esc(tg.code?tg.code+" — ":"")}${esc(tg.topic)}</div>
-      <div class="meta">${esc(tg.city||"")}${tg.date?" · "+fmtDate(tg.date):""}</div></div>
-    ${tg.debrief?`<span class="dbbadge dr">${esc(t("dbDraft"))}</span>`:""}
-    <button class="btn sm primary" onclick="openDebrief('${esc(String(tg.id))}')">${esc(t("dbNew"))}</button>
-  </div>`).join("");
+    .filter(tg=>{
+      if(rpListFilter==="all") return true;
+      if(rpListFilter==="due")   return tgIsPast(tg) && st(tg)!=="final";
+      if(rpListFilter==="draft") return st(tg)==="draft";
+      if(rpListFilter==="final") return st(tg)==="final";
+      if(rpListFilter==="soon")  return !tgIsPast(tg);
+      return true; })
+    .sort((a,b)=>{
+      // Zuerst, was fällig ist: gelaufen und noch nicht abgeschlossen
+      const rank=x=>(tgIsPast(x)&&(!x.debrief||x.debrief.status!=="final"))?0:(tgIsPast(x)?1:2);
+      const d=rank(a)-rank(b); if(d) return d;
+      return rank(a)===2 ? String(a.date||"").localeCompare(String(b.date||""))
+                         : String(b.date||"").localeCompare(String(a.date||""));
+    });
+}
+function drawRpList(){
+  const box=$("#rpList"); if(!box) return;
+  const rows=rpListRows();
+  const counts={
+    all:S.trainings.filter(tg=>!S.clientFilter||tg.clientId===S.clientFilter).length,
+    due:0,draft:0,final:0,soon:0};
+  S.trainings.filter(tg=>!S.clientFilter||tg.clientId===S.clientFilter).forEach(tg=>{
+    const st=tg.debrief?tg.debrief.status:"";
+    if(tgIsPast(tg)&&st!=="final") counts.due++;
+    if(st==="draft") counts.draft++;
+    if(st==="final") counts.final++;
+    if(!tgIsPast(tg)) counts.soon++;
+  });
+  const chips=[["due",t("rpFDue"),counts.due],["draft",t("dbDraft"),counts.draft],
+    ["final",t("rpFFinal"),counts.final],["soon",t("rpFSoon"),counts.soon],["all",t("rpFAll"),counts.all]];
+  $("#rpListChips").innerHTML=chips.map(([k,lbl,n])=>
+    `<button${rpListFilter===k?' class="on"':""} onclick="rpSetList('${k}')">${esc(lbl)} <b>${n}</b></button>`).join("");
+
+  box.innerHTML = rows.length ? rows.map(tg=>{
+    const pct=dbPctOf(tg), done=(tg.debrief&&tg.debrief.status==="final");
+    const past=tgIsPast(tg);
+    const team=dbTeamOf(tg).length;
+    return `<div class="row dbrow-l" onclick="openDebrief('${esc(String(tg.id))}')">
+      <span class="dbringwrap">${dbRing(pct,38,done)}<b class="${done?"g":pct?"i":"f"}">${pct}<i>%</i></b></span>
+      <div class="rowgrow">
+        <div class="nm">${esc(tg.code?tg.code+" — ":"")}${esc(tg.topic)}</div>
+        <div class="meta">${esc(tg.city||"")}${tg.date?" · "+fmtDate(tg.date):""}
+          · ${dbFilledOf(tg)}/${dbTotalOf(tg)}${team?" · "+t("rpTeamN",team):""}</div>
+      </div>
+      ${done?`<span class="dbbadge ok">${esc(t("dbDone"))}${tg.debrief.overall?" "+dbNum(tg.debrief.overall):""}</span>`
+        :tg.debrief?`<span class="dbbadge dr">${esc(t("dbDraft"))}</span>`
+        :past?`<span class="dbbadge no">${esc(t("dbMissing"))}</span>`
+        :`<span class="dbbadge no">${esc(t("rpNotYet"))}</span>`}
+      ${(past||tg.debrief)?`<button class="btn sm${past&&!done?" primary":""}"
+        onclick="event.stopPropagation();openDebrief('${esc(String(tg.id))}')">
+        ${esc(tg.debrief?t("dbEdit"):t("dbNew"))}</button>`:""}
+    </div>`;}).join("") : `<div class="empty">${esc(t("rpListEmpty"))}</div>`;
+}
+/* Gerüst der Liste — der Inhalt kommt aus drawRpList(). */
+function rpListPanel(){
+  return `<div class="panel" id="rpListPanel">
+    <div class="panel-h"><h3>${esc(t("rpAllReports"))}</h3>
+      <span class="meta">${esc(t("rpAllReportsSub"))}</span></div>
+    <div class="panel-b">
+      <div class="chips rpchips" id="rpListChips"></div>
+      <div id="rpList" style="margin-top:12px"></div>
+    </div></div>`;
 }
 
 async function rpActDone(id){
