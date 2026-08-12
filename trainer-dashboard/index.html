@@ -1668,7 +1668,11 @@ const L={
   agAllDone:n=>`${n} Agenden verschickt`, agAllFail:w=>`nicht zugestellt: ${w}`,
   agNoMail:"keine E-Mail",
   mtNothing:"Hier gibt es noch nichts zum Verschicken.",
-  mtMore:n=>`… und ${n} weitere Termine (vollständig im Cockpit)`,
+  mtMore:n=>`... und ${n} weitere Termine - die vollständige Übersicht steht im Cockpit.`,
+  mtMoreDays:n=>`... und ${n} weitere Tage - der vollständige Plan steht im Cockpit.`,
+  mtMoreDetail:n=>`... und ${n} weitere Termine. Mit den Wocheninhalten passt nur ein Ausschnitt in eine Mail - die vollständige Übersicht steht im Cockpit.`,
+  mtAsOf:d=>`Stand ${d}`,
+  wkAMs:"vm.", wkPMs:"nm.",
   rpBasis:"Grundlage", rpFinalOnly:"nur abgeschlossene", rpWithDrafts:"Zwischenstand",
   rpDraftNote:"Zwischenstand - vorläufige Zahlen",
   rpDraftNoteSub:(d,n)=>`${d} von ${n} Berichten sind noch Entwürfe. Fehlende Angaben zählen nicht mit, deshalb können sich alle Werte noch verschieben.`,
@@ -2123,7 +2127,11 @@ const L={
   agAllDone:n=>`${n} agendas sent`, agAllFail:w=>`not delivered: ${w}`,
   agNoMail:"no email",
   mtNothing:"There is nothing to send here yet.",
-  mtMore:n=>`… and ${n} more dates (full list in the cockpit)`,
+  mtMore:n=>`... and ${n} more dates - the full overview is in the cockpit.`,
+  mtMoreDays:n=>`... and ${n} more days - the full plan is in the cockpit.`,
+  mtMoreDetail:n=>`... and ${n} more dates. With the week contents only an excerpt fits into an email - the full overview is in the cockpit.`,
+  mtAsOf:d=>`As of ${d}`,
+  wkAMs:"am", wkPMs:"pm",
   rpBasis:"Basis", rpFinalOnly:"completed only", rpWithDrafts:"interim",
   rpDraftNote:"Interim status - provisional figures",
   rpDraftNoteSub:(d,n)=>`${d} of ${n} reports are still drafts. Missing entries are not counted, so every figure can still move.`,
@@ -7199,44 +7207,105 @@ async function copyText(txt,msg){
   catch(e){ prompt(t("mtCopyManual"),txt); }
 }
 
+/* ---------- Textaufbau für die Übergabe ans Mailprogramm ----------
+   Reiner Text, der in jedem Mailprogramm gleich aussieht: keine Einrückung
+   zum Ausrichten (proportionale Schrift!), sondern Blöcke mit Leerzeilen. */
+const MT_LIMIT=1750;               // Zeichen, die eine mailto-Adresse sicher verträgt
+function mtHead(title,sub){
+  const out=[title, "=".repeat(Math.min(46,Math.max(12,title.length)))];
+  if(sub) out.push(sub);
+  out.push("");                       // Leerzeile trennt Kopf vom Inhalt
+  return out;
+}
+/* Zeilen anhängen, solange Platz ist. Gibt zurück, wie viele Blöcke fehlen. */
+function mtFit(lines,blocks,tail){
+  let used=lines.join("\n").length + (tail||"").length, left=0;
+  blocks.forEach(bl=>{
+    const txt=bl.join("\n");
+    if(used+txt.length+2<=MT_LIMIT){ lines.push(txt,""); used+=txt.length+2; }
+    else left++;
+  });
+  return left;
+}
+
 /* Wochenplan als Text ins eigene Mailprogramm - Tag für Tag mit Trainern. */
 function weekToMailClient(){
   const tg=wkCurTg(); if(!tg||!WKD){ toast(t("mtNothing"),"warn"); return; }
   const {slots,bench}=wkPlacement();
-  const L=[(tg.code?tg.code+" - ":"")+tg.topic, (tg.city||"")+" · "+whenLabel(tg), ""];
+  const title=(tg.code?tg.code+" ":"")+tg.topic;
+  const L=mtHead(t("nav_week")+": "+title,
+    [tg.city||"", whenLabel(tg), t("wkTeam")+": "+((tg.roster||[])
+      .filter(x=>["yes","confirmed"].includes(x.status))
+      .map(x=>{const y=S.trainers.find(z=>String(z.id)===String(x.trainerId));return y?y.name.replace(/^Dr\.\s*/,""):null;})
+      .filter(Boolean).join(", ")||"-")].filter(Boolean).join(" · "));
+  const blocks=[];
   WK_DAYS.forEach((d,i)=>{
-    const day=["am","pm"].map(h=>{
+    const rows=[];
+    ["am","pm"].forEach(h=>{
       const items=slots[d+"_"+h].map(id=>{
         const ses=wkSess(id); if(!ses) return null;
         const names=sessTrIds(ses).map(x=>{const y=S.trainers.find(z=>String(z.id)===x);return y?y.name.replace(/^Dr\.\s*/,""):null;}).filter(Boolean);
-        return "  " + sessTitle(ses) + " (" + (ses.dur||1) + " h" + (names.length?", "+names.join(", "):"") + ")";
+        return "  · " + sessTitle(ses) + " (" + (ses.dur||1) + " h)" + (names.length?" - "+names.join(", "):"");
       }).filter(Boolean);
-      return items.length ? [t(h==="am"?"wkAM":"wkPM")+":"].concat(items).join("\n") : "";
-    }).filter(Boolean).join("\n");
-    if(day) L.push(t("day_"+d)+" "+wkDayDate(i)+"\n"+day);
+      if(items.length) rows.push(t(h==="am"?"wkAM":"wkPM")+":", ...items);
+    });
+    if(rows.length) blocks.push([t("day_"+d)+", "+wkDayDate(i), ...rows]);
   });
-  if(bench.length) L.push(t("wkBench")+": "+bench.map(id=>sessTitle(wkSess(id))).join(", "));
-  if(wkDelivText()) L.push("\n"+t("wkDeliverable")+": "+wkDelivText());
-  L.push("\n- ETAF Trainer-Koordination");
-  mailtoOpen("", t("nav_week")+" "+(tg.code?tg.code+" ":"")+tg.topic, L.join("\n"));
+  const tail=[];
+  if(bench.length) tail.push(t("wkBench")+": "+bench.map(id=>sessTitle(wkSess(id))).join(", "));
+  if(wkDelivText()) tail.push(t("wkDeliverable")+": "+wkDelivText());
+  tail.push("", "- ETAF Trainer-Koordination");
+  const left=mtFit(L,blocks,tail.join("\n"));
+  if(left) L.push(t("mtMoreDays",left),"");
+  mailtoOpen("", t("nav_week")+" "+title, L.concat(tail).join("\n"));
 }
-/* Wandkalender als Terminliste ins eigene Mailprogramm. */
+
+/* Wandkalender als Terminliste ins eigene Mailprogramm - nach Monaten
+   gegliedert und, wenn die Wocheninhalte eingeblendet sind, mit den
+   Sessions je Woche. */
 function calToMailClient(){
   const list=sortedForCal();
   if(!list.length){ toast(t("mtNothing"),"warn"); return; }
   const cl=activeClient();
-  const L=[t("calTitle")+(cl?" - "+cl.name:""),""];
-  // mailto-Adressen sind längenbegrenzt - deshalb kürzen und ehrlich sagen,
-  // wie viele Termine nicht mehr in die Mail passen.
-  const MAX=22;
-  list.slice(0,MAX).forEach(tg=>{
+  const M=(S.lang==="de"?MONTHS_DE:MONTHS_EN);
+  const L=mtHead(t("calTitle")+(cl?" - "+cl.name:""),
+    t("mtAsOf",fmtDate(new Date().toISOString().slice(0,10)))+" · "+t("pfTrainings",list.length));
+  const blocks=[]; let curMonth="";
+  list.forEach(tg=>{
+    const d=tg.date?new Date(tg.date+"T00:00:00"):null;
+    const mk=d?M[d.getMonth()]+" "+d.getFullYear():"";
+    const rows=[];
+    if(mk&&mk!==curMonth){ curMonth=mk; rows.push(mk.toUpperCase(),"-".repeat(mk.length)); }
     const r=rosterStats(tg);
-    L.push((tg.date?fmtDate(tg.date):"")+(tg.dateEnd&&tg.dateEnd!==tg.date?"-"+fmtDate(tg.dateEnd):"")
-      +" · "+(tg.code?tg.code+" ":"")+tg.topic+" · "+(tg.city||"")+" · "+r.yes+"/"+r.need);
+    rows.push((tg.code?tg.code+" - ":"")+tg.topic);
+    rows.push("  "+fmtDateRange(tg.date,tg.dateEnd,S.lang)+" · "+(tg.city||"")
+      +" · "+t("trainersC",r.yes,r.need));
+    // Wocheninhalte nur, wenn sie auch auf dem Bogen eingeblendet sind
+    if(calDetail && calWeeks){
+      const wd=calWeeks[String(tg.id)];
+      if(wd && (wd.sessions||[]).length){
+        const sess=id=>(wd.sessions||[]).find(x=>String(x.id)===String(id));
+        const plan=wd.plan||{}; const seen=new Set();
+        WK_DAYS.forEach((dk,i)=>{
+          ["am","pm"].forEach(h=>{
+            (plan[dk+"_"+h]||[]).forEach(id=>{
+              const x=sess(id); if(!x||seen.has(String(id))) return; seen.add(String(id));
+              const nm=(x.trainerIds||[]).map(ti=>{const y=S.trainers.find(z=>String(z.id)===String(ti));return y?y.name.replace(/^Dr\.\s*/,""):null;}).filter(Boolean);
+              rows.push("  · "+t("day_"+dk).slice(0,2)+" "+t(h==="am"?"wkAMs":"wkPMs")
+                +" "+((S.lang==="en"&&x.titleEn)?x.titleEn:x.title)+(nm.length?" - "+nm.join(", "):""));
+            });
+          });
+        });
+        const rest=(wd.sessions||[]).filter(x=>!seen.has(String(x.id)));
+        if(rest.length) rows.push("  · "+t("wkBench")+": "+rest.map(x=>(S.lang==="en"&&x.titleEn)?x.titleEn:x.title).join(", "));
+      }
+    }
+    blocks.push(rows);
   });
-  if(list.length>MAX) L.push(t("mtMore",list.length-MAX));
-  L.push("\n- ETAF Trainer-Koordination");
-  mailtoOpen("", t("calTitle")+(cl?" - "+cl.name:""), L.join("\n"));
+  const tail="\n- ETAF Trainer-Koordination";
+  const left=mtFit(L,blocks,tail);
+  if(left) L.push(t(calDetail?"mtMoreDetail":"mtMore",left));
+  mailtoOpen("", t("calTitle")+(cl?" - "+cl.name:""), L.join("\n")+tail);
 }
 
 /* Agenda an das eigene Mailprogramm übergeben (Link statt Anhang). */

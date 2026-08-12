@@ -297,6 +297,28 @@ function ensure_schema(): void {
     done INT DEFAULT 0, created_at VARCHAR(20), sort INT DEFAULT 0)$eng");
   try{ $d->exec("CREATE INDEX idx_dbact ON debrief_actions(debrief_id)"); }catch(Throwable $e){}
 
+  /* Einmalige Textkorrektur: lange Gedankenstriche in kurze Bindestriche.
+     Die Striche stecken im vorhandenen Datenbestand (Kundenname, Trainings-
+     titel, Sessions, Mailvorlagen) und lassen sich nicht im Quelltext beheben.
+     Nur strukturelle Felder - Freitexte und Notizen bleiben unangetastet. */
+  if(config_get('dash_fix_v1')===null){
+    $fix=[
+      'clients'=>['name','short'],
+      'trainings'=>['topic','spec','city','code'],
+      'training_sessions'=>['title','title_en','descr','mat'],
+      'materials'=>['name','cat'],
+      'templates'=>['de_name','de_subject','de_body','en_name','en_subject','en_body'],
+    ];
+    foreach($fix as $tbl=>$cols){
+      foreach($cols as $c){
+        try{ q("UPDATE $tbl SET $c=REPLACE(REPLACE($c, ?, '-'), ?, '-') WHERE $c LIKE ? OR $c LIKE ?",
+              ["\u{2014}","\u{2013}",'%'."\u{2014}".'%','%'."\u{2013}".'%']); }
+        catch(Throwable $e){ /* Spalte fehlt in aelteren Staenden */ }
+      }
+    }
+    config_set('dash_fix_v1', now());
+  }
+
   // Automatik-Standardwerte
   $ac=cfg();
   if(config_get('reminder_hours')===null) config_set('reminder_hours',(string)($ac['reminder_hours']??48));
