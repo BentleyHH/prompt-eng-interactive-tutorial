@@ -126,7 +126,7 @@ switch($action){
     if(!q("SELECT id FROM users WHERE id=?",[$uid])->fetch()) fail('Benutzer nicht gefunden.',404);
     $freq=in_array($in['freq']??'',['off','daily','every2','weekly'],true)?$in['freq']:'off';
     $day=max(1,min(7,(int)($in['day']??1)));
-    $validParts=['staffing','ppt','travel','inbox','week','passport'];
+    $validParts=['staffing','ppt','travel','inbox','week','passport','reports'];
     $dparts=array_values(array_intersect($validParts,(array)($in['parts']??[])));
     q("UPDATE users SET digest_freq=?,digest_day=?,digest_parts=? WHERE id=?",[$freq,$day,json_encode($dparts),$uid]);
     audit('user.digest','user',(string)$uid,'Info-Mail: '.$freq);
@@ -408,6 +408,129 @@ switch($action){
     $ik=(string)(cfg()['ics_key']??'');
     if($ik===''||$ik==='CHANGE_ME_kalender_schluessel') fail('Kein ics_key in config.php gesetzt — bitte einen zufälligen Wert eintragen.');
     out(['ok'=>true,'link'=>base_url().'/ics.php?key='.rawurlencode($ik).'&trainer='.$trId]);
+
+  /* ============================================================
+     TRAININGSBERICHT (DEBRIEF)
+     ============================================================ */
+
+  /* ---- Bericht eines Trainings holen (leer = noch keiner vorhanden) ---- */
+  case 'debrief.get':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    $r=q("SELECT * FROM debriefs WHERE training_id=?",[$tid])->fetch();
+    out(['ok'=>true,'debrief'=>$r?debrief_public($r):null]);
+
+  /* ---- Alle Berichte (Liste für die Auswertung/Export) ---- */
+  case 'debriefs.list':
+    require_auth();
+    $rows=q("SELECT d.*, t.code, t.topic, t.city, t.start_date, t.client_id
+             FROM debriefs d JOIN trainings t ON t.id=d.training_id
+             ORDER BY t.start_date DESC, d.id DESC")->fetchAll();
+    out(['ok'=>true,'debriefs'=>array_map(function($r){
+      $d=debrief_public($r);
+      $d['code']=$r['code']??''; $d['topic']=$r['topic']??''; $d['city']=$r['city']??'';
+      $d['date']=$r['start_date']??''; $d['clientId']=$r['client_id']??'';
+      return $d; },$rows),
+      'missing'=>array_map(fn($m)=>['id'=>(string)$m['id'],'code'=>$m['code']??'','topic'=>$m['topic']??'',
+        'city'=>$m['city']??'','date'=>$m['start_date']??''], debriefs_missing(0))]);
+
+  /* ---- Bericht speichern (Entwurf oder abgeschlossen) ---- */
+  case 'debrief.save':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    if(!$tid || !q("SELECT id FROM trainings WHERE id=?",[$tid])->fetch()) fail('Training nicht gefunden.',404);
+    $status=in_array($in['status']??'',['draft','final'],true)?$in['status']:'draft';
+    $rec=in_array($in['recommend']??'',['yes','partly','no'],true)?$in['recommend']:'';
+    $ov=(int)($in['overall']??0); if($ov<0||$ov>5) $ov=0;
+
+    // Nur bekannte Kriterien mit Werten 1..5 übernehmen — alles andere fällt weg
+    $keys=debrief_keys(); $sc=[];
+    foreach((array)($in['scores']??[]) as $k=>$v){
+      if(in_array((string)$k,$keys,true) && is_numeric($v) && $v>=1 && $v<=5) $sc[(string)$k]=(int)$v;
+    }
+    $trs=[];
+    foreach((array)($in['trainers']??[]) as $tid2=>$tv){
+      if(!is_array($tv) || !ctype_digit((string)$tid2)) continue;
+      $e=[];
+      foreach(['teaching','behaviour','ppt','punctuality'] as $tk){
+        if(isset($tv[$tk]) && is_numeric($tv[$tk]) && $tv[$tk]>=1 && $tv[$tk]<=5) $e[$tk]=(int)$tv[$tk];
+      }
+      $nt=trim((string)($tv['note']??'')); if($nt!=='') $e['note']=mb_substr($nt,0,1000);
+      if($e) $trs[(string)$tid2]=$e;
+    }
+    $okFlags=array_column(debrief_catalog()['flags'],'key');
+    $fl=array_values(array_unique(array_filter(array_map('strval',(array)($in['flags']??[])),
+        fn($x)=>in_array($x,$okFlags,true))));
+    $okTexts=array_column(debrief_catalog()['texts'],'key');
+    $tx=[];
+    foreach((array)($in['texts']??[]) as $k=>$v){
+      if(in_array((string)$k,$okTexts,true)){ $v=trim((string)$v); if($v!=='') $tx[(string)$k]=mb_substr($v,0,4000); }
+    }
+    // Gesamtnote leer? Dann aus den Einzelwerten mitteln, damit der Bericht zählt.
+    if($ov===0 && $sc){ $ov=(int)round(debrief_avg(array_values($sc)) ?? 0); }
+
+    $me=current_user();
+    $who=$me['name']??($me['email']??'');
+    $old=q("SELECT * FROM debriefs WHERE training_id=?",[$tid])->fetch();
+    if($old){
+      if(isset($in['version']) && (int)$in['version'] && (int)$in['version']!==(int)($old['version']??1) && empty($in['force'])){
+        fail('Dieser Bericht wurde inzwischen von jemand anderem geändert.',409);
+      }
+      q("UPDATE debriefs SET status=?,overall=?,recommend=?,scores=?,trainers=?,flags=?,texts=?,
+           updated_at=?,version=version+1 WHERE id=?",
+        [$status,$ov,$rec,json_encode($sc),json_encode($trs,JSON_UNESCAPED_UNICODE),
+         json_encode($fl),json_encode($tx,JSON_UNESCAPED_UNICODE),now(),$old['id']]);
+      $did=(int)$old['id'];
+    } else {
+      q("INSERT INTO debriefs(training_id,status,overall,recommend,scores,trainers,flags,texts,
+           author_id,author_name,created_at,updated_at,version)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,1)",
+        [$tid,$status,$ov,$rec,json_encode($sc),json_encode($trs,JSON_UNESCAPED_UNICODE),
+         json_encode($fl),json_encode($tx,JSON_UNESCAPED_UNICODE),
+         $me?(int)$me['id']:null,$who,now(),now()]);
+      $did=(int)db()->lastInsertId();
+    }
+
+    // Maßnahmen komplett neu schreiben (die Liste kommt immer vollständig)
+    q("DELETE FROM debrief_actions WHERE debrief_id=?",[$did]);
+    $sort=0;
+    foreach((array)($in['actions']??[]) as $a){
+      $txt=trim((string)($a['text']??'')); if($txt==='') continue;
+      $due=trim((string)($a['due']??'')); if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$due)) $due='';
+      q("INSERT INTO debrief_actions(debrief_id,training_id,text,owner,due,done,created_at,sort)
+         VALUES(?,?,?,?,?,?,?,?)",
+        [$did,$tid,mb_substr($txt,0,500),mb_substr(trim((string)($a['owner']??'')),0,190),
+         $due,!empty($a['done'])?1:0,now(),$sort++]);
+    }
+    audit('debrief.save','training',(string)$tid,$status==='final'?'Bericht abgeschlossen':'Bericht als Entwurf gespeichert');
+    $rowNew=q("SELECT * FROM debriefs WHERE id=?",[$did])->fetch();
+    out(['ok'=>true,'debrief'=>debrief_public($rowNew)]);
+
+  case 'debrief.delete':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    $d=q("SELECT id FROM debriefs WHERE training_id=?",[$tid])->fetch();
+    if($d){
+      q("DELETE FROM debrief_actions WHERE debrief_id=?",[$d['id']]);
+      q("DELETE FROM debriefs WHERE id=?",[$d['id']]);
+      audit('debrief.delete','training',(string)$tid,'Bericht gelöscht');
+    }
+    out(['ok'=>true]);
+
+  /* ---- Maßnahme abhaken/aufmachen (aus der Berichtsansicht heraus) ---- */
+  case 'debrief.actionDone':
+    require_auth();
+    $aid=(int)($in['id']??0);
+    q("UPDATE debrief_actions SET done=? WHERE id=?",[!empty($in['done'])?1:0,$aid]);
+    out(['ok'=>true]);
+
+  /* ---- Auswertung über einen Zeitraum ---- */
+  case 'report.build':
+    require_auth();
+    $ymd=function($s){ $s=trim((string)$s); return preg_match('/^\d{4}-\d{2}-\d{2}$/',$s)?$s:''; };
+    $bucket=in_array($in['bucket']??'',['week','month','year'],true)?$in['bucket']:'month';
+    out(['ok'=>true,'report'=>debrief_report($ymd($in['from']??''),$ymd($in['to']??''),
+      trim((string)($in['client']??'')),$bucket)]);
 
   /* ---- Wochenplan aus einer anderen Woche übernehmen (Vorlage kopieren) ---- */
   case 'weekplan.copy':

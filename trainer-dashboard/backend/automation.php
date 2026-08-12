@@ -8,7 +8,7 @@ require_once __DIR__.'/mailer.php';
 
 /**
  * Info-Mail (Digest): baut die gewählten Inhalts-Blöcke als HTML.
- * Blöcke: staffing | ppt | travel | inbox | week | passport
+ * Blöcke: staffing | ppt | travel | inbox | week | passport | reports
  */
 function digest_build(array $parts): string {
   $today=gmdate('Y-m-d'); $out='';
@@ -73,6 +73,28 @@ function digest_build(array $parts): string {
         .$li('Team: '.($team?htmlspecialchars(implode(', ',$team)):'— noch niemand zugesagt —'))
         .((($nx['deliverable']??'')!=='')?$li('Wochenergebnis: '.htmlspecialchars($nx['deliverable'])):'');
     }
+  }
+  if(in_array('reports',$parts,true)){
+    // Kurzbild der letzten drei Monate + was noch zu bewerten ist
+    $rep=debrief_report(gmdate('Y-m-d', time()-90*86400), '', '', 'month');
+    $rows=[];
+    if($rep['n']>0){
+      $rows[]=$li('Ø Gesamteindruck: <b>'.number_format((float)($rep['overall']??0),1,',','').'</b> aus '.$rep['n'].' Bericht'.($rep['n']===1?'':'en'));
+      $weak=array_values(array_filter($rep['criteria'], fn($c)=>$c['avg']!==null && $c['avg']<3));
+      usort($weak, fn($a,$b)=>$a['avg']<=>$b['avg']);
+      foreach(array_slice($weak,0,4) as $c){
+        $rows[]=$li('Handlungsbedarf: <b>'.htmlspecialchars(debrief_label($c['key'])).'</b> — '
+          .number_format((float)$c['avg'],1,',','').' (n='.$c['n'].')');
+      }
+      $openA=count($rep['actions']??[]);
+      if($openA) $rows[]=$li('<b>'.$openA.'</b> offene Maßnahme'.($openA===1?'':'n').' aus den Berichten');
+    }
+    $miss=debriefs_missing(2);
+    foreach(array_slice($miss,0,5) as $m){
+      $rows[]=$li('Bericht fehlt: '.htmlspecialchars((($m['code']??'')?$m['code'].' · ':'').$m['topic'])
+        .((($m['start_date']??'')!=='')?' ('.date('d.m.',strtotime($m['start_date'])).')':''));
+    }
+    $out.=$H('Trainingsberichte').($rows?implode('',$rows):$li('Alle gelaufenen Trainings sind bewertet ✓'));
   }
   if(in_array('passport',$parts,true)){
     $lead=(int)(config_get('passport_lead_days')??180); $rows=[];
@@ -299,6 +321,36 @@ function run_automation(): array {
     }
   }catch(Throwable $e){ /* Digest darf den Rest nicht stoppen */ }
 
+  /* 6c) Erinnerung: Training vorbei, aber kein Bericht. Geht an die Koordination
+         (Admins mit E-Mail) und nur einmal je Training. */
+  $debriefPing=0;
+  try{
+    $grace=(int)(config_get('debrief_grace_days') ?? 3);
+    $missing=debriefs_missing($grace);
+    if($missing){
+      $admins=q("SELECT email,name FROM users WHERE active=1 AND role='admin' AND email<>''")->fetchAll();
+      $dash=preg_replace('#/backend$#','',base_url());
+      foreach($missing as $m){
+        $flag='debrief_ping_'.(int)$m['id'];
+        if(config_get($flag)!==null) continue;              // schon erinnert
+        $title=(($m['code']??'')?$m['code'].' — ':'').$m['topic'];
+        foreach($admins as $a){
+          $html=email_html("Hallo ".(explode(' ',trim((string)($a['name']??'')))[0]?:'')."\n\n"
+            ."„".$title."\" in ".($m['city']??'')." ist beendet — ein Trainingsbericht fehlt noch. "
+            ."Er dauert nur zwei Minuten und ist die Grundlage für die Wochen-, Monats- und Jahresauswertung.",
+            cta_button($dash,'Bericht ausfüllen'));
+          $subj='ETAF — Trainingsbericht offen: '.$title;
+          $ok=send_email($a['email'],$a['name']??'',$subj,$html);
+          q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+             VALUES(?,?,?,?,?,?,?,?)",[(int)$m['id'],null,$a['email'],$subj,'Erinnerung Trainingsbericht','de',
+             ((cfg()['mail_mode']??'mail')==='log'?'logged':($ok?'sent':'failed')),now()]);
+          if($ok) $debriefPing++;
+        }
+        config_set($flag, now());
+      }
+    }
+  }catch(Throwable $e){ /* Erinnerung darf den Rest nicht stoppen */ }
+
   /* 7) Aufräumen: abgelaufene Sitzungen, alte Einmal-Links, alte Login-Sperren */
   try{
     $maxDays=(int)(cfg()['session_days']??14);
@@ -316,5 +368,5 @@ function run_automation(): array {
 
   return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,
           'passport'=>$passport,'mail_fetched'=>$mailFetched,'mail_flights'=>$mailFlights,
-          'digest'=>$digestSent,'backup'=>$backupFile,'auto_advance'=>$autoAdv];
+          'digest'=>$digestSent,'debrief_ping'=>$debriefPing,'backup'=>$backupFile,'auto_advance'=>$autoAdv];
 }

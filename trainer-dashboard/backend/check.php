@@ -105,7 +105,7 @@ if(is_array($cfg) && $authed){
                   $cfg['db_user']??'', $cfg['db_pass']??'');
       $pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
       $missT=[];
-      foreach(['users','activity','travel_mail','trainer_reviews','training_sessions'] as $t){
+      foreach(['users','activity','travel_mail','trainer_reviews','training_sessions','debriefs','debrief_actions'] as $t){
         try{ $pdo->query("SELECT 1 FROM $t LIMIT 1"); }catch(\Throwable $e){ $missT[]=$t; }
       }
       row('Datenbank-Schema aktuell', count($missT)===0,

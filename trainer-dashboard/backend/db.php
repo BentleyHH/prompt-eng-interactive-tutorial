@@ -277,6 +277,26 @@ function ensure_schema(): void {
     try{ import_programme_sessions(); }catch(Throwable $e){}
   }
 
+  /* ---- Trainingsbericht (Debrief): eine Bewertung je Training.
+         scores  = JSON {kriterium: 1..5}  — fehlende Schlüssel = „nicht bewertet"
+         trainers= JSON {trainerId: {teaching,behaviour,ppt,punctuality,note}}
+         flags   = JSON [chip-schlüssel] — Vorkommnisse zum Ankreuzen
+         texts   = JSON {wentWell,toImprove,adp,incidents}
+         status  = 'draft' (weiter bearbeitbar) | 'final' (im Bericht gezählt) ---- */
+  $d->exec("CREATE TABLE IF NOT EXISTS debriefs (
+    id $pk, training_id INT, status VARCHAR(8) DEFAULT 'draft',
+    overall INT DEFAULT 0, recommend VARCHAR(8) DEFAULT '',
+    scores TEXT, trainers TEXT, flags TEXT, texts TEXT,
+    author_id INT, author_name VARCHAR(190),
+    created_at VARCHAR(20), updated_at VARCHAR(20), version INT DEFAULT 1)$eng");
+  try{ $d->exec("CREATE INDEX idx_debriefs_tg ON debriefs(training_id)"); }catch(Throwable $e){}
+  // Maßnahmen aus einem Bericht — mit Verantwortlichem und Termin, abhakbar
+  $d->exec("CREATE TABLE IF NOT EXISTS debrief_actions (
+    id $pk, debrief_id INT, training_id INT,
+    text TEXT, owner VARCHAR(190), due VARCHAR(12),
+    done INT DEFAULT 0, created_at VARCHAR(20), sort INT DEFAULT 0)$eng");
+  try{ $d->exec("CREATE INDEX idx_dbact ON debrief_actions(debrief_id)"); }catch(Throwable $e){}
+
   // Automatik-Standardwerte
   $ac=cfg();
   if(config_get('reminder_hours')===null) config_set('reminder_hours',(string)($ac['reminder_hours']??48));

@@ -380,7 +380,7 @@
   .sheet-h{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
   .sheet-h h3{font-size:16px}
   .sheet-b{padding:18px 20px;overflow:auto;flex:1}
-  .sheet-f{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+  .sheet-f{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   label.fld{display:block;font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;
     letter-spacing:.05em;margin:14px 0 6px}
   .fldrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -621,6 +621,99 @@
   .cal-inl{font-size:11.5px;line-height:1.45;color:var(--ink)}
   .cal-inl i{color:var(--muted);font-style:normal}
   .cal-sd{position:absolute;left:0;top:5px;width:5px;height:5px;border-radius:50%}
+  /* ===== Trainingsbericht: Skala, Vorkommnisse, Maßnahmen ===== */
+  .dbsec{border-top:1px solid var(--line);margin:16px 0 0;padding-top:13px}
+  .dbsec:first-of-type{border-top:none;padding-top:0}
+  .dbsec h4{margin:0 0 9px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .dbrow{display:flex;align-items:center;gap:10px;padding:5px 0;flex-wrap:wrap}
+  .dbrow .lbl{flex:1 1 190px;min-width:0;font-size:13.5px}
+  /* Skala 1–5 + „n.z.“ — bewusst große Flächen, damit es am Handy vor Ort läuft */
+  .scale{display:flex;gap:4px;flex:none}
+  .scale button{width:34px;height:34px;border:1px solid var(--line);background:var(--panel);border-radius:9px;
+    font:600 13px/1 var(--sans);color:var(--muted);cursor:pointer;padding:0}
+  .scale button.na{width:auto;padding:0 9px;font-size:11.5px}
+  .scale button:hover{border-color:var(--brand);color:var(--ink)}
+  .scale button.on{background:var(--brand-solid);border-color:var(--brand-solid);color:#fff}
+  .scale button.on.s1,.scale button.on.s2{background:var(--crit);border-color:var(--crit)}
+  .scale button.on.s3{background:var(--warn);border-color:var(--warn)}
+  .scale button.on.s4,.scale button.on.s5{background:var(--good);border-color:var(--good)}
+  .scale button.na.on{background:var(--panel-2);border-color:var(--line);color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chips button{border:1px solid var(--line);background:var(--panel);border-radius:20px;padding:6px 13px;
+    font:500 12.5px/1.3 var(--sans);color:var(--muted);cursor:pointer}
+  .chips button.on{background:var(--crit-bg);border-color:var(--crit);color:var(--crit);font-weight:650}
+  .actrow{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
+  .actrow .inp{margin:0}
+  .actrow .at{flex:1 1 100%} .actrow .ao{flex:1 1 130px} .actrow .ad{flex:0 1 150px}
+  .dbbadge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .dbbadge.ok{background:var(--good-bg);color:var(--good)}
+  .dbbadge.dr{background:var(--warn-bg);color:var(--warn)}
+  .dbbadge.no{background:var(--panel-2);color:var(--faint)}
+
+  /* ===== Auswertung: Diagramme (reines SVG, keine Fremdbibliothek) ===== */
+  .rpfilter{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+  .rpfilter .fld{margin:0 0 4px}
+  .rpseg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
+  .rpseg button{border:none;background:transparent;padding:8px 13px;font:600 12.5px/1 var(--sans);
+    color:var(--muted);cursor:pointer;border-right:1px solid var(--line)}
+  .rpseg button:last-child{border-right:none}
+  .rpseg button.on{background:var(--brand-solid);color:#fff}
+  .chart{width:100%;display:block;overflow:visible}
+  .chart text{font-family:var(--sans);fill:var(--muted)}
+  .chart .val{fill:var(--ink);font-weight:650}
+  .chart .grid{stroke:var(--line);stroke-width:1}
+  .chart .axis{fill:var(--faint);font-size:11px}
+  .cbar{cursor:default}
+  .cbar:hover .bar{opacity:.82}
+  .clegend{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:10px}
+  .clegend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+  .spark{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+  .sparkbox{border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;background:var(--panel)}
+  .sparkbox .sh{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .sparkbox .sv{font-size:21px;font-weight:700;color:var(--ink);line-height:1.2}
+  .rpbars{display:flex;flex-direction:column;gap:7px}
+  .rprow{display:grid;grid-template-columns:minmax(120px,1.45fr) minmax(70px,2fr) 42px 40px;
+    gap:10px;align-items:center;font-size:13px}
+  .rplbl{color:var(--ink);min-width:0;overflow-wrap:anywhere}
+  .rpbar{height:10px;border-radius:5px;background:var(--brand-050);overflow:hidden}
+  .rpbar i{display:block;height:100%;border-radius:0 5px 5px 0}
+  .rpval{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .rpn{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+  /* Zwei gleich breite Spalten — .grid2 füllt mit auto-fill auch 4 Spuren auf */
+  .rpgrid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;align-items:start}
+  .rpcols .rpbars{display:block;columns:2;column-gap:34px}
+  .rpcols .rprow{break-inside:avoid;margin-bottom:7px}
+  @media(max-width:900px){ .rpcols .rpbars{columns:1} }
+  .rpkv{display:grid;grid-template-columns:190px 1fr;gap:5px 14px;font-size:13.5px;margin-bottom:4px}
+  .rpkv .rpk{color:var(--muted)}
+  .rpgrp{display:flex;gap:9px;flex-wrap:wrap}
+  .rpgrp>div{border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:12.5px;
+    display:flex;gap:10px;align-items:baseline}
+  .rpgrp b{font-size:16px}
+  .rpflags{display:flex;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+  .rpflags span{border:1px solid var(--line);border-radius:20px;padding:3px 11px}
+  .rpacts{margin:0;padding-left:19px;font-size:13px}
+  .rpacts i{color:var(--muted);font-style:normal}
+  @media(max-width:560px){
+    .rprow{grid-template-columns:1fr 46px;grid-template-areas:"l v" "b b";gap:3px 8px}
+    .rplbl{grid-area:l;white-space:normal}
+    .rpbar{grid-area:b} .rpval{grid-area:v} .rpn{display:none}
+    .rpkv{grid-template-columns:1fr;gap:0 0}
+    .rpkv .rpk{margin-top:7px}
+  }
+  .rptable{width:100%;border-collapse:collapse;font-size:13.5px}
+  .rptable th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);font-weight:700;padding:0 10px 7px}
+  .rptable td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:middle}
+  .rptable td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .rpmeter{height:6px;border-radius:3px;background:var(--brand-050);overflow:hidden;min-width:70px}
+  .rpmeter i{display:block;height:100%;border-radius:3px}
+  @media(max-width:560px){
+    .dbrow .lbl{flex:1 1 100%}
+    .scale button{width:calc((100% - 20px)/6);max-width:44px;height:38px}
+    .scale{width:100%}
+  }
+
   .wkdeliv{border-left:4px solid var(--warn);border-radius:10px;background:var(--panel-2);padding:11px 14px;font-size:13.5px}
   .wkdeliv b{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:3px}
   .wkteam{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
@@ -697,6 +790,16 @@
     .wkp .wkp-m{font-size:7.6pt}
     .wkp-head h2{font-size:15pt!important;margin:1px 0 2px!important}
     .wkp-del{padding:6px 10px!important;margin:9px 0 2px!important;font-size:9.5pt!important}
+    /* Auswertungsbogen */
+    .rpsheet .rprow{font-size:9.5pt;gap:8px}
+    .rpsheet .rpbar{height:8px}
+    .rpsheet .rpbars{gap:5px}
+    .rpsheet .rpkv{grid-template-columns:150px 1fr;font-size:9.5pt;gap:2px 12px}
+    .rpsheet .rpgrp>div{padding:5px 9px;font-size:9pt} .rpsheet .rpgrp b{font-size:12pt}
+    .rpsheet .rptable td,.rpsheet .rptable th{padding:3px 6px;font-size:9pt}
+    .rpsheet .rpflags{font-size:9pt} .rpsheet .rpacts{font-size:9.5pt}
+    .rpsheet .ag-h2{break-after:avoid;page-break-after:avoid}
+    .rpsheet .rpbars,.rpsheet .rptable{break-inside:avoid;page-break-inside:avoid}
   }
 </style>
 
@@ -785,6 +888,7 @@
       <section class="view" id="v-templates"></section>
       <section class="view" id="v-automation"></section>
       <section class="view" id="v-emails"></section>
+      <section class="view" id="v-reports"></section>
     </div>
   </main>
 </div>
@@ -833,6 +937,15 @@
   <div id="weekPrintBody"></div>
 </div>
 
+<!-- Druckbarer Auswertungsbericht (Overlay) -->
+<div id="repPrint" class="printable">
+  <div class="ag-toolbar">
+    <button class="btn primary" onclick="window.print()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><path d="M6 9V2h12v7"/><rect x="5" y="13" width="14" height="8" rx="1"/><path d="M6 17H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/></svg><span>Drucken</span></button>
+    <button class="btn" onclick="closeRepPrint()">✕</button>
+  </div>
+  <div id="repPrintBody"></div>
+</div>
+
 <!-- dynamische Seitenausrichtung für den Druck (Agenda=Hoch, Kalender=Quer) -->
 <style id="pageOrient">@page{size:A4 portrait;margin:16mm}</style>
 
@@ -878,7 +991,9 @@ const IC={
   inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>',
   pen:'<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
   more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
-  week:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="M7 13h3v5H7zM12 13h3v3h-3z"/>'
+  week:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="M7 13h3v5H7zM12 13h3v3h-3z"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M7 15v3M12 10v8M17 6v12"/>',
+  star:'<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 /* Inline-Strichicon in Textgröße (für Buttons/Labels). */
@@ -1094,6 +1209,7 @@ const L={
   dgPart_inbox:"Posteingang — Rückmeldungen & neue Flugpost",
   dgPart_week:"Nächstes Training — Team & Wochenergebnis",
   dgPart_passport:"Reisepässe — ablaufende Dokumente",
+  dgPart_reports:"Trainingsberichte — Schnitt, Handlungsbedarf & fehlende Berichte",
   dgTest:"Probe senden", dgTestSent:"Probe-Mail ist unterwegs", dgTestFail:"Versand fehlgeschlagen",
   dgSaved:"Info-Mail-Einstellungen gespeichert", dgLiveOnly:"Nur im Live-Betrieb verfügbar.",
   attNoContent:"Wochenplan ist noch leer — Inhalte planen",
@@ -1371,6 +1487,46 @@ const L={
   visa_none:"—", visa_needed:"benötigt", visa_applied:"beantragt", visa_approved:"genehmigt", visa_rejected:"abgelehnt",
   flSuggest:"Flug-Vorschläge", flSuggestHint:"Automatische Vorschläge nach Route (Region → Ziel). Zum Übernehmen anklicken.", flUse:"Übernehmen",
   nav_emails:"Protokoll", tp_emails:"E-Mail-Protokoll", tp_emailsSub:"Alle versendeten Anfragen, Erinnerungen und Agenden",
+  /* ---- Trainingsbericht & Auswertung ---- */
+  nav_reports:"Berichte", tp_reports:"Berichte & Auswertung",
+  tp_reportsSub:"Trainings bewerten und über Wochen, Monate und Jahre auswerten",
+  dbTitle:"Trainingsbericht", dbTitleFor:tg=>`Trainingsbericht — ${tg}`,
+  dbOpen:"Bericht", dbNew:"Bericht ausfüllen", dbEdit:"Bericht bearbeiten",
+  dbDone:"bewertet", dbDraft:"Entwurf", dbMissing:"offen",
+  dbSaveDraft:"Als Entwurf sichern", dbFinish:"Bericht abschließen", dbReopen:"Wieder öffnen",
+  dbDelete:"Bericht löschen", dbDeleteAsk:"Diesen Bericht wirklich löschen?",
+  dbSaved:"Bericht gespeichert", dbFinished:"Bericht abgeschlossen",
+  dbIntro:"Kurz nach dem Training ausfüllen — 1 = ungenügend, 5 = ausgezeichnet. Nicht Zutreffendes einfach offen lassen.",
+  dbNa:"n.z.", dbNaHint:"nicht zutreffend / nicht bewertet",
+  dbOverall:"Gesamteindruck", dbRecommend:"Noch einmal so durchführen?",
+  dbTrainerHead:"Trainerinnen und Trainer", dbTrainerNote:"Notiz zum Trainer",
+  dbTrainerNone:"Für dieses Training ist noch niemand bestätigt — Bewertung je Trainer erscheint danach.",
+  dbFlagsHead:"Vorkommnisse (Mehrfachauswahl)",
+  dbActions:"Maßnahmen", dbActionAdd:"Maßnahme hinzufügen",
+  dbActionText:"Was ist zu tun?", dbActionOwner:"Wer?", dbActionDue:"Bis wann?",
+  dbActionDone:"erledigt", dbNoActions:"Noch keine Maßnahme festgehalten.",
+  dbAuthor:a=>`Erfasst von ${a}`, dbUnrated:"noch nicht bewertet",
+  dbFilled:(n,m)=>`${n} von ${m} Kriterien bewertet`,
+  dbNeedSome:"Bitte mindestens ein Kriterium bewerten, bevor der Bericht abgeschlossen wird.",
+  rpPeriod:"Zeitraum", rpWeek:"Woche", rpMonth:"Monat", rpQuarter:"Quartal", rpYear:"Jahr", rpAll:"Gesamt",
+  rpFrom:"von", rpTo:"bis", rpBucket:"Achse",
+  rpKpiCount:"Berichte", rpKpiOverall:"Ø Gesamteindruck", rpKpiCoverage:"Abdeckung",
+  rpKpiAlert:"Handlungsbedarf", rpKpiAlertSub:"Kriterien unter 3,0",
+  rpCoverageSub:(a,b)=>`${a} von ${b} gelaufenen Trainings`,
+  rpNoData:"Für diesen Zeitraum gibt es noch keinen abgeschlossenen Bericht.",
+  rpNoDataHint:"Berichte entstehen im Training selbst — dort auf „Bericht ausfüllen“.",
+  rpCriteria:"Kriterien im Durchschnitt", rpCriteriaSub:"1 = ungenügend · 5 = ausgezeichnet",
+  rpTrend:"Verlauf des Gesamteindrucks", rpTrendGroups:"Verlauf je Bereich",
+  rpTrainers:"Trainerinnen und Trainer", rpTrainerSub:"Mittel aus Didaktik, Auftreten, Unterlagen, Pünktlichkeit",
+  rpFlags:"Häufigste Vorkommnisse", rpActionsOpen:"Offene Maßnahmen",
+  rpRecommend:"Wieder so durchführen?", rpSingles:"Einzelberichte",
+  rpPrint:"Bericht drucken", rpCsv:"Als CSV", rpOpenTraining:"Training öffnen",
+  rpBandGood:"gut (ab 4,0)", rpBandMid:"beobachten (3,0–3,9)", rpBandBad:"Handlungsbedarf (unter 3,0)",
+  rpN:n=>`${n} Bewertungen`, rpNoFlags:"Keine Vorkommnisse gemeldet — gut so.",
+  rpNoOpen:"Keine offene Maßnahme.", rpMissing:"Trainings ohne Bericht",
+  rpMissingSub:"bereits gelaufen, aber noch nicht bewertet",
+  rpBest:"Stärkste Werte", rpWorst:"Schwächste Werte",
+  rpExportName:"ETAF-Auswertung",
   emNone:"Noch keine E-Mails versendet.", em_sent:"gesendet", em_logged:"protokolliert", em_failed:"fehlgeschlagen",
   agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
   resetToast:"Demo-Daten zurückgesetzt",
@@ -1478,6 +1634,7 @@ const L={
   dgPart_inbox:"Inbox — feedback & new flight mail",
   dgPart_week:"Next training — team & weekly deliverable",
   dgPart_passport:"Passports — expiring documents",
+  dgPart_reports:"Training reports — average, issues & missing reports",
   dgTest:"Send sample", dgTestSent:"Sample email is on its way", dgTestFail:"Sending failed",
   dgSaved:"Info-mail settings saved", dgLiveOnly:"Available in live mode only.",
   attNoContent:"Week plan is still empty — plan the content",
@@ -1749,6 +1906,46 @@ const L={
   visa_none:"—", visa_needed:"needed", visa_applied:"applied", visa_approved:"approved", visa_rejected:"rejected",
   flSuggest:"Flight suggestions", flSuggestHint:"Auto suggestions by route (region → destination). Click to use.", flUse:"Use",
   nav_emails:"Log", tp_emails:"Email log", tp_emailsSub:"All sent requests, reminders and agendas",
+  /* ---- Training debrief & report ---- */
+  nav_reports:"Reports", tp_reports:"Reports & analysis",
+  tp_reportsSub:"Rate trainings and analyse them across weeks, months and years",
+  dbTitle:"Training report", dbTitleFor:tg=>`Training report — ${tg}`,
+  dbOpen:"Report", dbNew:"Fill in report", dbEdit:"Edit report",
+  dbDone:"rated", dbDraft:"draft", dbMissing:"open",
+  dbSaveDraft:"Save as draft", dbFinish:"Complete report", dbReopen:"Reopen",
+  dbDelete:"Delete report", dbDeleteAsk:"Really delete this report?",
+  dbSaved:"Report saved", dbFinished:"Report completed",
+  dbIntro:"Fill in right after the training — 1 = poor, 5 = excellent. Simply leave anything that does not apply blank.",
+  dbNa:"n/a", dbNaHint:"not applicable / not rated",
+  dbOverall:"Overall impression", dbRecommend:"Run it the same way again?",
+  dbTrainerHead:"Trainers", dbTrainerNote:"Note on this trainer",
+  dbTrainerNone:"Nobody is confirmed for this training yet — per-trainer ratings appear once they are.",
+  dbFlagsHead:"Incidents (multiple choice)",
+  dbActions:"Actions", dbActionAdd:"Add action",
+  dbActionText:"What needs doing?", dbActionOwner:"Who?", dbActionDue:"By when?",
+  dbActionDone:"done", dbNoActions:"No action recorded yet.",
+  dbAuthor:a=>`Recorded by ${a}`, dbUnrated:"not rated yet",
+  dbFilled:(n,m)=>`${n} of ${m} criteria rated`,
+  dbNeedSome:"Please rate at least one criterion before completing the report.",
+  rpPeriod:"Period", rpWeek:"Week", rpMonth:"Month", rpQuarter:"Quarter", rpYear:"Year", rpAll:"All time",
+  rpFrom:"from", rpTo:"to", rpBucket:"Axis",
+  rpKpiCount:"Reports", rpKpiOverall:"Avg. overall impression", rpKpiCoverage:"Coverage",
+  rpKpiAlert:"Needs action", rpKpiAlertSub:"criteria below 3.0",
+  rpCoverageSub:(a,b)=>`${a} of ${b} trainings already run`,
+  rpNoData:"There is no completed report for this period yet.",
+  rpNoDataHint:"Reports are written from the training itself — use “Fill in report” there.",
+  rpCriteria:"Criteria on average", rpCriteriaSub:"1 = poor · 5 = excellent",
+  rpTrend:"Overall impression over time", rpTrendGroups:"Trend per area",
+  rpTrainers:"Trainers", rpTrainerSub:"Average of teaching, conduct, materials, punctuality",
+  rpFlags:"Most frequent incidents", rpActionsOpen:"Open actions",
+  rpRecommend:"Run it the same way again?", rpSingles:"Individual reports",
+  rpPrint:"Print report", rpCsv:"As CSV", rpOpenTraining:"Open training",
+  rpBandGood:"good (4.0 and up)", rpBandMid:"watch (3.0–3.9)", rpBandBad:"needs action (below 3.0)",
+  rpN:n=>`${n} ratings`, rpNoFlags:"No incidents reported — good.",
+  rpNoOpen:"No open action.", rpMissing:"Trainings without a report",
+  rpMissingSub:"already run but not yet rated",
+  rpBest:"Strongest scores", rpWorst:"Weakest scores",
+  rpExportName:"ETAF-report",
   emNone:"No emails sent yet.", em_sent:"sent", em_logged:"logged", em_failed:"failed",
   agendaHint:"The trainer receives this overview by email (print link) and can print it.",
   resetToast:"Demo data reset",
@@ -2175,7 +2372,7 @@ document.addEventListener("keydown",e=>{
 /* ============================================================
    NAV / ROUTER
    ============================================================ */
-const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"week",ic:IC.week},{id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
+const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"week",ic:IC.week},{id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"reports",ic:IC.chart},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
 /* Offene Rückmeldungen (Trainer meldeten „stimmt nicht“, noch nicht erledigt). */
 function inboxItems(){ return (S.trainers||[]).filter(tr=>tr.plan&&tr.plan.status==="issue"&&tr.plan.note&&!tr.plan.resolvedAt)
   .map(tr=>({tr,note:tr.plan.note,at:tr.plan.confirmedAt})); }
@@ -2255,7 +2452,8 @@ function titleFor(r){
     bookings:["tp_book","tp_bookSub"],inbox:["tp_inbox","tp_inboxSub"],
     trainers:["tp_pool","tp_poolSub"],templates:["tp_tpl","tp_tplSub"],
     automation:["tp_auto","tp_autoSub"],emails:["tp_emails","tp_emailsSub"],
-    users:["tp_users","tp_usersSub"],activity:["tp_activity","tp_activitySub"]};
+    users:["tp_users","tp_usersSub"],activity:["tp_activity","tp_activitySub"],
+    reports:["tp_reports","tp_reportsSub"]};
   const k=m[r]||m.dash; return [t(k[0]),t(k[1])];
 }
 function go(r){route=r;render();}
@@ -2276,6 +2474,7 @@ function render(){
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
   else if(route==="emails"){renderEmails();$("#v-emails").classList.add("on");}
+  else if(route==="reports"){renderReports();$("#v-reports").classList.add("on");}
   if(route==="detail"&&curTg){$("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+whenLabel(curTg);}
   else if(route==="plan"&&curPlanTr){$("#tt").textContent=t("planTitle");$("#ts").textContent=curPlanTr.name;}
   else if(route==="transfer"&&curTransferCl){$("#tt").textContent=t("trfTitle");$("#ts").textContent=curTransferCl.name;}
@@ -2461,6 +2660,9 @@ function renderTrainings(){
         <div class="tags"><span class="tag">${tg.spec}</span><span class="tag">${t("trainersC",r.yes,r.need)}</span></div>
       </div>
       <span class="pill ${st.cls}">${t(st.key)}</span>
+      ${dbBadge(tg)}
+      ${(tgIsPast(tg)&&!(tg.debrief&&tg.debrief.status==="final"))
+        ? `<button class="btn sm" onclick="event.stopPropagation();openDebrief('${tg.id}')" title="${esc(t("dbNew"))}">${ic("chart",14)}${esc(t("dbOpen"))}</button>` : ""}
       <button class="btn sm primary" onclick="openDetail('${tg.id}')">${t("plan")}</button>
     </div>`;
   }).join("");
@@ -2509,7 +2711,10 @@ function renderDetail(){
   const suggEdited=(se.hidden.length||se.add.length);
 
   const info=`<div class="panel">
-    <div class="panel-h"><h3>${t("dTraining")}</h3><div class="spacer"></div><span class="pill ${st.cls}">${t(st.key)}</span></div>
+    <div class="panel-h"><h3>${t("dTraining")}</h3><div class="spacer"></div>
+      ${dbBadge(tg)}
+      <button class="btn sm${(tgIsPast(tg)&&!tg.debrief)?" primary":""}" onclick="openDebrief('${tg.id}')">${ic("chart",14)}${esc(tg.debrief?t("dbEdit"):t("dbNew"))}</button>
+      <span class="pill ${st.cls}">${t(st.key)}</span></div>
     <div class="panel-b">
       <div class="kv"><span class="k">${t("kThema")}</span><span class="v">${tg.topic}</span></div>
       <div class="kv"><span class="k">${t("clientLbl")}</span><span class="v">
@@ -4072,7 +4277,7 @@ function isAdmin(){ const m=meUser(); return m ? m.role==="admin" : !!S.setupMod
 function roleLabel(r){ return r==="admin"?t("roleAdmin"):t("roleEditor"); }
 /* ---- Info-Mail (Digest) je Benutzer: Rhythmus + Inhalte einstellen ---- */
 let digestEditId=null;
-const DG_PARTS=["staffing","ppt","travel","inbox","week","passport"];
+const DG_PARTS=["staffing","ppt","travel","inbox","week","passport","reports"];
 function openDigestEdit(uid){
   const u=usersCache.find(x=>String(x.id)===String(uid)); if(!u) return;
   digestEditId=uid;
@@ -5676,6 +5881,694 @@ async function runAutoNow(){
    ============================================================ */
 function initials(n){return n.replace(/^Dr\.\s*/,"").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();}
 function esc(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+/* ============================================================
+   TRAININGSBERICHT (DEBRIEF) + AUSWERTUNG
+   Der Kriterienkatalog steht hier für die Anzeige; das Backend hat
+   denselben Katalog als Prüfliste (backend/lib.php → debrief_catalog).
+   Skala 1–5, fehlender Wert = nicht bewertet und zählt nirgends mit.
+   ============================================================ */
+const DB_GROUPS=[
+  {key:"training", de:"Training & Teilnehmer", en:"Training & participants", items:[
+    ["students_engagement","Mitarbeit der Teilnehmer","Participant engagement"],
+    ["students_level","Vorkenntnisse passend","Prior knowledge fits"],
+    ["students_attendance","Anwesenheit & Pünktlichkeit","Attendance & punctuality"],
+    ["content_fit","Inhalte passend zum Auftrag","Content fits the brief"],
+    ["timing","Zeitplan eingehalten","Schedule kept"],
+    ["assessment","Qualität der Übungen & Prüfungen","Quality of exercises & assessments"]]},
+  {key:"team", de:"Trainerteam", en:"Trainer team", items:[
+    ["team_prep","Vorbereitung des Teams","Team preparation"],
+    ["team_coop","Zusammenarbeit im Team","Cooperation within the team"],
+    ["team_conduct","Auftreten & Verhalten","Conduct & demeanour"]]},
+  {key:"material", de:"Material & Technik", en:"Material & equipment", items:[
+    ["material_complete","Material vollständig","Material complete"],
+    ["material_quality","Materialqualität","Material quality"],
+    ["ppt_onsite","PowerPoint-Qualität vor Ort","PowerPoint quality on site"],
+    ["equipment","Technik (Beamer, Ton, Netz)","Equipment (projector, audio, network)"],
+    ["venue","Räumlichkeiten","Venue"]]},
+  {key:"logistics", de:"Reise & Logistik", en:"Travel & logistics", items:[
+    ["flight","Flug","Flight"],
+    ["shuttle","Shuttle & Transfer","Shuttle & transfer"],
+    ["hotel","Hotel","Hotel"],
+    ["catering","Verpflegung","Catering"]]},
+  {key:"client", de:"Kunde vor Ort", en:"Client on site", items:[
+    ["adp_coord","Koordination durch den Kunden","Coordination by the client"],
+    ["adp_punctual","Pünktlichkeit des Kunden","Client punctuality"],
+    ["adp_support","Unterstützung vor Ort","Support on site"],
+    ["adp_comm","Kommunikation & Absprachen","Communication & agreements"]]},
+];
+const DB_TRK=[["teaching","Didaktik & Vermittlung","Teaching & delivery"],
+  ["behaviour","Auftreten & Verhalten","Conduct & demeanour"],
+  ["ppt","Qualität der Unterlagen","Quality of materials"],
+  ["punctuality","Pünktlichkeit & Verlässlichkeit","Punctuality & reliability"]];
+const DB_FLAGS=[["shuttle_late","Shuttle verspätet","Shuttle late"],
+  ["flight_delay","Flugverspätung/-ausfall","Flight delayed/cancelled"],
+  ["hotel_issue","Hotelproblem","Hotel issue"],
+  ["material_missing","Material fehlte","Material missing"],
+  ["tech_fail","Technik ausgefallen","Equipment failure"],
+  ["room_small","Raum zu klein/ungeeignet","Room too small/unsuitable"],
+  ["plan_changed","Ablauf kurzfristig geändert","Schedule changed at short notice"],
+  ["participants_deviation","Teilnehmerzahl abweichend","Participant count deviated"],
+  ["language_barrier","Sprachbarriere / Dolmetscher nötig","Language barrier / interpreter needed"],
+  ["security_issue","Sicherheits-/Zugangsproblem","Security/access issue"],
+  ["medical_issue","Medizinischer Vorfall","Medical incident"],
+  ["extra_request","Zusatzwunsch des Kunden","Additional client request"]];
+const DB_TEXTS=[["wentWell","Was lief gut?","What went well?"],
+  ["toImprove","Was muss sich ändern?","What needs to change?"],
+  ["adp","Anmerkungen zum Kunden","Notes on the client"],
+  ["incidents","Besondere Vorkommnisse","Notable incidents"]];
+const DB_REC=[["yes","Ja — unverändert wieder so","Yes — run it again unchanged"],
+  ["partly","Mit Anpassungen","With adjustments"],
+  ["no","Nein — so nicht wieder","No — not like this again"]];
+const DB_SCALE=[[1,"ungenügend","poor"],[2,"ausbaufähig","weak"],[3,"in Ordnung","okay"],
+  [4,"gut","good"],[5,"ausgezeichnet","excellent"]];
+
+/* Zweisprachiges Label aus einem Katalog-Tripel [key, de, en]. */
+function dbL(tri){ return S.lang==="en" ? tri[2] : tri[1]; }
+function dbGroupLabel(g){ return S.lang==="en" ? g.en : g.de; }
+function dbLabelOf(key){
+  for(const g of DB_GROUPS) for(const it of g.items) if(it[0]===key) return dbL(it);
+  for(const it of DB_TRK) if(it[0]===key) return dbL(it);
+  for(const it of DB_FLAGS) if(it[0]===key) return dbL(it);
+  return key;
+}
+function dbGroupOf(key){
+  for(const g of DB_GROUPS) for(const it of g.items) if(it[0]===key) return g;
+  return null;
+}
+function dbAllKeys(){ return DB_GROUPS.flatMap(g=>g.items.map(i=>i[0])); }
+
+/* Ampelband eines Mittelwerts — dieselbe Sprache wie überall im Cockpit. */
+function dbBand(v){ return v==null?"":(v>=4?"good":(v>=3?"warn":"crit")); }
+function dbNum(v){ return v==null?"—":Number(v).toFixed(1).replace(".",S.lang==="en"?".":","); }
+
+/* ---------- Formular ---------- */
+let dbCur=null, dbTg=null;
+
+function dbEmpty(tgId){
+  return {training:String(tgId),status:"draft",overall:0,recommend:"",
+          scores:{},trainers:{},flags:[],texts:{},actions:[],version:0};
+}
+/* Wer war im Einsatz? Bestätigte Besetzung plus alle, die im Wochenplan stehen. */
+function dbTrainersOf(tg){
+  const ids=new Set((tg.roster||[]).filter(r=>["yes","confirmed"].includes(r.status)).map(r=>String(r.trainerId)));
+  const wd=(S.weekData||{})[tg.id];
+  if(wd) (wd.sessions||[]).forEach(s=>(s.trainerIds||[]).forEach(x=>ids.add(String(x))));
+  (dbCur&&dbCur.trainers?Object.keys(dbCur.trainers):[]).forEach(x=>ids.add(String(x)));
+  return [...ids].map(id=>S.trainers.find(x=>String(x.id)===id)).filter(Boolean);
+}
+
+async function openDebrief(tgId){
+  const tg=S.trainings.find(x=>String(x.id)===String(tgId)); if(!tg) return;
+  dbTg=tg; dbCur=dbEmpty(tgId);
+  if(LIVE){
+    try{ const d=await apiCall("debrief.get",{training:tgId}); if(d.debrief) dbCur=d.debrief; }
+    catch(e){ toast(e.message,"crit"); return; }
+  } else {
+    const st=(S.debriefs||{})[String(tgId)]; if(st) dbCur=JSON.parse(JSON.stringify(st));
+  }
+  drawDebrief(); openSheet();
+}
+
+function dbScale(kind,key,val){
+  const cur=val==null?null:Number(val);
+  const btn=v=>`<button class="s${v}${cur===v?" on":""}" data-v="${v}" title="${esc(dbL(DB_SCALE[v-1]))}"
+      onclick="dbPick('${kind}','${key}',${v})">${v}</button>`;
+  return `<span class="scale" id="sc-${esc(kind)}-${esc(key)}">${[1,2,3,4,5].map(btn).join("")}
+    <button class="na${cur==null?" on":""}" data-v="0" title="${esc(t("dbNaHint"))}"
+      onclick="dbPick('${kind}','${key}',0)">${esc(t("dbNa"))}</button></span>`;
+}
+/* Klick auf die Skala: nur die betroffene Zeile umschalten — sonst verlöre
+   ein offenes Textfeld beim Neuzeichnen den Fokus. */
+function dbPick(kind,key,v){
+  if(kind==="sc"){ if(v) dbCur.scores[key]=v; else delete dbCur.scores[key]; }
+  else if(kind==="ov"){ dbCur.overall=v; }
+  else { const [,tid,fld]=kind.split(":");
+    dbCur.trainers[tid]=dbCur.trainers[tid]||{};
+    if(v) dbCur.trainers[tid][fld]=v; else delete dbCur.trainers[tid][fld]; }
+  const box=document.getElementById("sc-"+kind+"-"+key);
+  if(box) box.querySelectorAll("button").forEach(b=>b.classList.toggle("on",Number(b.dataset.v)===v));
+  dbCount();
+}
+function dbFlagToggle(k,el){
+  const i=dbCur.flags.indexOf(k);
+  if(i<0) dbCur.flags.push(k); else dbCur.flags.splice(i,1);
+  el.classList.toggle("on",i<0);
+}
+function dbRec(v){ dbCur.recommend=v;
+  $$("#dbRec button").forEach(b=>b.classList.toggle("on",b.dataset.v===v)); }
+function dbText(k,el){ dbCur.texts[k]=el.value; }
+function dbCount(){
+  const el=$("#dbCount"); if(!el) return;
+  el.textContent=t("dbFilled",Object.keys(dbCur.scores).length,dbAllKeys().length);
+}
+function dbActAdd(){ dbCur.actions.push({text:"",owner:"",due:"",done:false}); drawDbActions(); }
+function dbActDel(i){ dbCur.actions.splice(i,1); drawDbActions(); }
+function dbActSet(i,f,el){ dbCur.actions[i][f]= f==="done"?el.checked:el.value; }
+function drawDbActions(){
+  const box=$("#dbActs"); if(!box) return;
+  box.innerHTML = dbCur.actions.length ? dbCur.actions.map((a,i)=>`
+    <div class="actrow">
+      <input class="inp at" placeholder="${esc(t("dbActionText"))}" value="${esc(a.text||"")}" oninput="dbActSet(${i},'text',this)">
+      <input class="inp ao" placeholder="${esc(t("dbActionOwner"))}" value="${esc(a.owner||"")}" oninput="dbActSet(${i},'owner',this)">
+      <input class="inp ad" type="date" value="${esc(a.due||"")}" onchange="dbActSet(${i},'due',this)">
+      <label class="meta" style="display:flex;align-items:center;gap:6px;white-space:nowrap">
+        <input type="checkbox" ${a.done?"checked":""} onchange="dbActSet(${i},'done',this)">${esc(t("dbActionDone"))}</label>
+      <button class="btn sm" onclick="dbActDel(${i})">${ic("trash",14)}</button>
+    </div>`).join("") : `<div class="meta">${esc(t("dbNoActions"))}</div>`;
+}
+
+function drawDebrief(){
+  const tg=dbTg;
+  $("#sheetTitle").textContent=t("dbTitleFor",(tg.code?tg.code+" — ":"")+tg.topic);
+  const trs=dbTrainersOf(tg);
+  const groups=DB_GROUPS.map(g=>`
+    <div class="dbsec"><h4>${esc(dbGroupLabel(g))}</h4>
+      ${g.items.map(it=>`<div class="dbrow"><span class="lbl">${esc(dbL(it))}</span>
+        ${dbScale("sc",it[0],dbCur.scores[it[0]])}</div>`).join("")}
+    </div>`).join("");
+  const trBlock = trs.length ? trs.map(tr=>{
+      const v=dbCur.trainers[String(tr.id)]||{};
+      return `<div class="dbsec"><h4>${esc(tr.name)}</h4>
+        ${DB_TRK.map(it=>`<div class="dbrow"><span class="lbl">${esc(dbL(it))}</span>
+          ${dbScale("tr:"+tr.id+":"+it[0],it[0],v[it[0]])}</div>`).join("")}
+        <input class="inp" placeholder="${esc(t("dbTrainerNote"))}" value="${esc(v.note||"")}"
+          oninput="dbCur.trainers['${tr.id}']=dbCur.trainers['${tr.id}']||{};dbCur.trainers['${tr.id}'].note=this.value">
+      </div>`; }).join("")
+    : `<div class="dbsec"><h4>${esc(t("dbTrainerHead"))}</h4><div class="meta">${esc(t("dbTrainerNone"))}</div></div>`;
+
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:12px">${esc(t("dbIntro"))}</div>
+    <div class="dbsec">
+      <h4>${esc(t("dbOverall"))}</h4>
+      <div class="dbrow"><span class="lbl">${esc(t("dbOverall"))}</span>${dbScale("ov","overall",dbCur.overall||null)}</div>
+      <div class="dbrow"><span class="lbl">${esc(t("dbRecommend"))}</span>
+        <span class="chips" id="dbRec">${DB_REC.map(r=>`<button data-v="${r[0]}"${dbCur.recommend===r[0]?' class="on"':""}
+          onclick="dbRec('${r[0]}')">${esc(dbL(r))}</button>`).join("")}</span></div>
+      <div class="meta" id="dbCount" style="margin-top:6px"></div>
+    </div>
+    ${groups}
+    ${trBlock}
+    <div class="dbsec"><h4>${esc(t("dbFlagsHead"))}</h4>
+      <div class="chips">${DB_FLAGS.map(f=>`<button${dbCur.flags.includes(f[0])?' class="on"':""}
+        onclick="dbFlagToggle('${f[0]}',this)">${esc(dbL(f))}</button>`).join("")}</div></div>
+    <div class="dbsec"><h4>${esc(t("dbActions"))}</h4>
+      <div id="dbActs"></div>
+      <button class="btn sm" onclick="dbActAdd()">${ic("plus",14)}${esc(t("dbActionAdd"))}</button></div>
+    <div class="dbsec">
+      ${DB_TEXTS.map(x=>`<label class="fld">${esc(dbL(x))}</label>
+        <textarea style="min-height:70px" oninput="dbText('${x[0]}',this)">${esc(dbCur.texts[x[0]]||"")}</textarea>`).join("")}
+    </div>
+    ${dbCur.author?`<div class="meta" style="margin-top:12px">${esc(t("dbAuthor",dbCur.author))}${dbCur.updatedAt?" · "+esc(fmtWhen(dbCur.updatedAt)):""}</div>`:""}`;
+
+  $("#sheetFoot").innerHTML=`
+    ${dbCur.version?`<button class="btn sm" onclick="deleteDebrief()">${ic("trash",14)}${esc(t("dbDelete"))}</button>`:""}
+    <div class="spacer"></div>
+    <button class="btn" onclick="saveDebrief('draft')">${esc(t("dbSaveDraft"))}</button>
+    <button class="btn primary" onclick="saveDebrief('final')">${ic("chart",15)}${esc(t("dbFinish"))}</button>`;
+  drawDbActions(); dbCount();
+}
+
+async function saveDebrief(status){
+  if(status==="final" && !Object.keys(dbCur.scores).length && !dbCur.overall){
+    toast(t("dbNeedSome"),"warn"); return;
+  }
+  const payload={...dbCur,status,training:dbCur.training};
+  payload.actions=(dbCur.actions||[]).filter(a=>(a.text||"").trim());
+  if(LIVE){
+    const ok=await saveGuarded("debrief.save",payload,d=>{
+      dbCur=d.debrief;
+      const tg=S.trainings.find(x=>String(x.id)===String(dbCur.training));
+      if(tg) tg.debrief={status:dbCur.status,overall:dbCur.overall,at:dbCur.updatedAt};
+    });
+    if(!ok) return;
+  } else {
+    S.debriefs=S.debriefs||{};
+    payload.version=(payload.version||0)+1;
+    payload.updatedAt=new Date().toISOString().slice(0,19).replace("T"," ");
+    S.debriefs[String(dbCur.training)]=JSON.parse(JSON.stringify(payload));
+    dbCur=S.debriefs[String(dbCur.training)];
+    const tg=S.trainings.find(x=>String(x.id)===String(dbCur.training));
+    if(tg) tg.debrief={status:dbCur.status,overall:dbCur.overall,at:dbCur.updatedAt};
+    save();
+  }
+  toast(status==="final"?t("dbFinished"):t("dbSaved"),"good");
+  closeSheet(); render();
+}
+async function deleteDebrief(){
+  if(!confirm(t("dbDeleteAsk"))) return;
+  const id=dbCur.training;
+  if(LIVE){ try{ await apiCall("debrief.delete",{training:id}); }catch(e){ toast(e.message,"crit"); return; } }
+  else { if(S.debriefs) delete S.debriefs[String(id)]; save(); }
+  const tg=S.trainings.find(x=>String(x.id)===String(id)); if(tg) tg.debrief=null;
+  closeSheet(); render(); toast(t("dbDelete"),"good");
+}
+
+/* Statusabzeichen für Listen und Detailkopf. */
+function dbBadge(tg){
+  const d=tg.debrief;
+  if(d&&d.status==="final") return `<span class="dbbadge ok">${ic("star",11)}${esc(t("dbDone"))}${d.overall?" "+dbNum(d.overall):""}</span>`;
+  if(d) return `<span class="dbbadge dr">${esc(t("dbDraft"))}</span>`;
+  return "";
+}
+/* Ist das Training vorbei? Erst dann ist ein fehlender Bericht ein Hinweis. */
+function tgIsPast(tg){
+  const d=tg.dateEnd||tg.date; if(!d) return false;
+  return new Date(d+"T23:59:59") < new Date();
+}
+
+
+/* ============================================================
+   AUSWERTUNG — Woche / Monat / Jahr / Gesamt
+   Diagramme sind bewusst reines HTML+SVG: keine Fremdbibliothek, damit
+   auch der Ausdruck und der Offline-Betrieb sicher funktionieren.
+   ============================================================ */
+/* Einstieg bewusst auf „Gesamt": ein Programm läuft über Jahre, und ein
+   voreingestelltes Fenster würde beim ersten Öffnen eine leere Seite zeigen. */
+let rpState={period:"all",from:"",to:"",bucket:"month",client:"",data:null,loading:false};
+
+/* Zeitraum-Schnellwahl in konkrete Daten übersetzen. */
+function rpRange(){
+  const now=new Date(); const iso=d=>d.toISOString().slice(0,10);
+  if(rpState.period==="all") return {from:"",to:""};
+  if(rpState.period==="custom") return {from:rpState.from,to:rpState.to};
+  const to=new Date(now);
+  const from=new Date(now);
+  if(rpState.period==="week")  from.setDate(from.getDate()-7);
+  if(rpState.period==="month") from.setMonth(from.getMonth()-1);
+  if(rpState.period==="quarter") from.setMonth(from.getMonth()-3);
+  if(rpState.period==="year")  from.setFullYear(from.getFullYear()-1);
+  return {from:iso(from),to:iso(to)};
+}
+function rpSetPeriod(p){ rpState.period=p; rpState.data=null;
+  rpState.bucket = p==="week"?"week" : (p==="month"||p==="quarter")?"week" : "month";
+  renderReports(); }
+function rpSetBucket(b){ rpState.bucket=b; rpState.data=null; renderReports(); }
+function rpSetDate(which,v){ rpState[which]=v; rpState.period="custom"; rpState.data=null; renderReports(); }
+
+/* Auswertung im Demo-Modus: dieselbe Rechnung wie im Backend, nur lokal. */
+function rpLocal(from,to,client,bucket){
+  const all=Object.values(S.debriefs||{}).filter(d=>d.status==="final");
+  const tgOf=d=>S.trainings.find(x=>String(x.id)===String(d.training));
+  const rows=all.map(d=>({d,tg:tgOf(d)})).filter(x=>x.tg)
+    .filter(({tg})=>{
+      const end=tg.dateEnd||tg.date||"";
+      if(from && end && end<from) return false;
+      if(to && tg.date && tg.date>to) return false;
+      if(client && tg.clientId!==client) return false;
+      return true; })
+    .sort((a,b)=>String(a.tg.date||"").localeCompare(String(b.tg.date||"")));
+  const avg=a=>{const v=a.filter(x=>x>=1&&x<=5); return v.length?Math.round(v.reduce((s,x)=>s+x,0)/v.length*100)/100:null;};
+  const per=dt=>{ if(!dt) return "";
+    const d=new Date(dt+"T00:00:00");
+    if(bucket==="year") return String(d.getFullYear());
+    if(bucket==="month") return dt.slice(0,7);
+    const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+    const day=x.getUTCDay()||7; x.setUTCDate(x.getUTCDate()+4-day);
+    const y0=new Date(Date.UTC(x.getUTCFullYear(),0,1));
+    return x.getUTCFullYear()+"-W"+String(Math.ceil(((x-y0)/86400000+1)/7)).padStart(2,"0"); };
+
+  const byKey={}, byGroup={}, overall=[], rec={yes:0,partly:0,no:0}, flags={}, trs={}, trend={}, items=[];
+  rows.forEach(({d,tg})=>{
+    const p=per(tg.date), vals=[];
+    Object.entries(d.scores||{}).forEach(([k,v])=>{
+      if(!(v>=1&&v<=5)) return;
+      (byKey[k]=byKey[k]||[]).push(v); vals.push(v);
+      const g=dbGroupOf(k); if(g){ (byGroup[g.key]=byGroup[g.key]||[]).push(v);
+        if(p){ trend[p]=trend[p]||{o:[],g:{},n:0}; (trend[p].g[g.key]=trend[p].g[g.key]||[]).push(v); } }
+    });
+    if(d.overall>=1) overall.push(d.overall);
+    if(p){ trend[p]=trend[p]||{o:[],g:{},n:0}; trend[p].o.push(d.overall>=1?d.overall:(avg(vals)||0)); trend[p].n++; }
+    if(rec[d.recommend]!==undefined) rec[d.recommend]++;
+    (d.flags||[]).forEach(f=>flags[f]=(flags[f]||0)+1);
+    Object.entries(d.trainers||{}).forEach(([tid,tv])=>{
+      DB_TRK.forEach(([k])=>{ const x=tv[k];
+        if(x>=1&&x<=5){ trs[tid]=trs[tid]||{all:[]}; (trs[tid][k]=trs[tid][k]||[]).push(x); trs[tid].all.push(x); } });
+    });
+    items.push({id:d.training,training:String(tg.id),code:tg.code||"",topic:tg.topic||"",city:tg.city||"",
+      date:tg.date||"",overall:d.overall||avg(vals)||0,recommend:d.recommend||"",flags:(d.flags||[]).length});
+  });
+
+  const past=S.trainings.filter(tg=>{
+    const end=tg.dateEnd||tg.date||""; if(!end) return false;
+    if(end>new Date().toISOString().slice(0,10)) return false;
+    if(from && end<from) return false;
+    if(to && tg.date>to) return false;
+    if(client && tg.clientId!==client) return false;
+    return true; });
+  const actions=[];
+  rows.forEach(({d,tg})=>(d.actions||[]).filter(a=>!a.done&&(a.text||"").trim())
+    .forEach((a,i)=>actions.push({id:tg.id+"-"+i,text:a.text,owner:a.owner||"",due:a.due||"",
+      code:tg.code||"",training:String(tg.id)})));
+
+  return {
+    n:rows.length, due:past.length,
+    dueDone:past.filter(tg=>(S.debriefs||{})[String(tg.id)]?.status==="final").length,
+    overall:avg(overall) ?? avg(items.map(i=>i.overall)),
+    recommend:rec,
+    criteria:dbAllKeys().filter(k=>byKey[k]).map(k=>({key:k,group:dbGroupOf(k).key,avg:avg(byKey[k]),n:byKey[k].length})),
+    groups:Object.entries(byGroup).map(([k,v])=>({key:k,avg:avg(v),n:v.length})),
+    trend:Object.keys(trend).sort().map(p=>({period:p,n:trend[p].n,avg:avg(trend[p].o),
+      groups:Object.fromEntries(Object.entries(trend[p].g).map(([g,v])=>[g,avg(v)]))})),
+    trainers:Object.entries(trs).map(([id,v])=>{
+      const tr=S.trainers.find(x=>String(x.id)===String(id));
+      const e={id,name:tr?tr.name:"#"+id,avg:avg(v.all),n:v.all.length};
+      DB_TRK.forEach(([k])=>e[k]=avg(v[k]||[])); return e;
+    }).sort((a,b)=>(b.avg||0)-(a.avg||0)),
+    flags:Object.entries(flags).sort((a,b)=>b[1]-a[1]).map(([k,n])=>({key:k,n})),
+    actions, items,
+  };
+}
+
+async function rpLoad(){
+  const {from,to}=rpRange();
+  if(LIVE){
+    const d=await apiCall("report.build",{from,to,client:S.clientFilter||"",bucket:rpState.bucket});
+    return d.report;
+  }
+  return rpLocal(from,to,S.clientFilter||"",rpState.bucket);
+}
+
+/* ---------- Diagramm-Bausteine ---------- */
+/* Waagerechte Balken 1–5 mit Ampelband, Wert immer als Zahl daneben
+   (Farbe allein trägt nie die Aussage). */
+function chBars(rows,opts){
+  const o=opts||{}, max=o.max||5;
+  if(!rows.length) return `<div class="meta">${esc(o.empty||"—")}</div>`;
+  return `<div class="rpbars">${rows.map(r=>{
+    const v=r.value==null?0:r.value;
+    const band=o.plain?"":dbBand(r.value);
+    const col=o.plain?"var(--info)":(band==="good"?"var(--good)":band==="warn"?"var(--warn)":"var(--crit)");
+    const pct=Math.max(2,Math.min(100, v/max*100));
+    return `<div class="rprow"${r.title?` title="${esc(r.title)}"`:""}>
+      <span class="rplbl">${esc(r.label)}</span>
+      <span class="rpbar"><i style="width:${pct.toFixed(1)}%;background:${col}"></i></span>
+      <span class="rpval">${o.plain?String(v):dbNum(r.value)}</span>
+      <span class="rpn">${r.n!=null?"n="+r.n:""}</span>
+    </div>`;}).join("")}</div>`;
+}
+/* Liniendiagramm 1–5 über die Perioden. Eine Reihe → keine Legende nötig,
+   der Titel sagt, was gezeigt wird. Endwert wird direkt beschriftet. */
+function chLine(points,opts){
+  const o=opts||{}, W=520, H=o.h||170, PL=26, PR=40, PT=10, PB=24;
+  const pts=points.filter(p=>p.v!=null);
+  if(pts.length<1) return `<div class="meta">${esc(o.empty||"—")}</div>`;
+  const n=pts.length;
+  const x=i=> n===1 ? PL+(W-PL-PR)/2 : PL+i*(W-PL-PR)/(n-1);
+  const y=v=> PT+(5-v)/4*(H-PT-PB);
+  const grid=[1,2,3,4,5].map(v=>`<line class="grid" x1="${PL}" y1="${y(v).toFixed(1)}" x2="${W-PR}" y2="${y(v).toFixed(1)}"/>
+    <text class="axis" x="${PL-7}" y="${(y(v)+3.5).toFixed(1)}" text-anchor="end">${v}</text>`).join("");
+  const d=pts.map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+  const area=`M${x(0).toFixed(1)},${y(1).toFixed(1)} `+pts.map((p,i)=>`L${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ")
+    +` L${x(n-1).toFixed(1)},${y(1).toFixed(1)} Z`;
+  const step=Math.ceil(n/8);
+  const labels=pts.map((p,i)=> (i%step===0||i===n-1)
+    ? `<text class="axis" x="${x(i).toFixed(1)}" y="${H-8}" text-anchor="middle">${esc(p.label)}</text>` : "").join("");
+  const dots=pts.map((p,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="4.5"
+      fill="var(--info)" stroke="var(--panel)" stroke-width="2"><title>${esc(p.label)}: ${dbNum(p.v)}</title></circle>`).join("");
+  const last=pts[n-1];
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria||"")}">
+    ${grid}
+    <path d="${area}" fill="var(--info)" opacity=".10"/>
+    <path d="${d}" fill="none" stroke="var(--info)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}${labels}
+    <text class="val" x="${W-PR+7}" y="${(y(last.v)+4).toFixed(1)}" font-size="12">${dbNum(last.v)}</text>
+  </svg>`;
+}
+/* Kleine Vielfache: je Bereich eine eigene Mini-Linie, gleiche Skala. */
+function chSpark(vals,w,h){
+  const pts=vals.filter(v=>v!=null);
+  if(pts.length<2) return "";
+  const W=w||150,H=h||34;
+  const x=i=>i*(W-2)/(pts.length-1)+1, y=v=>H-2-((v-1)/4)*(H-4);
+  const d=pts.map((v,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" style="height:${H}px" aria-hidden="true">
+    <path d="${d}" fill="none" stroke="var(--info)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(pts.length-1).toFixed(1)}" cy="${y(pts[pts.length-1]).toFixed(1)}" r="3.5"
+      fill="var(--info)" stroke="var(--panel)" stroke-width="2"/></svg>`;
+}
+/* Periodenschlüssel lesbar machen: 2026-W45 → KW 45 · 2026-11 → Nov 26 */
+function rpPerLabel(p){
+  if(/^\d{4}-W\d{2}$/.test(p)) return (S.lang==="en"?"W":"KW ")+p.slice(6);
+  if(/^\d{4}-\d{2}$/.test(p)){ const m=(S.lang==="de"?MONTHS_DE:MONTHS_EN)[Number(p.slice(5,7))-1]||p;
+    return m.slice(0,3)+" "+p.slice(2,4); }
+  return p;
+}
+
+async function renderReports(){
+  const box=$("#v-reports");
+  if(!rpState.data && !rpState.loading){
+    rpState.loading=true;
+    box.innerHTML=`<div class="panel"><div class="panel-b"><span class="btnspin"></span></div></div>`;
+    try{ rpState.data=await rpLoad(); }catch(e){ rpState.loading=false;
+      box.innerHTML=`<div class="panel"><div class="panel-b" style="color:var(--crit)">${esc(e.message)}</div></div>`; return; }
+    rpState.loading=false;
+  }
+  const R=rpState.data||{};
+  const seg=(id,cur,opts,fn)=>`<span class="rpseg" id="${id}">${opts.map(o=>
+    `<button data-v="${o[0]}"${cur===o[0]?' class="on"':""} onclick="${fn}('${o[0]}')">${esc(o[1])}</button>`).join("")}</span>`;
+  const {from,to}=rpRange();
+
+  const filter=`<div class="panel"><div class="panel-b rpfilter">
+    <div><label class="fld">${esc(t("rpPeriod"))}</label>
+      ${seg("rpPer",rpState.period,[["week",t("rpWeek")],["month",t("rpMonth")],["quarter",t("rpQuarter")],["year",t("rpYear")],["all",t("rpAll")]],"rpSetPeriod")}</div>
+    <div><label class="fld">${esc(t("rpFrom"))}</label>
+      <input class="inp" type="date" style="width:auto" value="${esc(from)}" onchange="rpSetDate('from',this.value)"></div>
+    <div><label class="fld">${esc(t("rpTo"))}</label>
+      <input class="inp" type="date" style="width:auto" value="${esc(to)}" onchange="rpSetDate('to',this.value)"></div>
+    <div><label class="fld">${esc(t("rpBucket"))}</label>
+      ${seg("rpBuc",rpState.bucket,[["week",t("rpWeek")],["month",t("rpMonth")],["year",t("rpYear")]],"rpSetBucket")}</div>
+    <div class="spacer"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="repCsv()">${ic("down",15)}${esc(t("rpCsv"))}</button>
+      <button class="btn primary" onclick="openRepPrint()">${ic("printer",15)}${esc(t("rpPrint"))}</button>
+    </div>
+  </div></div>`;
+
+  if(!R.n){
+    const miss=rpMissingList();
+    box.innerHTML=filter+`<div class="panel"><div class="panel-b">
+      <div class="empty"><b>${esc(t("rpNoData"))}</b><div class="meta" style="margin-top:6px">${esc(t("rpNoDataHint"))}</div></div>
+    </div></div>`+(miss?`<div class="panel"><div class="panel-h"><h3>${esc(t("rpMissing"))}</h3>
+      <span class="meta">${esc(t("rpMissingSub"))}</span></div><div class="panel-b">${miss}</div></div>`:"");
+    return;
+  }
+
+  const alerts=(R.criteria||[]).filter(c=>c.avg!=null&&c.avg<3);
+  const cov = R.due ? Math.round((R.dueDone||0)/R.due*100) : null;
+  const kpiBand=dbBand(R.overall)||"i";
+  const kpi=`<div class="kpis">
+    <div class="kpi i"><span class="rail"></span><div class="lab">${esc(t("rpKpiCount"))}</div>
+      <div class="val tnum">${R.n}</div></div>
+    <div class="kpi ${kpiBand==="good"?"g":kpiBand==="warn"?"w":kpiBand==="crit"?"c":"i"}"><span class="rail"></span>
+      <div class="lab">${esc(t("rpKpiOverall"))}</div><div class="val tnum">${dbNum(R.overall)}</div></div>
+    <div class="kpi i"><span class="rail"></span><div class="lab">${esc(t("rpKpiCoverage"))}</div>
+      <div class="val tnum">${cov==null?"—":cov+"%"}</div>
+      <div class="meta">${cov==null?"":esc(t("rpCoverageSub",R.dueDone||0,R.due))}</div></div>
+    <div class="kpi ${alerts.length?"c":"g"}" style="${alerts.length?"cursor:pointer":""}"
+      ${alerts.length?'onclick="rpJumpAlert()"':""}><span class="rail"></span>
+      <div class="lab">${esc(t("rpKpiAlert"))}</div><div class="val tnum">${alerts.length}</div>
+      <div class="meta">${esc(t("rpKpiAlertSub"))}</div></div>
+  </div>`;
+
+  const critRows=(R.criteria||[]).slice().sort((a,b)=>(a.avg||0)-(b.avg||0))
+    .map(c=>({label:dbLabelOf(c.key),value:c.avg,n:c.n,
+      title:(dbGroupOf(c.key)?dbGroupLabel(dbGroupOf(c.key))+" · ":"")+dbLabelOf(c.key)}));
+  const legend=`<div class="clegend">
+    <span><i style="background:var(--good)"></i>${esc(t("rpBandGood"))}</span>
+    <span><i style="background:var(--warn)"></i>${esc(t("rpBandMid"))}</span>
+    <span><i style="background:var(--crit)"></i>${esc(t("rpBandBad"))}</span></div>`;
+
+  const trendPts=(R.trend||[]).map(p=>({label:rpPerLabel(p.period),v:p.avg}));
+  const sparks=DB_GROUPS.map(g=>{
+    const g0=(R.groups||[]).find(x=>x.key===g.key);
+    const series=(R.trend||[]).map(p=>p.groups?p.groups[g.key]:null);
+    return `<div class="sparkbox"><div class="sh">${esc(dbGroupLabel(g))}</div>
+      <div class="sv" style="color:var(--${dbBand(g0?g0.avg:null)||"ink"})">${dbNum(g0?g0.avg:null)}</div>
+      ${chSpark(series)}</div>`;}).join("");
+
+  const trRows=(R.trainers||[]).map(x=>`<tr>
+    <td>${esc(x.name)}</td>
+    <td class="num" style="color:var(--${dbBand(x.avg)||"ink"});font-weight:700">${dbNum(x.avg)}</td>
+    ${DB_TRK.map(k=>`<td class="num">${dbNum(x[k[0]])}</td>`).join("")}
+    <td class="num meta">${x.n}</td></tr>`).join("");
+
+  const flagRows=(R.flags||[]).map(f=>({label:dbLabelOf(f.key),value:f.n,n:null}));
+  const maxFlag=Math.max(1,...(R.flags||[]).map(f=>f.n));
+
+  const recTotal=Object.values(R.recommend||{}).reduce((a,b)=>a+b,0)||1;
+  const recBar=DB_REC.map(r=>{
+    const n=(R.recommend||{})[r[0]]||0;
+    const col=r[0]==="yes"?"var(--good)":r[0]==="partly"?"var(--warn)":"var(--crit)";
+    return `<div class="rprow"><span class="rplbl">${esc(dbL(r))}</span>
+      <span class="rpbar"><i style="width:${Math.max(2,n/recTotal*100).toFixed(1)}%;background:${col}"></i></span>
+      <span class="rpval">${n}</span><span class="rpn"></span></div>`;}).join("");
+
+  const actRows=(R.actions||[]).length ? (R.actions||[]).map(a=>`
+    <div class="row">
+      <div class="rowgrow"><div class="nm">${esc(a.text)}</div>
+        <div class="meta">${a.code?esc(a.code)+" · ":""}${a.owner?esc(a.owner):"—"}${a.due?" · "+fmtDate(a.due):""}</div></div>
+      <button class="btn sm" onclick="rpActDone('${esc(a.id)}')">✓</button>
+    </div>`).join("") : `<div class="meta">${esc(t("rpNoOpen"))}</div>`;
+
+  const single=(R.items||[]).slice().reverse().map(i=>`
+    <div class="row" style="cursor:pointer" onclick="openDetail('${esc(i.training)}')">
+      <div class="rowgrow"><div class="nm">${esc(i.code?i.code+" — ":"")}${esc(i.topic)}</div>
+        <div class="meta">${esc(i.city||"")}${i.date?" · "+fmtDate(i.date):""}${i.flags?" · "+i.flags+" ⚑":""}</div></div>
+      <span class="pill ${dbBand(i.overall)}">${dbNum(i.overall)}</span>
+    </div>`).join("");
+
+  box.innerHTML = filter + kpi + `
+    <div class="panel"><div class="panel-h"><h3>${esc(t("rpCriteria"))}</h3>
+      <span class="meta">${esc(t("rpCriteriaSub"))}</span></div>
+      <div class="panel-b"><div class="rpcols">${chBars(critRows,{})}</div>${legend}</div></div>
+    <div class="rpgrid2">
+      <div class="panel"><div class="panel-h"><h3>${esc(t("rpTrend"))}</h3></div>
+        <div class="panel-b">${chLine(trendPts,{aria:t("rpTrend")})}</div></div>
+      <div class="panel"><div class="panel-h"><h3>${esc(t("rpTrendGroups"))}</h3></div>
+        <div class="panel-b"><div class="spark">${sparks}</div></div></div>
+    </div>
+    <div class="panel"><div class="panel-h"><h3>${esc(t("rpTrainers"))}</h3>
+      <span class="meta">${esc(t("rpTrainerSub"))}</span></div>
+      <div class="panel-b" style="overflow-x:auto">${trRows?`<table class="rptable">
+        <tr><th>${esc(t("rpTrainers"))}</th><th style="text-align:right">Ø</th>
+          ${DB_TRK.map(k=>`<th style="text-align:right">${esc(dbL(k))}</th>`).join("")}
+          <th style="text-align:right">n</th></tr>${trRows}</table>`:`<div class="meta">—</div>`}</div></div>
+    <div class="rpgrid2">
+      <div class="panel"><div class="panel-h"><h3>${esc(t("rpFlags"))}</h3></div>
+        <div class="panel-b">${flagRows.length?chBars(flagRows,{plain:true,max:maxFlag}):`<div class="meta">${esc(t("rpNoFlags"))}</div>`}</div></div>
+      <div class="panel"><div class="panel-h"><h3>${esc(t("rpRecommend"))}</h3></div>
+        <div class="panel-b"><div class="rpbars">${recBar}</div></div></div>
+    </div>
+    <div class="rpgrid2">
+      <div class="panel"><div class="panel-h"><h3>${esc(t("rpActionsOpen"))}</h3></div>
+        <div class="panel-b">${actRows}</div></div>
+      <div class="panel"><div class="panel-h"><h3>${esc(t("rpSingles"))}</h3></div>
+        <div class="panel-b">${single||`<div class="meta">—</div>`}</div></div>
+    </div>
+    ${rpMissingList()?`<div class="panel"><div class="panel-h"><h3>${esc(t("rpMissing"))}</h3>
+      <span class="meta">${esc(t("rpMissingSub"))}</span></div>
+      <div class="panel-b">${rpMissingList()}</div></div>`:""}`;
+}
+
+/* Sprung zur Kriterienliste — die Kachel „Handlungsbedarf" zeigt dorthin. */
+function rpJumpAlert(){
+  const el=$("#v-reports .rpbars"); if(el) el.scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+/* Trainings, die vorbei sind und noch keinen abgeschlossenen Bericht haben. */
+function rpMissingList(){
+  const rows=S.trainings.filter(tg=>tgIsPast(tg) && (!tg.debrief || tg.debrief.status!=="final"))
+    .filter(tg=>!S.clientFilter||tg.clientId===S.clientFilter)
+    .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+  if(!rows.length) return "";
+  return rows.map(tg=>`<div class="row">
+    <div class="rowgrow"><div class="nm">${esc(tg.code?tg.code+" — ":"")}${esc(tg.topic)}</div>
+      <div class="meta">${esc(tg.city||"")}${tg.date?" · "+fmtDate(tg.date):""}</div></div>
+    ${tg.debrief?`<span class="dbbadge dr">${esc(t("dbDraft"))}</span>`:""}
+    <button class="btn sm primary" onclick="openDebrief('${esc(String(tg.id))}')">${esc(t("dbNew"))}</button>
+  </div>`).join("");
+}
+
+async function rpActDone(id){
+  if(LIVE){ try{ await apiCall("debrief.actionDone",{id,done:1}); }catch(e){ toast(e.message,"crit"); return; } }
+  else {
+    const [tgId,idx]=String(id).split("-");
+    const d=(S.debriefs||{})[tgId];
+    if(d){ const open=(d.actions||[]).filter(a=>!a.done&&(a.text||"").trim());
+      const target=open[Number(idx)]; if(target) target.done=true; save(); }
+  }
+  rpState.data=null; renderReports(); toast(t("dbActionDone"),"good");
+}
+
+/* ---------- CSV: Einzelwerte je Bericht, damit man in Excel weiterrechnen kann ---------- */
+async function repCsv(){
+  const R=rpState.data; if(!R) return;
+  const keys=dbAllKeys();
+  const head=[S.lang==="en"?"Code":"Code",S.lang==="en"?"Topic":"Thema",S.lang==="en"?"City":"Ort",
+    S.lang==="en"?"Date":"Datum",S.lang==="en"?"Overall":"Gesamt",S.lang==="en"?"Recommend":"Empfehlung",
+    S.lang==="en"?"Incidents":"Vorkommnisse", ...keys.map(k=>dbLabelOf(k))];
+  // Einzelwerte je Bericht: im Live-Betrieb einmal nachladen, sonst stünden
+  // in der Tabelle nur die Kopfzahlen und man könnte nicht weiterrechnen.
+  let src={};
+  if(LIVE){
+    try{ const d=await apiCall("debriefs.list",{});
+      (d.debriefs||[]).forEach(x=>src[String(x.training)]=x); }
+    catch(e){ toast(e.message,"crit"); return; }
+  } else src=S.debriefs||{};
+  const lines=[head];
+  (R.items||[]).forEach(i=>{
+    const d=src[String(i.training)];
+    lines.push([i.code,i.topic,i.city,i.date,dbNum(i.overall),i.recommend,i.flags,
+      ...keys.map(k=>d&&d.scores&&d.scores[k]!=null?d.scores[k]:"")]);
+  });
+  // Zusammenfassung unten anhängen — der häufigste Grund, warum man exportiert
+  lines.push([]);
+  lines.push([S.lang==="en"?"Average":"Durchschnitt","","","",dbNum(R.overall),"","",
+    ...keys.map(k=>{const c=(R.criteria||[]).find(x=>x.key===k); return c?dbNum(c.avg):"";})]);
+  const csv="﻿"+lines.map(r=>r.map(c=>{
+    const s=String(c==null?"":c);
+    return /[";\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(";")).join("\r\n");
+  const {from,to}=rpRange();
+  download(`${t("rpExportName")}${from?"-"+from:""}${to?"-"+to:""}.csv`,csv,"text/csv;charset=utf-8");
+  toast(t("rpCsv"),"good");
+}
+
+/* ---------- Druckbogen ---------- */
+function openRepPrint(){
+  const R=rpState.data; if(!R||!R.n) return;
+  const {from,to}=rpRange();
+  // Ohne gesetzten Zeitraum den tatsächlich abgedeckten Bereich aus den Daten zeigen —
+  // „… – heute“ wäre im Titel und im Dateinamen wertlos.
+  const dates=(R.items||[]).map(i=>i.date).filter(Boolean).sort();
+  const f0=from||dates[0]||"", t0=to||dates[dates.length-1]||"";
+  const span=(f0?fmtDate(f0):"—")+" – "+(t0?fmtDate(t0):"—");
+  const cl=activeClient();
+  const crit=(R.criteria||[]).slice().sort((a,b)=>(a.avg||0)-(b.avg||0));
+  const worst=crit.slice(0,5), best=crit.slice(-5).reverse();
+  const cov = R.due ? Math.round((R.dueDone||0)/R.due*100) : null;
+  const kv=(k,v)=>`<div class="rpk">${esc(k)}</div><div class="rpv">${v}</div>`;
+  const barList=rows=>`<div class="rpbars">${rows.map(c=>{
+    const col=dbBand(c.avg)==="good"?"var(--good)":dbBand(c.avg)==="warn"?"var(--warn)":"var(--crit)";
+    return `<div class="rprow"><span class="rplbl">${esc(dbLabelOf(c.key))}</span>
+      <span class="rpbar"><i style="width:${Math.max(2,c.avg/5*100).toFixed(1)}%;background:${col}"></i></span>
+      <span class="rpval">${dbNum(c.avg)}</span><span class="rpn">n=${c.n}</span></div>`;}).join("")}</div>`;
+
+  $("#repPrintBody").innerHTML=`<div class="cal-sheet rpsheet">
+    <div class="ag-top"><div>
+      <div class="ag-eyebrow">${esc(t("tp_reports"))}${cl?" · "+esc(cl.name):""}</div>
+      <div class="ag-h1">${esc(span)}</div>
+      <div class="meta">${esc(t("rpN",R.n))}${cov!=null?" · "+esc(t("rpKpiCoverage"))+" "+cov+"%":""}</div></div>
+      <span style="color:var(--brand);display:inline-flex">${etafLogo(34)}</span></div>
+    <div class="ag-bar"></div>
+    <div class="rpkv">
+      ${kv(t("rpKpiOverall"),`<b style="color:var(--${dbBand(R.overall)||"ink"})">${dbNum(R.overall)}</b> / 5`)}
+      ${kv(t("rpRecommend"),DB_REC.map(r=>esc(dbL(r))+": "+((R.recommend||{})[r[0]]||0)).join(" · "))}
+      ${kv(t("rpKpiAlert"),String(crit.filter(c=>c.avg<3).length)+" — "+esc(t("rpKpiAlertSub")))}
+    </div>
+    <div class="ag-h2">${esc(t("rpWorst"))}</div>${barList(worst)}
+    <div class="ag-h2">${esc(t("rpBest"))}</div>${barList(best)}
+    <div class="ag-h2">${esc(t("rpTrendGroups"))}</div>
+    <div class="rpgrp">${DB_GROUPS.map(g=>{const x=(R.groups||[]).find(y=>y.key===g.key);
+      return `<div><span>${esc(dbGroupLabel(g))}</span><b style="color:var(--${dbBand(x?x.avg:null)||"ink"})">${dbNum(x?x.avg:null)}</b></div>`;}).join("")}</div>
+    ${(R.trainers||[]).length?`<div class="ag-h2">${esc(t("rpTrainers"))}</div>
+      <table class="rptable"><tr><th>${esc(t("rpTrainers"))}</th><th style="text-align:right">Ø</th>
+        ${DB_TRK.map(k=>`<th style="text-align:right">${esc(dbL(k))}</th>`).join("")}</tr>
+        ${(R.trainers||[]).map(x=>`<tr><td>${esc(x.name)}</td>
+          <td class="num"><b style="color:var(--${dbBand(x.avg)||"ink"})">${dbNum(x.avg)}</b></td>
+          ${DB_TRK.map(k=>`<td class="num">${dbNum(x[k[0]])}</td>`).join("")}</tr>`).join("")}</table>`:""}
+    ${(R.flags||[]).length?`<div class="ag-h2">${esc(t("rpFlags"))}</div>
+      <div class="rpflags">${(R.flags||[]).map(f=>`<span>${esc(dbLabelOf(f.key))} <b>${f.n}×</b></span>`).join("")}</div>`:""}
+    ${(R.actions||[]).length?`<div class="ag-h2">${esc(t("rpActionsOpen"))}</div>
+      <ul class="rpacts">${(R.actions||[]).map(a=>`<li>${esc(a.text)}<i> — ${a.owner?esc(a.owner):"?"}${a.due?", "+fmtDate(a.due):""}${a.code?" ("+esc(a.code)+")":""}</i></li>`).join("")}</ul>`:""}
+    <div class="meta" style="margin-top:14px">ETAF · Trainer-Koordination · ${esc(new Date().toLocaleDateString(S.lang==="en"?"en-GB":"de-DE"))}</div>
+  </div>`;
+  setPageOrient("portrait");
+  setSheetTitle(`ETAF ${t("tp_reports")}${cl?" "+cl.name:""} (${span})`);
+  $("#repPrint").classList.add("on");
+}
+function closeRepPrint(){ $("#repPrint").classList.remove("on"); clearSheetTitle(); }
+
 function openSheet(){$("#scrim").classList.add("on");$("#sheet").classList.add("on");}
 function closeSheet(){$("#scrim").classList.remove("on");$("#sheet").classList.remove("on");}
 let toastT;

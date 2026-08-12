@@ -164,7 +164,8 @@ function is_admin(): bool {
    Aktion eine eigene Umkehrfunktion nötig wäre.
    ============================================================ */
 const UNDO_TABLES=['trainings','trainers','clients','requests','travel','training_sessions',
-  'training_materials','material_presets','materials','templates','trainer_reviews','plan_tokens'];
+  'training_materials','material_presets','materials','templates','trainer_reviews','plan_tokens',
+  'debriefs','debrief_actions'];
 
 /** Zeilen zu einer Spezifikation [tabelle, spalte, wert] einsammeln. */
 function snap_take(array $specs): array {
@@ -235,6 +236,16 @@ function undo_targets(string $action, array $in): ?array {
       $id=(string)($in['id']??''); if($id==='') return null;
       return ['specs'=>[['materials','id',$id],['training_materials','material_id',$id],
                         ['material_presets','material_id',$id]],'label'=>'material','ref'=>$id];
+    case 'debrief.save': case 'debrief.delete':
+      $id=(string)($in['training']??0); if(!$id) return null;
+      $d=q("SELECT id FROM debriefs WHERE training_id=?",[$id])->fetch();
+      $sp=[['debriefs','training_id',$id]];
+      if($d) $sp[]=['debrief_actions','debrief_id',(string)$d['id']];
+      return ['specs'=>$sp,'label'=>'debrief','ref'=>$id];
+    case 'debrief.actionDone':
+      $a=q("SELECT debrief_id FROM debrief_actions WHERE id=?",[$in['id']??0])->fetch();
+      if(!$a) return null;
+      return ['specs'=>[['debrief_actions','debrief_id',(string)$a['debrief_id']]],'label'=>'debrief','ref'=>(string)$a['debrief_id']];
     case 'message.resolve':
       $id=(string)($in['trainer']??0); if(!$id) return null;
       return ['specs'=>[['plan_tokens','trainer_id',$id]],'label'=>'trainer','ref'=>$id];
@@ -252,7 +263,9 @@ function undo_label(string $action): string {
       'passport.save'=>'Reisepass gespeichert','passport.clear'=>'Reisepass gelöscht',
       'material.save'=>'Material gespeichert','material.delete'=>'Material gelöscht',
       'matpreset.save'=>'Material-Vorlage gespeichert','template.save'=>'Vorlage gespeichert',
-      'message.resolve'=>'Rückmeldung bearbeitet','request.notifyStatus'=>'Trainer informiert'];
+      'message.resolve'=>'Rückmeldung bearbeitet','request.notifyStatus'=>'Trainer informiert',
+      'debrief.save'=>'Trainingsbericht gespeichert','debrief.delete'=>'Trainingsbericht gelöscht',
+      'debrief.actionDone'=>'Maßnahme abgehakt'];
   return $m[$action] ?? $action;
 }
 
@@ -454,7 +467,16 @@ function get_state(): array {
     }
   }catch(Throwable $e){}
 
-  $trainings=array_map(function($r) use ($byT,$matByT,$wkAgg){
+  // Trainingsbericht je Training (nur Kurzstand für Liste und Ampel)
+  $dbBy=[];
+  try{
+    foreach(q("SELECT training_id,status,overall,updated_at FROM debriefs")->fetchAll() as $d){
+      $dbBy[(string)$d['training_id']]=['status'=>$d['status']??'draft',
+        'overall'=>(int)($d['overall']??0),'at'=>$d['updated_at']??''];
+    }
+  }catch(Throwable $e){}
+
+  $trainings=array_map(function($r) use ($byT,$matByT,$wkAgg,$dbBy){
     return [
       'id'=>(string)$r['id'], 'clientId'=>$r['client_id']??null, 'code'=>$r['code']??null,
       'topic'=>$r['topic'], 'city'=>$r['city'], 'country'=>$r['country'],
@@ -473,6 +495,7 @@ function get_state(): array {
       'stage'=>$r['stage']??'', 'star'=>(int)($r['star']??0),
       'deliverable'=>$r['deliverable']??'', 'deliverableEn'=>$r['deliverable_en']??'',
       'week'=>$wkAgg[(string)$r['id']] ?? null,
+      'debrief'=>$dbBy[(string)$r['id']] ?? null,
       // für den Überschreib-Schutz
       'version'=>(int)($r['version']??1), 'updatedAt'=>$r['updated_at']??'', 'updatedBy'=>$r['updated_by']??'',
     ];
@@ -493,6 +516,7 @@ function get_state(): array {
     'trainers'=>$trainers,'trainings'=>$trainings,'templates'=>$templates,
     'me'=>$me?user_public($me):null,
     'undo'=>undo_status(),
+    'debriefCat'=>debrief_catalog(),
     'setupMode'=>(user_count()===0)];
 }
 
@@ -667,4 +691,273 @@ function base_url(): string {
   $host=$_SERVER['HTTP_HOST']??'localhost';
   $dir=rtrim(dirname($_SERVER['SCRIPT_NAME']??'/'),'/'); // .../backend
   return ($https?'https':'http').'://'.$host.$dir;
+}
+
+/* ============================================================
+   TRAININGSBERICHT (DEBRIEF)
+   Ein Bericht je Training. Der Kriterienkatalog steht bewusst NUR hier —
+   Frontend und Auswertung holen ihn über die API, damit ein neues Kriterium
+   an genau einer Stelle ergänzt wird.
+   Skala: 1 = ungenügend … 5 = ausgezeichnet. Fehlender Schlüssel = nicht
+   bewertet (z.B. „kein Flug bei lokalem Training“) und zählt nirgends mit.
+   ============================================================ */
+function debrief_catalog(): array {
+  $G=function($key,$de,$en,$items){ return ['key'=>$key,'de'=>$de,'en'=>$en,'items'=>$items]; };
+  $I=function($key,$de,$en){ return ['key'=>$key,'de'=>$de,'en'=>$en]; };
+  return [
+    'scale'=>[
+      1=>['de'=>'ungenügend','en'=>'poor'],
+      2=>['de'=>'ausbaufähig','en'=>'weak'],
+      3=>['de'=>'in Ordnung','en'=>'okay'],
+      4=>['de'=>'gut','en'=>'good'],
+      5=>['de'=>'ausgezeichnet','en'=>'excellent'],
+    ],
+    'groups'=>[
+      $G('training','Training & Teilnehmer','Training & participants',[
+        $I('students_engagement','Mitarbeit der Teilnehmer','Participant engagement'),
+        $I('students_level','Vorkenntnisse passend','Prior knowledge fits'),
+        $I('students_attendance','Anwesenheit & Pünktlichkeit','Attendance & punctuality'),
+        $I('content_fit','Inhalte passend zum Auftrag','Content fits the brief'),
+        $I('timing','Zeitplan eingehalten','Schedule kept'),
+        $I('assessment','Qualität der Übungen & Prüfungen','Quality of exercises & assessments'),
+      ]),
+      $G('team','Trainerteam','Trainer team',[
+        $I('team_prep','Vorbereitung des Teams','Team preparation'),
+        $I('team_coop','Zusammenarbeit im Team','Cooperation within the team'),
+        $I('team_conduct','Auftreten & Verhalten','Conduct & demeanour'),
+      ]),
+      $G('material','Material & Technik','Material & equipment',[
+        $I('material_complete','Material vollständig','Material complete'),
+        $I('material_quality','Materialqualität','Material quality'),
+        $I('ppt_onsite','PowerPoint-Qualität vor Ort','PowerPoint quality on site'),
+        $I('equipment','Technik (Beamer, Ton, Netz)','Equipment (projector, audio, network)'),
+        $I('venue','Räumlichkeiten','Venue'),
+      ]),
+      $G('logistics','Reise & Logistik','Travel & logistics',[
+        $I('flight','Flug','Flight'),
+        $I('shuttle','Shuttle & Transfer','Shuttle & transfer'),
+        $I('hotel','Hotel','Hotel'),
+        $I('catering','Verpflegung','Catering'),
+      ]),
+      $G('client','Kunde vor Ort','Client on site',[
+        $I('adp_coord','Koordination durch den Kunden','Coordination by the client'),
+        $I('adp_punctual','Pünktlichkeit des Kunden','Client punctuality'),
+        $I('adp_support','Unterstützung vor Ort','Support on site'),
+        $I('adp_comm','Kommunikation & Absprachen','Communication & agreements'),
+      ]),
+    ],
+    // Bewertung je eingesetztem Trainer
+    'trainer'=>[
+      $I('teaching','Didaktik & Vermittlung','Teaching & delivery'),
+      $I('behaviour','Auftreten & Verhalten','Conduct & demeanour'),
+      $I('ppt','Qualität der Unterlagen','Quality of materials'),
+      $I('punctuality','Pünktlichkeit & Verlässlichkeit','Punctuality & reliability'),
+    ],
+    // Vorkommnisse zum Anklicken — kurz, damit der Bericht in zwei Minuten steht
+    'flags'=>[
+      $I('shuttle_late','Shuttle verspätet','Shuttle late'),
+      $I('flight_delay','Flugverspätung/-ausfall','Flight delayed/cancelled'),
+      $I('hotel_issue','Hotelproblem','Hotel issue'),
+      $I('material_missing','Material fehlte','Material missing'),
+      $I('tech_fail','Technik ausgefallen','Equipment failure'),
+      $I('room_small','Raum zu klein/ungeeignet','Room too small/unsuitable'),
+      $I('plan_changed','Ablauf kurzfristig geändert','Schedule changed at short notice'),
+      $I('participants_deviation','Teilnehmerzahl abweichend','Participant count deviated'),
+      $I('language_barrier','Sprachbarriere / Dolmetscher nötig','Language barrier / interpreter needed'),
+      $I('security_issue','Sicherheits-/Zugangsproblem','Security/access issue'),
+      $I('medical_issue','Medizinischer Vorfall','Medical incident'),
+      $I('extra_request','Zusatzwunsch des Kunden','Additional client request'),
+    ],
+    'texts'=>[
+      $I('wentWell','Was lief gut?','What went well?'),
+      $I('toImprove','Was muss sich ändern?','What needs to change?'),
+      $I('adp','Anmerkungen zum Kunden','Notes on the client'),
+      $I('incidents','Besondere Vorkommnisse','Notable incidents'),
+    ],
+    'recommend'=>[
+      $I('yes','Ja — unverändert wieder so','Yes — run it again unchanged'),
+      $I('partly','Mit Anpassungen','With adjustments'),
+      $I('no','Nein — so nicht wieder','No — not like this again'),
+    ],
+  ];
+}
+
+/** Klartext eines Kriteriums (für Mails und Auswertungen). */
+function debrief_label(string $key, string $lang='de'): string {
+  $c=debrief_catalog();
+  foreach($c['groups'] as $g) foreach($g['items'] as $i) if($i['key']===$key) return $i[$lang]??$i['de'];
+  foreach(['trainer','flags','texts','recommend'] as $sec)
+    foreach($c[$sec] as $i) if($i['key']===$key) return $i[$lang]??$i['de'];
+  return $key;
+}
+
+/** Alle gültigen Kriterienschlüssel (Gruppen), flach. */
+function debrief_keys(): array {
+  $out=[];
+  foreach(debrief_catalog()['groups'] as $g) foreach($g['items'] as $i) $out[]=$i['key'];
+  return $out;
+}
+/** Kriterium → Gruppe. */
+function debrief_group_of(string $key): string {
+  foreach(debrief_catalog()['groups'] as $g) foreach($g['items'] as $i) if($i['key']===$key) return $g['key'];
+  return '';
+}
+
+/** Eine Bericht-Zeile in die Form bringen, die das Frontend erwartet. */
+function debrief_public(array $r): array {
+  $acts=[];
+  foreach(q("SELECT * FROM debrief_actions WHERE debrief_id=? ORDER BY sort,id",[$r['id']])->fetchAll() as $a){
+    $acts[]=['id'=>(string)$a['id'],'text'=>$a['text']??'','owner'=>$a['owner']??'',
+             'due'=>$a['due']??'','done'=>((int)($a['done']??0))===1];
+  }
+  return [
+    'id'=>(string)$r['id'],'training'=>(string)$r['training_id'],
+    'status'=>$r['status']??'draft','overall'=>(int)($r['overall']??0),
+    'recommend'=>$r['recommend']??'',
+    'scores'=>json_decode(($r['scores']??'')?:'{}',true)?:[],
+    'trainers'=>json_decode(($r['trainers']??'')?:'{}',true)?:[],
+    'flags'=>json_decode(($r['flags']??'')?:'[]',true)?:[],
+    'texts'=>json_decode(($r['texts']??'')?:'{}',true)?:[],
+    'author'=>$r['author_name']??'','createdAt'=>$r['created_at']??'','updatedAt'=>$r['updated_at']??'',
+    'version'=>(int)($r['version']??1),'actions'=>$acts,
+  ];
+}
+
+/** Mittelwert einer Zahlenliste, auf eine Nachkommastelle. */
+function debrief_avg(array $vals): ?float {
+  $v=array_values(array_filter($vals, fn($x)=>is_numeric($x) && $x>=1 && $x<=5));
+  if(!$v) return null;
+  return round(array_sum($v)/count($v), 2);
+}
+
+/** Periodenschlüssel eines Datums: 'week' → 2026-W45, 'month' → 2026-11, 'year' → 2026. */
+function debrief_period(string $date, string $mode): string {
+  $t=strtotime($date.' UTC'); if(!$t) return '';
+  if($mode==='year')  return gmdate('Y',$t);
+  if($mode==='month') return gmdate('Y-m',$t);
+  return gmdate('o-\WW',$t);
+}
+
+/**
+ * Auswertung über alle abgeschlossenen Berichte im Zeitraum.
+ * $from/$to: 'YYYY-MM-DD' (leer = offen), $client: Kunden-ID (leer = alle),
+ * $bucket: 'week'|'month'|'year' für die Trendachse.
+ */
+function debrief_report(string $from, string $to, string $client, string $bucket='month'): array {
+  $sql="SELECT d.*, t.start_date, t.end_date, t.code, t.topic, t.city, t.client_id
+        FROM debriefs d JOIN trainings t ON t.id=d.training_id
+        WHERE d.status='final'";
+  $p=[];
+  if($from!==''){ $sql.=" AND COALESCE(t.end_date,t.start_date)>=?"; $p[]=$from; }
+  if($to!==''){   $sql.=" AND t.start_date<=?";                      $p[]=$to; }
+  if($client!==''){ $sql.=" AND t.client_id=?";                      $p[]=$client; }
+  $rows=q($sql." ORDER BY t.start_date",$p)->fetchAll();
+
+  $keys=debrief_keys();
+  $byKey=[]; foreach($keys as $k) $byKey[$k]=[];
+  $byGroup=[]; $overall=[]; $rec=['yes'=>0,'partly'=>0,'no'=>0];
+  $flags=[]; $trainers=[]; $trend=[]; $items=[];
+
+  foreach($rows as $r){
+    $sc=json_decode(($r['scores']??'')?:'{}',true)?:[];
+    $date=(string)($r['start_date']?:'');
+    $per=$date!=='' ? debrief_period($date,$bucket) : '';
+    $rowVals=[];
+    foreach($sc as $k=>$v){
+      if(!in_array($k,$keys,true) || !is_numeric($v) || $v<1 || $v>5) continue;
+      $byKey[$k][]=(float)$v; $rowVals[]=(float)$v;
+      $g=debrief_group_of($k); if($g!==''){ $byGroup[$g][]=(float)$v; if($per!=='') $trend[$per]['g'][$g][]=(float)$v; }
+    }
+    $ov=(int)($r['overall']??0);
+    if($ov>=1&&$ov<=5) $overall[]=(float)$ov;
+    if($per!==''){
+      $trend[$per]['overall'][] = $ov>=1 ? (float)$ov : (debrief_avg($rowVals) ?? 0);
+      $trend[$per]['n']=($trend[$per]['n']??0)+1;
+    }
+    $rc=(string)($r['recommend']??''); if(isset($rec[$rc])) $rec[$rc]++;
+    foreach((array)(json_decode(($r['flags']??'')?:'[]',true)?:[]) as $f){
+      $flags[(string)$f]=($flags[(string)$f]??0)+1;
+    }
+    foreach((array)(json_decode(($r['trainers']??'')?:'{}',true)?:[]) as $tid=>$tv){
+      if(!is_array($tv)) continue;
+      foreach(['teaching','behaviour','ppt','punctuality'] as $tk){
+        $x=$tv[$tk]??null;
+        if(is_numeric($x)&&$x>=1&&$x<=5){ $trainers[(string)$tid][$tk][]=(float)$x; $trainers[(string)$tid]['all'][]=(float)$x; }
+      }
+    }
+    $items[]=['id'=>(string)$r['id'],'training'=>(string)$r['training_id'],
+      'code'=>$r['code']??'','topic'=>$r['topic']??'','city'=>$r['city']??'',
+      'date'=>$date,'overall'=>$ov?:(debrief_avg($rowVals)??0),'recommend'=>$rc,
+      'flags'=>count((array)(json_decode(($r['flags']??'')?:'[]',true)?:[]))];
+  }
+
+  // Kriterien mit Mittelwert, nach Schwachstellen sortierbar im Frontend
+  $crit=[];
+  foreach($keys as $k){
+    $a=debrief_avg($byKey[$k]);
+    if($a===null) continue;
+    $crit[]=['key'=>$k,'group'=>debrief_group_of($k),'avg'=>$a,'n'=>count($byKey[$k])];
+  }
+  $grp=[]; foreach($byGroup as $g=>$v) $grp[]=['key'=>$g,'avg'=>debrief_avg($v),'n'=>count($v)];
+
+  ksort($trend);
+  $tr=[];
+  foreach($trend as $per=>$v){
+    $row=['period'=>$per,'n'=>$v['n']??0,'avg'=>debrief_avg($v['overall']??[]),'groups'=>[]];
+    foreach(($v['g']??[]) as $g=>$vals) $row['groups'][$g]=debrief_avg($vals);
+    $tr[]=$row;
+  }
+
+  $trOut=[];
+  foreach($trainers as $tid=>$v){
+    $nm=q("SELECT name FROM trainers WHERE id=?",[$tid])->fetch();
+    $e=['id'=>(string)$tid,'name'=>$nm['name']??('#'.$tid),'avg'=>debrief_avg($v['all']??[]),'n'=>count($v['all']??[])];
+    foreach(['teaching','behaviour','ppt','punctuality'] as $tk) $e[$tk]=debrief_avg($v[$tk]??[]);
+    $trOut[]=$e;
+  }
+  usort($trOut, fn($a,$b)=>($b['avg']??0)<=>($a['avg']??0));
+
+  arsort($flags);
+  $flOut=[]; foreach($flags as $k=>$c) $flOut[]=['key'=>$k,'n'=>$c];
+
+  // Abdeckung: wie viele bereits gelaufene Trainings im Zeitraum haben einen Bericht?
+  $cWhere=" WHERE COALESCE(t.end_date,t.start_date)<=?";
+  $cp=[gmdate('Y-m-d')];
+  if($from!==''){ $cWhere.=" AND COALESCE(t.end_date,t.start_date)>=?"; $cp[]=$from; }
+  if($to!==''){   $cWhere.=" AND t.start_date<=?";                      $cp[]=$to; }
+  if($client!==''){ $cWhere.=" AND t.client_id=?";                      $cp[]=$client; }
+  $due=(int)q("SELECT COUNT(*) c FROM trainings t".$cWhere,$cp)->fetch()['c'];
+  $dueDone=(int)q("SELECT COUNT(*) c FROM trainings t".$cWhere
+    ." AND EXISTS(SELECT 1 FROM debriefs d WHERE d.training_id=t.id AND d.status='final')",$cp)->fetch()['c'];
+
+  // Offene Maßnahmen aus den Berichten des Zeitraums
+  $open=[];
+  if($rows){
+    $ids=array_map(fn($r)=>(int)$r['id'],$rows);
+    $in=implode(',',array_fill(0,count($ids),'?'));
+    foreach(q("SELECT a.*, t.code FROM debrief_actions a
+               LEFT JOIN trainings t ON t.id=a.training_id
+               WHERE a.debrief_id IN ($in) AND a.done=0 ORDER BY a.due IS NULL, a.due, a.id",$ids)->fetchAll() as $a){
+      $open[]=['id'=>(string)$a['id'],'text'=>$a['text']??'','owner'=>$a['owner']??'',
+               'due'=>$a['due']??'','code'=>$a['code']??'','training'=>(string)$a['training_id']];
+    }
+  }
+
+  return [
+    'n'=>count($rows), 'due'=>$due, 'dueDone'=>$dueDone,
+    'overall'=>debrief_avg($overall) ?? debrief_avg(array_map(fn($i)=>(float)$i['overall'],$items)),
+    'recommend'=>$rec,
+    'criteria'=>$crit, 'groups'=>$grp, 'trend'=>$tr,
+    'trainers'=>$trOut, 'flags'=>$flOut, 'actions'=>$open, 'items'=>$items,
+  ];
+}
+
+/** Trainings ohne Bericht, die schon vorbei sind (für Erinnerung und Ampel). */
+function debriefs_missing(int $graceDays=0): array {
+  $cut=gmdate('Y-m-d', time()-$graceDays*86400);
+  return q("SELECT t.id,t.code,t.topic,t.city,t.start_date,t.end_date
+            FROM trainings t
+            WHERE COALESCE(t.end_date,t.start_date)<=?
+              AND NOT EXISTS (SELECT 1 FROM debriefs d WHERE d.training_id=t.id AND d.status='final')
+            ORDER BY COALESCE(t.end_date,t.start_date) DESC",[$cut])->fetchAll();
 }
