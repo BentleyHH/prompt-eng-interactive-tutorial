@@ -715,6 +715,15 @@
   .dbringwrap.sm{width:36px;height:36px}
   .dbringwrap.sm b{font-size:9.5px}
   .dbringwrap.sm b i{font-size:7.5px}
+  /* Ringpaar in der Trainingsliste: jeder Ring trägt seine eigene
+     Beschriftung - eine nackte Zahl neben einem Training ist mehrdeutig. */
+  .rdpair{display:flex;gap:12px;flex:none;align-items:flex-start}
+  .rdcell{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:36px}
+  /* Die Beschriftung ist breiter als der Ring und bestimmt damit die Zellbreite -
+     deshalb bewusst schmal gesetzt. */
+  .rdcap{font-size:8px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+    color:var(--faint);line-height:1;white-space:nowrap}
+  @media(max-width:560px){ .rdpair{gap:14px} }
   .row.dbrow-l{cursor:pointer}
   .row.dbrow-l:hover{background:var(--panel-2)}
   .chips.rpchips button b{font-variant-numeric:tabular-nums;margin-left:3px;opacity:.75}
@@ -1669,6 +1678,10 @@ const L={
   rpNever:"Bisher nie bewertet", rpGaps:"Berichte mit Lücken", rpGapsNone:"Alle Berichte im Zeitraum sind vollständig.",
   rpMissingN:n=>`${n} Felder fehlen noch`,
   rpOnlyClose:"Vollständig - nur noch abschließen",
+  rdPlanCap:"Plan", rdRepCap:"Bericht",
+  rdTitle:"Planungsstand des Trainings",
+  rdStaff:"Besetzung", rdPlan:"Sessions verteilt", rdPpt:"PowerPoints",
+  rdTravel:"Reisedaten", rdMat:"Materialliste",
   rpProvisional:"Zwischenstand - enthält Entwürfe, Zahlen können sich noch ändern",
   emNone:"Noch keine E-Mails versendet.", em_sent:"gesendet", em_logged:"protokolliert", em_failed:"fehlgeschlagen",
   agendaHint:"Diese Übersicht bekommt der Trainer per E-Mail (Druck-Link) und kann sie ausdrucken.",
@@ -2120,6 +2133,10 @@ const L={
   rpNever:"Never rated so far", rpGaps:"Reports with gaps", rpGapsNone:"All reports in this period are complete.",
   rpMissingN:n=>`${n} fields still missing`,
   rpOnlyClose:"Complete - just needs finishing",
+  rdPlanCap:"Setup", rdRepCap:"Report",
+  rdTitle:"Preparation status of this training",
+  rdStaff:"Staffing", rdPlan:"Sessions placed", rdPpt:"PowerPoints",
+  rdTravel:"Travel details", rdMat:"Material list",
   rpProvisional:"Interim status - includes drafts, figures may still change",
   emNone:"No emails sent yet.", em_sent:"sent", em_logged:"logged", em_failed:"failed",
   agendaHint:"The trainer receives this overview by email (print link) and can print it.",
@@ -2837,10 +2854,7 @@ function renderTrainings(){
         <div class="tags"><span class="tag">${tg.spec}</span><span class="tag">${t("trainersC",r.yes,r.need)}</span></div>
       </div>
       <span class="pill ${st.cls}">${t(st.key)}</span>
-      ${(tgIsPast(tg)||tg.debrief) ? `<span class="dbringwrap sm" title="${esc(t("dbFilled",dbFilledOf(tg),dbTotalOf(tg)))}"
-          onclick="event.stopPropagation();openDebrief('${tg.id}')" style="cursor:pointer">
-          ${dbRing(dbPctOf(tg),36,tg.debrief&&tg.debrief.status==="final")}
-          <b class="${tg.debrief&&tg.debrief.status==="final"?"g":dbPctOf(tg)?"i":"f"}${dbPctOf(tg)>=100?" full":""}">${dbPctOf(tg)}<i>%</i></b></span>` : ""}
+      ${rdPair(tg)}
       <button class="btn sm primary" onclick="openDetail('${tg.id}')">${t("plan")}</button>
     </div>`;
   }).join("");
@@ -6381,11 +6395,12 @@ function dbPctOf(tg){
 }
 /* Ring: ein Kreis, ein Wert - die Zahl steht immer daneben, damit der
    Fortschritt nicht allein an der Farbe hängt. */
-function dbRing(pct,size,done){
+function dbRing(pct,size,done,hue){
   const S0=size||34, r=S0/2-3, c=2*Math.PI*r;
   const shown=done?100:Math.max(0,Math.min(100,pct));
   const off=c*(1-shown/100);
-  const col=done||shown>=100?"var(--good)":shown>0?"var(--info)":"var(--line)";
+  const col=hue ? (shown>0?hue:"var(--line)")
+                : (done||shown>=100?"var(--good)":shown>0?"var(--info)":"var(--line)");
   return `<svg class="dbring" viewBox="0 0 ${S0} ${S0}" width="${S0}" height="${S0}" aria-hidden="true">
     <circle cx="${S0/2}" cy="${S0/2}" r="${r}" fill="none" stroke="var(--brand-050)" stroke-width="3"/>
     ${shown>0?`<circle cx="${S0/2}" cy="${S0/2}" r="${r}" fill="none" stroke="${col}" stroke-width="3"
@@ -6394,6 +6409,54 @@ function dbRing(pct,size,done){
     ${done?`<path d="M${(S0*0.33).toFixed(1)} ${(S0*0.51).toFixed(1)} l${(S0*0.11).toFixed(1)} ${(S0*0.12).toFixed(1)} l${(S0*0.23).toFixed(1)} -${(S0*0.26).toFixed(1)}" fill="none"
       stroke="var(--good)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`:""}
   </svg>`;
+}
+
+/* ---------- Planungsstand eines Trainings ----------
+   Fünf Bausteine, die man auch nachrechnen kann - der Tooltip zeigt sie
+   einzeln. Bausteine ohne Grundlage (kein Wochenplan, niemand zugesagt)
+   fallen aus der Rechnung, sonst wäre 100 % nie erreichbar. */
+function tgWeekAgg(tg){
+  if(tg.week) return tg.week;
+  const wd=(S.weekData||{})[tg.id];
+  if(!wd) return null;
+  const ses=wd.sessions||[], plan=wd.plan||{};
+  const seen=new Set();
+  WK_SLOTKEYS.forEach(k=>(plan[k]||[]).forEach(id=>seen.add(String(id))));
+  const rel=ses.filter(x=>!["orga","deliverable"].includes(x.type));
+  return {sessions:ses.length, placed:seen.size,
+          pptAll:rel.length, pptDone:ses.filter(x=>x.ppt==="vorhanden").length};
+}
+function tgReady(tg){
+  const parts=[]; const r=rosterStats(tg);
+  if(tg.need>0) parts.push({key:"rdStaff",have:Math.min(r.yes,tg.need),need:tg.need,w:2});
+  const wk=tgWeekAgg(tg);
+  if(wk&&wk.sessions>0) parts.push({key:"rdPlan",have:wk.placed||0,need:wk.sessions,w:1});
+  if(wk&&wk.pptAll>0)   parts.push({key:"rdPpt", have:Math.min(wk.pptDone||0,wk.pptAll),need:wk.pptAll,w:1});
+  const conf=(tg.roster||[]).filter(x=>["yes","confirmed"].includes(x.status));
+  if(conf.length) parts.push({key:"rdTravel",
+    have:conf.filter(x=>x.flight&&((x.flight.flightOut||"")||(x.flight.arrival||""))).length,need:conf.length,w:1});
+  parts.push({key:"rdMat",have:(tg.materials||[]).filter(l=>l.matId).length?1:0,need:1,w:1});
+  const wSum=parts.reduce((a,p)=>a+p.w,0)||1;
+  const pct=Math.round(parts.reduce((a,p)=>a+p.w*Math.min(1,p.have/(p.need||1)),0)/wSum*100);
+  return {pct,parts};
+}
+/* Beschriftetes Ringpaar: „Plan" (Vorbereitung) und „Bericht" (Nachbereitung).
+   Ohne Beschriftung ist eine nackte Zahl neben einem Training mehrdeutig. */
+function rdPair(tg){
+  const rd=tgReady(tg);
+  const tip=t("rdTitle")+"\n"+rd.parts.map(p=>"· "+t(p.key)+": "+p.have+"/"+p.need).join("\n");
+  const cell=(pct,cap,tip2,hue,done,click)=>`<span class="rdcell" title="${esc(tip2)}"${
+      click?` onclick="event.stopPropagation();${click}" style="cursor:pointer"`:""}>
+    <span class="dbringwrap sm">${dbRing(pct,36,done,hue)}
+      <b class="${done?"g":pct?"i":"f"}${pct>=100?" full":""}">${pct}<i>%</i></b></span>
+    <span class="rdcap">${esc(cap)}</span></span>`;
+  const showDb = tgIsPast(tg) || tg.debrief;
+  const dbDone = tg.debrief && tg.debrief.status==="final";
+  return `<span class="rdpair">
+    ${cell(rd.pct,t("rdPlanCap"),tip,"var(--brand-solid)",false,"")}
+    ${showDb?cell(dbPctOf(tg),t("rdRepCap"),
+        t("dbFilled",dbFilledOf(tg),dbTotalOf(tg)),"",dbDone,`openDebrief('${tg.id}')`):""}
+  </span>`;
 }
 
 /* Statusabzeichen für Listen und Detailkopf. */

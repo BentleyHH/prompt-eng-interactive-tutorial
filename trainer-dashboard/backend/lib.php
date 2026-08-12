@@ -463,7 +463,17 @@ function get_state(): array {
         SUM(CASE WHEN ppt='vorhanden' THEN 1 ELSE 0 END) done,
         SUM(CASE WHEN stype NOT IN('orga','deliverable') THEN 1 ELSE 0 END) rel
       FROM training_sessions GROUP BY training_id")->fetchAll() as $a){
-      $wkAgg[(string)$a['training_id']]=['sessions'=>(int)$a['n'],'pptAll'=>(int)$a['rel'],'pptDone'=>(int)$a['done']];
+      $wkAgg[(string)$a['training_id']]=['sessions'=>(int)$a['n'],'pptAll'=>(int)$a['rel'],
+        'pptDone'=>(int)$a['done'],'placed'=>0];
+    }
+    // Wie viele Sessions liegen schon auf einem Halbtag? (Planungsstand)
+    foreach(q("SELECT id,plan_slots FROM trainings WHERE plan_slots IS NOT NULL AND plan_slots<>''")->fetchAll() as $tp){
+      $tid=(string)$tp['id']; if(!isset($wkAgg[$tid])) continue;
+      $pl=json_decode($tp['plan_slots']?:'{}',true)?:[];
+      $seen=[];
+      foreach(['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm'] as $k)
+        foreach((array)($pl[$k]??[]) as $sid) $seen[(string)$sid]=true;
+      $wkAgg[$tid]['placed']=count($seen);
     }
   }catch(Throwable $e){}
 
