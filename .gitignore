@@ -6,3 +6,4 @@ trainer-dashboard/backend/config.js
 trainer-dashboard/backend/*.sqlite
 trainer-dashboard/**/config.js
 trainer-dashboard/backend/backups/
+trainer-dashboard/backend/uploads/

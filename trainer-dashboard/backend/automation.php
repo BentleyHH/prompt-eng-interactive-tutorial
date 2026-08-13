@@ -226,6 +226,91 @@ function send_period_report(): int {
   return $sent;
 }
 
+
+/**
+ * PowerPoints nachhalten. Erinnerung an den zuständigen Trainer ab 14 Tagen
+ * vor Fälligkeit, danach alle 4 Tage (höchstens 5x); bei Überfälligkeit
+ * einmalig eine Eskalation an die Koordination. $force = Knopf "Jetzt
+ * erinnern" im Cockpit: schickt sofort, unabhängig von Fenster und Kadenz.
+ */
+function ppt_chase(bool $force=false, int $onlyTraining=0): array {
+  $REMIND_BEFORE=14*86400; $EVERY=4*86400; $MAX=5;
+  $today=gmdate('Y-m-d'); $now=time();
+  $trainings=[];
+  foreach(q("SELECT * FROM trainings")->fetchAll() as $tg) $trainings[(string)$tg['id']]=$tg;
+
+  $byTrainer=[];      // [tgId][trainerId] => [sessions...]
+  $overdueAll=[];     // Eskalationsliste
+  foreach(q("SELECT * FROM training_sessions ORDER BY training_id,sort,id")->fetchAll() as $s){
+    $tg=$trainings[(string)$s['training_id']]??null;
+    if(!$tg) continue;
+    if($onlyTraining && (int)$tg['id']!==$onlyTraining) continue;
+    if(!ppt_relevant($s)) continue;
+    if(($s['ppt']??'')==='vorhanden') continue;
+    $start=trim((string)($tg['start_date']??''));
+    if($start!=='' && $start<$today) continue;              // Training läuft/vorbei
+    $due=ppt_due_of($s,$tg);
+    if($due==='') continue;
+    $trId=(int)($s['ppt_by']??0);
+    if(!$trId) continue;                                     // ohne Zuständigen: nur im Cockpit sichtbar
+    $overdue=$due<$today;
+    if($overdue && !(int)($s['ppt_escalated']??0)) $overdueAll[]=['s'=>$s,'tg'=>$tg];
+    if($force){
+      $byTrainer[(string)$tg['id']][$trId][]=$s;
+      continue;
+    }
+    if($now < strtotime($due.' UTC')-$REMIND_BEFORE) continue;      // noch nicht dran
+    if((int)($s['ppt_remind_count']??0)>=$MAX) continue;
+    $last=ts($s['ppt_reminded_at']??'');
+    if($last && $now-$last<$EVERY) continue;
+    $byTrainer[(string)$tg['id']][$trId][]=$s;
+  }
+
+  $sent=0;
+  foreach($byTrainer as $tgId=>$byTr){
+    $tg=$trainings[$tgId];
+    foreach($byTr as $trId=>$list){
+      $od=false; foreach($list as $s){ if(ppt_due_of($s,$tg)<$today){ $od=true; break; } }
+      if(ppt_send_reminder($tg,(int)$trId,$list,$od)){
+        $sent++;
+        foreach($list as $s)
+          q("UPDATE training_sessions SET ppt_reminded_at=?, ppt_remind_count=ppt_remind_count+1 WHERE id=?",[now(),$s['id']]);
+      }
+    }
+  }
+
+  // Eskalation an die Koordination - je Session genau einmal
+  $esc=0;
+  if($overdueAll && !$force){
+    $admins=q("SELECT email,name FROM users WHERE active=1 AND role='admin' AND email<>''")->fetchAll();
+    if($admins){
+      $tn=[]; foreach(q("SELECT id,name FROM trainers")->fetchAll() as $x) $tn[(string)$x['id']]=$x['name'];
+      $li='';
+      foreach($overdueAll as $o){
+        $due=ppt_due_of($o['s'],$o['tg']);
+        $li.='<div style="padding:3px 0;font-size:13px">- <b>'.htmlspecialchars($o['s']['title']).'</b> ('
+          .htmlspecialchars((($o['tg']['code']??'')?:'').')').' - '
+          .htmlspecialchars($tn[(string)$o['s']['ppt_by']]??'?')
+          .', fällig '.date('d.m.Y',strtotime($due)).'</div>';
+      }
+      $dash=preg_replace('#/backend$#','',base_url());
+      foreach($admins as $a){
+        $first=explode(' ',trim((string)($a['name']??'')))[0]?:'';
+        $html=email_html("Hallo".($first?" $first":"").",\n\ndiese PowerPoints sind überfällig - die Trainer wurden bereits erinnert:",
+          $li.cta_button($dash,'Folien-Übersicht im Cockpit'));
+        $subj='ETAF - '.count($overdueAll).' PowerPoint'.(count($overdueAll)===1?'':'s').' überfällig';
+        $ok=send_email($a['email'],$a['name']??'',$subj,$html);
+        q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+           VALUES(?,?,?,?,?,?,?,?)",[null,null,$a['email'],$subj,'PowerPoint-Eskalation','de',
+           ((cfg()['mail_mode']??'mail')==='log'?'logged':($ok?'sent':'failed')),now()]);
+        if($ok)$esc++;
+      }
+      foreach($overdueAll as $o) q("UPDATE training_sessions SET ppt_escalated=1 WHERE id=?",[$o['s']['id']]);
+    }
+  }
+  return ['reminded'=>$sent,'escalated'=>$esc];
+}
+
 function run_automation(): array {
   $reminderH=(int)(config_get('reminder_hours') ?? 48);
   $escalateH=(int)(config_get('escalate_hours') ?? 72);
@@ -424,6 +509,10 @@ function run_automation(): array {
     }
   }catch(Throwable $e){ /* Digest darf den Rest nicht stoppen */ }
 
+  /* 6b2) PowerPoints nachhalten (Erinnerung an Trainer + Eskalation) */
+  $pptRes=['reminded'=>0,'escalated'=>0];
+  try{ $pptRes=ppt_chase(); }catch(Throwable $e){ /* darf den Rest nicht stoppen */ }
+
   /* 6c) Erinnerung: Training vorbei, aber kein Bericht. Geht an die Koordination
          (Admins mit E-Mail) und nur einmal je Training. */
   $debriefPing=0;
@@ -475,5 +564,6 @@ function run_automation(): array {
 
   return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,
           'passport'=>$passport,'mail_fetched'=>$mailFetched,'mail_flights'=>$mailFlights,
-          'digest'=>$digestSent,'debrief_ping'=>$debriefPing,'period_report'=>$periodRep,'backup'=>$backupFile,'auto_advance'=>$autoAdv];
+          'digest'=>$digestSent,'debrief_ping'=>$debriefPing,'period_report'=>$periodRep,
+          'ppt_reminded'=>$pptRes['reminded'],'ppt_escalated'=>$pptRes['escalated'],'backup'=>$backupFile,'auto_advance'=>$autoAdv];
 }

@@ -336,6 +336,8 @@ switch($action){
         'type'=>$r['stype'],'dur'=>$r['dur'],'desc'=>$r['descr'],
         'trainerIds'=>array_values(array_map('strval',$ids)),
         'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,'pptDue'=>$r['ppt_due']??'',
+        'pptNote'=>$r['ppt_note']??'','pptFile'=>$r['ppt_file']??'','pptFileName'=>$r['ppt_file_name']??'',
+        'pptFileSize'=>(int)($r['ppt_file_size']??0),'pptFileAt'=>$r['ppt_file_at']??'',
         'mat'=>$r['mat']??''];},$rows),
       'plan'=>json_decode($tg['plan_slots']?:'{}',true)?:[],
       'deliverable'=>$tg['deliverable']??'','deliverableEn'=>$tg['deliverable_en']??'',
@@ -356,9 +358,19 @@ switch($action){
         'id'=>(string)$r['id'],'title'=>$r['title'],'titleEn'=>$r['title_en'],
         'type'=>$r['stype'],'dur'=>$r['dur'],
         'trainerIds'=>array_values(array_map('strval',$ids)),
-        'ppt'=>$r['ppt']??'','mat'=>$r['mat']??''];
+        'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,'pptDue'=>$r['ppt_due']??'',
+        'pptNote'=>$r['ppt_note']??'','pptFile'=>$r['ppt_file']??'','pptFileName'=>$r['ppt_file_name']??'',
+        'pptFileSize'=>(int)($r['ppt_file_size']??0),'pptFileAt'=>$r['ppt_file_at']??'',
+        'mat'=>$r['mat']??''];
     }
-    out(['ok'=>true,'weeks'=>$plans]);
+    foreach(q("SELECT id,ppt_template,ppt_template_name FROM trainings")->fetchAll() as $tp){
+      if(isset($plans[(string)$tp['id']])){
+        $plans[(string)$tp['id']]['template']=$tp['ppt_template']?($tp['ppt_template_name']?:'Vorlage'):'';
+      }
+    }
+    out(['ok'=>true,'weeks'=>$plans,
+      'pptLeadDays'=>(int)(config_get('ppt_lead_days')??21),
+      'pptMaxMb'=>(int)round(ppt_max_bytes()/1048576)]);
 
   case 'session.save':
     require_auth();
@@ -546,6 +558,95 @@ switch($action){
     $bucket=in_array($in['bucket']??'',['week','month','year'],true)?$in['bucket']:'month';
     out(['ok'=>true,'report'=>debrief_report($ymd($in['from']??''),$ymd($in['to']??''),
       trim((string)($in['client']??'')),$bucket, !empty($in['drafts']))]);
+
+  /* ============================================================
+     POWERPOINT-VERFOLGUNG
+     ============================================================ */
+
+  /* ---- Status/Zuständigkeit/Fälligkeit/Notiz einer Session pflegen ---- */
+  case 'ppt.setStatus':
+    require_auth();
+    $sid=(int)($in['session']??0);
+    $row=q("SELECT * FROM training_sessions WHERE id=?",[$sid])->fetch();
+    if(!$row) fail('Session nicht gefunden.',404);
+    $set=[]; $p=[];
+    if(isset($in['ppt']) && in_array($in['ppt'],['','inArbeit','vorhanden'],true)){ $set[]='ppt=?'; $p[]=$in['ppt']; }
+    if(array_key_exists('pptBy',$in)){ $set[]='ppt_by=?'; $p[]=((int)$in['pptBy'])?:null; }
+    if(array_key_exists('pptDue',$in)){
+      $d=trim((string)$in['pptDue']);
+      if($d!=='' && !preg_match('/^\d{4}-\d{2}-\d{2}$/',$d)) $d='';
+      $set[]='ppt_due=?'; $p[]=$d;
+    }
+    if(array_key_exists('note',$in)){ $set[]='ppt_note=?'; $p[]=mb_substr(trim((string)$in['note']),0,255); }
+    if($set){ $p[]=$sid; q("UPDATE training_sessions SET ".implode(',',$set)." WHERE id=?",$p); }
+    audit('ppt.setStatus','training',(string)$row['training_id'],mb_substr((string)$row['title'],0,80));
+    out(['ok'=>true]);
+
+  /* ---- Fertige Folie hochladen (multipart aus dem Cockpit) ---- */
+  case 'ppt.upload':
+    require_auth();
+    $sid=(int)($in['session']??0);
+    $row=q("SELECT * FROM training_sessions WHERE id=?",[$sid])->fetch();
+    if(!$row) fail('Session nicht gefunden.',404);
+    $res=ppt_store_upload($_FILES['file']??[], 'tg'.$row['training_id'].'-s'.$sid);
+    if(is_string($res)) fail($res);
+    if(!empty($row['ppt_file'])) @unlink(ppt_dir().'/'.basename($row['ppt_file']));
+    q("UPDATE training_sessions SET ppt='vorhanden', ppt_file=?, ppt_file_name=?, ppt_file_size=?, ppt_file_at=? WHERE id=?",
+      [$res['name'],$res['orig'],$res['size'],now(),$sid]);
+    audit('ppt.upload','training',(string)$row['training_id'],mb_substr((string)$row['title'],0,60).' ('.$res['orig'].')');
+    out(['ok'=>true,'file'=>$res['orig'],'size'=>$res['size']]);
+
+  /* ---- Datei herunterladen (streamt; kein JSON) ---- */
+  case 'ppt.download':
+    require_auth();
+    $row=q("SELECT ppt_file,ppt_file_name FROM training_sessions WHERE id=?",[(int)($in['session']??0)])->fetch();
+    if(!$row) fail('Session nicht gefunden.',404);
+    ppt_stream((string)$row['ppt_file'],(string)$row['ppt_file_name']);
+
+  case 'ppt.fileDelete':
+    require_auth();
+    $sid=(int)($in['session']??0);
+    $row=q("SELECT * FROM training_sessions WHERE id=?",[$sid])->fetch();
+    if(!$row) fail('Session nicht gefunden.',404);
+    if(!empty($row['ppt_file'])) @unlink(ppt_dir().'/'.basename($row['ppt_file']));
+    q("UPDATE training_sessions SET ppt_file='', ppt_file_name='', ppt_file_size=0, ppt_file_at='', ppt='' WHERE id=?",[$sid]);
+    audit('ppt.fileDelete','training',(string)$row['training_id'],mb_substr((string)$row['title'],0,80));
+    out(['ok'=>true]);
+
+  /* ---- Basis-Vorlage je Training ---- */
+  case 'ppt.templateUpload':
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $res=ppt_store_upload($_FILES['file']??[], 'tpl-tg'.$tgId);
+    if(is_string($res)) fail($res);
+    if(!empty($tg['ppt_template'])) @unlink(ppt_dir().'/'.basename($tg['ppt_template']));
+    q("UPDATE trainings SET ppt_template=?, ppt_template_name=? WHERE id=?",[$res['name'],$res['orig'],$tgId]);
+    audit('ppt.templateUpload','training',(string)$tgId,$res['orig']);
+    out(['ok'=>true,'file'=>$res['orig']]);
+
+  case 'ppt.templateDownload':
+    require_auth();
+    $tg=q("SELECT ppt_template,ppt_template_name FROM trainings WHERE id=?",[(int)($in['training']??0)])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    ppt_stream((string)$tg['ppt_template'],(string)$tg['ppt_template_name']);
+
+  case 'ppt.templateDelete':
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $tg=q("SELECT ppt_template FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    if(!empty($tg['ppt_template'])) @unlink(ppt_dir().'/'.basename($tg['ppt_template']));
+    q("UPDATE trainings SET ppt_template='', ppt_template_name='' WHERE id=?",[$tgId]);
+    out(['ok'=>true]);
+
+  /* ---- Erinnerungen für ein Training sofort auslösen ---- */
+  case 'ppt.remindNow':
+    require_auth();
+    require_once __DIR__.'/automation.php';
+    $n=ppt_chase(true,(int)($in['training']??0));
+    out(['ok'=>true,'sent'=>$n['reminded']]);
 
   /* ---- Wochenplan aus einer anderen Woche übernehmen (Vorlage kopieren) ---- */
   case 'weekplan.copy':
@@ -970,6 +1071,7 @@ switch($action){
       'escalate_hours'=>(int)(config_get('escalate_hours')??72),
       'auto_advance'=>(config_get('auto_advance')==='1'),
       'passport_lead_days'=>(int)(config_get('passport_lead_days')??180),
+      'ppt_lead_days'=>(int)(config_get('ppt_lead_days')??21),
       'ai_enabled'=>trim(cfg()['anthropic_key']??'')!=='',
     ]]);
 
@@ -979,6 +1081,7 @@ switch($action){
     if(isset($in['escalate_hours'])) config_set('escalate_hours',(string)max(1,(int)$in['escalate_hours']));
     if(isset($in['auto_advance']))   config_set('auto_advance', !empty($in['auto_advance'])?'1':'0');
     if(isset($in['passport_lead_days'])) config_set('passport_lead_days',(string)max(14,(int)$in['passport_lead_days']));
+    if(isset($in['ppt_lead_days'])) config_set('ppt_lead_days',(string)max(3,(int)$in['ppt_lead_days']));
     out(['ok'=>true]);
 
   /* ---- Login-PIN ändern (im Dashboard) ---- */

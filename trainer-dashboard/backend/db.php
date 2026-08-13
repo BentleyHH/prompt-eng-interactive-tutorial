@@ -277,6 +277,27 @@ function ensure_schema(): void {
     try{ import_programme_sessions(); }catch(Throwable $e){}
   }
 
+  /* ---- PowerPoint-Verfolgung: Datei-Ablage auf dem Webspace (nicht in der
+         Datenbank - sonst wachsen Dump und tägliche Sicherung um Gigabytes),
+         Erinnerungs-Stempel je Session, Basis-Vorlage je Training. ---- */
+  foreach([
+    "ppt_note VARCHAR(255)",
+    "ppt_file VARCHAR(255)","ppt_file_name VARCHAR(190)",
+    "ppt_file_size INT DEFAULT 0","ppt_file_at VARCHAR(20)",
+    "ppt_reminded_at VARCHAR(20)","ppt_remind_count INT DEFAULT 0","ppt_escalated INT DEFAULT 0"
+  ] as $col){ try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN $col"); }catch(Throwable $e){} }
+  foreach(["ppt_template VARCHAR(255)","ppt_template_name VARCHAR(190)"] as $col){
+    try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){}
+  }
+  // Ablage-Ordner anlegen und vor direktem Zugriff schützen (Auslieferung
+  // ausschließlich über die API bzw. den Token-Link)
+  $pd=__DIR__.'/uploads/ppt';
+  if(!is_dir($pd)) @mkdir($pd,0755,true);
+  if(is_dir($pd) && !is_file(dirname($pd).'/.htaccess')){
+    @file_put_contents(dirname($pd).'/.htaccess',"Require all denied
+");
+  }
+
   /* ---- Trainingsbericht (Debrief): eine Bewertung je Training.
          scores  = JSON {kriterium: 1..5}  - fehlende Schlüssel = „nicht bewertet"
          trainers= JSON {trainerId: {teaching,behaviour,ppt,punctuality,note}}
@@ -325,6 +346,7 @@ function ensure_schema(): void {
   if(config_get('escalate_hours')===null) config_set('escalate_hours',(string)($ac['escalate_hours']??72));
   if(config_get('auto_advance')===null)   config_set('auto_advance', !empty($ac['auto_advance'])?'1':'0');
   if(config_get('passport_lead_days')===null) config_set('passport_lead_days',(string)($ac['passport_lead_days']??180));
+  if(config_get('ppt_lead_days')===null)      config_set('ppt_lead_days','21');
 
   // Demo-Seed
   if((cfg()['seed_demo']??false) && (int)q("SELECT COUNT(*) c FROM trainers")->fetch()['c']===0){

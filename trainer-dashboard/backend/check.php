@@ -32,7 +32,7 @@ row('PHP-Version '.PHP_VERSION, version_compare(PHP_VERSION,'8.0','>='), version
 /* 2) Dateien vollständig? */
 $need=['config.php','db.php','lib.php','mailer.php','api.php','ai.php','automation.php',
        'mailfetch.php','mailtest.php','cron.php','respond.php','plan.php','transfer.php','reset.php',
-       'backup.php','programme-sessions.json'];
+       'backup.php','ppt.php','programme-sessions.json'];
 $missing=[];
 foreach($need as $f){ if(!is_file(__DIR__.'/'.$f)) $missing[]=$f; }
 row('Alle Backend-Dateien vorhanden', count($missing)===0,
@@ -45,6 +45,12 @@ row('Zugriffsschutz backend/.htaccess vorhanden', is_file(__DIR__.'/.htaccess'),
     .'Die Datei heißt exakt <code>.htaccess</code> - sie ist im FTP-Programm oft nur versteckt '
     .'(FileZilla: Server → „Auflistung versteckter Dateien erzwingen“; Finder: Cmd+Shift+Punkt). '
     .'Notfalls als <code>htaccess.txt</code> hochladen und auf dem Server in <code>.htaccess</code> umbenennen.');
+
+/* 2c) Kann der Server Folien-Uploads ablegen? */
+$upd=__DIR__.'/uploads';
+row('Upload-Ordner beschreibbar (backend/uploads)', is_dir($upd)?is_writable($upd):null,
+    is_dir($upd)?(is_writable($upd)?'':'Bitte per FTP die Rechte des Ordners auf 755/775 setzen.')
+                :'Wird beim ersten Aufruf der App automatisch angelegt.');
 
 /* 3) config.php fehlerfrei? (Tippfehler beim Bearbeiten sind die häufigste Ursache) */
 $cfg=null; $cfgErr='';

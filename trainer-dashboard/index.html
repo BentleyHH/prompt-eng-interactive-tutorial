@@ -764,6 +764,26 @@
   .rpnote svg{flex:none;margin-top:1px;color:var(--warn)}
   .rpnote.soft svg{color:var(--info)}
   .rpval .rpn{font-weight:400;color:var(--faint)}
+  /* Folien-Ansicht */
+  .pptprog{width:120px;height:8px;border-radius:4px;background:var(--brand-050);overflow:hidden;flex:none}
+  .pptprog i{display:block;height:100%;border-radius:4px;background:var(--good)}
+  .pptrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+  .pptrow:first-child{border-top:none}
+  .pptname{flex:1 1 230px;min-width:0}
+  .pptname b{font-size:13.5px}
+  .pptown{width:170px;flex:none;padding:6px 9px;font-size:12.5px}
+  .pptdue{width:140px;flex:none;padding:6px 9px;font-size:12.5px}
+  .pptbadge{flex:none;font-size:12px;min-width:104px}
+  .rpseg.pptst button{padding:6px 10px;font-size:12px}
+  .rpseg.pptst button.on.ok{background:var(--good)}
+  .pptfilecell{display:flex;align-items:center;gap:7px;flex:none;min-width:0}
+  .pptfile{font-size:12.5px;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;white-space:nowrap}
+  .pptup{cursor:pointer}
+  @media(max-width:900px){
+    .pptrow{align-items:flex-start}
+    .pptname{flex:1 1 100%}
+    .pptbadge{min-width:0}
+  }
   .rpbars{display:flex;flex-direction:column;gap:7px}
   .rprow{display:grid;grid-template-columns:minmax(120px,1.45fr) minmax(70px,2fr) 42px 40px;
     gap:10px;align-items:center;font-size:13px}
@@ -1007,6 +1027,7 @@
       <section class="view" id="v-automation"></section>
       <section class="view" id="v-emails"></section>
       <section class="view" id="v-reports"></section>
+      <section class="view" id="v-pptview"></section>
     </div>
   </main>
 </div>
@@ -1113,6 +1134,7 @@ const IC={
   more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
   week:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="M7 13h3v5H7zM12 13h3v3h-3z"/>',
   chart:'<path d="M3 3v18h18"/><path d="M7 15v3M12 10v8M17 6v12"/>',
+  slides:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8"/><path d="M7 8h6M7 11h4"/>',
   star:'<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'
 };
 const svg=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
@@ -1647,6 +1669,26 @@ const L={
   rpMissingSub:"bereits gelaufen, aber noch nicht bewertet",
   rpBest:"Stärkste Werte", rpWorst:"Schwächste Werte",
   rpExportName:"ETAF-Auswertung",
+  /* ---- Folien (PowerPoints) ---- */
+  nav_pptview:"Folien", nav_s_pptview:"Folien",
+  tp_pptv:"PowerPoints", tp_pptvSub:"Je Woche: was gebraucht wird, was da ist, wer erinnert wird",
+  pptKpiMissing:"fehlen noch", pptKpiOver:"überfällig", pptKpiSoon:"fällig in 14 Tagen", pptKpiNoOwner:"ohne Zuständigen",
+  pptFDue:"fällig", pptFOver:"überfällig", pptFNoOwner:"ohne Zuständigen", pptFAll:"alle", pptFDone:"da",
+  pptStOpen:"offen", pptStWork:"in Arbeit", pptStDone:"da",
+  pptOwner:"Zuständig", pptNoOwner:"- niemand -", pptDue:"fällig bis",
+  pptDueIn:d=>d===0?"heute fällig":`in ${d} Tagen`, pptOverBy:d=>`${d} Tag${d===1?"":"e"} überfällig`,
+  pptUpload:"Hochladen", pptReplace:"Ersetzen", pptDownload:"Herunterladen",
+  pptFileDel:"Datei entfernen", pptFileDelAsk:"Die Datei wirklich entfernen? Der Status springt zurück auf offen.",
+  pptTemplate:"Basis-Vorlage", pptTplNone:"Vorlage", pptTplUpload:"Basis-Vorlage hochladen",
+  pptTplHave:n=>`Basis-Vorlage: ${n}`,
+  pptRemind:"Jetzt erinnern", pptReminded:n=>n?`${n} Erinnerung${n===1?"":"en"} verschickt`:"Niemand zu erinnern (kein Zuständiger bei offenen Folien).",
+  pptUpDone:"Datei gespeichert - Status steht auf \"da\".",
+  pptTooBig:m=>`Datei zu groß (max. ${m} MB).`,
+  pptDemo:"Datei-Uploads gibt es im Live-Betrieb.",
+  pptEmpty:"In dieser Auswahl ist nichts offen.",
+  pptFoot:m=>`Erlaubt: ppt, pptx, pot, potx, pdf · max. ${m} MB je Datei. Trainer laden über ihren persönlichen Link hoch - der steht in jeder Erinnerungsmail.`,
+  pptLeadLbl:"PowerPoints fällig (Tage vor Trainingsbeginn)",
+  pptLeadHint:"Ohne eigenes Datum an der Session gilt: Trainingsbeginn minus diese Tage. Erinnerung an den Zuständigen ab 14 Tagen vorher, dann alle 4 Tage (höchstens 5x); bei Überfälligkeit geht einmalig eine Meldung an die Koordination.",
   rpAllReports:"Alle Trainingsberichte", rpAllReportsSub:"Ausfüllstand je Training - anklicken zum Bearbeiten",
   rpFDue:"fällig", rpFFinal:"abgeschlossen", rpFSoon:"kommt noch", rpFAll:"alle",
   rpNotYet:"läuft noch nicht", rpListEmpty:"Keine Trainings in dieser Auswahl.",
@@ -2106,6 +2148,26 @@ const L={
   rpMissingSub:"already run but not yet rated",
   rpBest:"Strongest scores", rpWorst:"Weakest scores",
   rpExportName:"ETAF-report",
+  /* ---- Slides (PowerPoints) ---- */
+  nav_pptview:"Slides", nav_s_pptview:"Slides",
+  tp_pptv:"PowerPoints", tp_pptvSub:"Per week: what is needed, what has arrived, who gets reminded",
+  pptKpiMissing:"still missing", pptKpiOver:"overdue", pptKpiSoon:"due in 14 days", pptKpiNoOwner:"no owner",
+  pptFDue:"due", pptFOver:"overdue", pptFNoOwner:"no owner", pptFAll:"all", pptFDone:"done",
+  pptStOpen:"open", pptStWork:"in progress", pptStDone:"done",
+  pptOwner:"Owner", pptNoOwner:"- nobody -", pptDue:"due by",
+  pptDueIn:d=>d===0?"due today":`in ${d} days`, pptOverBy:d=>`${d} day${d===1?"":"s"} overdue`,
+  pptUpload:"Upload", pptReplace:"Replace", pptDownload:"Download",
+  pptFileDel:"Remove file", pptFileDelAsk:"Really remove the file? The status goes back to open.",
+  pptTemplate:"Base template", pptTplNone:"Template", pptTplUpload:"Upload base template",
+  pptTplHave:n=>`Base template: ${n}`,
+  pptRemind:"Remind now", pptReminded:n=>n?`${n} reminder${n===1?"":"s"} sent`:"Nobody to remind (no owner on open slides).",
+  pptUpDone:"File saved - status set to \"done\".",
+  pptTooBig:m=>`File too large (max. ${m} MB).`,
+  pptDemo:"File uploads are available in live mode.",
+  pptEmpty:"Nothing open in this selection.",
+  pptFoot:m=>`Allowed: ppt, pptx, pot, potx, pdf · max. ${m} MB per file. Trainers upload via their personal link - it is included in every reminder email.`,
+  pptLeadLbl:"PowerPoints due (days before training start)",
+  pptLeadHint:"Without an explicit date on the session: training start minus these days. The owner is reminded from 14 days before the due date, then every 4 days (at most 5 times); once overdue, the coordination team gets a single notice.",
   rpAllReports:"All training reports", rpAllReportsSub:"Completion per training - click to edit",
   rpFDue:"due", rpFFinal:"completed", rpFSoon:"upcoming", rpFAll:"all",
   rpNotYet:"not started", rpListEmpty:"No trainings in this selection.",
@@ -2350,7 +2412,7 @@ function load(){
     const r=JSON.parse(localStorage.getItem("etaf_demo"));
     if(r&&r.trainers){
       r.lang=r.lang||"de"; r.emailLang=r.emailLang||"en";
-      r.settings=r.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180};
+      r.settings=r.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180,ppt_lead_days:21};
       r.emails=r.emails||[];
       if(!r.templates||!r.templates[0]||!r.templates[0].de)r.templates=TEMPLATES;
       if(!r.clients||!r.clients.length)r.clients=seedClients();
@@ -2373,7 +2435,7 @@ function load(){
   return {lang:"de", emailLang:"en", seedVersion:SEED_VERSION, clients:seedClients(), clientFilter:null,
     materials:seedMaterials(), matPresets:seedMatPresets(),
     trainers:seedTrainers(), trainings:seedTrainings(),
-    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180},
+    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180,ppt_lead_days:21},
     emails:[], me:null, setupMode:false};
 }
 /* Demo-Modus: vor jedem Speichern den vorherigen Stand auf den Rückgängig-Stapel
@@ -2574,7 +2636,7 @@ document.addEventListener("keydown",e=>{
 /* ============================================================
    NAV / ROUTER
    ============================================================ */
-const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"week",ic:IC.week},{id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"reports",ic:IC.chart},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
+const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"week",ic:IC.week},{id:"pptview",ic:IC.slides},{id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"reports",ic:IC.chart},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
 /* Offene Rückmeldungen (Trainer meldeten „stimmt nicht“, noch nicht erledigt). */
 function inboxItems(){ return (S.trainers||[]).filter(tr=>tr.plan&&tr.plan.status==="issue"&&tr.plan.note&&!tr.plan.resolvedAt)
   .map(tr=>({tr,note:tr.plan.note,at:tr.plan.confirmedAt})); }
@@ -2586,11 +2648,26 @@ let route="dash";
 /* Auf dem Handy nur die wichtigsten Ziele in der Leiste - der Rest liegt hinter „Mehr“.
    Acht Einträge nebeneinander bräuchten ~560px und würden das Layout sprengen. */
 const NAV_MOBILE=["dash","trainings","bookings","trainers","inbox"];
+/* Fehlende Folien in bald startenden Trainings (6 Wochen) - fuer den Nav-Badge. */
+function pptSoonMissing(){
+  const lim=new Date(Date.now()+42*86400000).toISOString().slice(0,10);
+  const today=new Date().toISOString().slice(0,10);
+  let n=0;
+  S.trainings.forEach(tg=>{
+    const wk=tgWeekAgg(tg);
+    if(!wk||!wk.pptAll) return;
+    if(!tg.date || tg.date<today || tg.date>lim) return;
+    n+=Math.max(0,(wk.pptAll||0)-Math.min(wk.pptDone||0,wk.pptAll||0));
+  });
+  return n;
+}
 function buildNav(){
   const crit=S.trainings.filter(t=>statusOf(t).cls==="crit").length;
   const inb=inboxCount();
+  const pptDue=pptSoonMissing();
   const badgeFor=n=> n.id==="trainings"&&crit ? `<span class="badge">${crit}</span>`
-    : n.id==="inbox"&&inb ? `<span class="badge">${inb}</span>` : "";
+    : n.id==="inbox"&&inb ? `<span class="badge">${inb}</span>`
+    : n.id==="pptview"&&pptDue ? `<span class="badge">${pptDue}</span>` : "";
   $("#nav").innerHTML=NAV.concat(extraNav()).map(n=>`
     <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
       ${svg(n.ic)}<span>${t("nav_"+n.id)}</span>
@@ -2655,7 +2732,7 @@ function titleFor(r){
     trainers:["tp_pool","tp_poolSub"],templates:["tp_tpl","tp_tplSub"],
     automation:["tp_auto","tp_autoSub"],emails:["tp_emails","tp_emailsSub"],
     users:["tp_users","tp_usersSub"],activity:["tp_activity","tp_activitySub"],
-    reports:["tp_reports","tp_reportsSub"]};
+    reports:["tp_reports","tp_reportsSub"],pptview:["tp_pptv","tp_pptvSub"]};
   const k=m[r]||m.dash; return [t(k[0]),t(k[1])];
 }
 function go(r){route=r;render();}
@@ -2677,6 +2754,7 @@ function render(){
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
   else if(route==="emails"){renderEmails();$("#v-emails").classList.add("on");}
   else if(route==="reports"){renderReports();$("#v-reports").classList.add("on");}
+  else if(route==="pptview"){renderPptView();$("#v-pptview").classList.add("on");}
   if(route==="detail"&&curTg){$("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+whenLabel(curTg);}
   else if(route==="plan"&&curPlanTr){$("#tt").textContent=t("planTitle");$("#ts").textContent=curPlanTr.name;}
   else if(route==="transfer"&&curTransferCl){$("#tt").textContent=t("trfTitle");$("#ts").textContent=curTransferCl.name;}
@@ -6039,7 +6117,7 @@ function renderAutomation(){
     S._settingsLoaded=true;
     apiCall("settings.get").then(d=>{S.settings=d.settings;renderAutomation();}).catch(()=>{});
   }
-  const s=S.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180};
+  const s=S.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180,ppt_lead_days:21};
   $("#v-automation").innerHTML=`
     <div class="panel">
       <div class="panel-h"><h3>${t("tp_auto")}</h3><div class="sub">${t("tp_autoSub")}</div></div>
@@ -6055,6 +6133,9 @@ function renderAutomation(){
         <div class="kv" style="align-items:flex-start">
           <span class="k">${ic("id",15)}${t("ppLeadLbl")}<div class="meta" style="max-width:360px;margin-top:2px">${t("ppLeadHint")}</div></span>
           <input class="inp" style="width:110px" type="number" min="14" step="1" id="aPpLead" value="${s.passport_lead_days||180}" onchange="saveAuto()"></div>
+        <div class="kv" style="align-items:flex-start">
+          <span class="k">${ic("slides",15)}${t("pptLeadLbl")}<div class="meta" style="max-width:360px;margin-top:2px">${t("pptLeadHint")}</div></span>
+          <input class="inp" style="width:110px" type="number" min="3" step="1" id="aPptLead" value="${s.ppt_lead_days||21}" onchange="saveAuto()"></div>
       </div>
       <div class="panel-b" style="border-top:1px solid var(--line)">
         <button class="btn amber" onclick="runAutoNow()">⚡ ${t("autoRunNow")}</button>
@@ -6087,7 +6168,7 @@ async function changePin(){
   }catch(e){ toast("Fehler: "+e.message,"crit"); }
 }
 function saveAuto(){
-  const s={reminder_hours:parseInt($("#aRem").value)||48,escalate_hours:parseInt($("#aEsc").value)||72,auto_advance:$("#aAdv").checked,passport_lead_days:Math.max(14,parseInt($("#aPpLead").value)||180)};
+  const s={reminder_hours:parseInt($("#aRem").value)||48,escalate_hours:parseInt($("#aEsc").value)||72,auto_advance:$("#aAdv").checked,passport_lead_days:Math.max(14,parseInt($("#aPpLead").value)||180),ppt_lead_days:Math.max(3,parseInt($("#aPptLead").value)||21)};
   S.settings=s;save();
   if(LIVE){ apiCall("settings.save",s).then(()=>toast(t("autoSaved"),"good")).catch(e=>toast("Fehler: "+e.message,"crit")); }
   else toast(t("autoSaved"),"good");
@@ -7356,6 +7437,274 @@ function debriefToMailClient(tgId){
     L.push(""); L.push("- ETAF Trainer-Koordination");
     mailtoOpen("", t("dbTitle")+" - "+(tg.code?tg.code+" ":"")+tg.topic, L.join("\n"));
   }).catch(e=>toast(e.message,"crit"));
+}
+
+
+/* ============================================================
+   FOLIEN (POWERPOINTS) - Bedarf, Eingang, Erinnerungen
+   Dateien liegen auf dem Webspace; hier steht der Stand je Session:
+   wer liefert, bis wann, was ist da. Zaehlt wie der Wochenplan -
+   Orga- und Deliverable-Kacheln brauchen keine Folien.
+   ============================================================ */
+let pptWeeks=null, pptLeadDays=21, pptMaxMb=40, pptFilter="due";
+
+async function pptLoad(force){
+  if(pptWeeks && !force) return;
+  if(LIVE){
+    const d=await apiCall("sessions.all");
+    pptWeeks=d.weeks||{}; pptLeadDays=d.pptLeadDays||21; pptMaxMb=d.pptMaxMb||40;
+  } else {
+    pptWeeks={};
+    for(const k in (S.weekData||{})) pptWeeks[k]={...S.weekData[k], template:""};
+    pptLeadDays=(S.settings&&S.settings.ppt_lead_days)||21;
+  }
+}
+function pptDueOf(s,tg){
+  if(s.pptDue) return s.pptDue;
+  if(!tg.date) return "";
+  const d=new Date(tg.date+"T00:00:00"); d.setDate(d.getDate()-pptLeadDays);
+  return d.toISOString().slice(0,10);
+}
+function pptRows(){
+  const today=new Date().toISOString().slice(0,10);
+  const soon=new Date(Date.now()+14*86400000).toISOString().slice(0,10);
+  const out=[];
+  S.trainings.slice()
+    .sort((a,b)=>String(a.date||"9999").localeCompare(String(b.date||"9999")))
+    .forEach(tg=>{
+      const wd=pptWeeks[String(tg.id)];
+      if(!wd||!(wd.sessions||[]).length) return;
+      const rel=(wd.sessions||[]).filter(wkPptRelevant);
+      if(!rel.length) return;
+      const rows=rel.map(s=>{
+        const due=pptDueOf(s,tg);
+        const done=s.ppt==="vorhanden";
+        return {s,due,done,
+          over: !done && !!due && due<today && (!tg.date||tg.date>=today),
+          soon: !done && !!due && due>=today && due<=soon,
+          noOwner: !done && !s.pptBy,
+          past: !!tg.date && tg.date<today};
+      });
+      out.push({tg,wd,rows,done:rows.filter(r=>r.done).length,all:rows.length});
+    });
+  return out;
+}
+function pptFilterRow(r){
+  if(pptFilter==="all") return true;
+  if(pptFilter==="done") return r.done;
+  if(r.past) return false;                     // Vergangenes nur unter "alle"/"komplett"
+  if(pptFilter==="due")  return !r.done && (r.over||r.soon);
+  if(pptFilter==="over") return r.over;
+  if(pptFilter==="noowner") return r.noOwner;
+  return true;
+}
+function pptSetFilter(f){ pptFilter=f; renderPptView(); }
+
+function pptOwnerOptions(sel){
+  return `<option value="">${esc(t("pptNoOwner"))}</option>`+S.trainers.map(x=>
+    `<option value="${x.id}"${String(sel||"")===String(x.id)?" selected":""}>${esc(x.name)}</option>`).join("");
+}
+function pptDueBadge(r){
+  if(r.done) return "";
+  if(!r.due) return `<span class="meta">-</span>`;
+  const days=Math.round((new Date(r.due+"T00:00:00")-new Date(new Date().toISOString().slice(0,10)+"T00:00:00"))/86400000);
+  if(r.over) return `<b style="color:var(--crit)">${esc(t("pptOverBy",Math.abs(days)))}</b>`;
+  if(r.soon) return `<b style="color:var(--warn)">${esc(t("pptDueIn",days))}</b>`;
+  return `<span class="meta">${esc(t("pptDueIn",days))}</span>`;
+}
+
+async function renderPptView(){
+  const box=$("#v-pptview");
+  try{ await pptLoad(); }
+  catch(e){ box.innerHTML=`<div class="panel"><div class="panel-b" style="color:var(--crit)">${esc(e.message)}</div></div>`; return; }
+  const groups=pptRows();
+  const flat=groups.flatMap(g=>g.rows);
+  const missing=flat.filter(r=>!r.done&&!r.past).length;
+  const over=flat.filter(r=>r.over).length;
+  const soon=flat.filter(r=>r.soon&&!r.over).length;
+  const noOwner=flat.filter(r=>r.noOwner&&!r.past).length;
+  const counts={due:flat.filter(r=>!r.past&&!r.done&&(r.over||r.soon)).length,
+    over, noowner:noOwner, all:flat.length, done:flat.filter(r=>r.done).length};
+
+  const kpi=`<div class="kpis">
+    <div class="kpi i"><span class="rail"></span><div class="lab">${esc(t("pptKpiMissing"))}</div><div class="val tnum">${missing}</div></div>
+    <div class="kpi ${over?"c":"g"}"><span class="rail"></span><div class="lab">${esc(t("pptKpiOver"))}</div><div class="val tnum">${over}</div></div>
+    <div class="kpi ${soon?"w":"g"}"><span class="rail"></span><div class="lab">${esc(t("pptKpiSoon"))}</div><div class="val tnum">${soon}</div></div>
+    <div class="kpi ${noOwner?"w":"g"}"><span class="rail"></span><div class="lab">${esc(t("pptKpiNoOwner"))}</div><div class="val tnum">${noOwner}</div></div>
+  </div>`;
+
+  const chips=[["due",t("pptFDue"),counts.due],["over",t("pptFOver"),counts.over],
+    ["noowner",t("pptFNoOwner"),counts.noowner],["done",t("pptFDone"),counts.done],["all",t("pptFAll"),counts.all]];
+  const chipbar=`<div class="chips rpchips" style="margin-bottom:14px">${chips.map(([k,lbl,n])=>
+    `<button${pptFilter===k?' class="on"':""} onclick="pptSetFilter('${k}')">${esc(lbl)} <b>${n}</b></button>`).join("")}</div>`;
+
+  const blocks=groups.map(g=>{
+    const rows=g.rows.filter(pptFilterRow);
+    if(!rows.length) return "";
+    const pct=g.all?Math.round(g.done/g.all*100):0;
+    const tpl=g.wd.template||"";
+    return `<div class="panel">
+      <div class="panel-h" style="flex-wrap:wrap;gap:8px 12px">
+        <h3 style="min-width:0">${esc(g.tg.code?g.tg.code+" - ":"")}${esc(g.tg.topic)}</h3>
+        <span class="meta">${g.tg.date?fmtDate(g.tg.date):""}</span>
+        <div class="spacer"></div>
+        <span class="pptprog"><i style="width:${Math.max(3,pct)}%"></i></span>
+        <b class="tnum" style="font-size:13px">${g.done}/${g.all}</b>
+        <span class="pill" style="cursor:pointer" onclick="pptTplClick('${g.tg.id}')"
+          title="${esc(tpl?t("pptTplHave",tpl):t("pptTplUpload"))}">📎 ${esc(tpl?t("pptTemplate"):t("pptTplNone"))}</span>
+        ${LIVE?`<button class="btn sm" onclick="pptRemind('${g.tg.id}',this)">${ic("bell",14)}${esc(t("pptRemind"))}</button>`:""}
+      </div>
+      <div class="panel-b">
+        ${rows.map(r=>pptRowHtml(g.tg,r)).join("")}
+      </div>
+    </div>`;
+  }).filter(Boolean).join("");
+
+  box.innerHTML=kpi+chipbar+(blocks||`<div class="panel"><div class="panel-b"><div class="empty">${esc(t("pptEmpty"))}</div></div></div>`)
+    +`<div class="meta" style="margin:4px 2px">${esc(t("pptFoot",pptMaxMb))}</div>`;
+}
+function pptRowHtml(tg,r){
+  const s=r.s;
+  const stseg=`<span class="rpseg pptst">${[["",t("pptStOpen")],["inArbeit",t("pptStWork")],["vorhanden",t("pptStDone")]]
+    .map(([v,l])=>`<button${(s.ppt||"")===v?` class="on${v==="vorhanden"?" ok":""}"`:""}
+      onclick="pptSt('${s.id}','${v}')">${esc(l)}</button>`).join("")}</span>`;
+  const file = s.pptFile
+    ? `<a href="#" onclick="pptDl('${s.id}');return false" class="pptfile" title="${esc(s.pptFileName||"")}">
+        ${ic("down",13)}${esc((s.pptFileName||t("pptDownload")).slice(0,26))}${(s.pptFileName||"").length>26?"…":""}</a>
+       <span class="meta tnum">${s.pptFileSize?(s.pptFileSize<1048576?Math.max(1,Math.round(s.pptFileSize/1024))+" KB":Math.round(s.pptFileSize/1048576*10)/10+" MB"):""}</span>
+       <button class="btn sm" title="${esc(t("pptFileDel"))}" onclick="pptFileDel('${s.id}')">✕</button>`
+    : `<label class="btn sm pptup">${ic("clip",13)}${esc(t("pptUpload"))}
+        <input type="file" accept=".ppt,.pptx,.pot,.potx,.pdf" style="display:none"
+          onchange="pptUp('${s.id}',this)"></label>`;
+  return `<div class="pptrow">
+    <div class="pptname"><b>${esc(sessTitle(s))}</b>
+      <div class="meta">${esc(t("type_"+(s.type||"theorie")))} · ${esc(String(s.dur||1))} h${s.pptNote?` · 📝 ${esc(s.pptNote)}`:""}</div></div>
+    <select class="inp pptown" title="${esc(t("pptOwner"))}" onchange="pptOwn('${s.id}',this.value)">${pptOwnerOptions(s.pptBy)}</select>
+    <input class="inp pptdue" type="date" title="${esc(t("pptDue"))}" value="${esc(s.pptDue||"")}"
+      placeholder="${esc(r.due)}" onchange="pptDueSet('${s.id}',this.value)">
+    <span class="pptbadge">${pptDueBadge(r)}</span>
+    ${stseg}
+    <span class="pptfilecell">${file}</span>
+  </div>`;
+}
+
+/* ---------- Aktionen ---------- */
+function pptLocal(sid,patch){
+  for(const k in pptWeeks){
+    const x=(pptWeeks[k].sessions||[]).find(y=>String(y.id)===String(sid));
+    if(x){ Object.assign(x,patch);
+      if(!LIVE){ const wd=(S.weekData||{})[k];
+        const y=wd&&(wd.sessions||[]).find(z=>String(z.id)===String(sid));
+        if(y) Object.assign(y,patch); save(); }
+      return; }
+  }
+}
+async function pptSt(sid,v){
+  pptLocal(sid,{ppt:v});
+  if(LIVE){ try{ await apiCall("ppt.setStatus",{session:sid,ppt:v}); }catch(e){ toast(e.message,"crit"); } }
+  renderPptView(); buildNav();
+}
+async function pptOwn(sid,v){
+  pptLocal(sid,{pptBy:v||null});
+  if(LIVE){ try{ await apiCall("ppt.setStatus",{session:sid,pptBy:v||0}); }catch(e){ toast(e.message,"crit"); } }
+  renderPptView();
+}
+async function pptDueSet(sid,v){
+  pptLocal(sid,{pptDue:v});
+  if(LIVE){ try{ await apiCall("ppt.setStatus",{session:sid,pptDue:v}); }catch(e){ toast(e.message,"crit"); } }
+  renderPptView();
+}
+async function pptUp(sid,input){
+  const f=input.files&&input.files[0]; if(!f) return;
+  if(!LIVE){ toast(t("pptDemo"),"warn"); input.value=""; return; }
+  if(f.size>pptMaxMb*1048576){ toast(t("pptTooBig",pptMaxMb),"crit"); input.value=""; return; }
+  const fd=new FormData(); fd.append("session",sid); fd.append("file",f);
+  try{
+    const r=await fetch(API+"/api.php?action=ppt.upload",{method:"POST",headers:{"X-Auth-Token":AUTH},body:fd});
+    const d=await r.json();
+    if(!r.ok||d.ok===false) throw new Error(d.error||("HTTP "+r.status));
+    pptLocal(sid,{ppt:"vorhanden",pptFile:"x",pptFileName:f.name,pptFileSize:f.size,pptFileAt:new Date().toISOString()});
+    toast(t("pptUpDone"),"good"); renderPptView(); buildNav();
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+  input.value="";
+}
+async function pptDl(sid){
+  try{
+    const r=await fetch(API+"/api.php?action=ppt.download",{method:"POST",
+      headers:{"Content-Type":"application/json","X-Auth-Token":AUTH},body:JSON.stringify({session:sid})});
+    if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.error||("HTTP "+r.status)); }
+    const cd=r.headers.get("Content-Disposition")||"";
+    const m=cd.match(/filename="([^"]+)"/);
+    const blob=await r.blob();
+    const u=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=u; a.download=m?m[1]:"folie.pptx";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(u),2000);
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
+async function pptFileDel(sid){
+  if(!LIVE){ toast(t("pptDemo"),"warn"); return; }
+  if(!confirm(t("pptFileDelAsk"))) return;
+  try{ await apiCall("ppt.fileDelete",{session:sid});
+    pptLocal(sid,{pptFile:"",pptFileName:"",pptFileSize:0,ppt:""});
+    renderPptView();
+  }catch(e){ toast(e.message,"crit"); }
+}
+function pptTplClick(tgId){
+  const wd=pptWeeks[String(tgId)];
+  if(wd&&wd.template){ pptTplMenu(tgId); } else pptTplPick(tgId);
+}
+function pptTplPick(tgId){
+  if(!LIVE){ toast(t("pptDemo"),"warn"); return; }
+  const inp=document.createElement("input"); inp.type="file"; inp.accept=".ppt,.pptx,.pot,.potx,.pdf";
+  inp.onchange=async()=>{
+    const f=inp.files&&inp.files[0]; if(!f) return;
+    const fd=new FormData(); fd.append("training",tgId); fd.append("file",f);
+    try{
+      const r=await fetch(API+"/api.php?action=ppt.templateUpload",{method:"POST",headers:{"X-Auth-Token":AUTH},body:fd});
+      const d=await r.json(); if(!r.ok||d.ok===false) throw new Error(d.error||("HTTP "+r.status));
+      pptWeeks[String(tgId)].template=f.name;
+      toast(t("pptUpDone"),"good"); renderPptView();
+    }catch(e){ toast("Fehler: "+e.message,"crit"); }
+  };
+  inp.click();
+}
+function pptTplMenu(tgId){
+  $("#sheetTitle").textContent=t("pptTemplate");
+  const name=pptWeeks[String(tgId)].template||"";
+  $("#sheetBody").innerHTML=`<div class="meta" style="margin-bottom:14px">${esc(name)}</div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn" onclick="pptTplDl('${tgId}')">${ic("down",14)}${esc(t("pptDownload"))}</button>
+      <button class="btn" onclick="closeSheet();pptTplPick('${tgId}')">${ic("clip",14)}${esc(t("pptReplace"))}</button>
+      <button class="btn" onclick="pptTplDel('${tgId}')">✕ ${esc(t("pptFileDel"))}</button>
+    </div>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>`;
+  openSheet();
+}
+async function pptTplDl(tgId){
+  try{
+    const r=await fetch(API+"/api.php?action=ppt.templateDownload",{method:"POST",
+      headers:{"Content-Type":"application/json","X-Auth-Token":AUTH},body:JSON.stringify({training:tgId})});
+    if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.error||("HTTP "+r.status)); }
+    const cd=r.headers.get("Content-Disposition")||""; const m=cd.match(/filename="([^"]+)"/);
+    const blob=await r.blob(); const u=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=u; a.download=m?m[1]:"vorlage.pptx";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
+async function pptTplDel(tgId){
+  try{ await apiCall("ppt.templateDelete",{training:tgId});
+    pptWeeks[String(tgId)].template="";
+    closeSheet(); renderPptView();
+  }catch(e){ toast(e.message,"crit"); }
+}
+async function pptRemind(tgId,btn){
+  if(btn){ btn.disabled=true; }
+  try{
+    const d=await apiCall("ppt.remindNow",{training:tgId});
+    toast(t("pptReminded",d.sent||0), d.sent?"good":"warn");
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+  if(btn){ btn.disabled=false; }
 }
 
 function openSheet(){$("#scrim").classList.add("on");$("#sheet").classList.add("on");}

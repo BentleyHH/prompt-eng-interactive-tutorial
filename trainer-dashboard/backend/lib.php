@@ -236,6 +236,15 @@ function undo_targets(string $action, array $in): ?array {
       $id=(string)($in['id']??''); if($id==='') return null;
       return ['specs'=>[['materials','id',$id],['training_materials','material_id',$id],
                         ['material_presets','material_id',$id]],'label'=>'material','ref'=>$id];
+    case 'ppt.setStatus': case 'ppt.upload': case 'ppt.fileDelete':
+      $sid=(int)($in['session']??0); if(!$sid) return null;
+      $r=q("SELECT training_id FROM training_sessions WHERE id=?",[$sid])->fetch();
+      if(!$r) return null;
+      return ['specs'=>[['training_sessions','training_id',(string)$r['training_id']]],
+              'label'=>'training','ref'=>(string)$r['training_id']];
+    case 'ppt.templateUpload': case 'ppt.templateDelete':
+      $id=(string)($in['training']??0); if(!$id) return null;
+      return ['specs'=>[['trainings','id',$id]],'label'=>'training','ref'=>$id];
     case 'debrief.save': case 'debrief.delete':
       $id=(string)($in['training']??0); if(!$id) return null;
       $d=q("SELECT id FROM debriefs WHERE training_id=?",[$id])->fetch();
@@ -265,6 +274,9 @@ function undo_label(string $action): string {
       'matpreset.save'=>'Material-Vorlage gespeichert','template.save'=>'Vorlage gespeichert',
       'message.resolve'=>'Rückmeldung bearbeitet','request.notifyStatus'=>'Trainer informiert',
       'debrief.save'=>'Trainingsbericht gespeichert','debrief.delete'=>'Trainingsbericht gelöscht',
+      'ppt.setStatus'=>'Folien-Status geändert','ppt.upload'=>'Folie hochgeladen',
+      'ppt.fileDelete'=>'Folien-Datei entfernt','ppt.templateUpload'=>'Basis-Vorlage hochgeladen',
+      'ppt.templateDelete'=>'Basis-Vorlage entfernt',
       'debrief.actionDone'=>'Maßnahme abgehakt'];
   return $m[$action] ?? $action;
 }
@@ -1062,4 +1074,109 @@ function send_agenda_mail(int $tgId, int $trId, string $lang='', string $subject
      VALUES(?,?,?,?,?,?,?,?)",[$tgId,$trId,$tr['email'],$subj,$intro."\n".$link,$lg,$ok?'sent':'failed',now()]);
   return ['ok'=>true,'link'=>$link,'sent'=>$ok?1:0,'attached'=>count($atts),
           'name'=>$tr['name'],'email'=>$tr['email']];
+}
+
+/* ============================================================
+   POWERPOINT-VERFOLGUNG
+   Dateien liegen auf dem Webspace (backend/uploads/ppt), in der Datenbank
+   steht nur der Verweis - Dump und tägliche Sicherung bleiben dadurch klein.
+   ============================================================ */
+function ppt_dir(): string {
+  $d=__DIR__.'/uploads/ppt';
+  if(!is_dir($d)) @mkdir($d,0755,true);
+  return $d;
+}
+const PPT_EXT=['ppt','pptx','pot','potx','pdf'];
+function ppt_max_bytes(): int {
+  $ini=function($k){ $v=trim((string)ini_get($k)); if($v==='') return PHP_INT_MAX;
+    $n=(float)$v; switch(strtolower(substr($v,-1))){ case 'g':$n*=1024; case 'm':$n*=1024; case 'k':$n*=1024; }
+    return (int)$n; };
+  return (int)min(40*1024*1024, $ini('upload_max_filesize'), $ini('post_max_size'));
+}
+/** Zaehlt eine Session fuer die Folien-Pflicht? (wie der Wochenplan-Zaehler) */
+function ppt_relevant(array $s): bool {
+  return !in_array((string)($s['stype']??''),['orga','deliverable'],true);
+}
+/** Wirksame Faelligkeit: eigenes Datum oder Trainingsbeginn minus Vorlauf. */
+function ppt_due_of(array $s, array $tg): string {
+  $d=trim((string)($s['ppt_due']??''));
+  if(preg_match('/^\d{4}-\d{2}-\d{2}$/',$d)) return $d;
+  $start=trim((string)($tg['start_date']??''));
+  if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$start)) return '';
+  $lead=(int)(config_get('ppt_lead_days')??21);
+  return gmdate('Y-m-d', strtotime($start.' UTC')-$lead*86400);
+}
+/** Hochgeladene Datei validieren und ablegen; gibt [name,orig,size] oder Fehlertext. */
+function ppt_store_upload(array $f, string $prefix){
+  if(($f['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK) return 'Upload fehlgeschlagen (Code '.($f['error']??'?').').';
+  if(($f['size']??0)>ppt_max_bytes()) return 'Datei zu groß (max. '.round(ppt_max_bytes()/1048576).' MB).';
+  $ext=strtolower(pathinfo((string)($f['name']??''),PATHINFO_EXTENSION));
+  if(!in_array($ext,PPT_EXT,true)) return 'Nur '.implode(', ',PPT_EXT).' sind erlaubt.';
+  $name=$prefix.'-'.substr(token(16),0,8).'.'.$ext;
+  if(!@move_uploaded_file($f['tmp_name'],ppt_dir().'/'.$name)) return 'Speichern fehlgeschlagen.';
+  $orig=preg_replace('/[^\w.\- ()\[\]]/u','_',(string)$f['name']);
+  return ['name'=>$name,'orig'=>mb_substr($orig,0,180),'size'=>(int)$f['size']];
+}
+/** Datei ausliefern (Download) und beenden. */
+function ppt_stream(string $file, string $origName): void {
+  $path=ppt_dir().'/'.basename($file);
+  if($file==='' || !is_file($path)){ http_response_code(404);
+    header('Content-Type: text/plain; charset=utf-8'); echo 'Datei nicht mehr vorhanden.'; exit; }
+  header('Content-Type: application/octet-stream');
+  header('Content-Length: '.filesize($path));
+  header('Content-Disposition: attachment; filename="'.str_replace('"','',$origName?:basename($path)).'"');
+  readfile($path); exit;
+}
+/** Token je Trainer+Training holen oder anlegen (gleicher Weg wie die Agenda). */
+function ppt_link_token(int $tgId, int $trId): string {
+  $rq=q("SELECT tok FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+  if($rq && $rq['tok']) return $rq['tok'];
+  $tr=q("SELECT pref_lang FROM trainers WHERE id=?",[$trId])->fetch();
+  $tok=token(40);
+  q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?,'yes',?,?,?)",
+    [$tgId,$trId, (($tr['pref_lang']??'')==='en'?'en':'de'), $tok, now()]);
+  return $tok;
+}
+/** Erinnerungsmail an einen Trainer: alle seine offenen Folien eines Trainings. */
+function ppt_send_reminder(array $tg, int $trId, array $sessions, bool $overdue): bool {
+  $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
+  if(!$tr || !$tr['email']) return false;
+  $lg=(($tr['pref_lang']??'')==='en')?'en':'de';
+  $tok=ppt_link_token((int)$tg['id'],$trId);
+  $link=base_url().'/ppt.php?token='.$tok;
+  $first=explode(' ',preg_replace('/^Dr\.\s*/','',(string)$tr['name']))[0]?:'';
+  $title=(($tg['code']??'')?$tg['code'].' - ':'').$tg['topic'];
+  $rows='';
+  foreach($sessions as $s){
+    $due=ppt_due_of($s,$tg);
+    $rows.='<tr><td style="padding:4px 12px 4px 0;font-size:13px"><b>'.htmlspecialchars($s['title']).'</b></td>'
+      .'<td style="padding:4px 0;font-size:13px;color:'.($overdue?'#D81F26':'#5c666e').';white-space:nowrap">'
+      .($due?($lg==='de'?'fällig bis ':'due by ').date('d.m.Y',strtotime($due)):'').'</td></tr>';
+  }
+  $tplNote='';
+  if(!empty($tg['ppt_template'])){
+    $tplNote=$lg==='de' ? "\n\nDie Basis-Vorlage findest du auf derselben Seite zum Herunterladen."
+                        : "\n\nYou will find the base template for download on the same page.";
+  }
+  if($lg==='de'){
+    $subj=($overdue?'Überfällig: ':'').'PowerPoints für '.$title;
+    $intro="Hallo $first,\n\n".($overdue
+      ? "für \"$title\" in ".($tg['city']??'')." sind PowerPoints überfällig. Bitte lade sie zeitnah hoch oder melde kurz den Stand - der Link unten führt direkt zu deiner Übersicht."
+      : "für \"$title\" in ".($tg['city']??'')." fehlen noch PowerPoints von dir. Über den Link unten kannst du sie hochladen oder den Stand melden.").$tplNote;
+    $cta='Folien hochladen & Stand melden';
+  } else {
+    $subj=($overdue?'Overdue: ':'').'PowerPoints for '.$title;
+    $intro="Hi $first,\n\n".($overdue
+      ? "PowerPoints for \"$title\" in ".($tg['city']??'')." are overdue. Please upload them soon or give a quick status - the link below takes you straight to your overview."
+      : "we are still missing PowerPoints from you for \"$title\" in ".($tg['city']??'').". Use the link below to upload them or report the status.").$tplNote;
+    $cta='Upload slides & report status';
+  }
+  $html=email_html($intro,
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0">'.$rows.'</table>'
+    .cta_button($link,$cta));
+  $ok=send_email($tr['email'],$tr['name'],$subj,$html);
+  q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+     VALUES(?,?,?,?,?,?,?,?)",[(int)$tg['id'],$trId,$tr['email'],$subj,'PowerPoint-Erinnerung ('.count($sessions).')',$lg,
+     ((cfg()['mail_mode']??'mail')==='log'?'logged':($ok?'sent':'failed')),now()]);
+  return $ok;
 }
