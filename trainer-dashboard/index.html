@@ -1206,7 +1206,16 @@ function renderCurrent(){
   else if(route==="detail")renderDetail();
   else if(route==="trainings")renderTrainings();
   else if(route==="emails")renderEmails();
+  else if(route==="pptview")pptRefresh();
   buildNav();
+}
+/* Folien-Ansicht im Hintergrund nachziehen. Nicht neu zeichnen, solange ein
+   Blatt offen ist oder jemand in einem Feld steht - sonst springt die Eingabe. */
+function pptRefresh(){
+  if($("#sheet").classList.contains("on")) return;
+  const a=document.activeElement;
+  if(a && $("#v-pptview").contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return;
+  pptInvalidate(); renderPptView();
 }
 function markSynced(){
   const e=$("#syncTime"); if(!e)return;
@@ -2793,7 +2802,7 @@ function render(){
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
   else if(route==="emails"){renderEmails();$("#v-emails").classList.add("on");}
   else if(route==="reports"){renderReports();$("#v-reports").classList.add("on");}
-  else if(route==="pptview"){renderPptView();$("#v-pptview").classList.add("on");}
+  else if(route==="pptview"){pptInvalidate();renderPptView();$("#v-pptview").classList.add("on");}
   if(route==="detail"&&curTg){$("#tt").textContent=curTg.topic;$("#ts").textContent=curTg.city+" · "+whenLabel(curTg);}
   else if(route==="plan"&&curPlanTr){$("#tt").textContent=t("planTitle");$("#ts").textContent=curPlanTr.name;}
   else if(route==="transfer"&&curTransferCl){$("#tt").textContent=t("trfTitle");$("#ts").textContent=curTransferCl.name;}
@@ -7508,6 +7517,13 @@ function debriefToMailClient(tgId){
    Orga- und Deliverable-Kacheln brauchen keine Folien.
    ============================================================ */
 let pptWeeks=null, pptLeadDays=21, pptMaxMb=40, pptFilter="due";
+
+/* Die Folien-Daten kommen nicht nur aus dem Cockpit: Trainer melden über ihre
+   eigene Seite (ppt.php) Stand und laden Dateien hoch. Ein Zwischenspeicher
+   ohne Verfall würde solche Rückmeldungen bis zum nächsten Neuladen der Seite
+   verstecken - deshalb wird beim Öffnen der Ansicht und bei jedem Abgleich
+   frisch geladen. */
+function pptInvalidate(){ pptWeeks=null; }
 
 async function pptLoad(force){
   if(pptWeeks && !force) return;

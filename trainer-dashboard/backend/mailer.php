@@ -274,10 +274,20 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
   $headers = 'MIME-Version: 1.0'."\r\n"
     .'Content-Type: '.$ctype."\r\n"
     .'From: '.mb_encode_mimeheader($fromName).' <'.$from.'>'."\r\n"
-    .'Reply-To: '.$from."\r\n";
+    .'Reply-To: '.$from."\r\n"
+    .mail_std_headers($from);
   $ok=@mail($toEmail, mb_encode_mimeheader($subject), $body, $headers);
   if(!$ok) $GLOBALS['__mail_err']="PHP mail() hat false zurückgegeben. Auf artfiles ist für die eigene Domain oft mail_mode='smtp' zuverlässiger.";
   return $ok;
+}
+
+/** Pflicht-Kopfzeilen nach RFC 5322. Ohne "Date" und "Message-ID" stufen viele
+ *  Empfänger-Server die Mail als verdächtig ein und halten sie per Greylisting
+ *  zurück - das sind die typischen Verzögerungen von einigen Minuten. */
+function mail_std_headers(string $from): string {
+  $dom=substr(strrchr($from,'@')?:'@localhost',1);
+  return 'Date: '.gmdate('D, d M Y H:i:s').' +0000'."\r\n"
+    .'Message-ID: <'.bin2hex(random_bytes(12)).'.'.gmdate('YmdHis').'@'.$dom.'>'."\r\n";
 }
 
 /** Letzter Versand-Fehler / SMTP-Mitschnitt (für backend/mailtest.php). */
@@ -319,6 +329,7 @@ function smtp_send(string $to, string $subject, string $html, array $s, string $
   $data='From: '.mb_encode_mimeheader($fromName).' <'.$from.'>'."\r\n"
     .'To: <'.$to.'>'."\r\n"
     .'Subject: '.mb_encode_mimeheader($subject)."\r\n"
+    .mail_std_headers($from)
     .'MIME-Version: 1.0'."\r\n"
     .'Content-Type: '.$ctype."\r\n\r\n"
     .$body."\r\n.";
