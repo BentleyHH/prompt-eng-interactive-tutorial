@@ -259,7 +259,11 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
     return false;
   }
   $subject=preg_replace('/[\r\n]+/',' ',$subject);
-  if($mode==='log'){ $GLOBALS['__mail_err']="mail_mode='log' - es wird NICHTS versendet, nur protokolliert. Für echten Versand in config.php auf 'smtp' (empfohlen) oder 'mail' umstellen."; return true; }
+  if($mode==='log'){
+    $GLOBALS['__mail_last_html']=$html;   // für Diagnose/Tests einsehbar
+    $GLOBALS['__mail_err']="mail_mode='log' - es wird NICHTS versendet, nur protokolliert. Für echten Versand in config.php auf 'smtp' (empfohlen) oder 'mail' umstellen.";
+    return true;
+  }
 
   $from=$c['from_email']; $fromName=$c['from_name']??'ETAF';
   if($mode==='smtp') return smtp_send($toEmail,$subject,$html,$c['smtp']??[],$from,$fromName,$atts);

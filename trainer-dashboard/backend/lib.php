@@ -610,7 +610,9 @@ function trainer_week_sessions(int $tgId, int $trId): array {
           array_filter(array_map('strval',$ids), fn($x)=>$x!==(string)$trId)));
     $rows[]=['title'=>$s['title'],'title_en'=>$s['title_en']??'','type'=>$s['stype'],'dur'=>$s['dur'],
              'dayIdx'=>($dayIdx===false?null:$dayIdx),'half'=>$half,'date'=>$date,'ord'=>$p['ord']??999,
-             'pptMine'=>(string)$trId!=='' && in_array((int)$trId, ppt_owner_ids($s), true),
+             'pptMine'=>(string)$trId!=='' && ppt_relevant($s) && in_array((int)$trId, ppt_owner_ids($s), true),
+             'pptDue'=>ppt_relevant($s)?ppt_due_of($s,['start_date'=>$tg['start_date']??'']):'',
+             'pptDone'=>($s['ppt']??'')==='vorhanden',
              'ppt'=>$s['ppt']??'','mat'=>$s['mat']??'','with'=>$with];
   }
   usort($rows, fn($a,$b)=>$a['ord']<=>$b['ord']);
@@ -1052,12 +1054,32 @@ function send_agenda_mail(int $tgId, int $trId, string $lang='', string $subject
       $li.='<tr><td style="padding:4px 12px 4px 0;color:#5c666e;white-space:nowrap;font-size:13px;vertical-align:top">'.htmlspecialchars($when).'</td>'
          .'<td style="padding:4px 0;font-size:13px"><b>'.htmlspecialchars($lg==='en'&&$s2['title_en']!==''?$s2['title_en']:$s2['title']).'</b> · '.htmlspecialchars((string)$s2['dur']).' h'
          .(!empty($s2['with'])?'<br><span style="color:#3F7A5E;font-weight:600">👥 '.htmlspecialchars(($lg==='de'?'zusammen mit ':'together with ').implode(', ',$s2['with'])).'</span>':'')
-         .($s2['pptMine']?'<br><span style="color:#B23A42;font-weight:600">'.($lg==='de'?'PowerPoint: von dir vorzubereiten':'PowerPoint: to be prepared by you').'</span>':'')
+         .($s2['pptMine']?'<br><span style="color:#B23A42;font-weight:600">'.($lg==='de'?'PowerPoint: von dir vorzubereiten':'PowerPoint: to be prepared by you')
+             .(!empty($s2['pptDue'])&&empty($s2['pptDone'])?' ('.($lg==='de'?'bis ':'by ').date('d.m.Y',strtotime($s2['pptDue'])).')':'').'</span>':'')
          .'</td></tr>';
     }
     $sessHtml='<div style="margin:18px 0 4px;font-family:Arial,Helvetica,sans-serif">'
       .'<b style="font-size:14px">'.($lg==='de'?'Deine Sessions in dieser Woche':'Your sessions this week').'</b>'
       .'<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:6px">'.$li.'</table></div>';
+    // PowerPoints: eigener Absatz mit Upload-Link, wenn der Trainer Folien schuldet
+    $mineOpen=array_filter($ws, fn($x)=>!empty($x['pptMine']) && empty($x['pptDone']));
+    if($mineOpen){
+      $pl=base_url().'/ppt.php?token='.$tok;
+      $tplTxt=!empty($tg['ppt_template'])
+        ? ($lg==='de'?' Die Basis-Vorlage liegt dort zum Herunterladen bereit.':' The base template is available for download there.')
+        : '';
+      $pptTxt=$lg==='de'
+        ? 'Du bist für '.count($mineOpen).' PowerPoint'.(count($mineOpen)===1?'':'s').' eingeplant (oben rot markiert). '
+          .'Über deine persönliche Folien-Seite kannst du sie hochladen oder kurz den Stand melden.'.$tplTxt
+        : 'You are scheduled to prepare '.count($mineOpen).' PowerPoint'.(count($mineOpen)===1?'':'s').' (marked in red above). '
+          .'Use your personal slides page to upload them or report the status.'.$tplTxt;
+      $sessHtml.='<div style="margin:14px 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:13px">'
+        .'<b style="font-size:14px">'.($lg==='de'?'Deine PowerPoints':'Your PowerPoints').'</b>'
+        .'<div style="margin:5px 0 10px;color:#242b31">'.htmlspecialchars($pptTxt).'</div>'
+        .'<a href="'.$pl.'" style="display:inline-block;padding:10px 17px;border-radius:8px;background:#fff;'
+        .'border:1px solid #3e4852;color:#3e4852;font:600 13px system-ui,Arial,sans-serif;text-decoration:none">'
+        .($lg==='de'?'Folien hochladen & Stand melden':'Upload slides & report status').'</a></div>';
+    }
   }
   // Ticket/Voucher aus der verknüpften Flugpost-Mail automatisch anhängen
   $atts=[];
@@ -1154,8 +1176,10 @@ function ppt_link_token(int $tgId, int $trId): string {
     [$tgId,$trId, (($tr['pref_lang']??'')==='en'?'en':'de'), $tok, now()]);
   return $tok;
 }
-/** Erinnerungsmail an einen Trainer: alle seine offenen Folien eines Trainings. */
-function ppt_send_reminder(array $tg, int $trId, array $sessions, bool $overdue): bool {
+/** Mail an einen Trainer zu seinen offenen Folien eines Trainings.
+ *  $kind: 'remind' (automatisches Nachhaken) oder 'request' (freundliche
+ *  Erst-Anfrage aus der Besetzungsliste, mit Hinweis auf die Basis-Vorlage). */
+function ppt_send_reminder(array $tg, int $trId, array $sessions, bool $overdue, string $kind='remind'): bool {
   $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
   if(!$tr || !$tr['email']) return false;
   $lg=(($tr['pref_lang']??'')==='en')?'en':'de';
@@ -1176,16 +1200,28 @@ function ppt_send_reminder(array $tg, int $trId, array $sessions, bool $overdue)
                         : "\n\nYou will find the base template for download on the same page.";
   }
   if($lg==='de'){
-    $subj=($overdue?'Überfällig: ':'').'PowerPoints für '.$title;
-    $intro="Hallo $first,\n\n".($overdue
-      ? "für \"$title\" in ".($tg['city']??'')." sind PowerPoints überfällig. Bitte lade sie zeitnah hoch oder melde kurz den Stand - der Link unten führt direkt zu deiner Übersicht."
-      : "für \"$title\" in ".($tg['city']??'')." fehlen noch PowerPoints von dir. Über den Link unten kannst du sie hochladen oder den Stand melden.").$tplNote;
+    if($kind==='request'){
+      $subj='Bitte um deine PowerPoints - '.$title;
+      $intro="Hallo $first,\n\nfür \"$title\" in ".($tg['city']??'')." bist du für die folgenden PowerPoints eingeplant. "
+        ."Über den Link unten kannst du sie hochladen oder kurz den Stand melden.".$tplNote;
+    } else {
+      $subj=($overdue?'Überfällig: ':'').'PowerPoints für '.$title;
+      $intro="Hallo $first,\n\n".($overdue
+        ? "für \"$title\" in ".($tg['city']??'')." sind PowerPoints überfällig. Bitte lade sie zeitnah hoch oder melde kurz den Stand - der Link unten führt direkt zu deiner Übersicht."
+        : "für \"$title\" in ".($tg['city']??'')." fehlen noch PowerPoints von dir. Über den Link unten kannst du sie hochladen oder den Stand melden.").$tplNote;
+    }
     $cta='Folien hochladen & Stand melden';
   } else {
-    $subj=($overdue?'Overdue: ':'').'PowerPoints for '.$title;
-    $intro="Hi $first,\n\n".($overdue
-      ? "PowerPoints for \"$title\" in ".($tg['city']??'')." are overdue. Please upload them soon or give a quick status - the link below takes you straight to your overview."
-      : "we are still missing PowerPoints from you for \"$title\" in ".($tg['city']??'').". Use the link below to upload them or report the status.").$tplNote;
+    if($kind==='request'){
+      $subj='Request for your PowerPoints - '.$title;
+      $intro="Hi $first,\n\nfor \"$title\" in ".($tg['city']??'')." you are scheduled to prepare the following PowerPoints. "
+        ."Use the link below to upload them or report the status.".$tplNote;
+    } else {
+      $subj=($overdue?'Overdue: ':'').'PowerPoints for '.$title;
+      $intro="Hi $first,\n\n".($overdue
+        ? "PowerPoints for \"$title\" in ".($tg['city']??'')." are overdue. Please upload them soon or give a quick status - the link below takes you straight to your overview."
+        : "we are still missing PowerPoints from you for \"$title\" in ".($tg['city']??'').". Use the link below to upload them or report the status.").$tplNote;
+    }
     $cta='Upload slides & report status';
   }
   $html=email_html($intro,
@@ -1193,7 +1229,8 @@ function ppt_send_reminder(array $tg, int $trId, array $sessions, bool $overdue)
     .cta_button($link,$cta));
   $ok=send_email($tr['email'],$tr['name'],$subj,$html);
   q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
-     VALUES(?,?,?,?,?,?,?,?)",[(int)$tg['id'],$trId,$tr['email'],$subj,'PowerPoint-Erinnerung ('.count($sessions).')',$lg,
+     VALUES(?,?,?,?,?,?,?,?)",[(int)$tg['id'],$trId,$tr['email'],$subj,
+     ($kind==='request'?'PowerPoint-Anfrage (':'PowerPoint-Erinnerung (').count($sessions).')',$lg,
      ((cfg()['mail_mode']??'mail')==='log'?'logged':($ok?'sent':'failed')),now()]);
   return $ok;
 }

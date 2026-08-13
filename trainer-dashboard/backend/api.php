@@ -669,6 +669,30 @@ switch($action){
     $n=ppt_chase(true,(int)($in['training']??0));
     out(['ok'=>true,'sent'=>$n['reminded']]);
 
+  /* ---- Folien-Anfrage an einen Trainer (aus der Besetzungsliste):
+         freundliche Erst-Anfrage mit Link zur persönlichen Folien-Seite
+         (inkl. Basis-Vorlage). Stempelt die Erinnerung, damit die Automatik
+         nicht direkt hinterherschickt - der Zähler bleibt unangetastet. ---- */
+  case 'ppt.requestTrainer':
+    require_auth();
+    $tgId=(int)($in['training']??0); $trId=(int)($in['trainer']??0);
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    if(!q("SELECT id FROM trainers WHERE id=?",[$trId])->fetch()) fail('Trainer nicht gefunden.',404);
+    $list=[];
+    foreach(q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$tgId])->fetchAll() as $s){
+      if(!ppt_relevant($s) || ($s['ppt']??'')==='vorhanden') continue;
+      if(in_array($trId, ppt_owner_ids($s), true)) $list[]=$s;
+    }
+    if(!$list) out(['ok'=>true,'sent'=>0,'open'=>0]);
+    $today=gmdate('Y-m-d');
+    $od=false; foreach($list as $s){ $d=ppt_due_of($s,$tg); if($d && $d<$today){ $od=true; break; } }
+    $ok=ppt_send_reminder($tg,$trId,$list,$od,'request');
+    if($ok) foreach($list as $s)
+      q("UPDATE training_sessions SET ppt_reminded_at=? WHERE id=?",[now(),$s['id']]);
+    audit('ppt.request','training',(string)$tgId,'Folien-Anfrage an Trainer '.$trId.' ('.count($list).')');
+    out(['ok'=>true,'sent'=>$ok?1:0,'open'=>count($list)]);
+
   /* ---- Wochenplan aus einer anderen Woche übernehmen (Vorlage kopieren) ---- */
   case 'weekplan.copy':
     require_auth();

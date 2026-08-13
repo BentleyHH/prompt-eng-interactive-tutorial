@@ -1687,6 +1687,9 @@ const L={
   pptOwner:"Zuständig", pptNoOwner:"- niemand -", pptDue:"fällig bis",
   pptAuto:"auto", pptAutoHint:"Automatisch aus dem Wochenplan", pptAutoActive:"aktiv",
   pptAutoBtn:"Automatisch (Wochenplan)", wkPptAuto:"automatisch (Besetzung der Session)", wkPptMulti:"- mehrere (siehe Folien) -",
+  pptAsk:"Folien anfragen", pptAskT:"Folien-Anfrage per Mail: offene PowerPoints, Frist und persönlicher Upload-Link (inkl. Basis-Vorlage)",
+  pptAsked:n=>`Folien-Anfrage verschickt - ${n} offene PowerPoint${n===1?"":"s"}.`,
+  pptAskedNone:"Für diesen Trainer sind keine PowerPoints offen.",
   pptDueIn:d=>d===0?"heute fällig":`in ${d} Tagen`, pptOverBy:d=>`${d} Tag${d===1?"":"e"} überfällig`,
   pptUpload:"Hochladen", pptReplace:"Ersetzen", pptDownload:"Herunterladen",
   pptFileDel:"Datei entfernen", pptFileDelAsk:"Die Datei wirklich entfernen? Der Status springt zurück auf offen.",
@@ -2168,6 +2171,9 @@ const L={
   pptOwner:"Owner", pptNoOwner:"- nobody -", pptDue:"due by",
   pptAuto:"auto", pptAutoHint:"Automatically from the week plan", pptAutoActive:"active",
   pptAutoBtn:"Automatic (week plan)", wkPptAuto:"automatic (session team)", wkPptMulti:"- several (see Slides) -",
+  pptAsk:"Request slides", pptAskT:"Slides request by mail: open PowerPoints, deadline and personal upload link (incl. base template)",
+  pptAsked:n=>`Slides request sent - ${n} open PowerPoint${n===1?"":"s"}.`,
+  pptAskedNone:"No open PowerPoints for this trainer.",
   pptDueIn:d=>d===0?"due today":`in ${d} days`, pptOverBy:d=>`${d} day${d===1?"":"s"} overdue`,
   pptUpload:"Upload", pptReplace:"Replace", pptDownload:"Download",
   pptFileDel:"Remove file", pptFileDelAsk:"Really remove the file? The status goes back to open.",
@@ -3083,6 +3089,7 @@ function rosterRow(x,tg){
     : (x.status==="yes"||x.status==="confirmed")
     ? `<button class="btn sm" onclick="openTrainerTravel('${tg.id}','${x.tr.id}')">${ic("plane")}${t("trTravel")}</button>`
       +`<button class="btn sm" onclick="openAgenda('${tg.id}','${x.tr.id}')">${ic("printer")}${t("agendaView")}</button>`
+      +`<button class="btn sm" onclick="pptRequestTrainer('${tg.id}','${x.tr.id}',this)" title="${esc(t("pptAskT"))}">${ic("slides",14)}${t("pptAsk")}</button>`
       +`<button class="btn sm primary" onclick="sendAgenda('${tg.id}','${x.tr.id}')">${ic("send")}${t("agendaSend")}</button>`
     : x.status==="no"
     ? `<button class="btn sm" onclick="requestNext('${tg.id}')">${t("nextInLine")}</button>`
@@ -7764,6 +7771,17 @@ async function pptTplDel(tgId){
     pptWeeks[String(tgId)].template="";
     closeSheet(); renderPptView();
   }catch(e){ toast(e.message,"crit"); }
+}
+/* Folien-Anfrage an einen Trainer aus der Besetzungsliste - synchron mit dem
+   Reiter Folien: die Automatik sieht den Versand und hakt erst später nach. */
+async function pptRequestTrainer(tgId,trId,btn){
+  if(!LIVE){ toast(t("pptDemo"),"warn"); return; }
+  if(btn) btn.disabled=true;
+  try{
+    const d=await apiCall("ppt.requestTrainer",{training:tgId,trainer:trId});
+    toast(d.open?t("pptAsked",d.open):t("pptAskedNone"), d.open?"good":"warn");
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+  if(btn) btn.disabled=false;
 }
 async function pptRemind(tgId,btn){
   if(btn){ btn.disabled=true; }

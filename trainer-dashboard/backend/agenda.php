@@ -90,6 +90,7 @@ $docTitle = trim(preg_replace('/\s+/',' ', str_replace(['/','\\',':','*','?','"'
   @media print{
     body{background:#fff;font-size:10pt;line-height:1.4}
     .toolbar{display:none}
+    .noprint{display:none}
     .wrap{padding:0;max-width:none}
     .sheet{border:none;border-radius:0;padding:0}
     @page{margin:12mm}
@@ -175,7 +176,7 @@ $docTitle = trim(preg_replace('/\s+/',' ', str_replace(['/','\\',':','*','?','"'
             .($mine&&$others?'<br><span style="color:#3F7A5E;font-weight:600">👥 '.e(($lang==='de'?'mit ':'with ').implode(', ',$others)).'</span>'
               :(!$mine&&$others?'<br>'.e(implode(', ',$others)):''));
           // Vorbereitungs-Hinweise nur bei den eigenen Sessions - der Rest bleibt schlank
-          if($mine && (string)($s2['ppt_by']??'')===(string)$req['trid'])
+          if(ppt_relevant($s2) && in_array((int)$req['trid'], ppt_owner_ids($s2), true))
             $sub.='<br><span style="color:#B23A42;font-weight:600">'.e($lang==='de'?'PowerPoint: von dir':'PowerPoint: by you').'</span>';
           if($mine && !empty($s2['mat'])) $sub.='<br>📦 '.e($s2['mat']);
           $out.='<div style="border:1.5px solid '.($mine?'#D81F26':'#e2e5e8').';border-left:4px solid '.($mine?'#D81F26':'#8A939A').';border-radius:7px;padding:5px 7px;margin:0 0 5px;font-size:10.5px;line-height:1.35;'.($mine?'background:#fdf1f1;font-weight:600':'').'">'
@@ -189,7 +190,9 @@ $docTitle = trim(preg_replace('/\s+/',' ', str_replace(['/','\\',':','*','?','"'
     <h2><?=e($lang==='de'?'Wochenplan (Mo-Fr) - deine Sessions rot markiert':'Week plan (Mon-Fri) - your sessions marked red')?></h2>
     <div class="mine"><?=e($lang==='de'
         ? 'Deine Einsätze: '.count($mySess).' Sessions · '.rtrim(rtrim(number_format($myH,1,',',''),'0'),',').' h'.($myPpt?' · '.$myPpt.'× PowerPoint von dir vorzubereiten':'')
-        : 'Your sessions: '.count($mySess).' · '.rtrim(rtrim(number_format($myH,1,'.',''),'0'),'.').' h'.($myPpt?' · '.$myPpt.' PowerPoint(s) to prepare':''))?></div>
+        : 'Your sessions: '.count($mySess).' · '.rtrim(rtrim(number_format($myH,1,'.',''),'0'),'.').' h'.($myPpt?' · '.$myPpt.' PowerPoint(s) to prepare':''))?>
+      <?php if($myPpt): ?> · <a class="noprint" style="color:#3e4852;font-weight:700"
+        href="ppt.php?token=<?=e((string)($req['tok']??''))?>"><?=e($lang==='de'?'Folien hochladen & Stand melden →':'Upload slides & report status →')?></a><?php endif; ?></div>
     <div class="agwk">
       <?php for($i=0;$i<5;$i++): $dk=['mon','tue','wed','thu','fri'][$i];
         $dLbl=''; if(!empty($req['start_date'])){ try{ $dd=new DateTime($req['start_date']); $dd->modify('+'.$i.' day'); $dLbl=$dd->format('d.m.'); }catch(Throwable $x){} } ?>
