@@ -335,7 +335,9 @@ switch($action){
         'id'=>(string)$r['id'],'title'=>$r['title'],'titleEn'=>$r['title_en'],
         'type'=>$r['stype'],'dur'=>$r['dur'],'desc'=>$r['descr'],
         'trainerIds'=>array_values(array_map('strval',$ids)),
-        'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,'pptDue'=>$r['ppt_due']??'',
+        'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,
+        'pptByIds'=>ppt_owner_explicit($r)?array_map('strval',ppt_owner_ids($r)):[],
+        'pptDue'=>$r['ppt_due']??'',
         'pptNote'=>$r['ppt_note']??'','pptFile'=>$r['ppt_file']??'','pptFileName'=>$r['ppt_file_name']??'',
         'pptFileSize'=>(int)($r['ppt_file_size']??0),'pptFileAt'=>$r['ppt_file_at']??'',
         'mat'=>$r['mat']??''];},$rows),
@@ -358,7 +360,9 @@ switch($action){
         'id'=>(string)$r['id'],'title'=>$r['title'],'titleEn'=>$r['title_en'],
         'type'=>$r['stype'],'dur'=>$r['dur'],
         'trainerIds'=>array_values(array_map('strval',$ids)),
-        'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,'pptDue'=>$r['ppt_due']??'',
+        'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,
+        'pptByIds'=>ppt_owner_explicit($r)?array_map('strval',ppt_owner_ids($r)):[],
+        'pptDue'=>$r['ppt_due']??'',
         'pptNote'=>$r['ppt_note']??'','pptFile'=>$r['ppt_file']??'','pptFileName'=>$r['ppt_file_name']??'',
         'pptFileSize'=>(int)($r['ppt_file_size']??0),'pptFileAt'=>$r['ppt_file_at']??'',
         'mat'=>$r['mat']??''];
@@ -384,16 +388,24 @@ switch($action){
     // Co-Teaching: Liste der Trainer (leer = noch offen)
     $tids=array_values(array_unique(array_filter(array_map('intval',(array)($in['trainerIds']??[])))));
     $tidsJson=json_encode(array_map('strval',$tids));
+    // Folien-Verantwortung: nur anfassen, wenn das Feld mitgeschickt wurde
+    // ("__multi" im Editor heißt: mehrere gesetzt, unverändert lassen).
+    $hasBy=array_key_exists('pptBy',$in) && (string)$in['pptBy']!=='__multi';
+    $byOne=$hasBy ? (((int)$in['pptBy'])?:null) : null;
+    $byIds=$hasBy ? ($byOne?json_encode([(string)$byOne]):'') : '';
     $f=[$title, trim((string)($in['titleEn']??'')), $type, (string)($in['dur']??'1'),
-        (string)($in['desc']??''), $tidsJson, $ppt, (int)($in['pptBy']??0)?:null, $due,
+        (string)($in['desc']??''), $tidsJson, $ppt, $due,
         trim((string)($in['mat']??''))];
     if($sid && q("SELECT id FROM training_sessions WHERE id=? AND training_id=?",[$sid,$tid])->fetch()){
-      q("UPDATE training_sessions SET title=?,title_en=?,stype=?,dur=?,descr=?,trainer_ids=?,ppt=?,ppt_by=?,ppt_due=?,mat=?,trainer_id=NULL WHERE id=?",
-        array_merge($f,[$sid]));
+      $bySql=$hasBy?'ppt_by=?,ppt_by_ids=?,':'';
+      $byPar=$hasBy?[$byOne,$byIds]:[];
+      q("UPDATE training_sessions SET title=?,title_en=?,stype=?,dur=?,descr=?,trainer_ids=?,ppt=?,{$bySql}ppt_due=?,mat=?,trainer_id=NULL WHERE id=?",
+        array_merge(array_slice($f,0,7),$byPar,array_slice($f,7),[$sid]));
     } else {
       $mx=(int)q("SELECT COALESCE(MAX(sort),0) m FROM training_sessions WHERE training_id=?",[$tid])->fetch()['m'];
-      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,trainer_ids,ppt,ppt_by,ppt_due,mat,sort)
-         VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", array_merge([$tid],$f,[$mx+1]));
+      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,trainer_ids,ppt,ppt_by,ppt_by_ids,ppt_due,mat,sort)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        array_merge([$tid],array_slice($f,0,7),[$byOne,$byIds],array_slice($f,7),[$mx+1]));
       $sid=(int)db()->lastInsertId();
     }
     audit('session.save','training',(string)$tid,mb_substr($title,0,80));
@@ -571,7 +583,16 @@ switch($action){
     if(!$row) fail('Session nicht gefunden.',404);
     $set=[]; $p=[];
     if(isset($in['ppt']) && in_array($in['ppt'],['','inArbeit','vorhanden'],true)){ $set[]='ppt=?'; $p[]=$in['ppt']; }
-    if(array_key_exists('pptBy',$in)){ $set[]='ppt_by=?'; $p[]=((int)$in['pptBy'])?:null; }
+    if(array_key_exists('pptByIds',$in)){
+      // Mehrere Verantwortliche; leere Liste = zurück auf automatisch (Wochenplan)
+      $ids=array_values(array_unique(array_filter(array_map('intval',(array)$in['pptByIds']))));
+      $set[]='ppt_by_ids=?'; $p[]=$ids?json_encode(array_map('strval',$ids)):'';
+      $set[]='ppt_by=?';     $p[]=$ids[0]??null;
+    } elseif(array_key_exists('pptBy',$in)){
+      $one=((int)$in['pptBy'])?:null;
+      $set[]='ppt_by=?';     $p[]=$one;
+      $set[]='ppt_by_ids=?'; $p[]=$one?json_encode([(string)$one]):'';
+    }
     if(array_key_exists('pptDue',$in)){
       $d=trim((string)$in['pptDue']);
       if($d!=='' && !preg_match('/^\d{4}-\d{2}-\d{2}$/',$d)) $d='';

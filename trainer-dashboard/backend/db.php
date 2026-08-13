@@ -284,7 +284,8 @@ function ensure_schema(): void {
     "ppt_note VARCHAR(255)",
     "ppt_file VARCHAR(255)","ppt_file_name VARCHAR(190)",
     "ppt_file_size INT DEFAULT 0","ppt_file_at VARCHAR(20)",
-    "ppt_reminded_at VARCHAR(20)","ppt_remind_count INT DEFAULT 0","ppt_escalated INT DEFAULT 0"
+    "ppt_reminded_at VARCHAR(20)","ppt_remind_count INT DEFAULT 0","ppt_escalated INT DEFAULT 0",
+    "ppt_by_ids VARCHAR(190)"
   ] as $col){ try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN $col"); }catch(Throwable $e){} }
   foreach(["ppt_template VARCHAR(255)","ppt_template_name VARCHAR(190)"] as $col){
     try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){}

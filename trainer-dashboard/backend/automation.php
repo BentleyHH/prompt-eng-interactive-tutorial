@@ -251,30 +251,31 @@ function ppt_chase(bool $force=false, int $onlyTraining=0): array {
     if($start!=='' && $start<$today) continue;              // Training läuft/vorbei
     $due=ppt_due_of($s,$tg);
     if($due==='') continue;
-    $trId=(int)($s['ppt_by']??0);
-    if(!$trId) continue;                                     // ohne Zuständigen: nur im Cockpit sichtbar
+    $owners=ppt_owner_ids($s);                               // explizit oder aus dem Wochenplan
+    if(!$owners) continue;                                   // ohne Zuständigen: nur im Cockpit sichtbar
     $overdue=$due<$today;
     if($overdue && !(int)($s['ppt_escalated']??0)) $overdueAll[]=['s'=>$s,'tg'=>$tg];
-    if($force){
-      $byTrainer[(string)$tg['id']][$trId][]=$s;
-      continue;
+    if(!$force){
+      if($now < strtotime($due.' UTC')-$REMIND_BEFORE) continue;    // noch nicht dran
+      if((int)($s['ppt_remind_count']??0)>=$MAX) continue;
+      $last=ts($s['ppt_reminded_at']??'');
+      if($last && $now-$last<$EVERY) continue;
     }
-    if($now < strtotime($due.' UTC')-$REMIND_BEFORE) continue;      // noch nicht dran
-    if((int)($s['ppt_remind_count']??0)>=$MAX) continue;
-    $last=ts($s['ppt_reminded_at']??'');
-    if($last && $now-$last<$EVERY) continue;
-    $byTrainer[(string)$tg['id']][$trId][]=$s;
+    foreach($owners as $trId) $byTrainer[(string)$tg['id']][$trId][]=$s;
   }
 
-  $sent=0;
+  $sent=0; $stamped=[];   // je Session nur einmal zaehlen, auch bei mehreren Verantwortlichen
   foreach($byTrainer as $tgId=>$byTr){
     $tg=$trainings[$tgId];
     foreach($byTr as $trId=>$list){
       $od=false; foreach($list as $s){ if(ppt_due_of($s,$tg)<$today){ $od=true; break; } }
       if(ppt_send_reminder($tg,(int)$trId,$list,$od)){
         $sent++;
-        foreach($list as $s)
+        foreach($list as $s){
+          if(isset($stamped[(string)$s['id']])) continue;
+          $stamped[(string)$s['id']]=1;
           q("UPDATE training_sessions SET ppt_reminded_at=?, ppt_remind_count=ppt_remind_count+1 WHERE id=?",[now(),$s['id']]);
+        }
       }
     }
   }
@@ -290,7 +291,7 @@ function ppt_chase(bool $force=false, int $onlyTraining=0): array {
         $due=ppt_due_of($o['s'],$o['tg']);
         $li.='<div style="padding:3px 0;font-size:13px">- <b>'.htmlspecialchars($o['s']['title']).'</b> ('
           .htmlspecialchars((($o['tg']['code']??'')?:'').')').' - '
-          .htmlspecialchars($tn[(string)$o['s']['ppt_by']]??'?')
+          .htmlspecialchars(implode(', ',array_map(fn($i)=>$tn[(string)$i]??'?',ppt_owner_ids($o['s'])))?:'?')
           .', fällig '.date('d.m.Y',strtotime($due)).'</div>';
       }
       $dash=preg_replace('#/backend$#','',base_url());

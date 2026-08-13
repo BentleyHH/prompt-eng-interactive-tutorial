@@ -771,7 +771,16 @@
   .pptrow:first-child{border-top:none}
   .pptname{flex:1 1 230px;min-width:0}
   .pptname b{font-size:13.5px}
-  .pptown{width:170px;flex:none;padding:6px 9px;font-size:12.5px}
+  .pptown{width:170px;flex:none;padding:6px 9px;font-size:12.5px;
+    display:inline-flex;align-items:center;gap:6px;justify-content:flex-start;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pptown.miss{color:var(--warn);border-color:var(--warn)}
+  .pptautotag{flex:none;margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.4px;
+    text-transform:uppercase;color:var(--good);background:color-mix(in srgb,var(--good) 12%,transparent);
+    border-radius:4px;padding:1.5px 5px}
+  .pptownrow{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;
+    cursor:pointer;font-size:13.5px}
+  .pptownrow:hover{background:var(--brand-050)}
   .pptdue{width:140px;flex:none;padding:6px 9px;font-size:12.5px}
   .pptbadge{flex:none;font-size:12px;min-width:104px}
   .rpseg.pptst button{padding:6px 10px;font-size:12px}
@@ -1676,6 +1685,8 @@ const L={
   pptFDue:"fällig", pptFOver:"überfällig", pptFNoOwner:"ohne Zuständigen", pptFAll:"alle", pptFDone:"da",
   pptStOpen:"offen", pptStWork:"in Arbeit", pptStDone:"da",
   pptOwner:"Zuständig", pptNoOwner:"- niemand -", pptDue:"fällig bis",
+  pptAuto:"auto", pptAutoHint:"Automatisch aus dem Wochenplan", pptAutoActive:"aktiv",
+  pptAutoBtn:"Automatisch (Wochenplan)", wkPptAuto:"automatisch (Besetzung der Session)", wkPptMulti:"- mehrere (siehe Folien) -",
   pptDueIn:d=>d===0?"heute fällig":`in ${d} Tagen`, pptOverBy:d=>`${d} Tag${d===1?"":"e"} überfällig`,
   pptUpload:"Hochladen", pptReplace:"Ersetzen", pptDownload:"Herunterladen",
   pptFileDel:"Datei entfernen", pptFileDelAsk:"Die Datei wirklich entfernen? Der Status springt zurück auf offen.",
@@ -2155,6 +2166,8 @@ const L={
   pptFDue:"due", pptFOver:"overdue", pptFNoOwner:"no owner", pptFAll:"all", pptFDone:"done",
   pptStOpen:"open", pptStWork:"in progress", pptStDone:"done",
   pptOwner:"Owner", pptNoOwner:"- nobody -", pptDue:"due by",
+  pptAuto:"auto", pptAutoHint:"Automatically from the week plan", pptAutoActive:"active",
+  pptAutoBtn:"Automatic (week plan)", wkPptAuto:"automatic (session team)", wkPptMulti:"- several (see Slides) -",
   pptDueIn:d=>d===0?"due today":`in ${d} days`, pptOverBy:d=>`${d} day${d===1?"":"s"} overdue`,
   pptUpload:"Upload", pptReplace:"Replace", pptDownload:"Download",
   pptFileDel:"Remove file", pptFileDelAsk:"Really remove the file? The status goes back to open.",
@@ -4118,7 +4131,8 @@ async function assignTrainerToSess(sid,trId){
   ids.push(String(trId)); s.trainerIds=ids;
   if(LIVE){
     try{ await apiCall("session.save",{training:curWeekId,id:sid,title:s.title,titleEn:s.titleEn||"",
-      type:s.type,dur:s.dur,desc:s.desc||"",trainerIds:ids,ppt:s.ppt||"",pptBy:s.pptBy||0,pptDue:s.pptDue||"",mat:s.mat||""}); }
+      type:s.type,dur:s.dur,desc:s.desc||"",trainerIds:ids,ppt:s.ppt||"",
+      pptBy:(s.pptByIds&&s.pptByIds.length>1)?"__multi":(s.pptBy||0),pptDue:s.pptDue||"",mat:s.mat||""}); }
     catch(e){ toast(e.message,"crit"); return; }
   } else save();
   drawWeekBody();
@@ -4157,13 +4171,14 @@ async function wkAutofill(){
 }
 
 /* ---- Session-Editor (Blatt): Felder + Trainer + PPT + Verschieben ---- */
-function wkTrainerOptions(sel){
+function wkTrainerOptions(sel,emptyLabel,multi){
   const tg=wkCurTg();
   const teamIds=(tg&&tg.roster||[]).filter(x=>["yes","confirmed","maybe","asked"].includes(x.status)).map(x=>String(x.trainerId));
   const team=S.trainers.filter(tr2=>teamIds.includes(String(tr2.id)));
   const rest=S.trainers.filter(tr2=>!teamIds.includes(String(tr2.id))).slice().sort((a,b)=>a.name.localeCompare(b.name));
   const opt=tr2=>`<option value="${tr2.id}" ${String(sel||"")===String(tr2.id)?"selected":""}>${esc(tr2.name)}</option>`;
-  return `<option value="">${t("wkTrainerNone")}</option>`
+  return `<option value="">${emptyLabel||t("wkTrainerNone")}</option>`
+    +(multi?`<option value="__multi" ${sel==="__multi"?"selected":""}>${t("wkPptMulti")}</option>`:"")
     +(team.length?`<optgroup label="${t("wkTeam")}">${team.map(opt).join("")}</optgroup>`:"")
     +`<optgroup label="${t("nav_trainers")}">${rest.map(opt).join("")}</optgroup>`;
 }
@@ -4227,7 +4242,10 @@ function openSessEdit(sid){
           <option value="vorhanden" ${s&&s.ppt==="vorhanden"?"selected":""}>${t("ppt_vorhanden")}</option>
         </select></div>
       <div style="flex:1"><label class="fld">${t("wkPptBy")}</label>
-        <select class="inp" id="wsPptBy">${wkTrainerOptions(s?s.pptBy:"")}</select></div>
+        <select class="inp" id="wsPptBy">${(()=>{
+          const many=s&&s.pptByIds&&s.pptByIds.length>1;
+          return wkTrainerOptions(many?"__multi":(s?s.pptBy:""),t("wkPptAuto"),many);
+        })()}</select></div>
       <div style="flex:1"><label class="fld">${t("wkPptDue")}</label>
         <input class="inp" id="wsPptDue" type="date" value="${esc(s?s.pptDue||"":"")}"></div>
     </div>
@@ -4248,6 +4266,9 @@ async function saveSess(){
     trainerIds:wkEdTrainers.slice(), ppt:val("wsPpt"), pptBy:val("wsPptBy")||0, pptDue:val("wsPptDue"),
     mat:val("wsMat").trim() };
   let sid=wkEditSid;
+  // "__multi": mehrere Verantwortliche in der Folien-Ansicht gesetzt - unverändert lassen
+  const byPatch = data.pptBy==="__multi" ? {}
+    : {pptBy:data.pptBy?String(data.pptBy):null, pptByIds:data.pptBy?[String(data.pptBy)]:[]};
   if(LIVE){
     try{ const d=await apiCall("session.save",data); sid=d.id; }
     catch(e){ toast(e.message,"crit"); return; }
@@ -4256,7 +4277,7 @@ async function saveSess(){
     if(!s){ s={id:uid("s")}; WKD.sessions.push(s); sid=s.id; }
     Object.assign(s,{title:data.title,titleEn:data.titleEn,type:data.type,dur:data.dur,desc:data.desc,
       trainerIds:data.trainerIds.slice(),ppt:data.ppt,
-      pptBy:data.pptBy?String(data.pptBy):null,pptDue:data.pptDue,mat:data.mat});
+      pptDue:data.pptDue,mat:data.mat},byPatch);
     save();
   }
   // Lokale Kopie aktualisieren (live: frisch geladene Daten beim nächsten renderWeek)
@@ -4265,7 +4286,7 @@ async function saveSess(){
     if(!s){ s={id:String(sid)}; WKD.sessions.push(s); }
     Object.assign(s,{title:data.title,titleEn:data.titleEn,type:data.type,dur:data.dur,desc:data.desc,
       trainerIds:data.trainerIds.slice(),ppt:data.ppt,
-      pptBy:data.pptBy?String(data.pptBy):null,pptDue:data.pptDue,mat:data.mat});
+      pptDue:data.pptDue,mat:data.mat},byPatch);
   }
   const slot=val("wsSlot");
   await wkMoveTo(String(sid),slot);
@@ -4410,7 +4431,7 @@ async function doWeekCopy(){
     if((S.weekData[curWeekId]?.sessions||[]).length && !confirm(t("wkCopyAsk",S.weekData[curWeekId].sessions.length))) return;
     const cur=S.weekData[curWeekId]={sessions:[],plan:{},deliverable:src.deliverable||"",deliverableEn:src.deliverableEn||""};
     const map={};
-    for(const s of src.sessions){ const n={...s,id:uid("s"),trainerIds:[],ppt:"",pptBy:null,pptDue:""}; map[s.id]=n.id; cur.sessions.push(n); }
+    for(const s of src.sessions){ const n={...s,id:uid("s"),trainerIds:[],ppt:"",pptBy:null,pptByIds:[],pptDue:""}; map[s.id]=n.id; cur.sessions.push(n); }
     for(const k in (src.plan||{})){ cur.plan[k]=(src.plan[k]||[]).map(x=>map[x]).filter(Boolean); }
     save(); closeSheet(); renderWeek(); toast(t("wkCopied",cur.sessions.length),"good");
   }
@@ -4431,7 +4452,8 @@ function openPptSheet(){
   $("#sheetTitle").textContent=t("wkPptTitle");
   $("#sheetBody").innerHTML=rel.length?rel.map(s=>{
     const col=s.ppt==="vorhanden"?"g":s.ppt==="inArbeit"?"y":"r";
-    const by=s.pptBy?S.trainers.find(x=>String(x.id)===String(s.pptBy)):null;
+    const own=pptOwnersOf(s);
+    const by=own.ids.length?{name:pptOwnerShort(own.ids)+(own.auto?" ("+t("pptAuto")+")":"")}:null;
     return `<button class="morerow" onclick="closeSheet();openSessEdit('${s.id}')">
       <span class="ppdot ${col}" style="flex:none"></span>
       <span class="rowgrow" style="text-align:left;min-width:0">
@@ -5387,7 +5409,7 @@ function agWeekGrid(sessions,plan,tg,trId){
   const cell=k=>slots[k].map(id=>{ const s=sess(id); const mine=sessTrIds(s).includes(String(trId));
     const others=sessTrIds(s).filter(x=>x!==String(trId))
       .map(tid=>{const x=S.trainers.find(y=>String(y.id)===tid);return x?x.name:null;}).filter(Boolean);
-    const pptMine=mine&&s.pptBy&&String(s.pptBy)===String(trId);
+    const pptMine=mine&&pptOwnersOf(s).ids.includes(String(trId));
     if(mine){ myN++; myH+=Number(s.dur||1); if(pptMine) myPpt++; }
     const sub=`${esc(String(s.dur||1))} h`
       +(mine&&tr?` · <b style="color:var(--crit)">${initials(tr.name)}</b>`:"")
@@ -7482,7 +7504,7 @@ function pptRows(){
         return {s,due,done,
           over: !done && !!due && due<today && (!tg.date||tg.date>=today),
           soon: !done && !!due && due>=today && due<=soon,
-          noOwner: !done && !s.pptBy,
+          noOwner: !done && !pptOwnersOf(s).ids.length,
           past: !!tg.date && tg.date<today};
       });
       out.push({tg,wd,rows,done:rows.filter(r=>r.done).length,all:rows.length});
@@ -7500,9 +7522,19 @@ function pptFilterRow(r){
 }
 function pptSetFilter(f){ pptFilter=f; renderPptView(); }
 
-function pptOwnerOptions(sel){
-  return `<option value="">${esc(t("pptNoOwner"))}</option>`+S.trainers.map(x=>
-    `<option value="${x.id}"${String(sel||"")===String(x.id)?" selected":""}>${esc(x.name)}</option>`).join("");
+/* Wirksame Folien-Verantwortliche: explizite Auswahl (auch mehrere), sonst
+   automatisch die Trainer der Session aus dem Wochenplan (Co-Teaching: alle). */
+function pptOwnersOf(s){
+  const ex=(s.pptByIds&&s.pptByIds.length)?s.pptByIds.map(String):(s.pptBy?[String(s.pptBy)]:null);
+  return ex?{ids:ex,auto:false}:{ids:(s.trainerIds||[]).map(String),auto:true};
+}
+function pptOwnerNames(ids){
+  return ids.map(i=>{const x=S.trainers.find(y=>String(y.id)===String(i));return x?x.name:"?";});
+}
+function pptOwnerShort(ids){
+  const last=n=>n.split(" ").slice(-1)[0];
+  const names=pptOwnerNames(ids).map(last);
+  return names.length<=2?names.join(", "):names.slice(0,2).join(", ")+" +"+(names.length-2);
 }
 function pptDueBadge(r){
   if(r.done) return "";
@@ -7579,7 +7611,10 @@ function pptRowHtml(tg,r){
   return `<div class="pptrow">
     <div class="pptname"><b>${esc(sessTitle(s))}</b>
       <div class="meta">${esc(t("type_"+(s.type||"theorie")))} · ${esc(String(s.dur||1))} h${s.pptNote?` · 📝 ${esc(s.pptNote)}`:""}</div></div>
-    <select class="inp pptown" title="${esc(t("pptOwner"))}" onchange="pptOwn('${s.id}',this.value)">${pptOwnerOptions(s.pptBy)}</select>
+    ${(()=>{const o=pptOwnersOf(s);
+      return `<button class="btn sm pptown${o.ids.length?"":" miss"}" title="${esc(t("pptOwner"))}" onclick="pptOwnSheet('${s.id}')">
+        ${esc(o.ids.length?pptOwnerShort(o.ids):t("pptNoOwner"))}${o.auto&&o.ids.length?`<span class="pptautotag">${esc(t("pptAuto"))}</span>`:""}
+      </button>`;})()}
     <input class="inp pptdue" type="date" title="${esc(t("pptDue"))}" value="${esc(s.pptDue||"")}"
       placeholder="${esc(r.due)}" onchange="pptDueSet('${s.id}',this.value)">
     <span class="pptbadge">${pptDueBadge(r)}</span>
@@ -7604,9 +7639,41 @@ async function pptSt(sid,v){
   if(LIVE){ try{ await apiCall("ppt.setStatus",{session:sid,ppt:v}); }catch(e){ toast(e.message,"crit"); } }
   renderPptView(); buildNav();
 }
-async function pptOwn(sid,v){
-  pptLocal(sid,{pptBy:v||null});
-  if(LIVE){ try{ await apiCall("ppt.setStatus",{session:sid,pptBy:v||0}); }catch(e){ toast(e.message,"crit"); } }
+let pptOwnSid=null;
+function pptFindSess(sid){
+  for(const k in (pptWeeks||{})){
+    const x=(pptWeeks[k].sessions||[]).find(y=>String(y.id)===String(sid));
+    if(x) return x;
+  }
+  return null;
+}
+function pptOwnSheet(sid){
+  const s=pptFindSess(sid); if(!s) return;
+  pptOwnSid=sid;
+  const o=pptOwnersOf(s);
+  const autoNames=pptOwnerNames((s.trainerIds||[]).map(String)).join(", ");
+  $("#sheetTitle").textContent=t("pptOwner");
+  $("#sheetBody").innerHTML=`
+    <div style="font-weight:650;margin-bottom:4px">${esc(sessTitle(s))}</div>
+    <div class="meta" style="margin-bottom:14px">${esc(t("pptAutoHint"))}: ${esc(autoNames||"-")}
+      ${o.auto?` · <b style="color:var(--good)">${esc(t("pptAutoActive"))}</b>`:""}</div>
+    <div style="display:flex;flex-direction:column;gap:2px;max-height:46vh;overflow:auto">
+      ${S.trainers.map(x=>`<label class="pptownrow"><input type="checkbox" value="${x.id}"
+        ${o.ids.includes(String(x.id))?"checked":""}> ${esc(x.name)}
+        ${(s.trainerIds||[]).map(String).includes(String(x.id))?`<span class="meta" style="margin-left:auto">${esc(t("wkTeam"))}</span>`:""}</label>`).join("")}
+    </div>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <button class="btn" onclick="pptOwnSave(null)">${esc(t("pptAutoBtn"))}</button>
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="pptOwnSave([...document.querySelectorAll('#sheetBody input:checked')].map(x=>x.value))">${ic("check",15)}${t("save")}</button>`;
+  openSheet();
+}
+async function pptOwnSave(ids){
+  const sid=pptOwnSid; closeSheet();
+  if(!sid) return;
+  const list=ids===null?[]:ids.slice();       // null/leer = zurück auf automatisch
+  pptLocal(sid,{pptByIds:list, pptBy:list[0]||null});
+  if(LIVE){ try{ await apiCall("ppt.setStatus",{session:sid,pptByIds:list}); }catch(e){ toast(e.message,"crit"); } }
   renderPptView();
 }
 async function pptDueSet(sid,v){

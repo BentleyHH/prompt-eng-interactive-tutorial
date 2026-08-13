@@ -25,7 +25,7 @@ $L = $lang==='de' ? [
   'okUp'=>'Danke - die Datei ist angekommen und der Status steht auf "da".',
   'okSt'=>'Danke - der Stand ist gespeichert.',
   'hint'=>'Hochladen erlaubt: %s · max. %d MB. Alternativ Status setzen und im Notizfeld sagen, wo die Datei liegt.',
-  'overdue'=>'überfällig','myfile'=>'Meine Datei',
+  'overdue'=>'überfällig','myfile'=>'Meine Datei','with'=>'zusammen mit',
 ] : [
   'title'=>'Your PowerPoints','due'=>'due by','open'=>'open','work'=>'in progress','done'=>'done',
   'tpl'=>'Download base template','upload'=>'Upload file','replace'=>'Replace file',
@@ -35,21 +35,18 @@ $L = $lang==='de' ? [
   'okUp'=>'Thank you - the file has arrived and the status is set to "done".',
   'okSt'=>'Thank you - the status has been saved.',
   'hint'=>'Allowed uploads: %s · max. %d MB. Or set the status and note where the file lives.',
-  'overdue'=>'overdue','myfile'=>'My file',
+  'overdue'=>'overdue','myfile'=>'My file','with'=>'together with',
 ];
 function e($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
-/* Sessions dieses Trainers: zuständig (ppt_by) oder - wenn niemand zuständig
-   ist - im Session-Team. Nur Folien-relevante Typen. */
+/* Sessions dieses Trainers: wirksame Folien-Verantwortung (explizit gesetzt
+   oder automatisch aus der Wochenplan-Besetzung, Co-Teaching: alle).
+   Nur Folien-relevante Typen. */
 function ppt_my_sessions(array $req): array {
   $out=[];
   foreach(q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$req['training_id']])->fetchAll() as $s){
     if(!ppt_relevant($s)) continue;
-    $ids=json_decode(($s['trainer_ids']??'')?:'',true);
-    if(!is_array($ids)) $ids=$s['trainer_id']?[(string)$s['trainer_id']]:[];
-    $mine=((string)($s['ppt_by']??''))===(string)$req['trid']
-       || (!$s['ppt_by'] && in_array((string)$req['trid'],array_map('strval',$ids),true));
-    if($mine) $out[]=$s;
+    if(in_array((int)$req['trid'], ppt_owner_ids($s), true)) $out[]=$s;
   }
   return $out;
 }
@@ -97,6 +94,7 @@ if($req && isset($_GET['dl'])){
 
 $my = $req ? ppt_my_sessions($req) : [];
 $today=gmdate('Y-m-d');
+$trNames=[]; foreach(q("SELECT id,name FROM trainers")->fetchAll() as $x) $trNames[(string)$x['id']]=$x['name'];
 $docTitle=$req ? 'ETAF PowerPoints '.($tr['name']??'').' '.((string)($req['code']??'')) : 'ETAF · PowerPoints';
 ?>
 <!doctype html><html lang="<?=e($lang)?>"><head>
@@ -168,6 +166,10 @@ $docTitle=$req ? 'ETAF PowerPoints '.($tr['name']??'').' '.((string)($req['code'
         <div class="meta<?=$over?' over':''?>"><?php
           echo e($due ? $L['due'].' '.date('d.m.Y',strtotime($due)).($over?' · '.$L['overdue']:'') : '');
         ?></div>
+        <?php $co=array_values(array_filter(ppt_owner_ids($s),fn($i)=>$i!==(int)$req['trid']));
+        if($co): $cn=array_map(fn($i)=>$trNames[(string)$i]??'?',$co); ?>
+          <div class="meta">👥 <?=e($L['with'].' '.implode(', ',$cn))?></div>
+        <?php endif; ?>
         <form method="post" enctype="multipart/form-data">
           <input type="hidden" name="token" value="<?=e($tok)?>">
           <input type="hidden" name="sid" value="<?=e((string)$s['id'])?>">

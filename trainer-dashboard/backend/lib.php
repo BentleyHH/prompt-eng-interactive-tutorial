@@ -610,7 +610,7 @@ function trainer_week_sessions(int $tgId, int $trId): array {
           array_filter(array_map('strval',$ids), fn($x)=>$x!==(string)$trId)));
     $rows[]=['title'=>$s['title'],'title_en'=>$s['title_en']??'','type'=>$s['stype'],'dur'=>$s['dur'],
              'dayIdx'=>($dayIdx===false?null:$dayIdx),'half'=>$half,'date'=>$date,'ord'=>$p['ord']??999,
-             'pptMine'=>((string)($s['ppt_by']??''))===(string)$trId && (string)$trId!=='',
+             'pptMine'=>(string)$trId!=='' && in_array((int)$trId, ppt_owner_ids($s), true),
              'ppt'=>$s['ppt']??'','mat'=>$s['mat']??'','with'=>$with];
   }
   usort($rows, fn($a,$b)=>$a['ord']<=>$b['ord']);
@@ -1096,6 +1096,23 @@ function ppt_max_bytes(): int {
 /** Zaehlt eine Session fuer die Folien-Pflicht? (wie der Wochenplan-Zaehler) */
 function ppt_relevant(array $s): bool {
   return !in_array((string)($s['stype']??''),['orga','deliverable'],true);
+}
+/** Wirksame Folien-Verantwortliche: explizite Auswahl (ppt_by_ids, mehrere
+ *  möglich; alt: ppt_by einzeln), sonst automatisch die im Wochenplan
+ *  zugeteilten Trainer der Session (Co-Teaching: alle). */
+function ppt_owner_ids(array $s): array {
+  $ex=json_decode((string)($s['ppt_by_ids']??''),true);
+  if(is_array($ex) && count($ex))
+    return array_values(array_unique(array_filter(array_map('intval',$ex))));
+  if(!empty($s['ppt_by'])) return [(int)$s['ppt_by']];
+  $ids=json_decode((string)($s['trainer_ids']??''),true);
+  if(!is_array($ids)) $ids=!empty($s['trainer_id'])?[(int)$s['trainer_id']]:[];
+  return array_values(array_unique(array_filter(array_map('intval',$ids))));
+}
+/** Wurde die Verantwortung von Hand gesetzt (statt aus dem Wochenplan geerbt)? */
+function ppt_owner_explicit(array $s): bool {
+  $ex=json_decode((string)($s['ppt_by_ids']??''),true);
+  return (is_array($ex)&&count($ex)) || !empty($s['ppt_by']);
 }
 /** Wirksame Faelligkeit: eigenes Datum oder Trainingsbeginn minus Vorlauf. */
 function ppt_due_of(array $s, array $tg): string {
