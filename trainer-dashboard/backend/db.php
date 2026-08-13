@@ -127,7 +127,7 @@ function ensure_schema(): void {
     id VARCHAR(24) PRIMARY KEY,
     name VARCHAR(160), unit VARCHAR(24), cat VARCHAR(64), sort_order INT DEFAULT 0)$eng");
   $d->exec("CREATE TABLE IF NOT EXISTS training_materials (
-    id $pk, training_id INT, material_id VARCHAR(24), qty INT DEFAULT 0)$eng");
+    id $pk, training_id INT, material_id VARCHAR(24), qty INT DEFAULT 0, ok INT DEFAULT 0)$eng");
   $d->exec("CREATE TABLE IF NOT EXISTS material_presets (
     id $pk, spec VARCHAR(96), material_id VARCHAR(24), qty INT DEFAULT 0)$eng");
 
@@ -290,6 +290,8 @@ function ensure_schema(): void {
   foreach(["ppt_template VARCHAR(255)","ppt_template_name VARCHAR(190)"] as $col){
     try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){}
   }
+  // Material-Haken "vorhanden/gepackt" je Position (für den Material-Ring)
+  try{ db()->exec("ALTER TABLE training_materials ADD COLUMN ok INT DEFAULT 0"); }catch(Throwable $e){}
   // Ablage-Ordner anlegen und vor direktem Zugriff schützen (Auslieferung
   // ausschließlich über die API bzw. den Token-Link)
   $pd=__DIR__.'/uploads/ppt';

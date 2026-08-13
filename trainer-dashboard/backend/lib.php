@@ -460,7 +460,7 @@ function get_state(): array {
   // Material-Positionen je Training
   $matByT=[];
   foreach(q("SELECT * FROM training_materials")->fetchAll() as $m){
-    $matByT[(string)$m['training_id']][]=['matId'=>$m['material_id'],'qty'=>(int)$m['qty']];
+    $matByT[(string)$m['training_id']][]=['matId'=>$m['material_id'],'qty'=>(int)$m['qty'],'ok'=>(int)($m['ok']??0)];
   }
   // Typ-Vorlagen (Schwerpunkt → Materialliste)
   $matPresets=[];

@@ -1694,6 +1694,12 @@ const L={
   pptAskHint:"Jeder Trainer bekommt automatisch seine eigene Liste offener Folien mit Fristen und seinen persönlichen Upload-Link angehängt - ist eine Basis-Vorlage hinterlegt, steht der Hinweis dazu mit in der Mail. Platzhalter wie {{firstName}} werden je Empfänger gefüllt.",
   pptAskSend:n=>n===1?"Anfrage senden":`An ${n} Trainer senden`,
   pptAskSentN:n=>`${n} Folien-Anfrage${n===1?"":"n"} verschickt.`,
+  pptOwnTeam:"Auch als Trainer dieser Session in den Wochenplan übernehmen",
+  pptOwnSaveAsk:"Speichern & anfragen",
+  rdFolCap:"Folien", rdMatCap:"Material",
+  rdFolTip:(a,b)=>`PowerPoints: ${a}/${b} da - klicken für die Folien-Ansicht`,
+  rdMatTip:(a,b)=>`Material: ${a}/${b} Positionen da - klicken zum Abhaken`,
+  matOk:"da",
   pptDueIn:d=>d===0?"heute fällig":`in ${d} Tagen`, pptOverBy:d=>`${d} Tag${d===1?"":"e"} überfällig`,
   pptUpload:"Hochladen", pptReplace:"Ersetzen", pptDownload:"Herunterladen",
   pptFileDel:"Datei entfernen", pptFileDelAsk:"Die Datei wirklich entfernen? Der Status springt zurück auf offen.",
@@ -2182,6 +2188,12 @@ const L={
   pptAskHint:"Each trainer automatically gets their own list of open slides with deadlines and their personal upload link attached - if a base template is stored, the note about it is included. Placeholders like {{firstName}} are filled per recipient.",
   pptAskSend:n=>n===1?"Send request":`Send to ${n} trainers`,
   pptAskSentN:n=>`${n} slides request${n===1?"":"s"} sent.`,
+  pptOwnTeam:"Also add as trainer of this session in the week plan",
+  pptOwnSaveAsk:"Save & request",
+  rdFolCap:"Slides", rdMatCap:"Material",
+  rdFolTip:(a,b)=>`PowerPoints: ${a}/${b} in - click for the slides view`,
+  rdMatTip:(a,b)=>`Material: ${a}/${b} items in - click to check off`,
+  matOk:"in",
   pptDueIn:d=>d===0?"due today":`in ${d} days`, pptOverBy:d=>`${d} day${d===1?"":"s"} overdue`,
   pptUpload:"Upload", pptReplace:"Replace", pptDownload:"Download",
   pptFileDel:"Remove file", pptFileDelAsk:"Really remove the file? The status goes back to open.",
@@ -3047,6 +3059,7 @@ function renderDetail(){
     <div class="panel-b">${matS.n?(tg.materials.filter(l=>l.matId).map(l=>`
       <div class="row" style="padding:8px 2px"><div class="rowgrow"><div class="nm">${esc(matName(l.matId))}</div>
         ${matById(l.matId)&&matById(l.matId).cat?`<div class="meta">${esc(matById(l.matId).cat)}</div>`:''}</div>
+        ${l.ok?`<span class="tag" style="border-color:var(--good);color:var(--good)">✓ ${esc(t("matOk"))}</span>`:""}
         <span class="fit">${+l.qty||0} ${esc(matUnit(l.matId))}</span></div>`).join("")
       +`<button class="btn sm" onclick="printMaterials('${tg.id}')" style="margin-top:12px">${ic("printer")}${t("matPrint")}</button>`):`<div class="empty">${t("matNone")}</div>`}</div>
   </div>`;
@@ -6005,11 +6018,12 @@ function drawMatLines(){
         ${S.materials.map(m=>`<option value="${m.id}" ${m.id===l.matId?'selected':''}>${esc(m.name)}${m.unit?' ('+esc(m.unit)+')':''}</option>`).join("")}
       </select>
       <input class="inp" type="number" min="0" style="width:84px" value="${l.qty!=null?l.qty:1}" onchange="matSetLine(${i},'qty',this.value)">
+      <label class="sw" title="${esc(t("matOk"))}"><input type="checkbox" ${l.ok?"checked":""} onchange="matSetLine(${i},'ok',this.checked?1:0)"><span></span></label>
       <button class="btn sm" onclick="matRmLine(${i})">✕</button>
     </div>`).join(""):`<div class="meta">${t("matNone")} ${t("matPickHint")}</div>`;
 }
-function matAddLine(){const tg=S.trainings.find(t=>t.id===matTg);tg.materials.push({matId:(S.materials[0]||{}).id||"",qty:1});drawMatLines();}
-function matSetLine(i,k,v){const tg=S.trainings.find(t=>t.id===matTg);tg.materials[i][k]=(k==='qty'?(parseInt(v)||0):v);}
+function matAddLine(){const tg=S.trainings.find(t=>t.id===matTg);tg.materials.push({matId:(S.materials[0]||{}).id||"",qty:1,ok:0});drawMatLines();}
+function matSetLine(i,k,v){const tg=S.trainings.find(t=>t.id===matTg);tg.materials[i][k]=((k==='qty'||k==='ok')?(parseInt(v)||0):v);}
 function matRmLine(i){const tg=S.trainings.find(t=>t.id===matTg);tg.materials.splice(i,1);drawMatLines();}
 async function saveMaterials(tgId){
   const tg=S.trainings.find(t=>t.id===tgId); tg.materials=(tg.materials||[]).filter(l=>l.matId);
@@ -6561,11 +6575,9 @@ function tgReady(tg){
   if(tg.need>0) parts.push({key:"rdStaff",have:Math.min(r.yes,tg.need),need:tg.need,w:2});
   const wk=tgWeekAgg(tg);
   if(wk&&wk.sessions>0) parts.push({key:"rdPlan",have:wk.placed||0,need:wk.sessions,w:1});
-  if(wk&&wk.pptAll>0)   parts.push({key:"rdPpt", have:Math.min(wk.pptDone||0,wk.pptAll),need:wk.pptAll,w:1});
   const conf=(tg.roster||[]).filter(x=>["yes","confirmed"].includes(x.status));
   if(conf.length) parts.push({key:"rdTravel",
     have:conf.filter(x=>x.flight&&((x.flight.flightOut||"")||(x.flight.arrival||""))).length,need:conf.length,w:1});
-  parts.push({key:"rdMat",have:(tg.materials||[]).filter(l=>l.matId).length?1:0,need:1,w:1});
   const wSum=parts.reduce((a,p)=>a+p.w,0)||1;
   const pct=Math.round(parts.reduce((a,p)=>a+p.w*Math.min(1,p.have/(p.need||1)),0)/wSum*100);
   return {pct,parts};
@@ -6582,8 +6594,16 @@ function rdPair(tg){
     <span class="rdcap">${esc(cap)}</span></span>`;
   const showDb = tgIsPast(tg) || tg.debrief;
   const dbDone = tg.debrief && tg.debrief.status==="final";
+  const wk=tgWeekAgg(tg);
+  const pptAll=wk?(wk.pptAll||0):0, pptDone=Math.min(wk?(wk.pptDone||0):0,pptAll);
+  const mats=(tg.materials||[]).filter(l=>l.matId);
+  const matDone=mats.filter(l=>l.ok).length;
   return `<span class="rdpair">
     ${cell(rd.pct,t("rdPlanCap"),tip,"var(--brand-solid)",false,"")}
+    ${pptAll?cell(Math.round(pptDone/pptAll*100),t("rdFolCap"),
+        t("rdFolTip",pptDone,pptAll),"",pptDone>=pptAll,`go('pptview')`):""}
+    ${mats.length?cell(Math.round(matDone/mats.length*100),t("rdMatCap"),
+        t("rdMatTip",matDone,mats.length),"",matDone>=mats.length,`openMaterials('${tg.id}')`):""}
     ${showDb?cell(dbPctOf(tg),t("rdRepCap"),
         t("dbFilled",dbFilledOf(tg),dbTotalOf(tg)),"",dbDone,`openDebrief('${tg.id}')`):""}
   </span>`;
@@ -7676,24 +7696,53 @@ function pptOwnSheet(sid){
     <div style="font-weight:650;margin-bottom:4px">${esc(sessTitle(s))}</div>
     <div class="meta" style="margin-bottom:14px">${esc(t("pptAutoHint"))}: ${esc(autoNames||"-")}
       ${o.auto?` · <b style="color:var(--good)">${esc(t("pptAutoActive"))}</b>`:""}</div>
-    <div style="display:flex;flex-direction:column;gap:2px;max-height:46vh;overflow:auto">
+    <div id="pqOwnList" style="display:flex;flex-direction:column;gap:2px;max-height:40vh;overflow:auto">
       ${S.trainers.map(x=>`<label class="pptownrow"><input type="checkbox" value="${x.id}"
         ${o.ids.includes(String(x.id))?"checked":""}> ${esc(x.name)}
         ${(s.trainerIds||[]).map(String).includes(String(x.id))?`<span class="meta" style="margin-left:auto">${esc(t("wkTeam"))}</span>`:""}</label>`).join("")}
-    </div>`;
+    </div>
+    <label class="pptownrow" style="margin-top:10px;border-top:1px solid var(--line);border-radius:0;padding-top:12px">
+      <input type="checkbox" id="pqAddTeam" ${(s.trainerIds||[]).length?"":"checked"}>
+      ${esc(t("pptOwnTeam"))}</label>`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
-    <button class="btn" onclick="pptOwnSave(null)">${esc(t("pptAutoBtn"))}</button>
+    <button class="btn" onclick="pptOwnSave(null,false)">${esc(t("pptAutoBtn"))}</button>
     <div class="spacer"></div>
-    <button class="btn primary" onclick="pptOwnSave([...document.querySelectorAll('#sheetBody input:checked')].map(x=>x.value))">${ic("check",15)}${t("save")}</button>`;
+    <button class="btn" onclick="pptOwnSave([...document.querySelectorAll('#pqOwnList input:checked')].map(x=>x.value),false)">${ic("check",15)}${t("save")}</button>
+    <button class="btn primary" onclick="pptOwnSave([...document.querySelectorAll('#pqOwnList input:checked')].map(x=>x.value),true)">${ic("send",15)}${esc(t("pptOwnSaveAsk"))}</button>`;
   openSheet();
 }
-async function pptOwnSave(ids){
-  const sid=pptOwnSid; closeSheet();
+function pptFindTid(sid){
+  for(const k in (pptWeeks||{})){
+    if((pptWeeks[k].sessions||[]).some(y=>String(y.id)===String(sid))) return k;
+  }
+  return null;
+}
+async function pptOwnSave(ids,ask){
+  const sid=pptOwnSid;
+  const addTeam=!!document.getElementById("pqAddTeam")?.checked;
+  closeSheet();
   if(!sid) return;
   const list=ids===null?[]:ids.slice();       // null/leer = zurück auf automatisch
-  pptLocal(sid,{pptByIds:list, pptBy:list[0]||null});
-  if(LIVE){ try{ await apiCall("ppt.setStatus",{session:sid,pptByIds:list}); }catch(e){ toast(e.message,"crit"); } }
+  const s=pptFindSess(sid);
+  const patch={pptByIds:list, pptBy:list[0]||null};
+  // Auf Wunsch in den Wochenplan übernehmen: Verantwortliche werden auch
+  // Trainer der Session (Vereinigung - bestehende Besetzung bleibt erhalten)
+  if(addTeam&&list.length&&s)
+    patch.trainerIds=[...new Set([...(s.trainerIds||[]).map(String),...list.map(String)])];
+  pptLocal(sid,patch);
+  if(LIVE){
+    try{ await apiCall("ppt.setStatus",{session:sid,pptByIds:list,
+      ...(addTeam&&list.length?{addTeam:list}:{})}); }
+    catch(e){ toast(e.message,"crit"); }
+  }
   renderPptView();
+  if(ask){
+    const s2=pptFindSess(sid);
+    const owners=s2?pptOwnersOf(s2).ids:[];
+    const tid=pptFindTid(sid);
+    if(owners.length&&tid) pptAskOpen(tid,owners);
+    else toast(t("pptAskedNone"),"warn");
+  }
 }
 async function pptDueSet(sid,v){
   pptLocal(sid,{pptDue:v});

@@ -599,6 +599,15 @@ switch($action){
       $set[]='ppt_due=?'; $p[]=$d;
     }
     if(array_key_exists('note',$in)){ $set[]='ppt_note=?'; $p[]=mb_substr(trim((string)$in['note']),0,255); }
+    // Auf Wunsch die Folien-Verantwortlichen auch als Session-Trainer in den
+    // Wochenplan übernehmen (Vereinigung - bestehende Besetzung bleibt).
+    if(!empty($in['addTeam']) && is_array($in['addTeam'])){
+      $ids=json_decode(($row['trainer_ids']??'')?:'',true);
+      if(!is_array($ids)) $ids=$row['trainer_id']?[(string)$row['trainer_id']]:[];
+      $ids=array_map('strval',$ids);
+      foreach($in['addTeam'] as $a){ $a=(string)(int)$a; if($a!=='0'&&!in_array($a,$ids,true)) $ids[]=$a; }
+      $set[]='trainer_ids=?'; $p[]=json_encode(array_values($ids));
+    }
     if($set){ $p[]=$sid; q("UPDATE training_sessions SET ".implode(',',$set)." WHERE id=?",$p); }
     audit('ppt.setStatus','training',(string)$row['training_id'],mb_substr((string)$row['title'],0,80));
     out(['ok'=>true]);
@@ -846,7 +855,7 @@ switch($action){
     q("DELETE FROM training_materials WHERE training_id=?",[$tid]);
     foreach($lines as $l){
       if(empty($l['matId'])) continue;
-      q("INSERT INTO training_materials(training_id,material_id,qty) VALUES(?,?,?)",[$tid,$l['matId'],(int)($l['qty']??0)]);
+      q("INSERT INTO training_materials(training_id,material_id,qty,ok) VALUES(?,?,?,?)",[$tid,$l['matId'],(int)($l['qty']??0),!empty($l['ok'])?1:0]);
     }
     out(['ok'=>true]);
 
