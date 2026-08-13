@@ -1703,6 +1703,8 @@ const L={
   pptAskHint:"Jeder Trainer bekommt automatisch seine eigene Liste offener Folien mit Fristen und seinen persönlichen Upload-Link angehängt - ist eine Basis-Vorlage hinterlegt, steht der Hinweis dazu mit in der Mail. Platzhalter wie {{firstName}} werden je Empfänger gefüllt.",
   pptAskSend:n=>n===1?"Anfrage senden":`An ${n} Trainer senden`,
   pptAskSentN:n=>`${n} Folien-Anfrage${n===1?"":"n"} verschickt.`,
+  pptNoFile:"ohne Datei", pptNoFileT:"Der Trainer hat den Stand auf \"da\" gemeldet, aber keine Datei hochgeladen - siehe Notiz, wo sie liegt.",
+  pptReopenAsk:"Die Folie steht jetzt nicht mehr auf \"da\". Soll der zuständige Trainer darüber informiert werden?",
   pptOwnTeam:"Auch als Trainer dieser Session in den Wochenplan übernehmen",
   pptOwnSaveAsk:"Speichern & anfragen",
   rdFolCap:"Folien", rdMatCap:"Material",
@@ -2197,6 +2199,8 @@ const L={
   pptAskHint:"Each trainer automatically gets their own list of open slides with deadlines and their personal upload link attached - if a base template is stored, the note about it is included. Placeholders like {{firstName}} are filled per recipient.",
   pptAskSend:n=>n===1?"Send request":`Send to ${n} trainers`,
   pptAskSentN:n=>`${n} slides request${n===1?"":"s"} sent.`,
+  pptNoFile:"no file", pptNoFileT:"The trainer reported the status as \"done\" but did not upload a file - see the note for where it is stored.",
+  pptReopenAsk:"This slide deck is no longer marked as done. Inform the responsible trainer?",
   pptOwnTeam:"Also add as trainer of this session in the week plan",
   pptOwnSaveAsk:"Save & request",
   rdFolCap:"Slides", rdMatCap:"Material",
@@ -7660,7 +7664,8 @@ function pptRowHtml(tg,r){
         ${ic("down",13)}${esc((s.pptFileName||t("pptDownload")).slice(0,26))}${(s.pptFileName||"").length>26?"…":""}</a>
        <span class="meta tnum">${s.pptFileSize?(s.pptFileSize<1048576?Math.max(1,Math.round(s.pptFileSize/1024))+" KB":Math.round(s.pptFileSize/1048576*10)/10+" MB"):""}</span>
        <button class="btn sm" title="${esc(t("pptFileDel"))}" onclick="pptFileDel('${s.id}')">✕</button>`
-    : `<label class="btn sm pptup">${ic("clip",13)}${esc(t("pptUpload"))}
+    : `${s.ppt==="vorhanden"?`<span class="tag" style="border-color:var(--warn);color:var(--warn)" title="${esc(t("pptNoFileT"))}">${esc(t("pptNoFile"))}</span>`:""}
+       <label class="btn sm pptup">${ic("clip",13)}${esc(t("pptUpload"))}
         <input type="file" accept=".ppt,.pptx,.pot,.potx,.pdf" style="display:none"
           onchange="pptUp('${s.id}',this)"></label>`;
   return `<div class="pptrow">
@@ -7690,9 +7695,18 @@ function pptLocal(sid,patch){
   }
 }
 async function pptSt(sid,v){
+  const s0=pptFindSess(sid);
+  const wasDone=s0 && s0.ppt==="vorhanden";
+  const owners=s0?pptOwnersOf(s0).ids:[];
   pptLocal(sid,{ppt:v});
   if(LIVE){ try{ await apiCall("ppt.setStatus",{session:sid,ppt:v}); }catch(e){ toast(e.message,"crit"); } }
   renderPptView(); buildNav();
+  /* Wird eine fertige Folie zurückgestellt, erfährt der Trainer davon sonst
+     nichts - deshalb hier direkt anbieten, ihn zu informieren. */
+  if(LIVE && wasDone && v!=="vorhanden" && owners.length){
+    const tid=pptFindTid(sid);
+    if(tid && confirm(t("pptReopenAsk"))) pptAskOpen(tid,owners);
+  }
 }
 let pptOwnSid=null;
 function pptFindSess(sid){

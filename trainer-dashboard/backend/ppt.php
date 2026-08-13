@@ -9,6 +9,11 @@
 require_once __DIR__.'/lib.php';
 ensure_schema();
 
+// Der Trainer ruft diese Seite immer wieder auf - sie muss den aktuellen
+// Stand zeigen, auch wenn die Koordination zwischendurch etwas geaendert hat.
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
+
 $tok=$_GET['token'] ?? ($_POST['token'] ?? '');
 $req = $tok ? q("SELECT r.*, t.*, r.trainer_id AS trid, r.lang AS rlang
                  FROM requests r JOIN trainings t ON t.id=r.training_id
@@ -182,12 +187,12 @@ $docTitle=$req ? 'ETAF PowerPoints '.($tr['name']??'').' '.((string)($req['code'
           </div>
           <input type="text" name="note" placeholder="<?=e($L['note'])?>" value="<?=e($s['ppt_note']??'')?>">
           <div class="rowline">
-            <button class="btn line" type="submit" name="act" value="status"><?=e($L['save'])?></button>
+            <button class="btn line" type="submit" onclick="setAct(this,'status')"><?=e($L['save'])?></button>
             <label class="btn" style="position:relative;overflow:hidden">
               <?=e($s['ppt_file']?$L['replace']:$L['upload'])?>
               <input type="file" name="file" accept=".ppt,.pptx,.pot,.potx,.pdf"
                 style="position:absolute;inset:0;opacity:0;cursor:pointer"
-                onchange="this.form.act.value='upload';this.form.submit()">
+                onchange="setAct(this,'upload');this.form.submit()">
             </label>
             <input type="hidden" name="act" value="status">
             <?php if(!empty($s['ppt_file'])): ?>
@@ -205,6 +210,13 @@ $docTitle=$req ? 'ETAF PowerPoints '.($tr['name']??'').' '.((string)($req['code'
 <?php endif; ?>
 </div>
 <script>
+/* Das Formular enthaelt mehrere Bedienelemente; das Ziel-Feld deshalb gezielt
+   ueber querySelector holen. form.act waere eine Liste gleichnamiger Elemente -
+   eine Zuweisung darauf bliebe wirkungslos und die Datei ginge verloren. */
+function setAct(el,val){
+  const f=el.form || el.closest('form');
+  f.querySelector('input[name=act]').value=val;
+}
 function pick(btn,sid,val){
   document.getElementById('st-'+sid).value=val;
   const box=btn.parentElement;
