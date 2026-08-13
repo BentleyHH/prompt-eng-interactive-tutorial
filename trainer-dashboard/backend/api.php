@@ -615,6 +615,10 @@ switch($action){
   /* ---- Fertige Folie hochladen (multipart aus dem Cockpit) ---- */
   case 'ppt.upload':
     require_auth();
+    // Zu große Übertragung: PHP hat $_POST/$_FILES verworfen - ohne diesen Test
+    // käme nur ein irreführendes "Session nicht gefunden" zurück.
+    if(ppt_post_too_big())
+      fail('Die Datei war zu groß für den Server und wurde abgewiesen. '.ppt_limit_hint(),413);
     $sid=(int)($in['session']??0);
     $row=q("SELECT * FROM training_sessions WHERE id=?",[$sid])->fetch();
     if(!$row) fail('Session nicht gefunden.',404);
@@ -646,6 +650,8 @@ switch($action){
   /* ---- Basis-Vorlage je Training ---- */
   case 'ppt.templateUpload':
     require_auth();
+    if(ppt_post_too_big())
+      fail('Die Datei war zu groß für den Server und wurde abgewiesen. '.ppt_limit_hint(),413);
     $tgId=(int)($in['training']??0);
     $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
     if(!$tg) fail('Training nicht gefunden.',404);

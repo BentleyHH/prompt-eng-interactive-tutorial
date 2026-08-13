@@ -57,7 +57,17 @@ function ppt_my_sessions(array $req): array {
 }
 
 $msg=''; $msgKind='ok';
-if($req && $_SERVER['REQUEST_METHOD']==='POST'){
+// Zu große Übertragung: PHP hat $_POST/$_FILES bereits verworfen - ohne diesen
+// Zweig liefe der Aufruf ins Leere und die Seite meldete gar nichts.
+if($req && ppt_post_too_big()){
+  $msg = $lang==='de'
+    ? 'Die Datei war zu groß für den Server und wurde abgewiesen. '.ppt_limit_hint()
+      .' Bitte die Datei verkleinern oder den Ablageort im Notizfeld angeben.'
+    : 'The file exceeded the server limit and was rejected (max. '.round(ppt_max_bytes()/1048576).' MB).'
+      .' Please reduce the file size or note where it is stored.';
+  $msgKind='err';
+}
+elseif($req && $_SERVER['REQUEST_METHOD']==='POST'){
   $sid=(int)($_POST['sid']??0);
   $mine=array_filter(ppt_my_sessions($req), fn($s)=>(int)$s['id']===$sid);
   if($mine){
@@ -175,7 +185,10 @@ $docTitle=$req ? 'ETAF PowerPoints '.($tr['name']??'').' '.((string)($req['code'
         if($co): $cn=array_map(fn($i)=>$trNames[(string)$i]??'?',$co); ?>
           <div class="meta">👥 <?=e($L['with'].' '.implode(', ',$cn))?></div>
         <?php endif; ?>
-        <form method="post" enctype="multipart/form-data">
+        <!-- Token zusätzlich in der Adresse: Verwirft der Server eine zu große
+             Übertragung, fehlt der Inhalt komplett - nur so bleibt die Seite
+             erkennbar und kann den Grund melden, statt "Link ungültig" zu zeigen. -->
+        <form method="post" enctype="multipart/form-data" action="ppt.php?token=<?=e($tok)?>">
           <input type="hidden" name="token" value="<?=e($tok)?>">
           <input type="hidden" name="sid" value="<?=e((string)$s['id'])?>">
           <input type="hidden" name="ppt" id="st-<?=e((string)$s['id'])?>" value="<?=e($s['ppt']??'')?>">

@@ -46,11 +46,38 @@ row('Zugriffsschutz backend/.htaccess vorhanden', is_file(__DIR__.'/.htaccess'),
     .'(FileZilla: Server → „Auflistung versteckter Dateien erzwingen“; Finder: Cmd+Shift+Punkt). '
     .'Notfalls als <code>htaccess.txt</code> hochladen und auf dem Server in <code>.htaccess</code> umbenennen.');
 
-/* 2c) Kann der Server Folien-Uploads ablegen? */
-$upd=__DIR__.'/uploads';
-row('Upload-Ordner beschreibbar (backend/uploads)', is_dir($upd)?is_writable($upd):null,
-    is_dir($upd)?(is_writable($upd)?'':'Bitte per FTP die Rechte des Ordners auf 755/775 setzen.')
-                :'Wird beim ersten Aufruf der App automatisch angelegt.');
+/* 2c) Folien-Uploads: Ordner, Schreibrechte und Größengrenzen im Klartext.
+      Scheitert ein Upload, liegt es fast immer an einer dieser drei Zeilen. */
+$upd=__DIR__.'/uploads'; $pptd=$upd.'/ppt';
+if(!is_dir($pptd)) @mkdir($pptd,0775,true);
+row('Upload-Ordner vorhanden (backend/uploads/ppt)', is_dir($pptd),
+    is_dir($pptd)?'':'Konnte nicht angelegt werden - bitte per FTP anlegen: <b>backend/uploads/ppt</b>');
+// Echter Schreibtest: nur so zeigt sich, ob PHP wirklich hineinschreiben darf
+$wOk=false; $wErr='';
+if(is_dir($pptd)){
+  $tf=$pptd.'/.schreibtest-'.substr(md5((string)mt_rand()),0,6);
+  $wOk=@file_put_contents($tf,'x')!==false;
+  if($wOk) @unlink($tf); else $wErr='PHP darf nicht in den Ordner schreiben.';
+}
+row('Upload-Ordner beschreibbar (Schreibtest)', $wOk,
+    $wOk?'':'<b>'.esc($wErr).'</b> Bitte per FTP die Rechte auf <b>775</b> setzen (Ordner backend/uploads und backend/uploads/ppt).');
+// Größengrenzen: der kleinste Wert gewinnt - ein 20-MB-Foliensatz scheitert
+// sonst lautlos, weil PHP die Übertragung komplett verwirft.
+$umf=trim((string)ini_get('upload_max_filesize'));
+$pms=trim((string)ini_get('post_max_size'));
+// Grenzwert selbst berechnen - diese Seite laedt bewusst nichts aus lib/db
+$toB=function($v){ $v=trim((string)$v); if($v==='') return PHP_INT_MAX;
+  $n=(float)$v; switch(strtolower(substr($v,-1))){ case 'g':$n*=1024; case 'm':$n*=1024; case 'k':$n*=1024; }
+  return (int)$n; };
+$eff=(int)round(min(40*1024*1024,$toB($umf),$toB($pms))/1048576);
+row('Datei-Uploads in PHP aktiv', (bool)ini_get('file_uploads'),
+    ini_get('file_uploads')?'':'In der php.ini steht file_uploads=Off - bitte beim Hoster einschalten lassen.');
+row('Größengrenze für Folien: '.$eff.' MB', $eff>=20,
+    'php.ini: upload_max_filesize='.esc($umf).', post_max_size='.esc($pms).'. '
+    .($eff>=20 ? 'Reicht für übliche Foliensätze.'
+               : '<b>Zu klein für übliche PowerPoints.</b> Bei artfiles im Kundenmenü unter PHP-Einstellungen '
+                .'beide Werte auf mindestens 32M setzen (oder eine Datei <b>.user.ini</b> im Hauptordner anlegen mit '
+                .'<code>upload_max_filesize = 32M</code> und <code>post_max_size = 40M</code>).'));
 
 /* 3) config.php fehlerfrei? (Tippfehler beim Bearbeiten sind die häufigste Ursache) */
 $cfg=null; $cfgErr='';

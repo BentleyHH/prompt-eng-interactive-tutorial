@@ -1146,13 +1146,52 @@ function ppt_due_of(array $s, array $tg): string {
   return gmdate('Y-m-d', strtotime($start.' UTC')-$lead*86400);
 }
 /** Hochgeladene Datei validieren und ablegen; gibt [name,orig,size] oder Fehlertext. */
+/** Hat der Server die Übertragung komplett verworfen? Überschreitet eine
+ *  Anfrage post_max_size, leert PHP $_POST und $_FILES restlos - ohne diesen
+ *  Test käme gar keine Meldung an und der Upload verschwände lautlos. */
+function ppt_post_too_big(): bool {
+  return ($_SERVER['REQUEST_METHOD']??'')==='POST'
+      && empty($_POST) && empty($_FILES)
+      && (int)($_SERVER['CONTENT_LENGTH']??0) > 0;
+}
+/** Grenze aus der PHP-Konfiguration im Klartext (für Fehlermeldungen). */
+function ppt_limit_hint(): string {
+  return 'Der Server nimmt derzeit höchstens '.round(ppt_max_bytes()/1048576).' MB an'
+    .' (php.ini: upload_max_filesize='.trim((string)ini_get('upload_max_filesize'))
+    .', post_max_size='.trim((string)ini_get('post_max_size')).').';
+}
 function ppt_store_upload(array $f, string $prefix){
-  if(($f['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK) return 'Upload fehlgeschlagen (Code '.($f['error']??'?').').';
-  if(($f['size']??0)>ppt_max_bytes()) return 'Datei zu groß (max. '.round(ppt_max_bytes()/1048576).' MB).';
+  if(ppt_post_too_big())
+    return 'Die Datei war zu groß für den Server und wurde komplett abgewiesen. '.ppt_limit_hint();
+  $err=(int)($f['error']??UPLOAD_ERR_NO_FILE);
+  if($err!==UPLOAD_ERR_OK){
+    $txt=[
+      UPLOAD_ERR_INI_SIZE  =>'Die Datei überschreitet das Limit des Servers. '.ppt_limit_hint(),
+      UPLOAD_ERR_FORM_SIZE =>'Die Datei überschreitet das Limit des Formulars.',
+      UPLOAD_ERR_PARTIAL   =>'Die Übertragung wurde abgebrochen - bitte noch einmal versuchen.',
+      UPLOAD_ERR_NO_FILE   =>'Es wurde keine Datei ausgewählt.',
+      UPLOAD_ERR_NO_TMP_DIR=>'Dem Server fehlt ein Zwischenspeicher für Uploads (upload_tmp_dir). Bitte beim Hoster melden.',
+      UPLOAD_ERR_CANT_WRITE=>'Der Server konnte die Datei nicht zwischenspeichern (Schreibrechte).',
+      UPLOAD_ERR_EXTENSION =>'Eine PHP-Erweiterung hat den Upload blockiert.',
+    ];
+    return $txt[$err] ?? ('Upload fehlgeschlagen (Code '.$err.').');
+  }
+  if(($f['size']??0)>ppt_max_bytes())
+    return 'Datei zu groß (max. '.round(ppt_max_bytes()/1048576).' MB). '.ppt_limit_hint();
   $ext=strtolower(pathinfo((string)($f['name']??''),PATHINFO_EXTENSION));
   if(!in_array($ext,PPT_EXT,true)) return 'Nur '.implode(', ',PPT_EXT).' sind erlaubt.';
+  // Ablageordner muss existieren UND beschreibbar sein - auf geteiltem Hosting
+  // scheitert das Anlegen sonst still an den Rechten des übergeordneten Ordners.
+  $dir=ppt_dir();
+  if(!is_dir($dir))
+    return 'Der Ablageordner konnte nicht angelegt werden: '.$dir
+      .' - bitte per FTP anlegen und die Rechte auf 775 setzen.';
+  if(!is_writable($dir))
+    return 'Der Ablageordner ist nicht beschreibbar: '.$dir
+      .' - bitte per FTP die Rechte auf 775 setzen.';
   $name=$prefix.'-'.substr(token(16),0,8).'.'.$ext;
-  if(!@move_uploaded_file($f['tmp_name'],ppt_dir().'/'.$name)) return 'Speichern fehlgeschlagen.';
+  if(!@move_uploaded_file($f['tmp_name'],$dir.'/'.$name))
+    return 'Speichern fehlgeschlagen (Ziel: '.$dir.'). Bitte die Ordnerrechte prüfen - Diagnose unter backend/check.php.';
   $orig=preg_replace('/[^\w.\- ()\[\]]/u','_',(string)$f['name']);
   return ['name'=>$name,'orig'=>mb_substr($orig,0,180),'size'=>(int)$f['size']];
 }
