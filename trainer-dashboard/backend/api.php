@@ -687,7 +687,8 @@ switch($action){
     if(!$list) out(['ok'=>true,'sent'=>0,'open'=>0]);
     $today=gmdate('Y-m-d');
     $od=false; foreach($list as $s){ $d=ppt_due_of($s,$tg); if($d && $d<$today){ $od=true; break; } }
-    $ok=ppt_send_reminder($tg,$trId,$list,$od,'request');
+    $ok=ppt_send_reminder($tg,$trId,$list,$od,'request',
+      (string)($in['lang']??''),(string)($in['subject']??''),(string)($in['text']??''));
     if($ok) foreach($list as $s)
       q("UPDATE training_sessions SET ppt_reminded_at=? WHERE id=?",[now(),$s['id']]);
     audit('ppt.request','training',(string)$tgId,'Folien-Anfrage an Trainer '.$trId.' ('.count($list).')');

@@ -1178,11 +1178,16 @@ function ppt_link_token(int $tgId, int $trId): string {
 }
 /** Mail an einen Trainer zu seinen offenen Folien eines Trainings.
  *  $kind: 'remind' (automatisches Nachhaken) oder 'request' (freundliche
- *  Erst-Anfrage aus der Besetzungsliste, mit Hinweis auf die Basis-Vorlage). */
-function ppt_send_reminder(array $tg, int $trId, array $sessions, bool $overdue, string $kind='remind'): bool {
+ *  Erst-Anfrage, mit Hinweis auf die Basis-Vorlage).
+ *  $lang/$subject/$text: aus dem Kontroll-Dialog angepasste Fassung -
+ *  Platzhalter ({{firstName}}, {{topic}}, ...) werden gefüllt, die
+ *  Folien-Liste und der persönliche Link werden immer angehängt. */
+function ppt_send_reminder(array $tg, int $trId, array $sessions, bool $overdue,
+                           string $kind='remind', string $lang='', string $subject='', string $text=''): bool {
   $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
   if(!$tr || !$tr['email']) return false;
   $lg=(($tr['pref_lang']??'')==='en')?'en':'de';
+  if(in_array($lang,['de','en'],true)) $lg=$lang;
   $tok=ppt_link_token((int)$tg['id'],$trId);
   $link=base_url().'/ppt.php?token='.$tok;
   $first=explode(' ',preg_replace('/^Dr\.\s*/','',(string)$tr['name']))[0]?:'';
@@ -1224,6 +1229,9 @@ function ppt_send_reminder(array $tg, int $trId, array $sessions, bool $overdue,
     }
     $cta='Upload slides & report status';
   }
+  // Aus dem Kontroll-Dialog angepasste Texte übernehmen (Platzhalter füllen)
+  if(trim($subject)!=='') $subj=preg_replace('/[\r\n]+/',' ',fill_tpl(trim($subject),$tg,$tr));
+  if(trim($text)!=='')    $intro=fill_tpl($text,$tg,$tr).$tplNote;
   $html=email_html($intro,
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0">'.$rows.'</table>'
     .cta_button($link,$cta));

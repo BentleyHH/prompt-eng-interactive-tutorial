@@ -1689,7 +1689,11 @@ const L={
   pptAutoBtn:"Automatisch (Wochenplan)", wkPptAuto:"automatisch (Besetzung der Session)", wkPptMulti:"- mehrere (siehe Folien) -",
   pptAsk:"Folien anfragen", pptAskT:"Folien-Anfrage per Mail: offene PowerPoints, Frist und persönlicher Upload-Link (inkl. Basis-Vorlage)",
   pptAsked:n=>`Folien-Anfrage verschickt - ${n} offene PowerPoint${n===1?"":"s"}.`,
-  pptAskedNone:"Für diesen Trainer sind keine PowerPoints offen.",
+  pptAskedNone:"Hier sind keine PowerPoints offen - niemand anzufragen.",
+  pptAskTitle:"Folien-Anfrage", pptAskTo:n=>n===1?"An:":`An ${n} Trainer (offene Folien in Klammern):`,
+  pptAskHint:"Jeder Trainer bekommt automatisch seine eigene Liste offener Folien mit Fristen und seinen persönlichen Upload-Link angehängt - ist eine Basis-Vorlage hinterlegt, steht der Hinweis dazu mit in der Mail. Platzhalter wie {{firstName}} werden je Empfänger gefüllt.",
+  pptAskSend:n=>n===1?"Anfrage senden":`An ${n} Trainer senden`,
+  pptAskSentN:n=>`${n} Folien-Anfrage${n===1?"":"n"} verschickt.`,
   pptDueIn:d=>d===0?"heute fällig":`in ${d} Tagen`, pptOverBy:d=>`${d} Tag${d===1?"":"e"} überfällig`,
   pptUpload:"Hochladen", pptReplace:"Ersetzen", pptDownload:"Herunterladen",
   pptFileDel:"Datei entfernen", pptFileDelAsk:"Die Datei wirklich entfernen? Der Status springt zurück auf offen.",
@@ -2173,7 +2177,11 @@ const L={
   pptAutoBtn:"Automatic (week plan)", wkPptAuto:"automatic (session team)", wkPptMulti:"- several (see Slides) -",
   pptAsk:"Request slides", pptAskT:"Slides request by mail: open PowerPoints, deadline and personal upload link (incl. base template)",
   pptAsked:n=>`Slides request sent - ${n} open PowerPoint${n===1?"":"s"}.`,
-  pptAskedNone:"No open PowerPoints for this trainer.",
+  pptAskedNone:"No open PowerPoints here - nobody to ask.",
+  pptAskTitle:"Slides request", pptAskTo:n=>n===1?"To:":`To ${n} trainers (open slides in brackets):`,
+  pptAskHint:"Each trainer automatically gets their own list of open slides with deadlines and their personal upload link attached - if a base template is stored, the note about it is included. Placeholders like {{firstName}} are filled per recipient.",
+  pptAskSend:n=>n===1?"Send request":`Send to ${n} trainers`,
+  pptAskSentN:n=>`${n} slides request${n===1?"":"s"} sent.`,
   pptDueIn:d=>d===0?"due today":`in ${d} days`, pptOverBy:d=>`${d} day${d===1?"":"s"} overdue`,
   pptUpload:"Upload", pptReplace:"Replace", pptDownload:"Download",
   pptFileDel:"Remove file", pptFileDelAsk:"Really remove the file? The status goes back to open.",
@@ -3973,6 +3981,7 @@ function drawWeekBody(){
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
       <button class="btn sm" onclick="openPptSheet()">${ic("clip",14)}${t("wkPptChip",done,rel.length)}</button>
+      ${LIVE?`<button class="btn sm" onclick="pptAskOpen(curWeekId,null)" title="${esc(t("pptAskT"))}">${ic("send",14)}${t("pptAsk")}</button>`:""}
       ${wkTarget==="#wkBody"
         ? `<button class="btn sm" onclick="openDetail('${tg.id}')">${ic("users",14)}${t("open")} - ${t("nav_trainings")}</button>`
         : `<button class="btn sm" onclick="openWeek('${tg.id}')">${ic("week",14)}${t("nav_week")}</button>`}
@@ -4256,6 +4265,9 @@ function openSessEdit(sid){
       <div style="flex:1"><label class="fld">${t("wkPptDue")}</label>
         <input class="inp" id="wsPptDue" type="date" value="${esc(s?s.pptDue||"":"")}"></div>
     </div>
+    ${(s&&LIVE&&s.ppt!=="vorhanden"&&pptOwnersOf(s).ids.length)?`
+    <div style="margin-top:6px"><button class="btn sm" onclick="pptAskFromEditor()" title="${esc(t("pptAskT"))}">${ic("send",13)}${t("pptAsk")}
+      <span class="meta">(${esc(pptOwnerShort(pptOwnersOf(s).ids))})</span></button></div>`:""}
     <label class="fld">${t("wkMove")}</label>
     <select class="inp" id="wsSlot">${slotOpt}</select>`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
@@ -7772,16 +7784,97 @@ async function pptTplDel(tgId){
     closeSheet(); renderPptView();
   }catch(e){ toast(e.message,"crit"); }
 }
-/* Folien-Anfrage an einen Trainer aus der Besetzungsliste - synchron mit dem
-   Reiter Folien: die Automatik sieht den Versand und hakt erst später nach. */
-async function pptRequestTrainer(tgId,trId,btn){
+/* Folien-Anfrage mit Kontroll-Dialog (wie beim Agenda-Versand): Betreff und
+   Text sind vor dem Senden anpassbar, jeder Empfänger bekommt automatisch
+   seine eigene Liste offener Folien samt persönlichem Upload-Link angehängt.
+   Synchron mit dem Reiter Folien: die Automatik sieht den Versand und hakt
+   erst nach der normalen Kadenz nach. Aufrufbar aus Besetzung, Wochenplan
+   (alle Trainer der Woche) und Session-Editor. */
+let pptAskD=null;
+function pptRequestTrainer(tgId,trId){ pptAskOpen(tgId,[trId]); }
+async function pptAskOpen(tgId,trIds){
   if(!LIVE){ toast(t("pptDemo"),"warn"); return; }
-  if(btn) btn.disabled=true;
-  try{
-    const d=await apiCall("ppt.requestTrainer",{training:tgId,trainer:trId});
-    toast(d.open?t("pptAsked",d.open):t("pptAskedNone"), d.open?"good":"warn");
-  }catch(e){ toast("Fehler: "+e.message,"crit"); }
-  if(btn) btn.disabled=false;
+  const tg=S.trainings.find(x=>String(x.id)===String(tgId)); if(!tg) return;
+  let sessions=[];
+  try{ const d=await apiCall("sessions.list",{training:tgId}); sessions=d.sessions||[]; }
+  catch(e){ toast("Fehler: "+e.message,"crit"); return; }
+  const openOf=id=>sessions.filter(s=>wkPptRelevant(s)&&s.ppt!=="vorhanden"&&pptOwnersOf(s).ids.includes(String(id))).length;
+  const ids=(trIds&&trIds.length)?trIds.map(String)
+    :[...new Set(sessions.flatMap(s=>(wkPptRelevant(s)&&s.ppt!=="vorhanden")?pptOwnersOf(s).ids:[]))];
+  const recips=ids.map(id=>{
+    const tr=S.trainers.find(x=>String(x.id)===String(id));
+    const open=openOf(id);
+    return (tr&&open)?{tr,open}:null;
+  }).filter(Boolean);
+  if(!recips.length){ toast(t("pptAskedNone"),"warn"); return; }
+  pptAskD={tg,recips,
+    lang:((recips.length===1?(recips[0].tr.prefLang||S.lang):S.lang)==="en")?"en":"de"};
+  drawPptAsk(true);
+  openSheet();
+}
+function pptAskTexts(tg,lang){
+  const title=(tg.code?tg.code+" - ":"")+tg.topic;
+  return lang==="de" ? {
+    subject:`Bitte um deine PowerPoints - ${title}`,
+    body:`Hallo {{firstName}},\n\nfür "${tg.topic}" in ${tg.city||""} bist du für die unten aufgeführten PowerPoints eingeplant. Über den Link unten kannst du sie hochladen oder kurz den Stand melden.`
+  } : {
+    subject:`Request for your PowerPoints - ${title}`,
+    body:`Hi {{firstName}},\n\nfor "${tg.topic}" in ${tg.city||""} you are scheduled to prepare the PowerPoints listed below. Use the link below to upload them or report the status.`
+  };
+}
+function drawPptAsk(first){
+  const {tg,recips,lang}=pptAskD;
+  const tx=pptAskTexts(tg,lang);
+  if(first){
+    $("#sheetTitle").textContent=t("pptAskTitle")+" - "+(recips.length===1?recips[0].tr.name:(tg.code||tg.topic));
+    $("#sheetBody").innerHTML=`
+      <div class="fldrow" style="align-items:flex-start;margin-bottom:10px">
+        <div class="meta rowgrow">${esc(t("pptAskTo",recips.length))}<br>${recips.map(r=>
+          esc(r.tr.name)+` <b class="tnum">(${r.open})</b>`+(r.tr.email?"":` <b style="color:var(--crit)">${esc(t("agNoMail"))}</b>`)).join(" · ")}</div>
+        <span class="langsw">
+          <button id="pqL-de" onclick="pptAskLang('de')">DE</button>
+          <button id="pqL-en" onclick="pptAskLang('en')">EN</button>
+        </span>
+      </div>
+      <label class="fld">${t("agSubjLbl")}</label>
+      <input class="inp" id="pqSubj">
+      <label class="fld">${t("agBodyLbl")}</label>
+      <textarea id="pqBody" style="min-height:140px"></textarea>
+      <div class="meta" style="margin-top:10px">${ic("clip",13)}${esc(t("pptAskHint"))}</div>`;
+    $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+      <div class="spacer"></div>
+      <button class="btn primary" onclick="doPptAsk()">${ic("send",15)}${esc(t("pptAskSend",recips.length))}</button>`;
+  }
+  $("#pqSubj").value=tx.subject;
+  $("#pqBody").value=tx.body;
+  $("#pqL-de").className=lang==="de"?"on":"";
+  $("#pqL-en").className=lang==="en"?"on":"";
+}
+function pptAskLang(l){ if(pptAskD.lang===l) return; pptAskD.lang=l; drawPptAsk(false); }
+async function doPptAsk(){
+  const {tg,recips,lang}=pptAskD;
+  const subject=val("pqSubj").trim(), text=val("pqBody");
+  if(!text.trim()){ toast(t("agBodyLbl")+"?","crit"); return; }
+  const btn=$("#sheetFoot .btn.primary");
+  if(btn){ btn.disabled=true; btn.innerHTML=`<span class="btnspin"></span>`; }
+  let sent=0; const fail=[];
+  for(const r of recips){
+    try{
+      const d=await apiCall("ppt.requestTrainer",{training:tg.id,trainer:r.tr.id,lang,subject,text});
+      if(d.sent) sent++; else fail.push(r.tr.name);
+    }catch(e){ fail.push(r.tr.name); }
+  }
+  closeSheet();
+  toast(t("pptAskSentN",sent)+(fail.length?" · "+t("agAllFail",fail.join(", ")):""),
+    fail.length?"warn":"good");
+}
+/* Aus dem Session-Editor: Anfrage an die Verantwortlichen dieser Session */
+function pptAskFromEditor(){
+  const s=wkSess(wkEditSid); if(!s) return;
+  const ids=pptOwnersOf(s).ids;
+  if(!ids.length){ toast(t("pptAskedNone"),"warn"); return; }
+  closeSheet();
+  pptAskOpen(curWeekId, ids);
 }
 async function pptRemind(tgId,btn){
   if(btn){ btn.disabled=true; }
