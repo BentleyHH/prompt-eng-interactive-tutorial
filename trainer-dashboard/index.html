@@ -1424,7 +1424,11 @@ const L={
   // Änderungsprotokoll
   actCount:n=>`${n} Einträge`, actHint:"Die letzten Änderungen aller Benutzer.",
   actEmpty:"Noch keine Einträge.",
-  act_login:"angemeldet", "act_user.create":"Benutzer angelegt", "act_user.update":"Benutzer geändert",
+  act_login:"angemeldet", act_logout:"abgemeldet", "act_login.failed":"Anmeldung fehlgeschlagen",
+  actAll:"Alles", actLogins:"Nur An- und Abmeldungen", actAllPeople:"Alle Personen",
+  actLoginHint:"Wer sich wann angemeldet hat - dauerhaft, auch nach Ablauf der Sitzung. Fehlversuche sind rot markiert.",
+  usrHistory:"Verlauf", usrHistoryT:"Alle An- und Abmeldungen dieser Person im Protokoll anzeigen",
+  "act_user.create":"Benutzer angelegt", "act_user.update":"Benutzer geändert",
   "act_user.invite":"Zugangs-Link gesendet", "act_user.activate":"Benutzer entsperrt", "act_user.deactivate":"Benutzer gesperrt",
   "act_password.set":"Passwort festgelegt", "act_password.reset":"Passwort zurückgesetzt", "act_password.change":"Passwort geändert",
   "act_training.create":"Training angelegt", "act_training.update":"Training geändert", "act_training.delete":"Training gelöscht",
@@ -1938,7 +1942,11 @@ const L={
   usrChangePw:"Change password", usrPwChanged:"Password changed", usrPwShort:"At least 8 characters.",
   actCount:n=>`${n} entries`, actHint:"The most recent changes by all users.",
   actEmpty:"No entries yet.",
-  act_login:"signed in", "act_user.create":"user created", "act_user.update":"user updated",
+  act_login:"signed in", act_logout:"signed out", "act_login.failed":"sign-in failed",
+  actAll:"Everything", actLogins:"Sign-ins only", actAllPeople:"All people",
+  actLoginHint:"Who signed in when - kept permanently, even after the session expires. Failed attempts are marked red.",
+  usrHistory:"History", usrHistoryT:"Show all sign-ins and sign-outs of this person in the log",
+  "act_user.create":"user created", "act_user.update":"user updated",
   "act_user.invite":"access link sent", "act_user.activate":"user unblocked", "act_user.deactivate":"user blocked",
   "act_password.set":"password set", "act_password.reset":"password reset", "act_password.change":"password changed",
   "act_training.create":"training created", "act_training.update":"training updated", "act_training.delete":"training deleted",
@@ -4766,6 +4774,7 @@ async function renderUsers(){
         <span class="pill ${u.active?'good':'neutral'}">${u.active?t("usrActive"):t("usrBlocked")}</span>
         <button class="btn sm" onclick="openUserEdit('${u.id}')">${ic("pen",15)}${t("trEdit")}</button>
         <button class="btn sm" onclick="openDigestEdit('${u.id}')" title="${t("dgTitle")}">${ic("bell",15)}${t("dgBtn")}${u.digestFreq&&u.digestFreq!=="off"?` <b style="color:var(--good)">·</b>`:""}</button>
+        <button class="btn sm" onclick="actShowLogins('${u.id}')" title="${esc(t("usrHistoryT"))}">${ic("log",15)}${t("usrHistory")}</button>
         <button class="btn sm" onclick="resendInvite('${u.id}')" title="${t("usrResend")}">${ic("send",15)}</button>
         <button class="btn sm" onclick="toggleUser('${u.id}',${u.active?0:1})" ${me&&me.id===u.id?'disabled style="opacity:.4"':''}>
           ${u.active?t("usrBlock"):t("usrUnblock")}</button>
@@ -4862,26 +4871,49 @@ async function changeOwnPassword(){
 /* ============================================================
    ÄNDERUNGSPROTOKOLL - wer hat wann was geändert
    ============================================================ */
-const ACT_ICON={login:"lock","user.create":"users","user.update":"users","user.invite":"send",
+const ACT_ICON={login:"lock",logout:"lock","login.failed":"alert","user.create":"users","user.update":"users","user.invite":"send",
   "user.activate":"users","user.deactivate":"users","password.set":"lock","password.reset":"lock",
   "password.change":"lock","training.create":"cal","training.update":"cal","training.delete":"trash",
   "trainer.create":"id","trainer.update":"id","trainer.delete":"trash","client.create":"book",
   "client.update":"book","client.delete":"trash","request.status":"reply"};
+let actFilter={kind:"all",user:""};   // Anmelde-Filter ist Administratoren vorbehalten
+function actSetKind(k){ actFilter.kind=k; renderActivity(); }
+function actSetUser(u){ actFilter.user=u; renderActivity(); }
+/* Aus der Benutzerliste heraus: nur die An-/Abmeldungen dieser Person. */
+function actShowLogins(userId){
+  actFilter={kind:"logins",user:String(userId||"")};
+  go("activity");
+}
 async function renderActivity(){
-  let list=[];
-  if(LIVE){ try{ const d=await apiCall("activity.list",{limit:200}); list=d.activity||[]; }catch(e){} }
+  let list=[], people=[];
+  if(!isAdmin() && actFilter.kind!=="all"){ actFilter={kind:"all",user:""}; }
+  if(LIVE){
+    try{
+      const d=await apiCall("activity.list",
+        {limit:actFilter.kind==="logins"?400:200, kind:actFilter.kind, user:actFilter.user||0});
+      list=d.activity||[]; people=d.people||[];
+    }catch(e){}
+  }
   const rows=list.map(a=>`
     <div class="row">
-      <div class="av" style="width:30px;height:30px;background:var(--panel-2);color:var(--muted)">${ic(ACT_ICON[a.action]||"log",15)}</div>
+      <div class="av" style="width:30px;height:30px;background:var(--panel-2);color:${
+        a.action==="login.failed"?"var(--crit)":"var(--muted)"}">${ic(ACT_ICON[a.action]||"log",15)}</div>
       <div class="rowgrow">
         <div class="nm">${esc(a.user_name||"-")} <span class="meta" style="font-weight:500">· ${esc(t("act_"+a.action)!=="act_"+a.action?t("act_"+a.action):a.action)}</span></div>
         <div class="meta">${esc(a.summary||"")}</div>
       </div>
       <span class="meta nowrap">${fmtWhen(a.created_at)}</span>
     </div>`).join("");
+  const chip=(k,lbl)=>`<button${actFilter.kind===k?' class="on"':""} onclick="actSetKind('${k}')">${esc(lbl)}</button>`;
   $("#v-activity").innerHTML=`
     <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <div class="rowgrow"><b>${t("actCount",list.length)}</b><div class="meta">${t("actHint")}</div></div>
+      <div class="rowgrow"><b>${t("actCount",list.length)}</b><div class="meta">${
+        actFilter.kind==="logins"?t("actLoginHint"):t("actHint")}</div></div>
+      ${isAdmin()?`<span class="chips rpchips">${chip("all",t("actAll"))}${chip("logins",t("actLogins"))}</span>
+      <select class="inp" style="width:180px" onchange="actSetUser(this.value)">
+        <option value="">${esc(t("actAllPeople"))}</option>
+        ${people.map(p=>`<option value="${esc(String(p.user_id))}"${String(actFilter.user)===String(p.user_id)?" selected":""}>${esc(p.user_name||"-")}</option>`).join("")}
+      </select>`:""}
       <button class="btn sm" onclick="renderActivity()">${ic("sync",15)}${t("sync")}</button>
     </div></div>
     <div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">${t("actEmpty")}</div>`}</div></div>`;

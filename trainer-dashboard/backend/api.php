@@ -44,7 +44,11 @@ switch($action){
     out(['ok'=>true,'setup'=>(user_count()===0)]);
 
   case 'logout':
-    if($t=auth_token()) q("DELETE FROM sessions WHERE token=?",[$t]);
+    if($t=auth_token()){
+      $who=current_user();
+      if($who) audit_as($who,'logout','user',(string)$who['id'],'abgemeldet');
+      q("DELETE FROM sessions WHERE token=?",[$t]);
+    }
     out(['ok'=>true]);
 
   /* ---- Passwort vergessen: Link anfordern (verrät nie, ob die Adresse existiert) ---- */
@@ -207,8 +211,26 @@ switch($action){
   /* ---- Änderungsprotokoll ---- */
   case 'activity.list':
     require_auth();
-    $lim=max(1,min(300,(int)($in['limit']??150)));
-    out(['ok'=>true,'activity'=>q("SELECT * FROM activity ORDER BY id DESC LIMIT $lim")->fetchAll()]);
+    $lim=max(1,min(500,(int)($in['limit']??150)));
+    // Filter: 'logins' = An-/Abmeldungen samt Fehlversuchen, sonst alles.
+    // Zusaetzlich je Person - so laesst sich eine Anmelde-Historie lesen,
+    // ohne zwischen hunderten Aenderungen zu suchen.
+    $w=[]; $p=[];
+    // An- und Abmeldungen sind Personendaten (Zeitpunkt, IP) - die sieht nur
+    // die Administration. Fuer alle anderen bleiben sie ganz aussen vor.
+    if(($in['kind']??'')==='logins'){
+      require_admin();
+      $w[]="action IN('login','logout','login.failed')";
+    } elseif(!is_admin()){
+      $w[]="action NOT IN('login','logout','login.failed')";
+    }
+    if(!empty($in['user'])){ $w[]='user_id=?'; $p[]=(int)$in['user']; }
+    $sql='SELECT * FROM activity'.($w?' WHERE '.implode(' AND ',$w):'')." ORDER BY id DESC LIMIT $lim";
+    out(['ok'=>true,'activity'=>q($sql,$p)->fetchAll(),'admin'=>is_admin(),
+         'people'=>is_admin()
+           ? q("SELECT DISTINCT user_id, user_name FROM activity
+                WHERE user_id IS NOT NULL ORDER BY user_name")->fetchAll()
+           : []]);
 
   case 'state':
     require_auth();

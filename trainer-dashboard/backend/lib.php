@@ -75,12 +75,18 @@ function do_login_email(string $email, string $pass): array {
   // Immer dieselbe Meldung - verrät nicht, ob die Adresse existiert.
   if(!$u || !$u['pass_hash'] || !password_verify($pass, $u['pass_hash']) || (int)$u['active']!==1){
     login_guard_fail();
+    // Fehlversuche gehören ins Protokoll: nur Adresse und Herkunft, nie das
+    // eingegebene Passwort. Der Grund bleibt bewusst grob.
+    $grund = !$u ? 'unbekannte Adresse'
+           : (((int)$u['active']!==1) ? 'Konto gesperrt' : 'falsches Passwort');
+    audit_as($u?:['id'=>null,'name'=>$email],'login.failed','user',(string)($u['id']??''),
+      $email.' - '.$grund.' (IP '.client_ip().')');
     fail('E-Mail oder Passwort ist nicht korrekt.',401);
   }
   login_guard_reset();
   q("UPDATE users SET last_login=? WHERE id=?",[now(),$u['id']]);
   $tok=issue_session((int)$u['id']);
-  audit_as($u,'login','user',(string)$u['id'],'angemeldet');
+  audit_as($u,'login','user',(string)$u['id'],'angemeldet (IP '.client_ip().')');
   return ['ok'=>true,'token'=>$tok,'user'=>user_public($u)];
 }
 
