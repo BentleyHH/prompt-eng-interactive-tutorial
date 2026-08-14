@@ -1159,8 +1159,9 @@ switch($action){
       'auto_advance'=>(config_get('auto_advance')==='1'),
       'passport_lead_days'=>(int)(config_get('passport_lead_days')??180),
       'ppt_lead_days'=>(int)(config_get('ppt_lead_days')??21),
-      'ppt_delivery'=>(config_get('ppt_delivery')??'upload'),
-      'ppt_mail'=>(string)(config_get('ppt_mail')??''),
+      'ppt_delivery'=>ppt_delivery(),          // wirksamer Wert, nicht der rohe Eintrag
+      'ppt_mail'=>ppt_mail_addr(),
+      'ppt_mailbox_set'=>ppt_mailbox_set(),    // Zugangsdaten in der config.php vorhanden?
       'ai_enabled'=>trim(cfg()['anthropic_key']??'')!=='',
     ]]);
 

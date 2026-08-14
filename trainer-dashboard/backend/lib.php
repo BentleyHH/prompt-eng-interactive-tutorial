@@ -1121,10 +1121,25 @@ function ppt_max_bytes(): int {
    'mail'   = Trainer schickt sie an ein eigenes Postfach (z.B. content@...);
               das Cockpit fuehrt dann nur noch Anfrage und Bearbeitungsstand.
    Ein einheitlicher Betreff macht das Postfach selbstsortierend.          */
-function ppt_delivery(): string {
-  return (config_get('ppt_delivery')??'upload')==='mail' ? 'mail' : 'upload';
+/** Ist in der config.php ein Folien-Postfach hinterlegt? */
+function ppt_mailbox_set(): bool {
+  $c=cfg()['ppt_mailbox']??[];
+  return !empty($c['host']) && !empty($c['user']);
 }
-function ppt_mail_addr(): string { return trim((string)(config_get('ppt_mail')??'')); }
+function ppt_delivery(): string {
+  $set=config_get('ppt_delivery');
+  // Noch nie bewusst gewählt? Dann entscheidet die Einrichtung: Wer ein
+  // Folien-Postfach hinterlegt hat, will die Abgabe per Mail - sonst waeren
+  // es zwei Schalter fuer eine Sache, und einer bliebe garantiert stehen.
+  if($set===null || $set==='') return ppt_mailbox_set() ? 'mail' : 'upload';
+  return $set==='mail' ? 'mail' : 'upload';
+}
+/** Abgabe-Adresse: eigene Angabe, sonst das Postfach aus der config.php. */
+function ppt_mail_addr(): string {
+  $a=trim((string)(config_get('ppt_mail')??''));
+  if($a!=='') return $a;
+  return trim((string)((cfg()['ppt_mailbox']['user'])??''));
+}
 /** Abgabe laeuft per Mail (nur wenn auch eine Adresse hinterlegt ist). */
 function ppt_by_mail(): bool { return ppt_delivery()==='mail' && ppt_mail_addr()!==''; }
 /** Einheitlicher Betreff: "<Code> - <Session>" - so liegt im Postfach sofort

@@ -1706,6 +1706,8 @@ const L={
   setPptWay:"Folien-Abgabe", setPptWaySub:"Wie die Trainer ihre fertigen PowerPoints abliefern",
   setPptWayUp:"Hochladen ins Cockpit", setPptWayMail:"Per E-Mail an ein Postfach",
   setPptMail:"Postfach für Folien", setPptMailSub:"Adresse, an die die Trainer ihre Folien schicken (z.B. content@…)",
+  setPptBoxOk:"✓ Postfach angebunden - eingehende Folien werden automatisch abgehakt.",
+  setPptBoxMissing:"Postfach noch nicht angebunden: Zugangsdaten in der config.php eintragen (Block ppt_mailbox), sonst muss von Hand abgehakt werden.",
   pmTitle:"Folien-Postfach", pmPoll:"Postfach abrufen", pmPick:"- Session wählen -",
   pmAssign:"Zuordnen", pmIgnore:"Beiseitelegen", pmNoAtt:"kein Foliensatz im Anhang",
   pmReady:a=>`Eingänge an ${a}, die noch keiner Session zugeordnet sind`,
@@ -2214,6 +2216,8 @@ const L={
   setPptWay:"Slide delivery", setPptWaySub:"How trainers hand in their finished PowerPoints",
   setPptWayUp:"Upload to the cockpit", setPptWayMail:"By e-mail to a mailbox",
   setPptMail:"Mailbox for slides", setPptMailSub:"Address trainers send their slides to (e.g. content@…)",
+  setPptBoxOk:"✓ Mailbox connected - incoming slides are ticked off automatically.",
+  setPptBoxMissing:"Mailbox not connected yet: add the credentials to config.php (block ppt_mailbox), otherwise you have to tick off manually.",
   pmTitle:"Slides mailbox", pmPoll:"Fetch mailbox", pmPick:"- choose session -",
   pmAssign:"Assign", pmIgnore:"Set aside", pmNoAtt:"no slide deck attached",
   pmReady:a=>`Incoming at ${a} that are not yet assigned to a session`,
@@ -6233,7 +6237,10 @@ function renderAutomation(){
             <option value="upload" ${s.ppt_delivery!=="mail"?"selected":""}>${t("setPptWayUp")}</option>
             <option value="mail" ${s.ppt_delivery==="mail"?"selected":""}>${t("setPptWayMail")}</option>
           </select></div>
-        <div class="fldrow"><div class="rowgrow"><b>${t("setPptMail")}</b><div class="meta">${t("setPptMailSub")}</div></div>
+        <div class="fldrow"><div class="rowgrow"><b>${t("setPptMail")}</b>
+            <div class="meta">${t("setPptMailSub")}</div>
+            <div class="meta" style="margin-top:3px;color:${s.ppt_mailbox_set?"var(--good)":"var(--warn)"}">
+              ${s.ppt_mailbox_set?esc(t("setPptBoxOk")):esc(t("setPptBoxMissing"))}</div></div>
           <input class="inp" style="width:260px" type="email" id="aPptMail" placeholder="content@dvi-systems.com"
             value="${esc(s.ppt_mail||"")}" onchange="saveAuto()"></div>
       </div>
