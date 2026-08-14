@@ -292,6 +292,19 @@ function ensure_schema(): void {
   }
   // Material-Haken "vorhanden/gepackt" je Position (für den Material-Ring)
   try{ db()->exec("ALTER TABLE training_materials ADD COLUMN ok INT DEFAULT 0"); }catch(Throwable $e){}
+
+  /* ---- Folien-Abgabe per Postfach: Woher kam die fertige Datei? Die Datei
+         selbst bleibt im Postfach bzw. in der eigenen Ablage - hier stehen nur
+         Absender, Zeitpunkt und Dateiname, damit im Cockpit nachvollziehbar
+         ist, was wann eingegangen ist. ---- */
+  foreach(["ppt_mail_from VARCHAR(190)","ppt_mail_at VARCHAR(20)","ppt_mail_file VARCHAR(255)"] as $col){
+    try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN $col"); }catch(Throwable $e){}
+  }
+  $d->exec("CREATE TABLE IF NOT EXISTS ppt_mail (
+    id $pk, uid VARCHAR(190), from_addr VARCHAR(190), subject VARCHAR(240),
+    received_at VARCHAR(40), atts TEXT, att_count INT DEFAULT 0, att_bytes INT DEFAULT 0,
+    training_id INT, session_id INT, status VARCHAR(16) DEFAULT 'open',
+    note VARCHAR(255), created_at VARCHAR(20))$eng");
   // Ablage-Ordner anlegen und vor direktem Zugriff schützen (Auslieferung
   // ausschließlich über die API bzw. den Token-Link)
   $pd=__DIR__.'/uploads/ppt';

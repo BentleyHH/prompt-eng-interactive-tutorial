@@ -18,7 +18,7 @@ require_once __DIR__.'/ai.php';
    1) POP3S - minimaler Client. Mails bleiben auf dem Server,
       bereits Geholtes wird über die UIDL wiedererkannt.
    ============================================================ */
-function pop3_fetch_new(array $cfg, int $limit=15): array {
+function pop3_fetch_new(array $cfg, int $limit=15, ?callable $seen=null): array {
   $host=$cfg['host']??''; $port=(int)($cfg['port']??995);
   $secure=$cfg['secure']??'ssl';                      // 'ssl' | 'none' (Tests)
   if($host==='') return ['ok'=>false,'error'=>'Kein Postfach-Host konfiguriert.','mails'=>[]];
@@ -46,9 +46,11 @@ function pop3_fetch_new(array $cfg, int $limit=15): array {
   while(($l=$line())!=='.' && $l!==''){ $p=explode(' ',trim($l),2); if(count($p)===2) $list[(int)$p[0]]=$p[1]; }
   // Nur Neues laden
   $new=[];
+  // Welche Nachrichten kennen wir schon? Je Postfach eine eigene Pruefung -
+  // das Folien-Postfach fuehrt eine andere Tabelle als die Flugpost.
+  $known = $seen ?: fn($u)=>(bool)q("SELECT id FROM travel_mail WHERE uid=?",[$u])->fetch();
   foreach($list as $num=>$uid){
-    $seen=q("SELECT id FROM travel_mail WHERE uid=?",[$uid])->fetch();
-    if(!$seen) $new[$num]=$uid;
+    if(!$known($uid)) $new[$num]=$uid;
   }
   $mails=[];
   foreach(array_slice($new,0,$limit,true) as $num=>$uid){

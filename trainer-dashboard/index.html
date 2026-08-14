@@ -1706,6 +1706,13 @@ const L={
   setPptWay:"Folien-Abgabe", setPptWaySub:"Wie die Trainer ihre fertigen PowerPoints abliefern",
   setPptWayUp:"Hochladen ins Cockpit", setPptWayMail:"Per E-Mail an ein Postfach",
   setPptMail:"Postfach für Folien", setPptMailSub:"Adresse, an die die Trainer ihre Folien schicken (z.B. content@…)",
+  pmTitle:"Folien-Postfach", pmPoll:"Postfach abrufen", pmPick:"- Session wählen -",
+  pmAssign:"Zuordnen", pmIgnore:"Beiseitelegen", pmNoAtt:"kein Foliensatz im Anhang",
+  pmReady:a=>`Eingänge an ${a}, die noch keiner Session zugeordnet sind`,
+  pmNotReady:"Zugangsdaten fehlen", pmEmpty:"Alles zugeordnet - nichts Offenes im Postfach.",
+  pmSetup:"Das Postfach ist noch nicht angebunden. Die Zugangsdaten gehören in die config.php (Block ppt_mailbox) - danach werden eingehende Folien automatisch abgehakt.",
+  pmPolled:(f,a)=>`${f} neue Mail${f===1?"":"s"} geholt, ${a} automatisch abgehakt.`,
+  pmAssigned:"Zugeordnet - die Folie steht jetzt auf \"da\".",
   pptMailTo:"Per Mail", pptMailToT:a=>`Die Trainer schicken ihre Folien an ${a} - im Cockpit wird nur der Stand geführt.`,
   pptFootMail:a=>`Abgabe per E-Mail an ${a}. Das Cockpit führt Anfrage und Bearbeitungsstand; die Dateien liegen im Postfach bzw. in eurer Ablage.`,
   pptNoFile:"ohne Datei", pptNoFileT:"Der Trainer hat den Stand auf \"da\" gemeldet, aber keine Datei hochgeladen - siehe Notiz, wo sie liegt.",
@@ -2207,6 +2214,13 @@ const L={
   setPptWay:"Slide delivery", setPptWaySub:"How trainers hand in their finished PowerPoints",
   setPptWayUp:"Upload to the cockpit", setPptWayMail:"By e-mail to a mailbox",
   setPptMail:"Mailbox for slides", setPptMailSub:"Address trainers send their slides to (e.g. content@…)",
+  pmTitle:"Slides mailbox", pmPoll:"Fetch mailbox", pmPick:"- choose session -",
+  pmAssign:"Assign", pmIgnore:"Set aside", pmNoAtt:"no slide deck attached",
+  pmReady:a=>`Incoming at ${a} that are not yet assigned to a session`,
+  pmNotReady:"credentials missing", pmEmpty:"All assigned - nothing pending in the mailbox.",
+  pmSetup:"The mailbox is not connected yet. The credentials belong in config.php (block ppt_mailbox) - after that incoming slides are ticked off automatically.",
+  pmPolled:(f,a)=>`${f} new mail${f===1?"":"s"} fetched, ${a} ticked off automatically.`,
+  pmAssigned:"Assigned - the slide deck is now marked as done.",
   pptMailTo:"By mail", pptMailToT:a=>`Trainers send their slides to ${a} - the cockpit only tracks the status.`,
   pptFootMail:a=>`Delivery by e-mail to ${a}. The cockpit handles requests and progress; the files live in the mailbox or your own storage.`,
   pptNoFile:"no file", pptNoFileT:"The trainer reported the status as \"done\" but did not upload a file - see the note for where it is stored.",
@@ -7541,6 +7555,7 @@ function debriefToMailClient(tgId){
    ============================================================ */
 let pptWeeks=null, pptLeadDays=21, pptMaxMb=40, pptFilter="due";
 let pptWay="upload", pptMail="";   // Abgabeweg: Upload auf den Webspace oder Postfach
+let pptMailbox={ready:false,mails:[]};   // Folien-Postfach: noch nicht zugeordnete Eingänge
 
 /* Die Folien-Daten kommen nicht nur aus dem Cockpit: Trainer melden über ihre
    eigene Seite (ppt.php) Stand und laden Dateien hoch. Ein Zwischenspeicher
@@ -7555,6 +7570,11 @@ async function pptLoad(force){
     const d=await apiCall("sessions.all");
     pptWeeks=d.weeks||{}; pptLeadDays=d.pptLeadDays||21; pptMaxMb=d.pptMaxMb||40;
     pptWay=d.pptDelivery||"upload"; pptMail=d.pptMail||"";
+    // Eingänge des Folien-Postfachs mitladen (nur im Postfach-Betrieb)
+    if(pptWay==="mail"){
+      try{ const mb=await apiCall("pptmail.list"); pptMailbox={ready:!!mb.ready,mails:mb.mails||[]}; }
+      catch(e){ pptMailbox={ready:false,mails:[]}; }
+    } else pptMailbox={ready:false,mails:[]};
   } else {
     pptWeeks={};
     for(const k in (S.weekData||{})) pptWeeks[k]={...S.weekData[k], template:""};
@@ -7672,9 +7692,70 @@ async function renderPptView(){
     </div>`;
   }).filter(Boolean).join("");
 
-  box.innerHTML=kpi+chipbar+(blocks||`<div class="panel"><div class="panel-b"><div class="empty">${esc(t("pptEmpty"))}</div></div></div>`)
+  box.innerHTML=kpi+chipbar+pptMailboxPanel()+(blocks||`<div class="panel"><div class="panel-b"><div class="empty">${esc(t("pptEmpty"))}</div></div></div>`)
     +`<div class="meta" style="margin:4px 2px">${esc(pptWay==="mail"?t("pptFootMail",pptMail||"-"):t("pptFoot",pptMaxMb))}</div>`;
 }
+/* Folien-Postfach: was ist eingegangen, ohne dass es sich sicher zuordnen
+   liess? Alles Eindeutige ist beim Abruf bereits abgehakt worden. */
+function pptMailboxPanel(){
+  if(pptWay!=="mail" || !LIVE) return "";
+  const n=pptMailbox.mails.length;
+  const head=`<div class="panel-h" style="flex-wrap:wrap;gap:8px 12px">
+      <h3 style="min-width:0">${ic("inbox",17)} ${esc(t("pmTitle"))}</h3>
+      <span class="meta">${esc(pptMailbox.ready?t("pmReady",pptMail||"-"):t("pmNotReady"))}</span>
+      <div class="spacer"></div>
+      <button class="btn sm" onclick="pptMailPoll(this)">${ic("sync",14)}${esc(t("pmPoll"))}</button>
+    </div>`;
+  if(!pptMailbox.ready)
+    return `<div class="panel">${head}<div class="panel-b"><div class="meta">${esc(t("pmSetup"))}</div></div></div>`;
+  if(!n)
+    return `<div class="panel">${head}<div class="panel-b"><div class="empty">${esc(t("pmEmpty"))}</div></div></div>`;
+  const opts=pptMailSessionOptions();
+  return `<div class="panel">${head}<div class="panel-b">
+    ${pptMailbox.mails.map(m=>`<div class="pptrow">
+      <div class="pptname"><b>${esc(m.subject||"(ohne Betreff)")}</b>
+        <div class="meta">${esc(m.from||"")}${m.received?" · "+esc(m.received.slice(0,22)):""}
+          ${m.attCount?` · 📎 ${m.attCount} ${esc(m.atts.map(a=>a.name).join(", ").slice(0,60))}`:` · <b style="color:var(--warn)">${esc(t("pmNoAtt"))}</b>`}</div></div>
+      <select class="inp" style="flex:1 1 260px;min-width:0" id="pm-${m.id}"><option value="">${esc(t("pmPick"))}</option>${opts}</select>
+      <button class="btn sm primary" onclick="pptMailAssign('${m.id}')">${ic("check",14)}${esc(t("pmAssign"))}</button>
+      <button class="btn sm" title="${esc(t("pmIgnore"))}" onclick="pptMailIgnore('${m.id}')">✕</button>
+    </div>`).join("")}
+  </div></div>`;
+}
+/* Auswahlliste: alle noch offenen Folien, nach Training gruppiert. */
+function pptMailSessionOptions(){
+  return pptRows().map(g=>{
+    const open=g.rows.filter(r=>!r.done);
+    if(!open.length) return "";
+    return `<optgroup label="${esc((g.tg.code?g.tg.code+" - ":"")+g.tg.topic)}">${
+      open.map(r=>`<option value="${r.s.id}">${esc(sessTitle(r.s))}</option>`).join("")}</optgroup>`;
+  }).join("");
+}
+async function pptMailPoll(btn){
+  if(btn){ btn.disabled=true; btn.innerHTML=`<span class="btnspin"></span>`; }
+  try{
+    const d=await apiCall("pptmail.poll");
+    toast(t("pmPolled",d.fetched||0,d.applied||0), (d.applied?"good":"warn"));
+    pptInvalidate(); await renderPptView(); buildNav();
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+  if(btn){ btn.disabled=false; }
+}
+async function pptMailAssign(mailId){
+  const sid=val("pm-"+mailId);
+  if(!sid){ toast(t("pmPick"),"warn"); return; }
+  try{
+    await apiCall("pptmail.assign",{mail:mailId,session:sid});
+    toast(t("pmAssigned"),"good");
+    pptInvalidate(); await renderPptView(); buildNav();
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
+async function pptMailIgnore(mailId){
+  try{
+    await apiCall("pptmail.ignore",{mail:mailId});
+    pptInvalidate(); await renderPptView();
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
+
 function pptRowHtml(tg,r){
   const s=r.s;
   const stseg=`<span class="rpseg pptst">${[["",t("pptStOpen")],["inArbeit",t("pptStWork")],["vorhanden",t("pptStDone")]]
@@ -7694,7 +7775,8 @@ function pptRowHtml(tg,r){
           onchange="pptUp('${s.id}',this)"></label>`);
   return `<div class="pptrow">
     <div class="pptname"><b>${esc(sessTitle(s))}</b>
-      <div class="meta">${esc(t("type_"+(s.type||"theorie")))} · ${esc(String(s.dur||1))} h${s.pptNote?` · 📝 ${esc(s.pptNote)}`:""}</div></div>
+      <div class="meta">${esc(t("type_"+(s.type||"theorie")))} · ${esc(String(s.dur||1))} h${s.pptNote?` · 📝 ${esc(s.pptNote)}`:""}${
+        s.pptMailFile?` · <span style="color:var(--good)">✉ ${esc(s.pptMailFile.slice(0,40))}${s.pptMailAt?" ("+esc(fmtDate(String(s.pptMailAt).slice(0,10)))+")":""}</span>`:""}</div></div>
     ${(()=>{const o=pptOwnersOf(s);
       return `<button class="btn sm pptown${o.ids.length?"":" miss"}" title="${esc(t("pptOwner"))}" onclick="pptOwnSheet('${s.id}')">
         ${esc(o.ids.length?pptOwnerShort(o.ids):t("pptNoOwner"))}${o.auto&&o.ids.length?`<span class="pptautotag">${esc(t("pptAuto"))}</span>`:""}

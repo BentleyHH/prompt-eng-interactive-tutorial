@@ -236,6 +236,7 @@ function undo_targets(string $action, array $in): ?array {
       $id=(string)($in['id']??''); if($id==='') return null;
       return ['specs'=>[['materials','id',$id],['training_materials','material_id',$id],
                         ['material_presets','material_id',$id]],'label'=>'material','ref'=>$id];
+    case 'pptmail.assign':
     case 'ppt.setStatus': case 'ppt.upload': case 'ppt.fileDelete':
       $sid=(int)($in['session']??0); if(!$sid) return null;
       $r=q("SELECT training_id FROM training_sessions WHERE id=?",[$sid])->fetch();

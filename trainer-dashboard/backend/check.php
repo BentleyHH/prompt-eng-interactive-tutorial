@@ -32,7 +32,7 @@ row('PHP-Version '.PHP_VERSION, version_compare(PHP_VERSION,'8.0','>='), version
 /* 2) Dateien vollständig? */
 $need=['config.php','db.php','lib.php','mailer.php','api.php','ai.php','automation.php',
        'mailfetch.php','mailtest.php','cron.php','respond.php','plan.php','transfer.php','reset.php',
-       'backup.php','ppt.php','programme-sessions.json'];
+       'backup.php','ppt.php','pptmail.php','programme-sessions.json'];
 $missing=[];
 foreach($need as $f){ if(!is_file(__DIR__.'/'.$f)) $missing[]=$f; }
 row('Alle Backend-Dateien vorhanden', count($missing)===0,
@@ -78,6 +78,14 @@ row('Größengrenze für Folien: '.$eff.' MB', $eff>=20,
                : '<b>Zu klein für übliche PowerPoints.</b> Bei artfiles im Kundenmenü unter PHP-Einstellungen '
                 .'beide Werte auf mindestens 32M setzen (oder eine Datei <b>.user.ini</b> im Hauptordner anlegen mit '
                 .'<code>upload_max_filesize = 32M</code> und <code>post_max_size = 40M</code>).'));
+
+/* 2d) Folien-Postfach (Abgabe per Mail): sind Zugangsdaten hinterlegt? */
+$cfgRaw = is_file(__DIR__.'/config.php') ? @include __DIR__.'/config.php' : [];
+$pm = is_array($cfgRaw) ? ($cfgRaw['ppt_mailbox'] ?? []) : [];
+$pmOk = !empty($pm['host']) && !empty($pm['user']) && !empty($pm['pass']);
+row('Folien-Postfach eingerichtet', $pmOk?true:null,
+    $pmOk ? 'Postfach <b>'.esc((string)$pm['user']).'</b> über '.esc((string)$pm['host']).':'.esc((string)($pm['port']??995))
+          : 'Nur nötig, wenn die Trainer ihre Folien per E-Mail abgeben: Block <b>ppt_mailbox</b> in der config.php ausfüllen (siehe config.sample.php).');
 
 /* 3) config.php fehlerfrei? (Tippfehler beim Bearbeiten sind die häufigste Ursache) */
 $cfg=null; $cfgErr='';

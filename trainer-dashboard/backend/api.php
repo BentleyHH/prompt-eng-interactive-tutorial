@@ -365,6 +365,8 @@ switch($action){
         'pptDue'=>$r['ppt_due']??'',
         'pptNote'=>$r['ppt_note']??'','pptFile'=>$r['ppt_file']??'','pptFileName'=>$r['ppt_file_name']??'',
         'pptFileSize'=>(int)($r['ppt_file_size']??0),'pptFileAt'=>$r['ppt_file_at']??'',
+        'pptMailFrom'=>$r['ppt_mail_from']??'','pptMailAt'=>$r['ppt_mail_at']??'',
+        'pptMailFile'=>$r['ppt_mail_file']??'',
         'mat'=>$r['mat']??''];
     }
     foreach(q("SELECT id,ppt_template,ppt_template_name FROM trainings")->fetchAll() as $tp){
@@ -709,6 +711,29 @@ switch($action){
       q("UPDATE training_sessions SET ppt_reminded_at=? WHERE id=?",[now(),$s['id']]);
     audit('ppt.request','training',(string)$tgId,'Folien-Anfrage an Trainer '.$trId.' ('.count($list).')');
     out(['ok'=>true,'sent'=>$ok?1:0,'open'=>count($list)]);
+
+  /* ---- Folien-Postfach: abrufen, sichten, zuordnen ---- */
+  case 'pptmail.poll':
+    require_auth();
+    require_once __DIR__.'/pptmail.php';
+    out(pptmail_poll());
+
+  case 'pptmail.list':
+    require_auth();
+    require_once __DIR__.'/pptmail.php';
+    out(['ok'=>true,'ready'=>pptmail_ready(),'mails'=>pptmail_open_list()]);
+
+  case 'pptmail.assign':
+    require_auth();
+    require_once __DIR__.'/pptmail.php';
+    $r=pptmail_assign((int)($in['mail']??0),(int)($in['session']??0));
+    if(empty($r['ok'])) fail($r['error']??'Zuordnung fehlgeschlagen.',404);
+    out(['ok'=>true]);
+
+  case 'pptmail.ignore':
+    require_auth();
+    require_once __DIR__.'/pptmail.php';
+    out(pptmail_ignore((int)($in['mail']??0)));
 
   /* ---- Wochenplan aus einer anderen Woche übernehmen (Vorlage kopieren) ---- */
   case 'weekplan.copy':

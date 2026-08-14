@@ -510,6 +510,14 @@ function run_automation(): array {
     }
   }catch(Throwable $e){ /* Digest darf den Rest nicht stoppen */ }
 
+  /* 6b1) Folien-Postfach abrufen: eingegangene Foliensätze abhaken, BEVOR
+         erinnert wird - sonst mahnt das System bereits Geliefertes an. */
+  $pptMailRes=['fetched'=>0,'applied'=>0,'open'=>0];
+  try{
+    require_once __DIR__.'/pptmail.php';
+    if(pptmail_ready()){ $r2=pptmail_poll(); if(!empty($r2['ok'])) $pptMailRes=$r2; }
+  }catch(Throwable $e){ /* darf den Rest nicht stoppen */ }
+
   /* 6b2) PowerPoints nachhalten (Erinnerung an Trainer + Eskalation) */
   $pptRes=['reminded'=>0,'escalated'=>0];
   try{ $pptRes=ppt_chase(); }catch(Throwable $e){ /* darf den Rest nicht stoppen */ }
@@ -566,5 +574,6 @@ function run_automation(): array {
   return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,
           'passport'=>$passport,'mail_fetched'=>$mailFetched,'mail_flights'=>$mailFlights,
           'digest'=>$digestSent,'debrief_ping'=>$debriefPing,'period_report'=>$periodRep,
-          'ppt_reminded'=>$pptRes['reminded'],'ppt_escalated'=>$pptRes['escalated'],'backup'=>$backupFile,'auto_advance'=>$autoAdv];
+          'ppt_reminded'=>$pptRes['reminded'],'ppt_escalated'=>$pptRes['escalated'],
+          'ppt_mails'=>$pptMailRes['fetched'],'ppt_mail_applied'=>$pptMailRes['applied'],'backup'=>$backupFile,'auto_advance'=>$autoAdv];
 }

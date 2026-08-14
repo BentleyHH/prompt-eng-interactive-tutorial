@@ -65,6 +65,19 @@ return [
     'pass' => '',
   ],
 
+  // ---- Folien-Postfach (z.B. content@…) ---------------------------
+  // Hierhin schicken die Trainer ihre fertigen PowerPoints. Das Cockpit
+  // liest das Postfach mit, ordnet jede Mail über den Betreff einer Session
+  // zu und setzt den Haken. Die Dateien bleiben im Postfach - gespeichert
+  // werden nur Absender, Zeitpunkt und Dateiname.
+  'ppt_mailbox' => [
+    'host' => 'pop3.artfiles.de',
+    'port' => 995,
+    'secure' => 'ssl',
+    'user' => '',                  // z.B. content@dvi-systems.com
+    'pass' => '',
+  ],
+
   // ---- KI: Profilanlage aus Text (Claude API) ---------------------
   // API-Key aus console.anthropic.com. Leer lassen = KI-Import deaktiviert
   // (das Dashboard läuft trotzdem, der Import zeigt dann einen Hinweis).
