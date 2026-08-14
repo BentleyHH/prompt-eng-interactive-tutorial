@@ -717,6 +717,12 @@
   .dbringwrap.sm b i{font-size:7.5px}
   /* Ringpaar in der Trainingsliste: jeder Ring trägt seine eigene
      Beschriftung - eine nackte Zahl neben einem Training ist mehrdeutig. */
+  /* Trennung über das Layout, nicht über Zeichen - sonst haengt beim Umbruch
+     ein einzelner Punkt am Zeilenende. */
+  .usrwhen{margin-top:2px;display:flex;align-items:center;gap:2px 14px;flex-wrap:wrap}
+  .usrwhen>span{display:inline-flex;align-items:center;gap:5px}
+  .usrwhen svg{opacity:.55}
+  .usrago{color:var(--faint)}
   .rdpair{display:flex;gap:12px;flex:none;align-items:flex-start}
   .rdcell{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:36px}
   /* Die Beschriftung ist breiter als der Ring und bestimmt damit die Zellbreite -
@@ -1410,7 +1416,7 @@ const L={
   usrActive:"Aktiv", usrBlocked:"Gesperrt", usrBlock:"Sperren", usrUnblock:"Entsperren",
   usrBlockedToast:"Benutzer gesperrt und abgemeldet", usrUnblocked:"Benutzer entsperrt",
   usrResend:"Zugangs-Link erneut senden", usrResent:"Link verschickt", usrResendFail:"Versand fehlgeschlagen",
-  usrYou:"du", usrLast:"zuletzt", usrNever:"noch nie angemeldet",
+  usrYou:"du", usrLast:"angemeldet", usrNever:"noch nie angemeldet",
   usrBadMail:"Bitte eine gültige E-Mail-Adresse angeben.",
   usrNoRights:"Diesen Bereich dürfen nur Administratoren öffnen.",
   usrOwnPw:"Eigenes Passwort ändern", usrCurPw:"Aktuelles Passwort", usrNewPw:"Neues Passwort (mind. 8 Zeichen)",
@@ -1706,6 +1712,7 @@ const L={
   setPptWay:"Folien-Abgabe", setPptWaySub:"Wie die Trainer ihre fertigen PowerPoints abliefern",
   setPptWayUp:"Hochladen ins Cockpit", setPptWayMail:"Per E-Mail an ein Postfach",
   setPptMail:"Postfach für Folien", setPptMailSub:"Adresse, an die die Trainer ihre Folien schicken (z.B. content@…)",
+  usrSeen:"zuletzt aktiv", usrOnline:"jetzt aktiv",
   setPptBoxOk:"✓ Postfach angebunden - eingehende Folien werden automatisch abgehakt.",
   setPptBoxMissing:"Postfach noch nicht angebunden: Zugangsdaten in der config.php eintragen (Block ppt_mailbox), sonst muss von Hand abgehakt werden.",
   pmTitle:"Folien-Postfach", pmPoll:"Postfach abrufen", pmPick:"- Session wählen -",
@@ -1924,7 +1931,7 @@ const L={
   usrActive:"Active", usrBlocked:"Blocked", usrBlock:"Block", usrUnblock:"Unblock",
   usrBlockedToast:"User blocked and signed out", usrUnblocked:"User unblocked",
   usrResend:"Resend access link", usrResent:"Link sent", usrResendFail:"Sending failed",
-  usrYou:"you", usrLast:"last", usrNever:"never signed in",
+  usrYou:"you", usrLast:"signed in", usrNever:"never signed in",
   usrBadMail:"Please enter a valid email address.",
   usrNoRights:"Only administrators can open this area.",
   usrOwnPw:"Change your password", usrCurPw:"Current password", usrNewPw:"New password (min. 8 characters)",
@@ -2216,6 +2223,7 @@ const L={
   setPptWay:"Slide delivery", setPptWaySub:"How trainers hand in their finished PowerPoints",
   setPptWayUp:"Upload to the cockpit", setPptWayMail:"By e-mail to a mailbox",
   setPptMail:"Mailbox for slides", setPptMailSub:"Address trainers send their slides to (e.g. content@…)",
+  usrSeen:"last active", usrOnline:"active now",
   setPptBoxOk:"✓ Mailbox connected - incoming slides are ticked off automatically.",
   setPptBoxMissing:"Mailbox not connected yet: add the credentials to config.php (block ppt_mailbox), otherwise you have to tick off manually.",
   pmTitle:"Slides mailbox", pmPoll:"Fetch mailbox", pmPick:"- choose session -",
@@ -3829,9 +3837,36 @@ function planBadge(tr){
    RÜCKMELDUNGEN - Posteingang für „Da stimmt etwas nicht“-Meldungen
    der Trainer zur Einsatzübersicht (landen direkt hier statt im Mail-Postfach).
    ============================================================ */
+/* Alle Zeitstempel der Datenbank sind UTC (siehe now() im Backend). Ohne das
+   angehaengte "Z" liest der Browser sie als Ortszeit - die Uhrzeit waere dann
+   je nach Jahreszeit ein bis zwei Stunden zu frueh. */
+function utcDate(s){
+  const t=String(s||"").trim().replace(" ","T");
+  if(!t) return null;
+  const d=new Date(/[Zz]|[+-]\d{2}:?\d{2}$/.test(t) ? t : t+"Z");
+  return isNaN(d) ? null : d;
+}
 function fmtWhen(s){
-  if(!s) return ""; const d=new Date(String(s).replace(" ","T")); if(isNaN(d)) return fmtDate((s||"").slice(0,10));
-  return fmtDate((s||"").slice(0,10))+" · "+d.toLocaleTimeString(S.lang==="de"?"de-DE":"en-GB",{hour:"2-digit",minute:"2-digit"});
+  const d=utcDate(s);
+  if(!d) return s?fmtDate(String(s).slice(0,10)):"";
+  const loc=S.lang==="de"?"de-DE":"en-GB";
+  return d.toLocaleDateString(loc,{day:"2-digit",month:"2-digit",year:"numeric"})
+    +" · "+d.toLocaleTimeString(loc,{hour:"2-digit",minute:"2-digit"});
+}
+/* „vor 5 Minuten“ / „vor 3 Tagen“ - fuer die Benutzerliste aussagekraeftiger
+   als ein nacktes Datum. */
+function fmtAgo(s){
+  const d=utcDate(s); if(!d) return "";
+  const min=Math.floor((Date.now()-d.getTime())/60000);
+  const de=S.lang==="de";
+  if(min<2)   return de?"gerade eben":"just now";
+  if(min<60)  return de?`vor ${min} Minuten`:`${min} min ago`;
+  const h=Math.floor(min/60);
+  if(h<24)    return de?`vor ${h} Stunde${h===1?"":"n"}`:`${h} h ago`;
+  const t=Math.floor(h/24);
+  if(t<31)    return de?`vor ${t} Tag${t===1?"":"en"}`:`${t} d ago`;
+  const mo=Math.floor(t/30);
+  return de?`vor ${mo} Monat${mo===1?"":"en"}`:`${mo} mo ago`;
 }
 function renderInbox(){
   const items=inboxAll();
@@ -4705,6 +4740,11 @@ async function sendDigestTest(){
   }catch(e){ toast(e.message,"crit"); }
 }
 
+/* Als „jetzt aktiv“ gilt, wer in den letzten 10 Minuten etwas getan hat. */
+function usrOnline(u){
+  const d=utcDate(u.lastSeen); if(!d) return false;
+  return (Date.now()-d.getTime()) < 10*60000;
+}
 async function renderUsers(){
   if(!isAdmin()){ $("#v-users").innerHTML=`<div class="panel"><div class="panel-b meta" style="padding:22px">${t("usrNoRights")}</div></div>`; return; }
   if(LIVE){ try{ const d=await apiCall("users.list"); usersCache=d.users||[]; }catch(e){ usersCache=[]; } }
@@ -4714,7 +4754,13 @@ async function renderUsers(){
       <div class="av" style="background:${u.role==='admin'?'var(--brand-solid)':'#6E7A82'}">${initials(u.name||u.email)}</div>
       <div class="rowgrow">
         <div class="nm">${esc(u.name||"-")}${me&&me.id===u.id?` <span class="tag">${t("usrYou")}</span>`:""}</div>
-        <div class="meta">${esc(u.email)} · ${roleLabel(u.role)}${u.lastLogin?` · ${t("usrLast")} ${fmtWhen(u.lastLogin)}`:` · ${t("usrNever")}`}</div>
+        <div class="meta">${esc(u.email)} · ${roleLabel(u.role)}</div>
+        <div class="meta usrwhen">${u.lastLogin
+          ? `<span>${ic("lock",12)}${esc(t("usrLast"))} <b>${esc(fmtWhen(u.lastLogin))}</b>
+              <span class="usrago">(${esc(fmtAgo(u.lastLogin))})</span></span>`
+          : `<span><b style="color:var(--warn)">${esc(t("usrNever"))}</b></span>`}${
+          u.lastSeen ? `<span>${esc(t("usrSeen"))} <b>${esc(fmtAgo(u.lastSeen))}</b></span>` : ""}${
+          usrOnline(u) ? `<span><b style="color:var(--good)">● ${esc(t("usrOnline"))}</b></span>` : ""}</div>
       </div>
       <div class="rowacts">
         <span class="pill ${u.active?'good':'neutral'}">${u.active?t("usrActive"):t("usrBlocked")}</span>

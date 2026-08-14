@@ -76,8 +76,18 @@ switch($action){
   /* ---- Benutzerverwaltung (nur Admin) ---- */
   case 'users.list':
     require_admin();
-    out(['ok'=>true,'users'=>array_map('user_public',
-      q("SELECT * FROM users ORDER BY (role='admin') DESC, name, id")->fetchAll())]);
+    // Letzte Aktivität kommt aus den Sitzungen: sie sagt, ob jemand das
+    // Cockpit wirklich nutzt - die Anmeldung allein kann Wochen her sein.
+    $seen=[];
+    try{
+      foreach(q("SELECT user_id, MAX(last_seen) ls FROM sessions WHERE user_id IS NOT NULL GROUP BY user_id")->fetchAll() as $r)
+        $seen[(string)$r['user_id']]=(string)$r['ls'];
+    }catch(Throwable $e){}
+    out(['ok'=>true,'users'=>array_map(function($u) use($seen){
+      $p=user_public($u);
+      $p['lastSeen']=$seen[(string)$u['id']]??'';
+      return $p;
+    }, q("SELECT * FROM users ORDER BY (role='admin') DESC, name, id")->fetchAll())]);
 
   case 'user.save':
     require_admin();
