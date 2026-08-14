@@ -31,6 +31,8 @@ $L = $lang==='de' ? [
   'okSt'=>'Danke - der Stand ist gespeichert.',
   'hint'=>'Hochladen erlaubt: %s · max. %d MB. Alternativ Status setzen und im Notizfeld sagen, wo die Datei liegt.',
   'overdue'=>'überfällig','myfile'=>'Meine Datei','with'=>'zusammen mit',
+  'sendMail'=>'Folien per E-Mail senden','sendTo'=>'Fertige Folien bitte an',
+  'sendHint'=>'Betreff bitte so lassen - daran erkennen wir, zu welcher Session die Datei gehört.',
 ] : [
   'title'=>'Your PowerPoints','due'=>'due by','open'=>'open','work'=>'in progress','done'=>'done',
   'tpl'=>'Download base template','upload'=>'Upload file','replace'=>'Replace file',
@@ -41,6 +43,8 @@ $L = $lang==='de' ? [
   'okSt'=>'Thank you - the status has been saved.',
   'hint'=>'Allowed uploads: %s · max. %d MB. Or set the status and note where the file lives.',
   'overdue'=>'overdue','myfile'=>'My file','with'=>'together with',
+  'sendMail'=>'Send slides by e-mail','sendTo'=>'Please send finished slides to',
+  'sendHint'=>'Please keep the subject - it tells us which session the file belongs to.',
 ];
 function e($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
@@ -107,6 +111,8 @@ if($req && isset($_GET['dl'])){
   }
 }
 
+$byMail  = ppt_by_mail();
+$mailAddr= ppt_mail_addr();
 $my = $req ? ppt_my_sessions($req) : [];
 $today=gmdate('Y-m-d');
 $trNames=[]; foreach(q("SELECT id,name FROM trainers")->fetchAll() as $x) $trNames[(string)$x['id']]=$x['name'];
@@ -201,12 +207,17 @@ $docTitle=$req ? 'ETAF PowerPoints '.($tr['name']??'').' '.((string)($req['code'
           <input type="text" name="note" placeholder="<?=e($L['note'])?>" value="<?=e($s['ppt_note']??'')?>">
           <div class="rowline">
             <button class="btn line" type="submit" onclick="setAct(this,'status')"><?=e($L['save'])?></button>
-            <label class="btn" style="position:relative;overflow:hidden">
-              <?=e($s['ppt_file']?$L['replace']:$L['upload'])?>
-              <input type="file" name="file" accept=".ppt,.pptx,.pot,.potx,.pdf"
-                style="position:absolute;inset:0;opacity:0;cursor:pointer"
-                onchange="setAct(this,'upload');this.form.submit()">
-            </label>
+            <?php if($byMail): $subj=ppt_mail_subject($req,$s); ?>
+              <a class="btn" href="mailto:<?=e($mailAddr)?>?subject=<?=e(rawurlencode($subj))?>"
+                 title="<?=e($L['sendTo'].' '.$mailAddr)?>">✉ <?=e($L['sendMail'])?></a>
+            <?php else: ?>
+              <label class="btn" style="position:relative;overflow:hidden">
+                <?=e($s['ppt_file']?$L['replace']:$L['upload'])?>
+                <input type="file" name="file" accept=".ppt,.pptx,.pot,.potx,.pdf"
+                  style="position:absolute;inset:0;opacity:0;cursor:pointer"
+                  onchange="setAct(this,'upload');this.form.submit()">
+              </label>
+            <?php endif; ?>
             <input type="hidden" name="act" value="status">
             <?php if(!empty($s['ppt_file'])): ?>
               <span class="file">✓ <?=e($L['myfile'])?>:
@@ -217,7 +228,12 @@ $docTitle=$req ? 'ETAF PowerPoints '.($tr['name']??'').' '.((string)($req['code'
         </form>
       </div>
     <?php endforeach; ?>
-    <div class="hint"><?=e(sprintf($L['hint'], implode(', ',PPT_EXT), (int)round(ppt_max_bytes()/1048576)))?></div>
+    <?php if($byMail): ?>
+      <div class="hint"><b><?=e($L['sendTo'])?>: <a href="mailto:<?=e($mailAddr)?>"><?=e($mailAddr)?></a></b><br>
+        <?=e($L['sendHint'])?></div>
+    <?php else: ?>
+      <div class="hint"><?=e(sprintf($L['hint'], implode(', ',PPT_EXT), (int)round(ppt_max_bytes()/1048576)))?></div>
+    <?php endif; ?>
   </div>
   <div class="foot">ETAF · Trainer-Koordination</div>
 <?php endif; ?>

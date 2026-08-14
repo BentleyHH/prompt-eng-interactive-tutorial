@@ -1115,6 +1115,24 @@ function ppt_max_bytes(): int {
     return (int)$n; };
   return (int)min(40*1024*1024, $ini('upload_max_filesize'), $ini('post_max_size'));
 }
+/* ---- Abgabeweg der Folien -------------------------------------------------
+   'upload' = Datei landet auf dem Webspace (backend/uploads/ppt)
+   'mail'   = Trainer schickt sie an ein eigenes Postfach (z.B. content@...);
+              das Cockpit fuehrt dann nur noch Anfrage und Bearbeitungsstand.
+   Ein einheitlicher Betreff macht das Postfach selbstsortierend.          */
+function ppt_delivery(): string {
+  return (config_get('ppt_delivery')??'upload')==='mail' ? 'mail' : 'upload';
+}
+function ppt_mail_addr(): string { return trim((string)(config_get('ppt_mail')??'')); }
+/** Abgabe laeuft per Mail (nur wenn auch eine Adresse hinterlegt ist). */
+function ppt_by_mail(): bool { return ppt_delivery()==='mail' && ppt_mail_addr()!==''; }
+/** Einheitlicher Betreff: "<Code> - <Session>" - so liegt im Postfach sofort
+ *  auf der Hand, wohin eine Datei gehoert. */
+function ppt_mail_subject(array $tg, array $s): string {
+  $code=trim((string)($tg['code']??''));
+  return ($code!==''?$code.' - ':'').mb_substr((string)($s['title']??''),0,90);
+}
+
 /** Zaehlt eine Session fuer die Folien-Pflicht? (wie der Wochenplan-Zaehler) */
 function ppt_relevant(array $s): bool {
   return !in_array((string)($s['stype']??''),['orga','deliverable'],true);
@@ -1243,28 +1261,43 @@ function ppt_send_reminder(array $tg, int $trId, array $sessions, bool $overdue,
     $tplNote=$lg==='de' ? "\n\nDie Basis-Vorlage findest du auf derselben Seite zum Herunterladen."
                         : "\n\nYou will find the base template for download on the same page.";
   }
+  // Abgabe per Postfach: Adresse und Betreff gehoeren in die Mail, sonst
+  // landen Dateien ohne Zuordnung im Postfach.
+  $mailNote='';
+  if(ppt_by_mail()){
+    $addr=ppt_mail_addr();
+    $mailNote=$lg==='de'
+      ? "\n\nBitte schicke die fertigen Folien als Anhang an ".$addr
+        ." - am besten je Session eine eigene Mail mit dem Titel der Session im Betreff."
+      : "\n\nPlease send the finished slides as an attachment to ".$addr
+        ." - ideally one mail per session with the session title in the subject.";
+  }
   if($lg==='de'){
     if($kind==='request'){
       $subj='Bitte um deine PowerPoints - '.$title;
       $intro="Hallo $first,\n\nfür \"$title\" in ".($tg['city']??'')." bist du für die folgenden PowerPoints eingeplant. "
-        ."Über den Link unten kannst du sie hochladen oder kurz den Stand melden.".$tplNote;
+        .(ppt_by_mail()
+            ? "Über den Link unten kannst du jederzeit den Stand melden."
+            : "Über den Link unten kannst du sie hochladen oder kurz den Stand melden.").$tplNote.$mailNote;
     } else {
       $subj=($overdue?'Überfällig: ':'').'PowerPoints für '.$title;
       $intro="Hallo $first,\n\n".($overdue
         ? "für \"$title\" in ".($tg['city']??'')." sind PowerPoints überfällig. Bitte lade sie zeitnah hoch oder melde kurz den Stand - der Link unten führt direkt zu deiner Übersicht."
-        : "für \"$title\" in ".($tg['city']??'')." fehlen noch PowerPoints von dir. Über den Link unten kannst du sie hochladen oder den Stand melden.").$tplNote;
+        : "für \"$title\" in ".($tg['city']??'')." fehlen noch PowerPoints von dir.").$tplNote.$mailNote;
     }
     $cta='Folien hochladen & Stand melden';
   } else {
     if($kind==='request'){
       $subj='Request for your PowerPoints - '.$title;
       $intro="Hi $first,\n\nfor \"$title\" in ".($tg['city']??'')." you are scheduled to prepare the following PowerPoints. "
-        ."Use the link below to upload them or report the status.".$tplNote;
+        .(ppt_by_mail()
+            ? "Use the link below to report the status at any time."
+            : "Use the link below to upload them or report the status.").$tplNote.$mailNote;
     } else {
       $subj=($overdue?'Overdue: ':'').'PowerPoints for '.$title;
       $intro="Hi $first,\n\n".($overdue
         ? "PowerPoints for \"$title\" in ".($tg['city']??'')." are overdue. Please upload them soon or give a quick status - the link below takes you straight to your overview."
-        : "we are still missing PowerPoints from you for \"$title\" in ".($tg['city']??'').". Use the link below to upload them or report the status.").$tplNote;
+        : "we are still missing PowerPoints from you for \"$title\" in ".($tg['city']??'').".").$tplNote.$mailNote;
     }
     $cta='Upload slides & report status';
   }

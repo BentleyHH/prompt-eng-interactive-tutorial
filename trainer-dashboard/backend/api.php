@@ -374,7 +374,8 @@ switch($action){
     }
     out(['ok'=>true,'weeks'=>$plans,
       'pptLeadDays'=>(int)(config_get('ppt_lead_days')??21),
-      'pptMaxMb'=>(int)round(ppt_max_bytes()/1048576)]);
+      'pptMaxMb'=>(int)round(ppt_max_bytes()/1048576),
+      'pptDelivery'=>ppt_delivery(), 'pptMail'=>ppt_mail_addr()]);
 
   case 'session.save':
     require_auth();
@@ -1133,6 +1134,8 @@ switch($action){
       'auto_advance'=>(config_get('auto_advance')==='1'),
       'passport_lead_days'=>(int)(config_get('passport_lead_days')??180),
       'ppt_lead_days'=>(int)(config_get('ppt_lead_days')??21),
+      'ppt_delivery'=>(config_get('ppt_delivery')??'upload'),
+      'ppt_mail'=>(string)(config_get('ppt_mail')??''),
       'ai_enabled'=>trim(cfg()['anthropic_key']??'')!=='',
     ]]);
 
@@ -1143,6 +1146,12 @@ switch($action){
     if(isset($in['auto_advance']))   config_set('auto_advance', !empty($in['auto_advance'])?'1':'0');
     if(isset($in['passport_lead_days'])) config_set('passport_lead_days',(string)max(14,(int)$in['passport_lead_days']));
     if(isset($in['ppt_lead_days'])) config_set('ppt_lead_days',(string)max(3,(int)$in['ppt_lead_days']));
+    if(isset($in['ppt_delivery'])) config_set('ppt_delivery', $in['ppt_delivery']==='mail'?'mail':'upload');
+    if(isset($in['ppt_mail'])){
+      $m=trim((string)$in['ppt_mail']);
+      if($m!=='' && !filter_var($m,FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige E-Mail-Adresse für die Folien-Abgabe angeben.');
+      config_set('ppt_mail',$m);
+    }
     out(['ok'=>true]);
 
   /* ---- Login-PIN ändern (im Dashboard) ---- */

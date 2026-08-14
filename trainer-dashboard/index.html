@@ -1703,6 +1703,11 @@ const L={
   pptAskHint:"Jeder Trainer bekommt automatisch seine eigene Liste offener Folien mit Fristen und seinen persönlichen Upload-Link angehängt - ist eine Basis-Vorlage hinterlegt, steht der Hinweis dazu mit in der Mail. Platzhalter wie {{firstName}} werden je Empfänger gefüllt.",
   pptAskSend:n=>n===1?"Anfrage senden":`An ${n} Trainer senden`,
   pptAskSentN:n=>`${n} Folien-Anfrage${n===1?"":"n"} verschickt.`,
+  setPptWay:"Folien-Abgabe", setPptWaySub:"Wie die Trainer ihre fertigen PowerPoints abliefern",
+  setPptWayUp:"Hochladen ins Cockpit", setPptWayMail:"Per E-Mail an ein Postfach",
+  setPptMail:"Postfach für Folien", setPptMailSub:"Adresse, an die die Trainer ihre Folien schicken (z.B. content@…)",
+  pptMailTo:"Per Mail", pptMailToT:a=>`Die Trainer schicken ihre Folien an ${a} - im Cockpit wird nur der Stand geführt.`,
+  pptFootMail:a=>`Abgabe per E-Mail an ${a}. Das Cockpit führt Anfrage und Bearbeitungsstand; die Dateien liegen im Postfach bzw. in eurer Ablage.`,
   pptNoFile:"ohne Datei", pptNoFileT:"Der Trainer hat den Stand auf \"da\" gemeldet, aber keine Datei hochgeladen - siehe Notiz, wo sie liegt.",
   pptReopenAsk:"Die Folie steht jetzt nicht mehr auf \"da\". Soll der zuständige Trainer darüber informiert werden?",
   pptOwnTeam:"Auch als Trainer dieser Session in den Wochenplan übernehmen",
@@ -2199,6 +2204,11 @@ const L={
   pptAskHint:"Each trainer automatically gets their own list of open slides with deadlines and their personal upload link attached - if a base template is stored, the note about it is included. Placeholders like {{firstName}} are filled per recipient.",
   pptAskSend:n=>n===1?"Send request":`Send to ${n} trainers`,
   pptAskSentN:n=>`${n} slides request${n===1?"":"s"} sent.`,
+  setPptWay:"Slide delivery", setPptWaySub:"How trainers hand in their finished PowerPoints",
+  setPptWayUp:"Upload to the cockpit", setPptWayMail:"By e-mail to a mailbox",
+  setPptMail:"Mailbox for slides", setPptMailSub:"Address trainers send their slides to (e.g. content@…)",
+  pptMailTo:"By mail", pptMailToT:a=>`Trainers send their slides to ${a} - the cockpit only tracks the status.`,
+  pptFootMail:a=>`Delivery by e-mail to ${a}. The cockpit handles requests and progress; the files live in the mailbox or your own storage.`,
   pptNoFile:"no file", pptNoFileT:"The trainer reported the status as \"done\" but did not upload a file - see the note for where it is stored.",
   pptReopenAsk:"This slide deck is no longer marked as done. Inform the responsible trainer?",
   pptOwnTeam:"Also add as trainer of this session in the week plan",
@@ -2464,7 +2474,7 @@ function load(){
     const r=JSON.parse(localStorage.getItem("etaf_demo"));
     if(r&&r.trainers){
       r.lang=r.lang||"de"; r.emailLang=r.emailLang||"en";
-      r.settings=r.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180,ppt_lead_days:21};
+      r.settings=r.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180,ppt_lead_days:21,ppt_delivery:"upload",ppt_mail:""};
       r.emails=r.emails||[];
       if(!r.templates||!r.templates[0]||!r.templates[0].de)r.templates=TEMPLATES;
       if(!r.clients||!r.clients.length)r.clients=seedClients();
@@ -2487,7 +2497,7 @@ function load(){
   return {lang:"de", emailLang:"en", seedVersion:SEED_VERSION, clients:seedClients(), clientFilter:null,
     materials:seedMaterials(), matPresets:seedMatPresets(),
     trainers:seedTrainers(), trainings:seedTrainings(),
-    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180,ppt_lead_days:21},
+    templates:TEMPLATES, settings:{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180,ppt_lead_days:21,ppt_delivery:"upload",ppt_mail:""},
     emails:[], me:null, setupMode:false};
 }
 /* Demo-Modus: vor jedem Speichern den vorherigen Stand auf den Rückgängig-Stapel
@@ -6185,7 +6195,7 @@ function renderAutomation(){
     S._settingsLoaded=true;
     apiCall("settings.get").then(d=>{S.settings=d.settings;renderAutomation();}).catch(()=>{});
   }
-  const s=S.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180,ppt_lead_days:21};
+  const s=S.settings||{reminder_hours:48,escalate_hours:72,auto_advance:false,passport_lead_days:180,ppt_lead_days:21,ppt_delivery:"upload",ppt_mail:""};
   $("#v-automation").innerHTML=`
     <div class="panel">
       <div class="panel-h"><h3>${t("tp_auto")}</h3><div class="sub">${t("tp_autoSub")}</div></div>
@@ -6204,6 +6214,14 @@ function renderAutomation(){
         <div class="kv" style="align-items:flex-start">
           <span class="k">${ic("slides",15)}${t("pptLeadLbl")}<div class="meta" style="max-width:360px;margin-top:2px">${t("pptLeadHint")}</div></span>
           <input class="inp" style="width:110px" type="number" min="3" step="1" id="aPptLead" value="${s.ppt_lead_days||21}" onchange="saveAuto()"></div>
+        <div class="fldrow"><div class="rowgrow"><b>${t("setPptWay")}</b><div class="meta">${t("setPptWaySub")}</div></div>
+          <select class="inp" style="width:210px" id="aPptWay" onchange="saveAuto()">
+            <option value="upload" ${s.ppt_delivery!=="mail"?"selected":""}>${t("setPptWayUp")}</option>
+            <option value="mail" ${s.ppt_delivery==="mail"?"selected":""}>${t("setPptWayMail")}</option>
+          </select></div>
+        <div class="fldrow"><div class="rowgrow"><b>${t("setPptMail")}</b><div class="meta">${t("setPptMailSub")}</div></div>
+          <input class="inp" style="width:260px" type="email" id="aPptMail" placeholder="content@dvi-systems.com"
+            value="${esc(s.ppt_mail||"")}" onchange="saveAuto()"></div>
       </div>
       <div class="panel-b" style="border-top:1px solid var(--line)">
         <button class="btn amber" onclick="runAutoNow()">⚡ ${t("autoRunNow")}</button>
@@ -6236,7 +6254,8 @@ async function changePin(){
   }catch(e){ toast("Fehler: "+e.message,"crit"); }
 }
 function saveAuto(){
-  const s={reminder_hours:parseInt($("#aRem").value)||48,escalate_hours:parseInt($("#aEsc").value)||72,auto_advance:$("#aAdv").checked,passport_lead_days:Math.max(14,parseInt($("#aPpLead").value)||180),ppt_lead_days:Math.max(3,parseInt($("#aPptLead").value)||21)};
+  const s={reminder_hours:parseInt($("#aRem").value)||48,escalate_hours:parseInt($("#aEsc").value)||72,auto_advance:$("#aAdv").checked,passport_lead_days:Math.max(14,parseInt($("#aPpLead").value)||180),ppt_lead_days:Math.max(3,parseInt($("#aPptLead").value)||21),
+    ppt_delivery:val("aPptWay")||"upload", ppt_mail:val("aPptMail").trim()};
   S.settings=s;save();
   if(LIVE){ apiCall("settings.save",s).then(()=>toast(t("autoSaved"),"good")).catch(e=>toast("Fehler: "+e.message,"crit")); }
   else toast(t("autoSaved"),"good");
@@ -7521,6 +7540,7 @@ function debriefToMailClient(tgId){
    Orga- und Deliverable-Kacheln brauchen keine Folien.
    ============================================================ */
 let pptWeeks=null, pptLeadDays=21, pptMaxMb=40, pptFilter="due";
+let pptWay="upload", pptMail="";   // Abgabeweg: Upload auf den Webspace oder Postfach
 
 /* Die Folien-Daten kommen nicht nur aus dem Cockpit: Trainer melden über ihre
    eigene Seite (ppt.php) Stand und laden Dateien hoch. Ein Zwischenspeicher
@@ -7534,6 +7554,7 @@ async function pptLoad(force){
   if(LIVE){
     const d=await apiCall("sessions.all");
     pptWeeks=d.weeks||{}; pptLeadDays=d.pptLeadDays||21; pptMaxMb=d.pptMaxMb||40;
+    pptWay=d.pptDelivery||"upload"; pptMail=d.pptMail||"";
   } else {
     pptWeeks={};
     for(const k in (S.weekData||{})) pptWeeks[k]={...S.weekData[k], template:""};
@@ -7652,7 +7673,7 @@ async function renderPptView(){
   }).filter(Boolean).join("");
 
   box.innerHTML=kpi+chipbar+(blocks||`<div class="panel"><div class="panel-b"><div class="empty">${esc(t("pptEmpty"))}</div></div></div>`)
-    +`<div class="meta" style="margin:4px 2px">${esc(t("pptFoot",pptMaxMb))}</div>`;
+    +`<div class="meta" style="margin:4px 2px">${esc(pptWay==="mail"?t("pptFootMail",pptMail||"-"):t("pptFoot",pptMaxMb))}</div>`;
 }
 function pptRowHtml(tg,r){
   const s=r.s;
@@ -7664,10 +7685,13 @@ function pptRowHtml(tg,r){
         ${ic("down",13)}${esc((s.pptFileName||t("pptDownload")).slice(0,26))}${(s.pptFileName||"").length>26?"…":""}</a>
        <span class="meta tnum">${s.pptFileSize?(s.pptFileSize<1048576?Math.max(1,Math.round(s.pptFileSize/1024))+" KB":Math.round(s.pptFileSize/1048576*10)/10+" MB"):""}</span>
        <button class="btn sm" title="${esc(t("pptFileDel"))}" onclick="pptFileDel('${s.id}')">✕</button>`
-    : `${s.ppt==="vorhanden"?`<span class="tag" style="border-color:var(--warn);color:var(--warn)" title="${esc(t("pptNoFileT"))}">${esc(t("pptNoFile"))}</span>`:""}
+    : (pptWay==="mail"
+      ? `<a class="btn sm" href="mailto:${esc(pptMail)}?subject=${encodeURIComponent((tg.code?tg.code+" - ":"")+sessTitle(s))}"
+           title="${esc(t("pptMailToT",pptMail||"-"))}">${ic("mail",13)}${esc(t("pptMailTo"))}</a>`
+      : `${s.ppt==="vorhanden"?`<span class="tag" style="border-color:var(--warn);color:var(--warn)" title="${esc(t("pptNoFileT"))}">${esc(t("pptNoFile"))}</span>`:""}
        <label class="btn sm pptup">${ic("clip",13)}${esc(t("pptUpload"))}
         <input type="file" accept=".ppt,.pptx,.pot,.potx,.pdf" style="display:none"
-          onchange="pptUp('${s.id}',this)"></label>`;
+          onchange="pptUp('${s.id}',this)"></label>`);
   return `<div class="pptrow">
     <div class="pptname"><b>${esc(sessTitle(s))}</b>
       <div class="meta">${esc(t("type_"+(s.type||"theorie")))} · ${esc(String(s.dur||1))} h${s.pptNote?` · 📝 ${esc(s.pptNote)}`:""}</div></div>
