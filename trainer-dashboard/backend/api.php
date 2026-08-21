@@ -876,70 +876,57 @@ switch($action){
 
   /* Sammelanlage: eine Zeile je Teilnehmer, Felder mit Semikolon oder Tab.
      Reihenfolge: Name; Dienstgrad; Einheit; Personalnummer; E-Mail */
-  /* Liste einlesen: eingefuegter Text oder hochgeladene xlsx/csv.
-     Erkannt wird an der Ueberschrift, die Reihenfolge der Spalten ist egal. */
+  /* Datei ansehen, bevor etwas angelegt wird: welches Blatt, welche
+     Spalten, welche Zeilen. Das nimmt dem Import die Blackbox. */
+  case 'students.preview':
+    require_auth();
+    $bin=stud_upload_bin($in);
+    $R=stud_parse_file($bin);
+    out(['ok'=>true,'sheets'=>$R['sheets'],'sheet'=>$R['sheet'],
+      'head'=>array_values($R['head']),'headCols'=>count(array_unique($R['head'])),
+      'start'=>$R['start'],'error'=>$R['error'],
+      'sample'=>array_slice($R['rows'],0,8),
+      'people'=>array_slice(array_map(fn($p)=>[
+         'row'=>$p['row'],'skip'=>$p['skip'],'name'=>$p['name']??'',
+         'rank'=>$p['rank_title'],'unit'=>$p['unit'],'birth'=>$p['birth_date'],
+         'staffNo'=>$p['staff_no'],'email'=>$p['email']],$R['people']),0,200),
+      'total'=>count(array_filter($R['people'],fn($p)=>$p['skip']===''))]);
+
+  /* Liste einlesen: hochgeladene xlsx/csv oder eingefuegter Text. */
   case 'students.import':
     require_auth();
     $cohort=trim((string)($in['cohort']??''));
     $client=trim((string)($in['clientId']??''));
     $tgId=(int)($in['training']??0);
 
-    $rows=[];
+    $people=[]; $sheet=''; $cols=0;
     if(!empty($in['file'])){
-      $bin=base64_decode(preg_replace('~^data:[^,]*,~','',(string)$in['file']), true);
-      if($bin===false||$bin==='') fail('Die Datei konnte nicht gelesen werden.');
-      if(strlen($bin)>8*1024*1024) fail('Die Datei ist zu gross (mehr als 8 MB).');
-      if(substr($bin,0,2)==="PK"){
-        $rows=xlsx_rows($bin);
-        if(!$rows) fail('In der Excel-Datei war kein lesbares Tabellenblatt. Bitte als .xlsx speichern oder als CSV senden.');
-      } else {
-        // CSV: Zeichensatz und Trennzeichen erraten
-        if(substr($bin,0,3)==="\xEF\xBB\xBF") $bin=substr($bin,3);
-        if(!preg_match('//u',$bin)) $bin=mb_convert_encoding($bin,'UTF-8','Windows-1252');
-        $first=strtok($bin,"\n");
-        $sep = substr_count($first,';')>=substr_count($first,',') ? ';' : ',';
-        foreach(preg_split('/\r?\n/',$bin) as $line){
-          if(trim($line)==='') continue;
-          $rows[]=array_map(fn($x)=>trim($x,"\" \t"),str_getcsv($line,$sep,'"'));
-        }
-      }
+      $R=stud_parse_file(stud_upload_bin($in));
+      if($R['error']==='nozip') fail('Die Datei liess sich nicht oeffnen. Bitte in Excel als .xlsx speichern oder als CSV senden.');
+      if($R['error']==='nohead')
+        fail('In der Datei war keine Kopfzeile zu finden. Erwartet werden Spaltenueberschriften wie "Nachname" und "Vorname" - am einfachsten mit unserer Vorlage.');
+      $people=$R['people']; $sheet=$R['sheet']; $cols=count(array_unique($R['head']));
     } else {
-      foreach(preg_split('/\r?\n/',(string)($in['text']??'')) as $line){
+      $txt=(string)($in['text']??'');
+      if(trim($txt)==='') fail('Es war nichts zu lesen. Bitte eine Datei waehlen oder eine Liste einfuegen.');
+      $rows=[];
+      foreach(preg_split('/\r?\n/',$txt) as $line){
         if(trim($line)==='') continue;
         $rows[]=preg_split('/\s*[;\t]\s*/',trim($line));
       }
-    }
-    if(!$rows) fail('Es war nichts zu lesen.');
-
-    /* Kopfzeile suchen: die erste Zeile, in der mindestens zwei Spalten
-       als Ueberschrift erkannt werden. Fehlt sie, gilt die alte
-       Reihenfolge Name; Dienstgrad; Einheit; Personalnummer; E-Mail. */
-    $map=null; $start=0;
-    foreach($rows as $ri=>$r){
-      if($ri>4) break;
-      $m=[]; foreach($r as $ci=>$h){ $k=stud_col_key((string)$h); if($k) $m[$ci]=$k; }
-      if(count(array_unique($m))>=2){ $map=$m; $start=$ri+1; break; }
-    }
-    if($map===null){
-      $map=[0=>'last_name',1=>'rank_title',2=>'unit',3=>'staff_no',4=>'email'];
-      $start=0;
+      $hit=stud_find_head($rows);
+      // Eingefuegter Text darf auch ohne Kopfzeile kommen - dann gilt die
+      // dokumentierte Reihenfolge Name; Dienstgrad; Einheit; Nr.; E-Mail.
+      $map = $hit ? $hit['map'] : [0=>'last_name',1=>'rank_title',2=>'unit',3=>'staff_no',4=>'email'];
+      $people=stud_rows_to_people($rows,$map,$hit?$hit['start']:0);
+      $sheet='Text'; $cols=count(array_unique($map));
     }
 
     $n=0; $skip=0; $bad=0;
-    for($ri=$start; $ri<count($rows); $ri++){
-      $r=$rows[$ri];
-      $f=['last_name'=>'','first_name'=>'','birth_date'=>'','birth_place'=>'','gender'=>'',
-          'nationality'=>'','rank_title'=>'','unit'=>'','staff_no'=>'','email'=>'',
-          'phone'=>'','cohort'=>'','note'=>''];
-      foreach($map as $ci=>$key) if(isset($r[$ci])) $f[$key]=trim((string)$r[$ci]);
-      if(implode('',$f)==='') continue;
-      // Wer aus Versehen die Kopfzeile doppelt einfuegt, soll keine Person "Nachname" bekommen
-      if(stud_col_key($f['last_name'])==='last_name'){ continue; }
-      $name=trim($f['first_name'].' '.$f['last_name']);
-      if($name===''){ $bad++; continue; }
-      $f['birth_date']=stud_date($f['birth_date']);
+    foreach($people as $f){
+      if($f['skip']!==''){ $bad++; continue; }
+      $name=$f['name'];
       $coh = $f['cohort']!=='' ? $f['cohort'] : $cohort;
-
       $ex=q("SELECT id FROM students WHERE name=? AND COALESCE(cohort,'')=?",[$name,$coh])->fetch();
       if($ex){ $sid=(int)$ex['id']; $skip++; }
       else{
@@ -954,8 +941,8 @@ switch($action){
       if($tgId && !q("SELECT id FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId])->fetch())
         q("INSERT INTO student_training(student_id,training_id,attendance,created_at) VALUES(?,?,100,?)",[$sid,$tgId,now()]);
     }
-    audit('students.import','student','',$n.' Teilnehmer uebernommen');
-    out(['ok'=>true,'added'=>$n,'skipped'=>$skip,'bad'=>$bad,'cols'=>count(array_unique($map))]);
+    audit('students.import','student','',$n.' Teilnehmer uebernommen ('.$sheet.')');
+    out(['ok'=>true,'added'=>$n,'skipped'=>$skip,'bad'=>$bad,'cols'=>$cols,'sheet'=>$sheet]);
 
   /* Teilnahme an einem Block setzen/entfernen */
   case 'student.part':

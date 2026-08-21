@@ -170,6 +170,18 @@ Reihenfolge und auch mit den ueblichen Abweichungen wie „Pers.-Nr." oder
 Excel-Tageszahl werden vereinheitlicht. Leerzeilen, doppelte Kopfzeilen und bereits
 vorhandene Personen werden uebersprungen und in der Rueckmeldung gezaehlt.
 
+Gelesen werden **alle Tabellenblaetter**, nicht nur das erste: Deckblaetter, verschobene
+Blaetter und Titelzeilen ueber der Tabelle stoeren nicht, und wer seine Leute unter die
+Beispielzeilen tippt statt ins leere Blatt, bekommt sie trotzdem uebernommen. Die fuenf
+erfundenen Musterpersonen werden dabei immer herausgefiltert, das Hinweisblatt
+uebersprungen.
+
+Sobald eine Datei gewaehlt ist, zeigt das Cockpit **vor dem Einlesen** eine Vorschau:
+welches Blatt, wie viele Zeilen, wie viele Personen je Blatt, welche Spalten zugeordnet
+wurden und die ersten Namen. Findet es nichts, sagt es warum. `backend/check.php` prueft
+ausserdem, ob dieser Server alles mitbringt, was der Import braucht (zlib, ZipArchive,
+mbstring, `post_max_size`).
+
 ### Vor dem Echtstart aufraeumen
 Wenn der Auftrag steht und die echten Teilnehmer kommen, entfernt
 **Zertifizierung -> Katalog -> Daten zuruecksetzen** (nur fuer Administratoren) alle

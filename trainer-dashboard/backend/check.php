@@ -79,6 +79,27 @@ row('Größengrenze für Folien: '.$eff.' MB', $eff>=20,
                 .'beide Werte auf mindestens 32M setzen (oder eine Datei <b>.user.ini</b> im Hauptordner anlegen mit '
                 .'<code>upload_max_filesize = 32M</code> und <code>post_max_size = 40M</code>).'));
 
+/* 2c) Teilnehmerlisten: was der Excel-Import auf diesem Server braucht.
+   Diese Seite laedt bewusst nichts aus lib.php - deshalb hier direkt gepruefte
+   Grundfunktionen statt eines echten Testimports. */
+$zlib = function_exists('gzinflate') && function_exists('gzdeflate');
+row('Excel-Import: ZIP-Entpackung (zlib)', $zlib,
+    $zlib ? 'Vorhanden - .xlsx kann gelesen und die Vorlage erzeugt werden.'
+          : '<b>Fehlt.</b> Ohne zlib lassen sich .xlsx-Dateien nicht lesen. Beim Hoster die Erweiterung <b>zlib</b> einschalten lassen; bis dahin Listen als <b>CSV</b> schicken lassen.');
+$zipA = class_exists('ZipArchive');
+row('Excel-Import: ZipArchive', $zipA?true:null,
+    $zipA ? 'Vorhanden - wird bevorzugt genutzt.'
+          : 'Nicht vorhanden. Kein Problem: das Backend liest das ZIP dann selbst (braucht nur zlib).');
+$mbs = function_exists('mb_strtolower');
+row('Excel-Import: mbstring', $mbs?true:null,
+    $mbs ? 'Vorhanden - Spaltenüberschriften mit Umlauten werden sicher erkannt.'
+         : 'Nicht vorhanden. Der Import läuft trotzdem, erkennt Überschriften mit Umlauten aber etwas weniger zuverlässig.');
+$jsonMb = (int)round(min($toB($pms), 8*1024*1024)/1048576);
+row('Excel-Import: Größengrenze '.$jsonMb.' MB', $jsonMb>=2,
+    'Die Datei wird als Teil der Anfrage geschickt, es gilt <b>post_max_size='.esc($pms).'</b>. '
+    .($jsonMb>=2 ? 'Reicht für Teilnehmerlisten bei Weitem.'
+                 : '<b>Sehr knapp.</b> post_max_size beim Hoster auf mindestens 8M setzen.'));
+
 /* 2d) Folien-Postfach (Abgabe per Mail): sind Zugangsdaten hinterlegt? */
 $cfgRaw = is_file(__DIR__.'/config.php') ? @include __DIR__.'/config.php' : [];
 $pm = is_array($cfgRaw) ? ($cfgRaw['ppt_mailbox'] ?? []) : [];

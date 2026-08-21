@@ -1801,13 +1801,19 @@ function xlsx_col(string $ref): int {
 }
 
 /**
- * Erstes Arbeitsblatt einer xlsx-Datei als Zeilen-/Spaltenraster.
+ * Alle Arbeitsblaetter einer xlsx-Datei als Zeilen-/Spaltenraster.
+ *
+ * Die Blattreihenfolge steht in xl/workbook.xml, die Zuordnung zur Datei in
+ * den zugehoerigen Beziehungen. Auf die Namen sheet1.xml, sheet2.xml … ist
+ * kein Verlass: Excel behaelt sie bei, wenn man Blaetter verschiebt, und
+ * andere Programme vergeben eigene. Deshalb wird richtig aufgeloest.
+ *
  * Zahlen kommen als Text zurueck - fuer Stammdaten ist das richtig,
  * eine Personalnummer ist keine Rechengroesse.
  */
-function xlsx_rows(string $bin, int $maxRows=5000): array {
-  $sheet = zip_entry($bin,'xl/worksheets/sheet1.xml');
-  if($sheet===null) return [];
+function xlsx_sheets(string $bin, int $maxRows=5000, int $maxSheets=12): array {
+  $wbXml = zip_entry($bin,'xl/workbook.xml');
+  $rels  = zip_entry($bin,'xl/_rels/workbook.xml.rels');
   $shared=[];
   $ss = zip_entry($bin,'xl/sharedStrings.xml');
   if($ss!==null && preg_match_all('~<si>(.*?)</si>~s',$ss,$m)){
@@ -1817,6 +1823,48 @@ function xlsx_rows(string $bin, int $maxRows=5000): array {
       $shared[]=html_entity_decode($txt,ENT_QUOTES|ENT_XML1,'UTF-8');
     }
   }
+  // Beziehung -> Dateiname
+  $target=[];
+  if($rels!==null && preg_match_all('~<Relationship\b[^>]*>~',$rels,$rm)){
+    foreach($rm[0] as $tag){
+      if(!preg_match('~Id="([^"]+)"~',$tag,$a)) continue;
+      if(!preg_match('~Target="([^"]+)"~',$tag,$b)) continue;
+      $t=$b[1];
+      $t=preg_replace('~^/xl/~','',$t);
+      $t=preg_replace('~^\.?/~','',$t);
+      if(strpos($t,'worksheets/')!==0 && strpos($t,'xl/')!==0) $t='worksheets/'.basename($t);
+      $target[$a[1]] = (strpos($t,'xl/')===0) ? $t : 'xl/'.$t;
+    }
+  }
+  // Blattreihenfolge aus der Arbeitsmappe
+  $list=[];
+  if($wbXml!==null && preg_match_all('~<sheet\b[^>]*>~',$wbXml,$sm)){
+    foreach($sm[0] as $tag){
+      $name = preg_match('~name="([^"]*)"~',$tag,$a)
+        ? html_entity_decode($a[1],ENT_QUOTES|ENT_XML1,'UTF-8') : '';
+      $rid  = preg_match('~r:id="([^"]+)"~',$tag,$b) ? $b[1] : '';
+      $file = $target[$rid] ?? '';
+      if($file==='') continue;
+      $list[]=['name'=>$name,'file'=>$file];
+    }
+  }
+  // Notnagel, wenn die Arbeitsmappe nicht lesbar ist
+  if(!$list){
+    for($i=1;$i<=$maxSheets;$i++) $list[]=['name'=>'Blatt '.$i,'file'=>'xl/worksheets/sheet'.$i.'.xml'];
+  }
+
+  $out=[];
+  foreach($list as $sh){
+    if(count($out)>=$maxSheets) break;
+    $xml = zip_entry($bin,$sh['file']);
+    if($xml===null) continue;
+    $out[]=['name'=>$sh['name'],'rows'=>xlsx_sheet_rows($xml,$shared,$maxRows)];
+  }
+  return $out;
+}
+
+/** Ein Arbeitsblatt-XML in Zeilen und Spalten aufloesen. */
+function xlsx_sheet_rows(string $sheet, array $shared, int $maxRows=5000): array {
   $rows=[];
   if(!preg_match_all('~<row[^>]*>(.*?)</row>~s',$sheet,$rm)) return [];
   foreach($rm[1] as $ri=>$rowXml){
@@ -1844,6 +1892,12 @@ function xlsx_rows(string $bin, int $maxRows=5000): array {
     $rows[]=$out;
   }
   return $rows;
+}
+
+/** Erstes Arbeitsblatt - der einfache Fall. */
+function xlsx_rows(string $bin, int $maxRows=5000): array {
+  $sh=xlsx_sheets($bin,$maxRows,1);
+  return $sh ? $sh[0]['rows'] : [];
 }
 
 /** Eine xlsx-Datei bauen. $sheets = ['Blattname'=>[[zelle,…],…], …] */
@@ -2015,9 +2069,10 @@ function stud_template_xlsx(string $lang='de'): string {
   $sheet1=[$head];
 
   // Blatt 2: Beispiel, klar als solches gekennzeichnet.
-  $note = $de
-    ? 'BEISPIEL - erfundene Personen. Bitte NICHT übernehmen, nur als Muster ansehen.'
-    : 'EXAMPLE - fictitious people. Do NOT copy, look at it as a pattern only.';
+  $note = ($de
+    ? 'BEISPIEL - erfundene Personen. Nur zur Anschauung; bitte im Blatt "Teilnehmer" eintragen.'
+    : 'EXAMPLE - fictitious people. For illustration only; please type into the "Participants" sheet.')
+    .'  ['.STUD_TPL_MARK.']';
   $sheet2=[[[$note,2]],[],$head];
   foreach(stud_examples() as $r) $sheet2[]=$r;
 
@@ -2043,7 +2098,7 @@ function stud_template_xlsx(string $lang='de'): string {
     'ch'=>'Column','me'=>'Meaning',
     'p'=>'Data protection: we process these details solely to run and certify the course.',
   ];
-  $sheet3=[[[$t['h'],1],['',1]],[]];
+  $sheet3=[[[$t['h'],1],['',1]],[[STUD_TPL_HELP.' - '.($de?'Anleitung, kein Erfassungsblatt':'instructions, not a data sheet'),2]],[]];
   foreach(['i1','i2','i3','i4','i5','i6'] as $k) $sheet3[]=[$t[$k]];
   $sheet3[]=[];
   $sheet3[]=[[$t['ch'],1],[$t['me'],1]];
@@ -2062,7 +2117,7 @@ function stud_template_xlsx(string $lang='de'): string {
 
 /** Ueberschrift einer Spalte auf einen Feldnamen abbilden. */
 function stud_col_key(string $head): string {
-  $h=mb_strtolower(trim($head),'UTF-8');
+  $h=function_exists('mb_strtolower') ? mb_strtolower(trim($head),'UTF-8') : strtolower(trim($head));
   $h=str_replace(['ä','ö','ü','ß','.','-','_','/','(',')'],['ae','oe','ue','ss','','','','','',''],$h);
   $h=preg_replace('/\s+/','',$h);
   static $map=null;
@@ -2070,7 +2125,7 @@ function stud_col_key(string $head): string {
     $map=[];
     foreach(stud_cols() as $c){
       foreach([$c['de'],$c['en']] as $lbl){
-        $k=mb_strtolower($lbl,'UTF-8');
+        $k=function_exists('mb_strtolower') ? mb_strtolower($lbl,'UTF-8') : strtolower($lbl);
         $k=str_replace(['ä','ö','ü','ß','.','-','_','/','(',')'],['ae','oe','ue','ss','','','','','',''],$k);
         $map[preg_replace('/\s+/','',$k)]=$c['key'];
       }
@@ -2105,4 +2160,205 @@ function stud_date(string $v): string {
   if(ctype_digit($v) && (int)$v>10000 && (int)$v<80000)
     return gmdate('Y-m-d', ((int)$v - 25569) * 86400);
   return $v;
+}
+
+/** Erkennungszeichen im Beispielblatt der Vorlage. */
+const STUD_TPL_MARK = 'ETAF-MUSTER';
+/** Erkennungszeichen im Hinweisblatt der Vorlage. */
+const STUD_TPL_HELP = 'ETAF-HINWEISE';
+
+/**
+ * Aus einer hochgeladenen Datei die Teilnehmerzeilen herausschaelen.
+ *
+ * Gelesen werden ALLE Blaetter, nicht nur das erste. Das ist der
+ * entscheidende Punkt: Wer die Vorlage bekommt, tippt seine Leute mal in
+ * das leere Erfassungsblatt und mal unter die Beispielzeilen - beides muss
+ * ankommen. Ueberspruengen werden nur Blaetter, die sich selbst als
+ * Beispiel oder Hinweis ausweisen, und die fuenf erfundenen Musterpersonen.
+ *
+ * Rueckgabe: sheets (mit Befund je Blatt), head, people, error.
+ */
+function stud_parse_file(string $bin): array {
+  $R=['sheets'=>[],'sheet'=>'','head'=>[],'rows'=>[],'start'=>0,'people'=>[],'error'=>''];
+  $isZip = substr($bin,0,2)==="PK";
+
+  $sheets=[];
+  if($isZip){
+    $sheets=xlsx_sheets($bin);
+    if(!$sheets){ $R['error']='nozip'; return $R; }
+  } else {
+    $sheets[]=['name'=>'CSV','rows'=>stud_csv_rows($bin)];
+  }
+
+  $mustNames=[];
+  foreach(stud_examples() as $e) $mustNames[mb_strtolower_x(trim($e[1].' '.$e[0]))]=true;
+
+  $all=[]; $seen=[]; $bestHead=[]; $bestSheet='';
+  foreach($sheets as $s){
+    $info=['name'=>$s['name'],'rows'=>count($s['rows']),'people'=>0,'skipped'=>''];
+    if(stud_sheet_is_helper($s)){ $info['skipped']='Hinweisblatt'; $R['sheets'][]=$info; continue; }
+    $hit=stud_find_head($s['rows']);
+    if(!$hit){ $info['skipped']='keine Kopfzeile'; $R['sheets'][]=$info; continue; }
+    $people=stud_rows_to_people($s['rows'],$hit['map'],$hit['start']);
+    $take=0;
+    foreach($people as $p){
+      if($p['skip']===''){
+        $k=mb_strtolower_x($p['name']);
+        if(isset($mustNames[$k])) continue;      // die erfundenen Musterpersonen nie uebernehmen
+        if(isset($seen[$k])) continue;           // dieselbe Person auf zwei Blaettern
+        $seen[$k]=true; $take++;
+      }
+      $p['sheet']=$s['name'];
+      $all[]=$p;
+    }
+    $info['people']=$take;
+    $R['sheets'][]=$info;
+    if(count(array_unique($hit['map']))>count(array_unique($bestHead)) || $bestSheet===''){
+      $bestHead=$hit['map']; $bestSheet=$s['name'];
+    }
+    if(!$R['rows']) $R['rows']=array_slice($s['rows'],0,60);
+  }
+
+  if(!$bestHead){
+    $R['error']='nohead';
+    $R['sheet']=$sheets[0]['name'];
+    $R['rows']=array_slice($sheets[0]['rows'],0,8);
+    return $R;
+  }
+  // Doppelte und Musterpersonen aus der Ausgabe halten
+  $out=[]; $seen2=[];
+  foreach($all as $p){
+    if($p['skip']===''){
+      $k=mb_strtolower_x($p['name']);
+      if(isset($mustNames[$k]) || isset($seen2[$k])) continue;
+      $seen2[$k]=true;
+    }
+    $out[]=$p;
+  }
+  // Genannt wird das Blatt, aus dem die Leute tatsaechlich kommen -
+  // nicht das mit der schoensten Kopfzeile.
+  $from=[];
+  foreach($out as $p) if($p['skip']==='') $from[$p['sheet']]=($from[$p['sheet']]??0)+1;
+  if($from){ arsort($from); $bestSheet=array_key_first($from); }
+  $R['sheet']=$bestSheet; $R['head']=$bestHead; $R['people']=$out;
+  $R['from']=$from;
+  return $R;
+}
+
+/** Kleinschreibung auch ohne mbstring. */
+function mb_strtolower_x(string $s): string {
+  return function_exists('mb_strtolower') ? mb_strtolower($s,'UTF-8') : strtolower($s);
+}
+
+/**
+ * Nur das Hinweisblatt ueberspringen. Das Beispielblatt wird ganz normal
+ * gelesen: Wer seine Leute unter die Musterzeilen tippt, soll sie
+ * wiederfinden. Die fuenf erfundenen Personen fallen an anderer Stelle
+ * ueber ihren Namen heraus.
+ */
+function stud_sheet_is_helper(array $sheet): bool {
+  $n=mb_strtolower_x(trim((string)$sheet['name']));
+  if(in_array($n,['hinweise','notes','anleitung','instructions'],true)) return true;
+  foreach(array_slice($sheet['rows'],0,3) as $r){
+    foreach((array)$r as $c){
+      if(stripos((string)$c, STUD_TPL_HELP)!==false) return true;
+    }
+  }
+  return false;
+}
+
+/** CSV robust zerlegen: Zeichensatz und Trennzeichen erraten. */
+function stud_csv_rows(string $bin): array {
+  if(substr($bin,0,3)==="\xEF\xBB\xBF") $bin=substr($bin,3);
+  if(!preg_match('//u',$bin)){
+    $bin = function_exists('mb_convert_encoding')
+      ? mb_convert_encoding($bin,'UTF-8','Windows-1252')
+      : utf8_encode($bin);
+  }
+  $first=strtok($bin,"\n");
+  $sep=';';
+  foreach([';' => substr_count($first,';'), ',' => substr_count($first,','),
+           "\t"=> substr_count($first,"\t")] as $c=>$n){
+    if($n>substr_count($first,$sep)) $sep=$c;
+  }
+  $rows=[];
+  foreach(preg_split('/\r?\n/',$bin) as $line){
+    if(trim($line)==='') { $rows[]=[]; continue; }
+    $rows[]=array_map(fn($x)=>trim((string)$x),str_getcsv($line,$sep,'"',''));
+  }
+  return $rows;
+}
+
+/** Kopfzeile suchen: erste Zeile mit mindestens zwei erkannten Spalten. */
+function stud_find_head(array $rows): ?array {
+  $single=null;
+  foreach($rows as $ri=>$r){
+    if($ri>14) break;
+    if(!is_array($r)) continue;
+    $m=[];
+    foreach($r as $ci=>$h){ $k=stud_col_key((string)$h); if($k) $m[$ci]=$k; }
+    $u=array_unique($m);
+    if(count($u)>=2) return ['map'=>$m,'start'=>$ri+1];
+    // Eine blanke Namensspalte ist auch eine Liste - merken und nur nehmen,
+    // wenn sich nichts Besseres findet.
+    if($single===null && count($u)===1 && in_array(reset($u),['last_name','first_name'],true)
+       && isset($rows[$ri+1]) && trim(implode('',(array)$rows[$ri+1]))!=='')
+      $single=['map'=>$m,'start'=>$ri+1];
+  }
+  return $single;
+}
+
+/** Datenzeilen in fertige Personensaetze umwandeln. */
+function stud_rows_to_people(array $rows, array $map, int $start): array {
+  $out=[];
+  for($ri=$start; $ri<count($rows); $ri++){
+    $r=$rows[$ri];
+    if(!is_array($r)) continue;
+    $f=['last_name'=>'','first_name'=>'','birth_date'=>'','birth_place'=>'','gender'=>'',
+        'nationality'=>'','rank_title'=>'','unit'=>'','staff_no'=>'','email'=>'',
+        'phone'=>'','cohort'=>'','note'=>''];
+    foreach($map as $ci=>$key) if(isset($r[$ci])) $f[$key]=trim((string)$r[$ci]);
+    if(implode('',$f)==='') continue;
+    // Eine zweite Kopfzeile (kopierter Block) ist keine Person
+    if(stud_col_key($f['last_name'])==='last_name' || stud_col_key($f['first_name'])==='first_name') continue;
+    // Und eine Zeile, in der nur eine Spaltenbezeichnung steht, auch nicht -
+    // so rutschen Erlaeuterungstabellen nicht als Personen durch.
+    $filled=array_filter($f, fn($v)=>trim((string)$v)!=='');
+    if(count($filled)===1 && stud_col_key((string)reset($filled))!=='') continue;
+    $name=trim($f['first_name'].' '.$f['last_name']);
+    if($name===''){ $out[]=['row'=>$ri+1,'skip'=>'noname']+$f; continue; }
+    $f['birth_date']=stud_date($f['birth_date']);
+    $out[]=['row'=>$ri+1,'skip'=>'','name'=>$name]+$f;
+  }
+  return $out;
+}
+
+/**
+ * Hochgeladene Datei aus dem Aufruf holen - und den haeufigsten Stolperstein
+ * benennen: ist der Rumpf groesser als post_max_size, wirft PHP ihn weg und
+ * die Anfrage kommt leer an. Ohne diesen Hinweis sucht man an der falschen
+ * Stelle.
+ */
+function stud_upload_bin(array $in): string {
+  $raw=(string)($in['file']??'');
+  if($raw===''){
+    $len=(int)($_SERVER['CONTENT_LENGTH'] ?? 0);
+    $max=stud_post_max();
+    if($max>0 && $len>$max)
+      fail('Die Datei ist fuer diesen Server zu gross (Grenze '.round($max/1048576,1).' MB). '
+          .'Bitte die Liste als CSV speichern oder in zwei Teile zerlegen.');
+    fail('Es kam keine Datei an.');
+  }
+  $bin=base64_decode(preg_replace('~^data:[^,]*,~','',$raw), true);
+  if($bin===false || $bin==='') fail('Die Datei konnte nicht gelesen werden.');
+  if(strlen($bin)>8*1024*1024) fail('Die Datei ist groesser als 8 MB.');
+  return $bin;
+}
+/** post_max_size in Bytes, 0 wenn unbegrenzt. */
+function stud_post_max(): int {
+  $v=trim((string)ini_get('post_max_size'));
+  if($v===''||$v==='0'||$v==='-1') return 0;
+  $u=strtolower(substr($v,-1)); $n=(float)$v;
+  if($u==='g') $n*=1073741824; elseif($u==='m') $n*=1048576; elseif($u==='k') $n*=1024;
+  return (int)$n;
 }

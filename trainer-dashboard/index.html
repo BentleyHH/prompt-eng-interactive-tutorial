@@ -1455,6 +1455,18 @@ function restoreView(){
    ============================================================ */
 const L={
  de:{
+  /* ---- Zertifizierung: Import-Vorschau ---- */
+  ceScanning:"Datei wird gelesen …",
+  ceSheet:"Tabellenblatt", ceRowsN:"Zeilen",
+  ceFound:n=>`${n} Teilnehmer erkannt`,
+  ceFoundHint:(sh,c)=>`Blatt „${sh}“ · ${c} Spalten zugeordnet`,
+  ceFirstRows:"Die ersten Zeilen:",
+  ceAndMore:n=>`… und ${n} weitere`,
+  ceNoHead:"Keine Kopfzeile gefunden",
+  ceNoHeadHint:"Die Datei braucht eine Zeile mit Spaltenüberschriften wie „Nachname“ und „Vorname“. Am einfachsten mit unserer Vorlage - oben herunterladen.",
+  ceNoRows:"Kopfzeile erkannt, aber keine Personen darunter",
+  ceNoRowsHint:"Sind die Namen vielleicht auf einem anderen Blatt oder stehen nur die Beispielzeilen darin? Die Übersicht unten zeigt, was auf welchem Blatt gefunden wurde.",
+
   /* ---- Zertifizierung: Zuruecksetzen vor dem Echtstart ---- */
   ceReset:"Daten zurücksetzen",
   ceResetHint:"Vor dem Echtbetrieb: alle Übungs- und Beispieldaten der Zertifizierung entfernen.",
@@ -2166,6 +2178,18 @@ const L={
   matSummary:(n,q)=>`${n} Positionen · ${q} Einheiten`, matColHead:"Material", matColQty:"Anzahl", matColUnit:"Einheit"
  },
  en:{
+  /* ---- Certification: import preview ---- */
+  ceScanning:"Reading the file …",
+  ceSheet:"Sheet", ceRowsN:"Rows",
+  ceFound:n=>`${n} participants recognised`,
+  ceFoundHint:(sh,c)=>`sheet "${sh}" · ${c} columns matched`,
+  ceFirstRows:"The first rows:",
+  ceAndMore:n=>`… and ${n} more`,
+  ceNoHead:"No heading row found",
+  ceNoHeadHint:"The file needs a row of column headings such as \"Last name\" and \"First name\". Easiest with our template - download it above.",
+  ceNoRows:"Heading row found, but no people below it",
+  ceNoRowsHint:"Are the names on a different sheet, or does the file only contain the example rows? The overview below shows what was found on which sheet.",
+
   /* ---- Certification: reset before going live ---- */
   ceReset:"Reset data",
   ceResetHint:"Before going live: remove all practice and example data of the certification area.",
@@ -9140,7 +9164,8 @@ function certImportSheet(){
     <label class="fld">${esc(t("ceFile"))}</label>
     <input class="inp" type="file" id="ciFile" accept=".xlsx,.csv,.txt"
       onchange="certPickFile(this)">
-    <div class="meta" id="ciFileInfo" style="margin:5px 0 14px">${esc(t("ceFileHint"))}</div>
+    <div class="meta" id="ciFileInfo" style="margin:5px 0 6px">${esc(t("ceFileHint"))}</div>
+    <div id="ciPreview"></div>
     <div class="meta" style="margin-bottom:10px">${esc(t("ceImportHint"))}</div>
     <label class="fld">${esc(t("ceCohort"))}</label>
     <input class="inp" id="ciCoh" placeholder="ADP DVI 2026-A">
@@ -9161,18 +9186,66 @@ function certTemplate(lang){
   const url=base+"/students-template.php?lang="+lang+"&token="+encodeURIComponent(AUTH||"");
   window.open(url,"_blank");
 }
-let certFileData=null;
+let certFileData=null, certPrev=null;
 function certPickFile(el){
   const f=el.files&&el.files[0];
-  certFileData=null;
-  const info=$("#ciFileInfo");
+  certFileData=null; certPrev=null;
+  const info=$("#ciFileInfo"), box=$("#ciPreview");
+  if(box) box.innerHTML="";
   if(!f){ info.textContent=t("ceFileHint"); return; }
   if(f.size>8*1024*1024){ info.textContent=t("ceFileBig"); el.value=""; return; }
   const r=new FileReader();
-  r.onload=()=>{ certFileData=String(r.result).replace(/^data:[^,]*,/,"");
-    info.textContent=t("ceFileReady",f.name); };
+  r.onload=()=>{
+    certFileData=String(r.result).replace(/^data:[^,]*,/,"");
+    info.textContent=t("ceFileReady",f.name)+" · "+Math.max(1,Math.round(f.size/1024))+" KB";
+    certPreviewFile();
+  };
   r.onerror=()=>{ info.textContent=t("ceFileErr"); };
   r.readAsDataURL(f);
+}
+/* Erst zeigen, dann anlegen. Ohne das ist der Import eine Blackbox: man
+   sieht nur eine Zahl und weiss nicht, woher sie kommt. */
+async function certPreviewFile(){
+  const box=$("#ciPreview"); if(!box||!certFileData) return;
+  box.innerHTML=`<div class="meta">${esc(t("ceScanning"))}</div>`;
+  try{
+    const d=await apiCall("students.preview",{file:certFileData});
+    certPrev=d;
+    box.innerHTML=certPreviewHtml(d);
+  }catch(e){
+    certPrev=null;
+    box.innerHTML=`<div class="rpnote"><div class="rowgrow" style="color:var(--crit)">${esc(e.message)}</div></div>`;
+  }
+}
+function certPreviewHtml(d){
+  const sheets=(d.sheets||[]).map(s=>`<tr>
+      <td>${esc(s.name)}</td><td class="num">${s.rows}</td>
+      <td class="num"><b>${s.people}</b></td>
+      <td class="nt">${esc(s.skipped||"")}</td></tr>`).join("");
+  const people=(d.people||[]).filter(p=>!p.skip);
+  const rows=people.slice(0,8).map(p=>`<tr>
+      <td class="nt">${p.row}</td><td><b>${esc(p.name)}</b></td>
+      <td class="nt">${esc([p.rank,p.unit].filter(Boolean).join(" · "))}</td>
+      <td class="nt">${p.birth?esc(fmtDate(p.birth)):""}</td></tr>`).join("");
+  const bad=(d.people||[]).filter(p=>p.skip).length;
+  let head="";
+  if(d.error==="nohead") head=`<div class="ampel a-red"><span class="lamp"></span>
+    <div class="rowgrow"><b>${esc(t("ceNoHead"))}</b><div class="meta">${esc(t("ceNoHeadHint"))}</div></div></div>`;
+  else if(!d.total) head=`<div class="ampel a-amber"><span class="lamp"></span>
+    <div class="rowgrow"><b>${esc(t("ceNoRows"))}</b><div class="meta">${esc(t("ceNoRowsHint"))}</div></div></div>`;
+  else head=`<div class="ampel a-green"><span class="lamp"></span>
+    <div class="rowgrow"><b>${esc(t("ceFound",d.total))}</b>
+      <div class="meta">${esc(t("ceFoundHint",d.sheet,d.headCols))}${
+        bad?" · "+esc(t("ceImportBad",bad)):""}</div></div></div>`;
+  return head+`
+    <table class="rptable" style="margin-bottom:12px"><thead><tr>
+      <th>${esc(t("ceSheet"))}</th><th class="num">${esc(t("ceRowsN"))}</th>
+      <th class="num">${esc(t("ceTabPeople"))}</th><th></th></tr></thead>
+      <tbody>${sheets}</tbody></table>
+    ${rows?`<div class="meta" style="margin-bottom:5px">${esc(t("ceFirstRows"))}</div>
+      <table class="rptable"><tbody>${rows}</tbody></table>
+      ${people.length>8?`<div class="meta" style="margin-top:5px">${
+        esc(t("ceAndMore",people.length-8))}</div>`:""}`:""}`;
 }
 async function certDoImport(){
   const text=val("ciTxt").trim();
@@ -9184,8 +9257,9 @@ async function certDoImport(){
     certFileData=null;
     closeSheet(); await certLoadStudents(true);
     if(certState.tg) await certLoadTraining(certState.tg);
-    toast(t("ceImported",d.added,d.skipped)+(d.bad?" · "+t("ceImportBad",d.bad):""),"good");
-    certAnInvalidate(); renderCert();
+    toast(t("ceImported",d.added,d.skipped)+(d.bad?" · "+t("ceImportBad",d.bad):""),
+      d.added?"good":"warn");
+    certPrev=null; certAnInvalidate(); renderCert();
   }catch(e){ toast("Fehler: "+e.message,"crit"); }
 }
 
