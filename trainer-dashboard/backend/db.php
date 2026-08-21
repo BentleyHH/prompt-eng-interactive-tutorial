@@ -305,6 +305,62 @@ function ensure_schema(): void {
     received_at VARCHAR(40), atts TEXT, att_count INT DEFAULT 0, att_bytes INT DEFAULT 0,
     training_id INT, session_id INT, status VARCHAR(16) DEFAULT 'open',
     note VARCHAR(255), created_at VARCHAR(20))$eng");
+  /* ============================================================
+     ZERTIFIZIERUNG DER TEILNEHMER
+     Bewertung nach einem Katalog aus Hauptkriterien und Unterkriterien.
+     Der Katalog ist frei änderbar - deshalb hängt jede Bewertung an der
+     Fassung, mit der sie erhoben wurde (crit_snapshot). Ohne das würden
+     spätere Änderungen am Katalog alte Zeugnisse rückwirkend verfälschen.
+     ============================================================ */
+  $d->exec("CREATE TABLE IF NOT EXISTS students (
+    id $pk, client_id VARCHAR(24),
+    name VARCHAR(160), rank_title VARCHAR(96), unit VARCHAR(160),
+    staff_no VARCHAR(64), email VARCHAR(190), cohort VARCHAR(96),
+    note TEXT, active INT DEFAULT 1, created_at VARCHAR(20))$eng");
+
+  // Teilnahme je Block (Anwesenheit in Prozent steuert die Bestehensregel)
+  $d->exec("CREATE TABLE IF NOT EXISTS student_training (
+    id $pk, student_id INT, training_id INT,
+    attendance INT DEFAULT 100, note VARCHAR(255), created_at VARCHAR(20))$eng");
+
+  // Hauptkriterien (Gruppen) und Unterkriterien
+  $d->exec("CREATE TABLE IF NOT EXISTS crit_groups (
+    id $pk, name VARCHAR(160), name_en VARCHAR(160),
+    weight INT DEFAULT 1, sort_order INT DEFAULT 0, active INT DEFAULT 1)$eng");
+  $d->exec("CREATE TABLE IF NOT EXISTS crits (
+    id $pk, group_id INT, name VARCHAR(190), name_en VARCHAR(190),
+    descr TEXT, weight INT DEFAULT 1, sort_order INT DEFAULT 0,
+    ko INT DEFAULT 0,                      -- K.-o.-Kriterium: darunter kein Bestehen
+    active INT DEFAULT 1)$eng");
+
+  // Bewertung eines Teilnehmers in einem Block
+  $d->exec("CREATE TABLE IF NOT EXISTS assessments (
+    id $pk, student_id INT, training_id INT,
+    rater_id INT, rater_name VARCHAR(160),
+    status VARCHAR(16) DEFAULT 'draft',    -- 'draft' | 'final'
+    score REAL DEFAULT 0,                  -- gewichteter Gesamtwert (Skala)
+    pct INT DEFAULT 0,                     -- Prozent der erreichbaren Punkte
+    result VARCHAR(16) DEFAULT '',         -- 'pass' | 'merit' | 'fail'
+    attendance INT DEFAULT 100,
+    comment TEXT, strengths TEXT, todo TEXT,
+    crit_snapshot TEXT,                    -- Katalogfassung zum Zeitpunkt der Erhebung
+    cert_no VARCHAR(32), cert_at VARCHAR(20),
+    created_at VARCHAR(20), updated_at VARCHAR(20))$eng");
+  $d->exec("CREATE TABLE IF NOT EXISTS assessment_scores (
+    id $pk, assessment_id INT, crit_id INT, score REAL, note VARCHAR(255))$eng");
+
+  // Schnellzugriff: eine Bewertung je Teilnehmer, Block und Bewerter
+  try{ $d->exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_assess ON assessments(student_id,training_id,rater_id)"); }catch(Throwable $e){}
+  try{ $d->exec("CREATE INDEX IF NOT EXISTS ix_scores ON assessment_scores(assessment_id)"); }catch(Throwable $e){}
+
+  // Kriterienkatalog einmalig fachlich vorbelegen (danach frei änderbar)
+  if((int)q("SELECT COUNT(*) c FROM crit_groups")->fetch()['c']===0) seed_crits();
+  if(config_get('cert_scale')===null)   config_set('cert_scale','5');    // 1..5
+  if(config_get('cert_pass')===null)    config_set('cert_pass','60');    // Prozent
+  if(config_get('cert_merit')===null)   config_set('cert_merit','85');   // mit Auszeichnung
+  if(config_get('cert_ko_min')===null)  config_set('cert_ko_min','3');   // K.-o.-Mindestwert
+  if(config_get('cert_attend')===null)  config_set('cert_attend','80');  // Mindestanwesenheit
+
   // Ablage-Ordner anlegen und vor direktem Zugriff schützen (Auslieferung
   // ausschließlich über die API bzw. den Token-Link)
   $pd=__DIR__.'/uploads/ppt';
@@ -461,6 +517,86 @@ function seed_clients(): void {
 }
 
 /** Material-Katalog (DVI/Forensik) anlegen (idempotent). */
+/**
+ * Kriterienkatalog für die Teilnehmer-Zertifizierung (INTERPOL DVI).
+ * Bewusst entlang des Einsatzablaufs gegliedert: erst Grundlagen, dann die
+ * beiden Datenstränge (Post Mortem / Ante Mortem), dann die Zusammenführung,
+ * zuletzt Verhalten im Einsatz. Alles ist im Cockpit änderbar - das hier ist
+ * nur der Startpunkt, damit niemand vor einer leeren Liste sitzt.
+ * ko=1 markiert Kriterien, bei denen ein zu schwacher Wert das Bestehen
+ * verhindert (Sorgfaltspflichten, an denen im echten Einsatz alles hängt).
+ */
+function seed_crits(): void {
+  $groups=[
+    ['Fachliche Grundlagen','Professional foundations',2,[
+      ['INTERPOL DVI: Phasen und Rollen','INTERPOL DVI: phases and roles',
+       'Kennt Ablauf, Zuständigkeiten und Qualitätsprinzipien der vier Phasen.',2,0],
+      ['Rechtsrahmen und Ethik','Legal framework and ethics',
+       'Handelt im rechtlichen Rahmen, wahrt Würde der Verstorbenen und Datenschutz.',2,1],
+      ['Standardformulare und Nomenklatur','Standard forms and nomenclature',
+       'Verwendet AM-/PM-/Reconciliation-Formulare korrekt und einheitlich.',1,0],
+      ['Acht-Zellen-Struktur','Eight-cell structure',
+       'Ordnet die eigene Rolle und Schnittstellen im Zellenmodell richtig ein.',1,0],
+    ]],
+    ['Post Mortem: Fundort und Bergung','Post mortem: scene and recovery',3,[
+      ['Fundortarbeit und Spurensicherung','Scene work and evidence handling',
+       'Sichert Fundort, dokumentiert Lage, vermeidet Spurenverlust.',2,1],
+      ['Kennzeichnung und Chain of Custody','Labelling and chain of custody',
+       'Lückenlose Kennzeichnung und nachvollziehbare Übergaben.',2,1],
+      ['PM-Datenerhebung','PM data collection',
+       'Erhebt körperliche Merkmale, Kleidung und Effekten vollständig.',2,0],
+      ['Umgang mit Fragmentierung','Handling of fragmentation',
+       'Geht mit Teilfunden methodisch und dokumentiert um.',1,0],
+    ]],
+    ['Ante Mortem und Angehörige','Ante mortem and family liaison',3,[
+      ['AM-Datenerhebung','AM data collection',
+       'Erhebt Vermisstendaten strukturiert und belastbar.',2,0],
+      ['Gesprächsführung mit Angehörigen','Family interviews',
+       'Führt Gespräche empathisch, klar und ergebnisorientiert.',2,1],
+      ['Qualität der Referenzproben','Quality of reference samples',
+       'Wählt geeignete Referenzen, dokumentiert Herkunft sauber.',2,0],
+      ['Umgang mit Belastung und Nähe','Handling distress and proximity',
+       'Bleibt professionell distanziert, erkennt eigene Belastungsgrenzen.',1,0],
+    ]],
+    ['Daten, Abgleich und Identifizierung','Data, reconciliation and identification',3,[
+      ['PlassData: Erfassung und Pflege','PlassData: entry and maintenance',
+       'Arbeitet sicher im System, hält Datensätze konsistent.',2,0],
+      ['Abgleich und Hypothesenbildung','Reconciliation and hypotheses',
+       'Bildet und prüft Identifizierungshypothesen nachvollziehbar.',2,0],
+      ['Primärmerkmale bewerten','Assessing primary identifiers',
+       'Bewertet Fingerabdruck, Zahnstatus und DNA sachgerecht.',2,1],
+      ['Qualitätskontrolle und Vier-Augen-Prinzip','Quality control and dual verification',
+       'Prüft Ergebnisse gegen, dokumentiert Freigaben.',2,1],
+      ['Berichte und Dokumentation','Reporting and documentation',
+       'Erstellt vollständige, prüffähige Unterlagen.',1,0],
+    ]],
+    ['Einsatzverhalten und Zusammenarbeit','Conduct and teamwork',2,[
+      ['Teamarbeit in der Zelle','Teamwork within the cell',
+       'Arbeitet zuverlässig zu, teilt Informationen aktiv.',2,0],
+      ['Kommunikation und Übergaben','Communication and handovers',
+       'Übergibt strukturiert, meldet Abweichungen früh.',2,0],
+      ['Belastbarkeit unter Einsatzdruck','Resilience under pressure',
+       'Bleibt bei Zeitdruck und Belastung handlungsfähig.',1,0],
+      ['Sorgfalt und Ausdauer','Diligence and stamina',
+       'Hält Qualität auch in langen Schichten.',1,0],
+      ['Führungs- und Anleitungsfähigkeit','Leadership and instruction',
+       'Leitet andere an, trifft Entscheidungen im Rahmen der Rolle.',1,0],
+    ]],
+  ];
+  $gs=0;
+  foreach($groups as [$de,$en,$gw,$items]){
+    q("INSERT INTO crit_groups(name,name_en,weight,sort_order,active) VALUES(?,?,?,?,1)",
+      [$de,$en,$gw,$gs]);
+    $gid=(int)db()->lastInsertId(); $cs=0;
+    foreach($items as [$cde,$cen,$descr,$cw,$ko]){
+      q("INSERT INTO crits(group_id,name,name_en,descr,weight,sort_order,ko,active)
+         VALUES(?,?,?,?,?,?,?,1)",[$gid,$cde,$cen,$descr,$cw,$cs,$ko]);
+      $cs+=10;
+    }
+    $gs+=10;
+  }
+}
+
 function seed_materials(): void {
   $M=[
     ['m-dvi','DVI-Kit (pre-coded)','Set','Kits',1],

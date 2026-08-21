@@ -744,6 +744,265 @@ switch($action){
     audit('ppt.request','training',(string)$tgId,'Folien-Anfrage an Trainer '.$trId.' ('.count($list).')');
     out(['ok'=>true,'sent'=>$ok?1:0,'open'=>count($list)]);
 
+  /* ============================================================
+     ZERTIFIZIERUNG: Katalog, Teilnehmer, Bewertungen
+     ============================================================ */
+  case 'cert.catalog':
+    require_auth();
+    out(['ok'=>true,'catalog'=>cert_catalog(false),'cfg'=>cert_cfg()]);
+
+  case 'cert.group.save':
+    require_admin();
+    $gid=(int)($in['id']??0);
+    $nm=trim((string)($in['name']??'')); if($nm==='') fail('Bitte einen Namen angeben.');
+    $f=[$nm, trim((string)($in['nameEn']??'')), max(1,(int)($in['weight']??1)),
+        (int)($in['sort']??0), !empty($in['active'])?1:0];
+    if($gid) q("UPDATE crit_groups SET name=?,name_en=?,weight=?,sort_order=?,active=? WHERE id=?",array_merge($f,[$gid]));
+    else {
+      q("INSERT INTO crit_groups(name,name_en,weight,sort_order,active) VALUES(?,?,?,?,?)",$f);
+      $gid=(int)db()->lastInsertId();
+    }
+    audit('cert.group.save','crit',(string)$gid,$nm);
+    out(['ok'=>true,'id'=>(string)$gid]);
+
+  case 'cert.group.delete':
+    require_admin();
+    $gid=(int)($in['id']??0);
+    // Nicht loeschen, wenn schon bewertet wurde - sonst fehlen alten
+    // Bewertungen die Bezugspunkte. Stattdessen stilllegen.
+    $used=(int)q("SELECT COUNT(*) c FROM assessment_scores s
+                  JOIN crits c ON c.id=s.crit_id WHERE c.group_id=?",[$gid])->fetch()['c'];
+    if($used){ q("UPDATE crit_groups SET active=0 WHERE id=?",[$gid]);
+      out(['ok'=>true,'archived'=>true,'used'=>$used]); }
+    q("DELETE FROM crits WHERE group_id=?",[$gid]);
+    q("DELETE FROM crit_groups WHERE id=?",[$gid]);
+    audit('cert.group.delete','crit',(string)$gid,'');
+    out(['ok'=>true]);
+
+  case 'cert.crit.save':
+    require_admin();
+    $cid=(int)($in['id']??0);
+    $nm=trim((string)($in['name']??'')); if($nm==='') fail('Bitte einen Namen angeben.');
+    $gid=(int)($in['group']??0);
+    if(!$gid || !q("SELECT id FROM crit_groups WHERE id=?",[$gid])->fetch()) fail('Hauptkriterium nicht gefunden.',404);
+    $f=[$gid,$nm,trim((string)($in['nameEn']??'')),trim((string)($in['descr']??'')),
+        max(1,(int)($in['weight']??1)),(int)($in['sort']??0),
+        !empty($in['ko'])?1:0, !empty($in['active'])?1:0];
+    if($cid) q("UPDATE crits SET group_id=?,name=?,name_en=?,descr=?,weight=?,sort_order=?,ko=?,active=? WHERE id=?",array_merge($f,[$cid]));
+    else {
+      q("INSERT INTO crits(group_id,name,name_en,descr,weight,sort_order,ko,active) VALUES(?,?,?,?,?,?,?,?)",$f);
+      $cid=(int)db()->lastInsertId();
+    }
+    audit('cert.crit.save','crit',(string)$cid,$nm);
+    out(['ok'=>true,'id'=>(string)$cid]);
+
+  case 'cert.crit.delete':
+    require_admin();
+    $cid=(int)($in['id']??0);
+    $used=(int)q("SELECT COUNT(*) c FROM assessment_scores WHERE crit_id=?",[$cid])->fetch()['c'];
+    if($used){ q("UPDATE crits SET active=0 WHERE id=?",[$cid]);
+      out(['ok'=>true,'archived'=>true,'used'=>$used]); }
+    q("DELETE FROM crits WHERE id=?",[$cid]);
+    audit('cert.crit.delete','crit',(string)$cid,'');
+    out(['ok'=>true]);
+
+  case 'cert.cfg.save':
+    require_admin();
+    foreach(['cert_scale'=>['scale',3,10],'cert_pass'=>['pass',1,100],
+             'cert_merit'=>['merit',1,100],'cert_attend'=>['attend',0,100]] as $k=>$m){
+      if(isset($in[$m[0]])) config_set($k,(string)max($m[1],min($m[2],(int)$in[$m[0]])));
+    }
+    if(isset($in['koMin'])) config_set('cert_ko_min',(string)max(0,(float)$in['koMin']));
+    audit('cert.cfg.save','','','Bewertungsregeln geändert');
+    out(['ok'=>true,'cfg'=>cert_cfg()]);
+
+  /* ---- Teilnehmer ---- */
+  case 'students.list':
+    require_auth();
+    $rows=q("SELECT * FROM students ORDER BY active DESC, name")->fetchAll();
+    $part=[];
+    foreach(q("SELECT * FROM student_training")->fetchAll() as $r)
+      $part[(string)$r['student_id']][]=['training'=>(string)$r['training_id'],
+        'attendance'=>(int)$r['attendance'],'note'=>$r['note']];
+    out(['ok'=>true,'students'=>array_map(function($r) use($part){
+      return ['id'=>(string)$r['id'],'clientId'=>$r['client_id'],'name'=>$r['name'],
+        'rank'=>$r['rank_title'],'unit'=>$r['unit'],'staffNo'=>$r['staff_no'],
+        'email'=>$r['email'],'cohort'=>$r['cohort'],'note'=>$r['note'],
+        'active'=>((int)$r['active'])===1,
+        'trainings'=>$part[(string)$r['id']]??[]];
+    },$rows)]);
+
+  case 'student.save':
+    require_auth();
+    $sid=(int)($in['id']??0);
+    $nm=trim((string)($in['name']??'')); if($nm==='') fail('Bitte einen Namen angeben.');
+    $f=[trim((string)($in['clientId']??'')),$nm,trim((string)($in['rank']??'')),
+        trim((string)($in['unit']??'')),trim((string)($in['staffNo']??'')),
+        trim((string)($in['email']??'')),trim((string)($in['cohort']??'')),
+        trim((string)($in['note']??'')), !empty($in['active'])?1:0];
+    if($sid) q("UPDATE students SET client_id=?,name=?,rank_title=?,unit=?,staff_no=?,email=?,cohort=?,note=?,active=? WHERE id=?",array_merge($f,[$sid]));
+    else {
+      q("INSERT INTO students(client_id,name,rank_title,unit,staff_no,email,cohort,note,active,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",array_merge($f,[now()]));
+      $sid=(int)db()->lastInsertId();
+    }
+    audit('student.save','student',(string)$sid,$nm);
+    out(['ok'=>true,'id'=>(string)$sid]);
+
+  case 'student.delete':
+    require_admin();
+    $sid=(int)($in['id']??0);
+    $used=(int)q("SELECT COUNT(*) c FROM assessments WHERE student_id=?",[$sid])->fetch()['c'];
+    if($used){ q("UPDATE students SET active=0 WHERE id=?",[$sid]);
+      out(['ok'=>true,'archived'=>true,'used'=>$used]); }
+    q("DELETE FROM student_training WHERE student_id=?",[$sid]);
+    q("DELETE FROM students WHERE id=?",[$sid]);
+    audit('student.delete','student',(string)$sid,'');
+    out(['ok'=>true]);
+
+  /* Sammelanlage: eine Zeile je Teilnehmer, Felder mit Semikolon oder Tab.
+     Reihenfolge: Name; Dienstgrad; Einheit; Personalnummer; E-Mail */
+  case 'students.import':
+    require_auth();
+    $txt=(string)($in['text']??'');
+    $cohort=trim((string)($in['cohort']??''));
+    $client=trim((string)($in['clientId']??''));
+    $tgId=(int)($in['training']??0);
+    $n=0; $skip=0;
+    foreach(preg_split('/\r?\n/',$txt) as $line){
+      $line=trim($line); if($line==='') continue;
+      $p=preg_split('/\s*[;\t]\s*/',$line);
+      $nm=trim((string)($p[0]??'')); if($nm==='' ){ $skip++; continue; }
+      // Doppelte vermeiden: gleicher Name in derselben Kohorte
+      $ex=q("SELECT id FROM students WHERE name=? AND COALESCE(cohort,'')=?",[$nm,$cohort])->fetch();
+      if($ex){ $sid=(int)$ex['id']; $skip++; }
+      else{
+        q("INSERT INTO students(client_id,name,rank_title,unit,staff_no,email,cohort,active,created_at)
+           VALUES(?,?,?,?,?,?,?,1,?)",
+          [$client,$nm,trim((string)($p[1]??'')),trim((string)($p[2]??'')),
+           trim((string)($p[3]??'')),trim((string)($p[4]??'')),$cohort,now()]);
+        $sid=(int)db()->lastInsertId(); $n++;
+      }
+      if($tgId && !q("SELECT id FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId])->fetch())
+        q("INSERT INTO student_training(student_id,training_id,attendance,created_at) VALUES(?,?,100,?)",[$sid,$tgId,now()]);
+    }
+    audit('students.import','student','',$n.' Teilnehmer übernommen');
+    out(['ok'=>true,'added'=>$n,'skipped'=>$skip]);
+
+  /* Teilnahme an einem Block setzen/entfernen */
+  case 'student.part':
+    require_auth();
+    $sid=(int)($in['student']??0); $tgId=(int)($in['training']??0);
+    if(!$sid||!$tgId) fail('Teilnehmer oder Training fehlt.');
+    if(!empty($in['remove'])){
+      q("DELETE FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId]);
+      out(['ok'=>true]);
+    }
+    $att=max(0,min(100,(int)($in['attendance']??100)));
+    if(q("SELECT id FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId])->fetch())
+      q("UPDATE student_training SET attendance=? WHERE student_id=? AND training_id=?",[$att,$sid,$tgId]);
+    else
+      q("INSERT INTO student_training(student_id,training_id,attendance,created_at) VALUES(?,?,?,?)",[$sid,$tgId,$att,now()]);
+    out(['ok'=>true]);
+
+  /* ---- Bewertungen ---- */
+  /* Alle Bewertungen eines Blocks - Grundlage der Erfassungsmaske. */
+  /* Gesamtauswertung ueber alle Bloecke - ein Aufruf, alle Ebenen. */
+  case 'cert.analytics':
+    require_auth();
+    out(cert_analytics());
+
+  case 'cert.assessments':
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    if(!$tgId) fail('Training fehlt.');
+    $cat=cert_catalog(true);
+    $rows=q("SELECT * FROM assessments WHERE training_id=?",[$tgId])->fetchAll();
+    $ids=array_map(fn($r)=>(int)$r['id'],$rows);
+    $sc=[];
+    if($ids){
+      $ph=implode(',',array_fill(0,count($ids),'?'));
+      foreach(q("SELECT * FROM assessment_scores WHERE assessment_id IN ($ph)",$ids)->fetchAll() as $x)
+        $sc[(string)$x['assessment_id']][(string)$x['crit_id']]=['v'=>(float)$x['score'],'n'=>$x['note']];
+    }
+    $part=[];
+    foreach(q("SELECT * FROM student_training WHERE training_id=?",[$tgId])->fetchAll() as $r)
+      $part[(string)$r['student_id']]=(int)$r['attendance'];
+    out(['ok'=>true,'catalog'=>$cat,'cfg'=>cert_cfg(),'attendance'=>$part,
+      'assessments'=>array_map(function($r) use($sc){
+        return ['id'=>(string)$r['id'],'student'=>(string)$r['student_id'],
+          'training'=>(string)$r['training_id'],'raterId'=>(string)$r['rater_id'],
+          'rater'=>$r['rater_name'],'status'=>$r['status'],'score'=>(float)$r['score'],
+          'pct'=>(int)$r['pct'],'result'=>$r['result'],'attendance'=>(int)$r['attendance'],
+          'comment'=>$r['comment'],'strengths'=>$r['strengths'],'todo'=>$r['todo'],
+          'certNo'=>$r['cert_no'],'certAt'=>$r['cert_at'],'updatedAt'=>$r['updated_at'],
+          'scores'=>$sc[(string)$r['id']]??[]];
+      },$rows)]);
+
+  /* Einzelne Bewertung speichern. Teilweise Eingaben sind ausdruecklich
+     erlaubt - im Kurs wird zwischendurch gespeichert. */
+  case 'cert.save':
+    require_auth();
+    $sid=(int)($in['student']??0); $tgId=(int)($in['training']??0);
+    if(!$sid||!$tgId) fail('Teilnehmer oder Training fehlt.');
+    $me=current_user();
+    $rid=(int)($me['id']??0);
+    $rname=actor_name();
+    $row=q("SELECT * FROM assessments WHERE student_id=? AND training_id=? AND rater_id=?",[$sid,$tgId,$rid])->fetch();
+    $att=array_key_exists('attendance',$in)
+      ? max(0,min(100,(int)$in['attendance']))
+      : (int)(q("SELECT attendance FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId])->fetchColumn() ?: 100);
+    $status=($in['status']??'draft')==='final'?'final':'draft';
+    if(!$row){
+      q("INSERT INTO assessments(student_id,training_id,rater_id,rater_name,status,attendance,created_at,updated_at)
+         VALUES(?,?,?,?,?,?,?,?)",[$sid,$tgId,$rid,$rname,'draft',$att,now(),now()]);
+      $aid=(int)db()->lastInsertId();
+    } else $aid=(int)$row['id'];
+
+    // Einzelwerte uebernehmen (nur die mitgeschickten)
+    if(isset($in['scores']) && is_array($in['scores'])){
+      foreach($in['scores'] as $critId=>$val){
+        $cid=(int)$critId; if(!$cid) continue;
+        $v=is_array($val)?($val['v']??null):$val;
+        $note=is_array($val)?mb_substr(trim((string)($val['n']??'')),0,255):'';
+        $has=q("SELECT id FROM assessment_scores WHERE assessment_id=? AND crit_id=?",[$aid,$cid])->fetch();
+        if($v===null || $v===''){
+          if($has) q("DELETE FROM assessment_scores WHERE id=?",[$has['id']]);
+          continue;
+        }
+        if($has) q("UPDATE assessment_scores SET score=?,note=? WHERE id=?",[(float)$v,$note,$has['id']]);
+        else q("INSERT INTO assessment_scores(assessment_id,crit_id,score,note) VALUES(?,?,?,?)",[$aid,$cid,(float)$v,$note]);
+      }
+    }
+    foreach(['comment','strengths','todo'] as $k){
+      if(array_key_exists($k,$in)) q("UPDATE assessments SET $k=? WHERE id=?",[mb_substr(trim((string)$in[$k]),0,4000),$aid]);
+    }
+
+    // Neu rechnen und Ergebnis festhalten
+    $cat=cert_catalog(true);
+    $cur=[];
+    foreach(q("SELECT * FROM assessment_scores WHERE assessment_id=?",[$aid])->fetchAll() as $x)
+      $cur[(string)$x['crit_id']]=(float)$x['score'];
+    $calc=cert_calc($cat,$cur,$att);
+    $snap=$status==='final' ? json_encode($cat,JSON_UNESCAPED_UNICODE) : null;
+    q("UPDATE assessments SET status=?,score=?,pct=?,result=?,attendance=?,updated_at=?".
+      ($snap!==null?",crit_snapshot=?":"")." WHERE id=?",
+      $snap!==null
+        ? [$status,$calc['avg'],$calc['pct'],$calc['result'],$att,now(),$snap,$aid]
+        : [$status,$calc['avg'],$calc['pct'],$calc['result'],$att,now(),$aid]);
+    audit('cert.save','student',(string)$sid,
+      ($status==='final'?'Bewertung abgeschlossen':'Bewertung gespeichert').' ('.$calc['pct'].'%)');
+    out(['ok'=>true,'id'=>(string)$aid,'calc'=>$calc,'status'=>$status]);
+
+  case 'cert.delete':
+    require_admin();
+    $aid=(int)($in['id']??0);
+    $a=q("SELECT * FROM assessments WHERE id=?",[$aid])->fetch();
+    if(!$a) fail('Bewertung nicht gefunden.',404);
+    q("DELETE FROM assessment_scores WHERE assessment_id=?",[$aid]);
+    q("DELETE FROM assessments WHERE id=?",[$aid]);
+    audit('cert.delete','student',(string)$a['student_id'],'Bewertung gelöscht');
+    out(['ok'=>true]);
+
   /* ---- Folien-Postfach: abrufen, sichten, zuordnen ---- */
   case 'pptmail.poll':
     require_auth();

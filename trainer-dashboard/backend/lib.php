@@ -1336,3 +1336,251 @@ function ppt_send_reminder(array $tg, int $trId, array $sessions, bool $overdue,
      ((cfg()['mail_mode']??'mail')==='log'?'logged':($ok?'sent':'failed')),now()]);
   return $ok;
 }
+
+/* ============================================================
+   ZERTIFIZIERUNG - Katalog, Bewertung, Bestehensregeln
+   Der Katalog ist frei änderbar. Damit alte Bewertungen dadurch nicht
+   nachträglich anders ausfallen, wird bei jedem Abschluss die verwendete
+   Katalogfassung mitgespeichert und für Anzeige und Zeugnis herangezogen.
+   ============================================================ */
+function cert_cfg(): array {
+  return [
+    'scale'  => max(3,(int)(config_get('cert_scale')??5)),
+    'pass'   => max(1,min(100,(int)(config_get('cert_pass')??60))),
+    'merit'  => max(1,min(100,(int)(config_get('cert_merit')??85))),
+    'koMin'  => (float)(config_get('cert_ko_min')??3),
+    'attend' => max(0,min(100,(int)(config_get('cert_attend')??80))),
+  ];
+}
+
+/** Aktueller Katalog als verschachtelte Liste (Gruppen mit Unterkriterien). */
+function cert_catalog(bool $onlyActive=true): array {
+  $gw = $onlyActive ? ' WHERE active=1' : '';
+  $groups=[];
+  foreach(q("SELECT * FROM crit_groups$gw ORDER BY sort_order,id")->fetchAll() as $g){
+    $groups[(string)$g['id']]=[
+      'id'=>(string)$g['id'],'name'=>$g['name'],'nameEn'=>$g['name_en'],
+      'weight'=>(int)$g['weight'],'active'=>((int)$g['active'])===1,'crits'=>[]];
+  }
+  $cw = $onlyActive ? ' WHERE active=1' : '';
+  foreach(q("SELECT * FROM crits$cw ORDER BY sort_order,id")->fetchAll() as $c){
+    $gid=(string)$c['group_id'];
+    if(!isset($groups[$gid])) continue;
+    $groups[$gid]['crits'][]=[
+      'id'=>(string)$c['id'],'name'=>$c['name'],'nameEn'=>$c['name_en'],
+      'descr'=>$c['descr'],'weight'=>(int)$c['weight'],
+      'ko'=>((int)$c['ko'])===1,'active'=>((int)$c['active'])===1];
+  }
+  // Gruppen ohne Kriterien wären in der Bewertung nur leere Überschriften
+  return array_values(array_filter($groups, fn($g)=>count($g['crits'])>0));
+}
+
+/**
+ * Gesamtwert und Ergebnis berechnen.
+ * Gewichtung: Gruppe × Kriterium. Nicht bewertete Kriterien zählen nicht mit -
+ * eine halb ausgefüllte Bewertung soll niemanden schlechter dastehen lassen,
+ * als er ist; ob sie vollständig ist, zeigt der Fortschritt getrennt an.
+ */
+function cert_calc(array $catalog, array $scores, int $attendance=100): array {
+  $cfg=cert_cfg();
+  $sum=0.0; $wsum=0.0; $n=0; $total=0; $koFail=[]; $koIds=[]; $groupRes=[];
+  foreach($catalog as $g){
+    $gsum=0.0; $gw=0.0; $gn=0;
+    foreach($g['crits'] as $c){
+      $total++;
+      $w=max(1,(int)$g['weight'])*max(1,(int)$c['weight']);
+      $v=$scores[$c['id']]??null;
+      if($v===null || $v==='') continue;
+      $v=(float)$v; $n++;
+      $sum+=$v*$w; $wsum+=$w; $gsum+=$v*$w; $gw+=$w; $gn++;
+      if(!empty($c['ko']) && $v < $cfg['koMin']){ $koFail[]=$c['name']; $koIds[]=(string)$c['id']; }
+    }
+    $groupRes[]=['id'=>$g['id'],'name'=>$g['name'],
+      'avg'=>$gn?round($gsum/$gw,2):null,'n'=>$gn,'of'=>count($g['crits'])];
+  }
+  $avg = $wsum>0 ? $sum/$wsum : 0.0;
+  $pct = $wsum>0 ? (int)round(($avg/$cfg['scale'])*100) : 0;
+  $result='';
+  if($n>0){
+    if($koFail || $pct<$cfg['pass'] || $attendance<$cfg['attend']) $result='fail';
+    elseif($pct>=$cfg['merit']) $result='merit';
+    else $result='pass';
+  }
+  return ['avg'=>round($avg,2),'pct'=>$pct,'result'=>$result,'rated'=>$n,'total'=>$total,
+          'koFail'=>$koFail,'koIds'=>$koIds,'groups'=>$groupRes,
+          'attendOk'=>$attendance>=$cfg['attend']];
+}
+
+/** Fortlaufende Zeugnisnummer: ETAF-<Jahr>-<laufend>-<Pruefzeichen>. */
+function cert_number(int $assessmentId): string {
+  $y=gmdate('Y');
+  $n=(int)q("SELECT COUNT(*) c FROM assessments WHERE cert_no IS NOT NULL AND cert_no<>''")->fetch()['c'] + 1;
+  $base=sprintf('ETAF-%s-%04d',$y,$n);
+  // Pruefzeichen erschwert das Erfinden von Nummern (kein Sicherheitsmerkmal,
+  // die Echtheit bestaetigt die Verifikationsseite)
+  $chk=strtoupper(substr(hash('sha256',$base.'|'.$assessmentId.'|'.(config_get('pin_hash')??'')),0,4));
+  return $base.'-'.$chk;
+}
+
+/**
+ * Auswertung ueber alle Bloecke.
+ * Ein Aufruf liefert alles, was die Analyse braucht - bei dieser Datenmenge
+ * (Dutzende Teilnehmer, zwei Dutzend Bloecke) ist das schneller und
+ * einfacher als viele Einzelabfragen.
+ *
+ * Mehrere Bewerter je Teilnehmer und Block werden auf Kriteriumsebene
+ * gemittelt und dann einmal gerechnet - so entsteht ein gemeinsames
+ * Urteil statt konkurrierender Einzelnoten.
+ */
+function cert_analytics(): array {
+  $cfg=cert_cfg();
+  $catAll=cert_catalog(false);          // auch archivierte - alte Namen sollen lesbar bleiben
+  $catAct=cert_catalog(true);
+  $meta=[];
+  foreach($catAll as $g) foreach($g['crits'] as $c)
+    $meta[$c['id']]=['gid'=>$g['id'],'group'=>$g['name'],'groupEn'=>$g['nameEn'],
+      'name'=>$c['name'],'nameEn'=>$c['nameEn'],'ko'=>$c['ko'],
+      'active'=>$c['active']&&$g['active']];
+
+  $tg=[];
+  foreach(q("SELECT id,code,topic,start_date FROM trainings ORDER BY start_date,id")->fetchAll() as $r)
+    $tg[(string)$r['id']]=['id'=>(string)$r['id'],'code'=>$r['code'],'topic'=>$r['topic'],
+      'date'=>$r['start_date'],'people'=>0,'rated'=>0,'final'=>0,'avgPct'=>null,
+      'pass'=>0,'merit'=>0,'fail'=>0,'open'=>0,'groups'=>[]];
+
+  $st=[];
+  foreach(q("SELECT * FROM students ORDER BY name")->fetchAll() as $r)
+    $st[(string)$r['id']]=['id'=>(string)$r['id'],'name'=>$r['name'],'rank'=>$r['rank_title'],
+      'unit'=>$r['unit'],'cohort'=>$r['cohort'],'staffNo'=>$r['staff_no'],'email'=>$r['email'],
+      'active'=>((int)$r['active'])===1,'blocks'=>[],'avgPct'=>null,'groups'=>[],'crits'=>[],
+      'pass'=>0,'merit'=>0,'fail'=>0,'open'=>0,'final'=>0];
+
+  $att=[];
+  foreach(q("SELECT * FROM student_training")->fetchAll() as $r){
+    $s=(string)$r['student_id']; $t=(string)$r['training_id'];
+    if(!isset($st[$s])||!isset($tg[$t])) continue;
+    $att[$s.'|'.$t]=(int)$r['attendance'];
+    $tg[$t]['people']++;
+  }
+
+  /* Bewertungen einsammeln und je Teilnehmer+Block zusammenfuehren */
+  $rows=q("SELECT * FROM assessments")->fetchAll();
+  $byId=[]; foreach($rows as $r) $byId[(string)$r['id']]=$r;
+  $sc=[];
+  if($rows){
+    foreach(q("SELECT * FROM assessment_scores")->fetchAll() as $x){
+      $aid=(string)$x['assessment_id'];
+      if(!isset($byId[$aid])) continue;
+      $sc[$aid][(string)$x['crit_id']]=(float)$x['score'];
+    }
+  }
+  $merged=[]; $raters=[];
+  foreach($rows as $r){
+    $s=(string)$r['student_id']; $t=(string)$r['training_id'];
+    if(!isset($st[$s])||!isset($tg[$t])) continue;
+    $k=$s.'|'.$t;
+    if(!isset($merged[$k])) $merged[$k]=['s'=>$s,'t'=>$t,'sum'=>[],'n'=>[],
+      'final'=>true,'any'=>false,'att'=>$att[$k]??100,'raters'=>[],'notes'=>[]];
+    $m=&$merged[$k];
+    $m['any']=true;
+    if($r['status']!=='final') $m['final']=false;
+    if($r['rater_name']) $m['raters'][]=$r['rater_name'];
+    foreach(['strengths','todo','comment'] as $f)
+      if(trim((string)$r[$f])!=='') $m['notes'][$f][]=trim((string)$r[$f]);
+    if((int)$r['attendance']>0) $m['att']=(int)$r['attendance'];
+    foreach($sc[(string)$r['id']]??[] as $cid=>$v){
+      $m['sum'][$cid]=($m['sum'][$cid]??0)+$v;
+      $m['n'][$cid]=($m['n'][$cid]??0)+1;
+    }
+    unset($m);
+    /* Bewerter-Kalibrierung: wie streng urteilt wer? */
+    if($r['rater_name'] && (int)$r['pct']>0){
+      $rn=$r['rater_name'];
+      $raters[$rn]=$raters[$rn]??['name'=>$rn,'n'=>0,'sum'=>0];
+      $raters[$rn]['n']++; $raters[$rn]['sum']+=(int)$r['pct'];
+    }
+  }
+
+  /* Rechnen - je Paar einmal, mit denselben Regeln wie in der Maske */
+  $critSum=[]; $critN=[]; $critLow=[]; $allPct=[];
+  foreach($merged as $k=>$m){
+    $scores=[];
+    foreach($m['sum'] as $cid=>$sum) $scores[$cid]=$sum/max(1,$m['n'][$cid]);
+    $calc=cert_calc($catAct,$scores,$m['att']);
+    $s=$m['s']; $t=$m['t'];
+    $blk=['training'=>$t,'pct'=>$calc['pct'],'result'=>$calc['result'],
+      'status'=>$m['final']?'final':'draft','attendance'=>$m['att'],
+      'rated'=>$calc['rated'],'total'=>$calc['total'],'ko'=>$calc['koFail'],'koIds'=>$calc['koIds'],
+      'raters'=>array_values(array_unique($m['raters'])),
+      'groups'=>$calc['groups'],'scores'=>$scores,
+      'notes'=>$m['notes']];
+    $st[$s]['blocks'][]=$blk;
+    if($calc['rated']>0){
+      $tg[$t]['rated']++;
+      $allPct[]=$calc['pct'];
+      $tg[$t]['_sum']=($tg[$t]['_sum']??0)+$calc['pct'];
+      $r=$calc['result']?:'open';
+      if(isset($tg[$t][$r])) $tg[$t][$r]++;
+      if(isset($st[$s][$r])) $st[$s][$r]++;
+      foreach($calc['groups'] as $g){
+        if($g['avg']===null) continue;
+        $tg[$t]['groups'][$g['id']]=$tg[$t]['groups'][$g['id']]??['sum'=>0,'n'=>0];
+        $tg[$t]['groups'][$g['id']]['sum']+=$g['avg'];
+        $tg[$t]['groups'][$g['id']]['n']++;
+        $st[$s]['groups'][$g['id']]=$st[$s]['groups'][$g['id']]??['sum'=>0,'n'=>0];
+        $st[$s]['groups'][$g['id']]['sum']+=$g['avg'];
+        $st[$s]['groups'][$g['id']]['n']++;
+      }
+      foreach($scores as $cid=>$v){
+        $critSum[$cid]=($critSum[$cid]??0)+$v; $critN[$cid]=($critN[$cid]??0)+1;
+        if($v < $cfg['koMin']) $critLow[$cid]=($critLow[$cid]??0)+1;
+        $st[$s]['crits'][$cid]=$st[$s]['crits'][$cid]??['sum'=>0,'n'=>0];
+        $st[$s]['crits'][$cid]['sum']+=$v; $st[$s]['crits'][$cid]['n']++;
+      }
+    }
+    if($m['final']) { $tg[$t]['final']++; $st[$s]['final']++; }
+  }
+
+  foreach($tg as $t=>&$row){
+    $row['avgPct']=$row['rated']?(int)round($row['_sum']/$row['rated']):null;
+    unset($row['_sum']);
+    $row['open']=max(0,$row['people']-$row['rated']);
+    foreach($row['groups'] as $gid=>&$g){ $g=round($g['sum']/max(1,$g['n']),2); } unset($g);
+  } unset($row);
+
+  foreach($st as $s=>&$row){
+    $n=0; $sum=0;
+    foreach($row['blocks'] as $b) if($b['rated']>0){ $n++; $sum+=$b['pct']; }
+    $row['avgPct']=$n?(int)round($sum/$n):null;
+    $row['blocksRated']=$n;
+    foreach($row['groups'] as $gid=>&$g){ $g=round($g['sum']/max(1,$g['n']),2); } unset($g);
+    foreach($row['crits'] as $cid=>&$c){ $c=round($c['sum']/max(1,$c['n']),2); } unset($c);
+    usort($row['blocks'], fn($a,$b)=>strcmp($tg[$a['training']]['date']??'',$tg[$b['training']]['date']??''));
+  } unset($row);
+
+  $crits=[];
+  foreach($meta as $cid=>$m){
+    if(!isset($critN[$cid]) && !$m['active']) continue;   // archiviert und nie benutzt
+    $crits[]=['id'=>(string)$cid,'name'=>$m['name'],'nameEn'=>$m['nameEn'],
+      'group'=>$m['group'],'groupEn'=>$m['groupEn'],'groupId'=>$m['gid'],
+      'ko'=>$m['ko'],'active'=>$m['active'],
+      'avg'=>isset($critN[$cid])?round($critSum[$cid]/$critN[$cid],2):null,
+      'n'=>$critN[$cid]??0,'low'=>$critLow[$cid]??0];
+  }
+  foreach($raters as &$r){ $r['avg']=(int)round($r['sum']/max(1,$r['n'])); unset($r['sum']); } unset($r);
+
+  $tot=['students'=>0,'assessed'=>0,'final'=>0,'pass'=>0,'merit'=>0,'fail'=>0,
+        'avgPct'=>$allPct?(int)round(array_sum($allPct)/count($allPct)):null,
+        'blocks'=>count($tg),'assessments'=>count($merged)];
+  foreach($st as $row){
+    if(!$row['active']) continue;
+    $tot['students']++;
+    if($row['blocksRated']>0) $tot['assessed']++;
+    $tot['final']+=$row['final']; $tot['pass']+=$row['pass'];
+    $tot['merit']+=$row['merit']; $tot['fail']+=$row['fail'];
+  }
+
+  return ['ok'=>true,'cfg'=>$cfg,'catalog'=>$catAct,
+    'trainings'=>array_values($tg),'students'=>array_values($st),
+    'crits'=>$crits,'raters'=>array_values($raters),'totals'=>$tot];
+}
