@@ -975,6 +975,47 @@ switch($action){
 
   /* ---- Bewertungen ---- */
   /* Alle Bewertungen eines Blocks - Grundlage der Erfassungsmaske. */
+  /* Was wuerde ein Zuruecksetzen kosten? Erst zeigen, dann fragen. */
+  case 'cert.resetInfo':
+    require_admin();
+    out(['ok'=>true,'counts'=>[
+      'students'    => (int)q("SELECT COUNT(*) c FROM students")->fetch()['c'],
+      'parts'       => (int)q("SELECT COUNT(*) c FROM student_training")->fetch()['c'],
+      'assessments' => (int)q("SELECT COUNT(*) c FROM assessments")->fetch()['c'],
+      'scores'      => (int)q("SELECT COUNT(*) c FROM assessment_scores")->fetch()['c'],
+      'certs'       => (int)q("SELECT COUNT(*) c FROM certificates")->fetch()['c'],
+      'groups'      => (int)q("SELECT COUNT(*) c FROM crit_groups")->fetch()['c'],
+      'crits'       => (int)q("SELECT COUNT(*) c FROM crits")->fetch()['c'],
+    ]]);
+
+  /* Vor dem Echtstart aufraeumen. Bewusst umstaendlich: es gibt kein
+     Rueckgaengig, deshalb muss ein Wort getippt werden. */
+  case 'cert.reset':
+    require_admin();
+    if(strtoupper(trim((string)($in['confirm']??''))) !== 'RESET')
+      fail('Zum Zurücksetzen bitte RESET eintippen.');
+    $before=[
+      'students'=>(int)q("SELECT COUNT(*) c FROM students")->fetch()['c'],
+      'assessments'=>(int)q("SELECT COUNT(*) c FROM assessments")->fetch()['c'],
+      'certs'=>(int)q("SELECT COUNT(*) c FROM certificates")->fetch()['c'],
+    ];
+    q("DELETE FROM assessment_scores");
+    q("DELETE FROM assessments");
+    q("DELETE FROM certificates");
+    q("DELETE FROM student_training");
+    q("DELETE FROM students");
+    $cat=false;
+    if(!empty($in['catalog'])){
+      q("DELETE FROM crits");
+      q("DELETE FROM crit_groups");
+      seed_crits();
+      $cat=true;
+    }
+    audit('cert.reset','','', 'Zertifizierung zurueckgesetzt: '.$before['students'].' Teilnehmer, '
+      .$before['assessments'].' Bewertungen, '.$before['certs'].' Zertifikate'
+      .($cat?', Kriterienkatalog neu':''));
+    out(['ok'=>true,'removed'=>$before,'catalog'=>$cat]);
+
   /* ---- Zeugnisse und Zertifikate ---- */
   case 'cert.state':
     require_auth();

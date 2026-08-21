@@ -157,6 +157,36 @@ für Suchmaschinen gesperrt (`noindex`) und bremst Fehlversuche aus. Zurückgezo
 zeigt sie als ungültig an. Der Link steht am Fuß jedes gedruckten Papiers; er richtet sich
 automatisch nach der Adresse, unter der das Cockpit läuft.
 
+### Teilnehmer einsammeln
+Unter **Zertifizierung -> Teilnehmer -> Liste einlesen** liegt eine **Excel-Vorlage**
+(deutsch oder englisch) zum Herunterladen. Sie hat drei Blaetter: ein leeres
+Erfassungsblatt, ein Beispielblatt mit fuenf erfundenen Personen und ein Blatt mit
+Ausfuellhinweisen. Die Vorlage geht an den Kunden; die ausgefuellte Datei wird an
+derselben Stelle wieder hochgeladen (.xlsx oder .csv).
+
+Die Spalten werden an der Ueberschrift erkannt - deutsch wie englisch, in beliebiger
+Reihenfolge und auch mit den ueblichen Abweichungen wie „Pers.-Nr." oder
+„Einheit/Abteilung". Geburtsdaten in `12.04.1988`, `12/04/1988`, `1988-04-12` und als
+Excel-Tageszahl werden vereinheitlicht. Leerzeilen, doppelte Kopfzeilen und bereits
+vorhandene Personen werden uebersprungen und in der Rueckmeldung gezaehlt.
+
+### Vor dem Echtstart aufraeumen
+Wenn der Auftrag steht und die echten Teilnehmer kommen, entfernt
+**Zertifizierung -> Katalog -> Daten zuruecksetzen** (nur fuer Administratoren) alle
+Uebungsdaten: Teilnehmer, Teilnahmen, Bewertungen, Einzelwertungen und ausgestellte
+Zertifikate. Der Kriterienkatalog bleibt erhalten, wenn du das nicht ausdruecklich
+mit ankreuzt. Trainings, Trainer, Wochenplaene und Folien sind nicht betroffen.
+Der Vorgang laesst sich nicht rueckgaengig machen, verlangt deshalb das getippte
+Wort RESET und landet im Protokoll.
+
+### Zwischenbilanz fuer den Kunden
+**Zertifizierung -> Auswertung -> Zwischenbilanz** schneidet alle Zahlen nach
+Zeitraum: Monat, Quartal, Halbjahr, Jahr, Gesamt oder frei gewaehlt, mit Pfeilen
+zum Blaettern. Verglichen wird automatisch mit dem gleich langen Zeitraum davor.
+Der Bericht zeigt Fortschritt, Entwicklung, Kompetenzprofil und je Teilnehmer eine
+Ampel mit Trend - die Regel dahinter steht unter der Tabelle, damit der Kunde die
+Einordnung nachvollziehen und selbst nachjustieren kann. Druck und CSV wie ueberall.
+
 ## Visum-Workflow (Abu Dhabi)
 Im Reise-Editor je Trainer trägst du **Reisepass gültig bis** und **Visum-Status**
 (benötigt / beantragt / genehmigt / abgelehnt) samt Notizen ein; im Roster zeigt eine

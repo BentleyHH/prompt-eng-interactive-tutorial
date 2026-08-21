@@ -837,7 +837,7 @@
     font-style:normal;color:#fff;font-weight:700;font-size:12px}
   .ceprint .kpi{box-shadow:none}
   /* Im Ausdruck stoeren Bedienelemente - Auswahl, Knoepfe, Umschalter raus. */
-  .ceprint select,.ceprint button,.ceprint .rpseg,.ceprint .spacer{display:none}
+  .ceprint select,.ceprint button,.ceprint .rpseg,.ceprint .spacer,.ceprint .hintx{display:none}
   .ceprint .panel{box-shadow:none;border-color:var(--line)}
   .ceprint td.cehc{cursor:default}
   /* Alles, was weiterfuehrt, sieht auch so aus. */
@@ -860,6 +860,29 @@
     100%{box-shadow:0 0 0 0 transparent}
   }
   @media print{ .hit,.clickrow{cursor:default} .cehl{animation:none} }
+  /* Zwischenbilanz */
+  .cedelta{display:inline-block;font-size:11.5px;font-weight:700;margin-top:3px;
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cedelta.up{color:var(--good)} .cedelta.down{color:var(--crit)} .cedelta.flat{color:var(--faint)}
+  .kpi .cedelta{position:absolute;right:14px;bottom:12px}
+  /* Zwei Balken uebereinander: kraeftig = Zeitraum, blass = davor */
+  .cetwin{position:relative;height:14px;border-radius:7px;background:var(--brand-050);overflow:hidden}
+  .cetwin i{position:absolute;left:0;display:block;border-radius:0 7px 7px 0}
+  .cetwin i.now{top:0;height:9px}
+  .cetwin i.prev{bottom:0;height:4px;background:var(--faint);opacity:.6}
+  .celamp{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--line)}
+  .celamp.green{background:var(--good)} .celamp.amber{background:var(--warn)}
+  .celamp.red{background:var(--crit)} .celamp.none{background:var(--line)}
+  .cenotes{margin:16px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+  .cenotes li{position:relative;padding-left:22px;font-size:13.5px;line-height:1.5}
+  .cenotes li::before{content:"";position:absolute;left:6px;top:7px;width:8px;height:8px;
+    border-radius:50%;background:var(--faint)}
+  .cenotes li.g::before{background:var(--good)}
+  .cenotes li.w::before{background:var(--warn)}
+  .cenotes li.c::before{background:var(--crit)}
+  .cenotes li.i::before{background:var(--info)}
+  .cerule{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6;
+    border-top:1px solid var(--line);padding-top:10px}
   /* Zeugnis / Zertifikat - ein Blatt, ruhig gesetzt */
   .certsheet{max-width:820px;padding:44px 52px}
   .certtop{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
@@ -1432,6 +1455,56 @@ function restoreView(){
    ============================================================ */
 const L={
  de:{
+  /* ---- Zertifizierung: Zuruecksetzen vor dem Echtstart ---- */
+  ceReset:"Daten zurücksetzen",
+  ceResetHint:"Vor dem Echtbetrieb: alle Übungs- und Beispieldaten der Zertifizierung entfernen.",
+  ceResetBtn:"Zurücksetzen",
+  ceResetWarn:"Das lässt sich nicht rückgängig machen.",
+  ceResetWarnSub:"Trainings, Trainer, Wochenpläne und Folien bleiben unberührt - gelöscht wird nur, was zur Zertifizierung gehört.",
+  ceResetParts:"Teilnahmen an Blöcken", ceResetScores:"Einzelwertungen",
+  ceResetCat:(g,c)=>`Kriterienkatalog auch zurücksetzen (${g} Hauptkriterien, ${c} Kriterien)`,
+  ceResetCatHint:"Ohne Haken bleibt der Katalog so, wie du ihn eingerichtet hast. Mit Haken wird der DVI-Startkatalog neu geladen.",
+  ceResetType:"Zum Bestätigen RESET eintippen",
+  ceResetDone:(s,a)=>`Zurückgesetzt - ${s} Teilnehmer und ${a} Bewertungen entfernt.`,
+
+  /* ---- Zertifizierung: Zwischenbilanz ---- */
+  ceEvBalance:"Zwischenbilanz",
+  cePer_month:"Monat", cePer_quarter:"Quartal", cePer_half:"Halbjahr",
+  cePer_year:"Jahr", cePer_all:"Gesamt", cePer_free:"Frei",
+  cePerAllLbl:"Gesamter Lehrgang", ceHalf:"Halbjahr",
+  ceMonth1:"Januar", ceMonth2:"Februar", ceMonth3:"März", ceMonth4:"April",
+  ceMonth5:"Mai", ceMonth6:"Juni", ceMonth7:"Juli", ceMonth8:"August",
+  ceMonth9:"September", ceMonth10:"Oktober", ceMonth11:"November", ceMonth12:"Dezember",
+  ceBalTitle:"Zwischenbilanz",
+  ceBalAsOf:d=>`Stand ${d}`, ceBalVs:p=>`Vergleich: ${p}`,
+  ceBalBlocks:"bewertet / terminiert",
+  ceBalProgress:"Fortschritt des Programms",
+  ceBalProgressHint:"bewertete Blöcke bis zum Ende des Zeitraums",
+  ceBalDone:"abgeschlossen",
+  ceBalBehind:n=>n===1
+    ? "Ein bereits terminierter Block ist noch ohne Bewertung."
+    : `${n} bereits terminierte Blöcke sind noch ohne Bewertung.`,
+  ceBalNext:"Als Nächstes",
+  ceBalBlockList:"Blöcke im Zeitraum",
+  ceBalNoBlocks:"In diesem Zeitraum wurde nichts bewertet.",
+  ceBalProfile:"Kompetenzprofil der Gruppe",
+  ceBalProfileHint:"kräftig: Zeitraum · blass: Zeitraum davor",
+  ceBalPeople:"Einordnung der Teilnehmer",
+  ceBalPeopleHint:"Ampel, Durchschnitt und Trend - Grundlage für die eigene Einschätzung",
+  ceBalTrend:"Trend", ceBalClass:"Einordnung",
+  ceBalRule:(p,a)=>`Regel der Ampel - rot: mindestens ein nicht bestandener Block, ein offenes K.-o.-Kriterium oder Anwesenheit unter ${a} %. Gelb: Durchschnitt unter ${p+10} % oder um mindestens 5 Punkte gefallen. Grün: alles darüber.`,
+  ceClsGreen:"auf Kurs", ceClsAmber:"beobachten", ceClsRed:"Nachschulung", ceClsNone:"keine Bewertung",
+  ceBalNoteEmpty:"In diesem Zeitraum liegt noch keine Bewertung vor.",
+  ceBalNoteUp:(d,p)=>`Der Durchschnitt liegt ${d} Punkte über dem Zeitraum ${p}.`,
+  ceBalNoteDown:(d,p)=>`Der Durchschnitt liegt ${d} Punkte unter dem Zeitraum ${p}.`,
+  ceBalNoteFlat:"Der Durchschnitt ist gegenüber dem Zeitraum davor stabil.",
+  ceBalNoteRed:(n,who)=>`${n} Teilnehmer ${n===1?"braucht":"brauchen"} Nachschulung: ${who}.`,
+  ceBalNoteNoRed:"Kein Teilnehmer ist im Zeitraum durchgefallen.",
+  ceBalNoteAtt:(n,m)=>`${n} Bewertung${n===1?"":"en"} mit Anwesenheit unter ${m} %.`,
+  ceBalNoteWeak:(c,v)=>`Schwächstes Kriterium: ${c} (Ø ${v}).`,
+  ceBalNoteStrong:(c,v)=>`Stärkstes Kriterium: ${c} (Ø ${v}).`,
+  ceRepBalance:"ETAF Zwischenbilanz",
+
   /* ---- Zertifizierung: Stammdaten und Vorlage ---- */
   ceFirstName:"Vorname", ceLastName:"Nachname",
   ceBirthDate:"Geburtsdatum", ceBirthPlace:"Geburtsort",
@@ -2093,6 +2166,54 @@ const L={
   matSummary:(n,q)=>`${n} Positionen · ${q} Einheiten`, matColHead:"Material", matColQty:"Anzahl", matColUnit:"Einheit"
  },
  en:{
+  /* ---- Certification: reset before going live ---- */
+  ceReset:"Reset data",
+  ceResetHint:"Before going live: remove all practice and example data of the certification area.",
+  ceResetBtn:"Reset",
+  ceResetWarn:"This cannot be undone.",
+  ceResetWarnSub:"Trainings, trainers, week plans and slides are untouched - only what belongs to the certification is deleted.",
+  ceResetParts:"Block participations", ceResetScores:"Individual scores",
+  ceResetCat:(g,c)=>`Reset the criteria catalogue as well (${g} main criteria, ${c} criteria)`,
+  ceResetCatHint:"Unticked, the catalogue stays as you set it up. Ticked, the DVI starting catalogue is loaded again.",
+  ceResetType:"Type RESET to confirm",
+  ceResetDone:(s,a)=>`Reset done - ${s} participants and ${a} assessments removed.`,
+
+  /* ---- Certification: interim report ---- */
+  ceEvBalance:"Interim report",
+  cePer_month:"Month", cePer_quarter:"Quarter", cePer_half:"Half year",
+  cePer_year:"Year", cePer_all:"Total", cePer_free:"Custom",
+  cePerAllLbl:"Whole programme", ceHalf:"half year",
+  ceMonth1:"January", ceMonth2:"February", ceMonth3:"March", ceMonth4:"April",
+  ceMonth5:"May", ceMonth6:"June", ceMonth7:"July", ceMonth8:"August",
+  ceMonth9:"September", ceMonth10:"October", ceMonth11:"November", ceMonth12:"December",
+  ceBalTitle:"Interim report",
+  ceBalAsOf:d=>`As of ${d}`, ceBalVs:p=>`compared with: ${p}`,
+  ceBalBlocks:"assessed / scheduled",
+  ceBalProgress:"Programme progress",
+  ceBalProgressHint:"blocks assessed up to the end of the period",
+  ceBalDone:"completed",
+  ceBalBehind:n=>`${n} already scheduled block${n===1?"":"s"} ${n===1?"is":"are"} still unassessed.`,
+  ceBalNext:"Coming up",
+  ceBalBlockList:"Blocks in the period",
+  ceBalNoBlocks:"Nothing was assessed in this period.",
+  ceBalProfile:"Cohort competence profile",
+  ceBalProfileHint:"solid: this period · pale: the period before",
+  ceBalPeople:"Where each participant stands",
+  ceBalPeopleHint:"traffic light, average and trend - a basis for your own judgement",
+  ceBalTrend:"Trend", ceBalClass:"Standing",
+  ceBalRule:(p,a)=>`Traffic light rule - red: at least one block not passed, an open knock-out criterion, or attendance below ${a}%. Amber: average below ${p+10}% or down by at least 5 points. Green: everything above that.`,
+  ceClsGreen:"on track", ceClsAmber:"watch", ceClsRed:"further training", ceClsNone:"not assessed",
+  ceBalNoteEmpty:"No assessment exists for this period yet.",
+  ceBalNoteUp:(d,p)=>`The average is ${d} points above the ${p} period.`,
+  ceBalNoteDown:(d,p)=>`The average is ${d} points below the ${p} period.`,
+  ceBalNoteFlat:"The average is stable compared with the period before.",
+  ceBalNoteRed:(n,who)=>`${n} participant${n===1?"":"s"} need further training: ${who}.`,
+  ceBalNoteNoRed:"No participant failed in this period.",
+  ceBalNoteAtt:(n,m)=>`${n} assessment${n===1?"":"s"} with attendance below ${m}%.`,
+  ceBalNoteWeak:(c,v)=>`Weakest criterion: ${c} (avg. ${v}).`,
+  ceBalNoteStrong:(c,v)=>`Strongest criterion: ${c} (avg. ${v}).`,
+  ceRepBalance:"ETAF interim report",
+
   /* ---- Certification: master data and template ---- */
   ceFirstName:"First name", ceLastName:"Last name",
   ceBirthDate:"Date of birth", ceBirthPlace:"Place of birth",
@@ -9104,7 +9225,14 @@ function certCatalogHtml(){
       <div><label class="fld">${esc(t("ceAttendMin"))}</label>
         <input class="inp" style="width:80px" type="number" min="0" max="100" id="ccAtt" value="${cfg.attend||80}" onchange="certCfgSave()"></div>
       <button class="btn sm" onclick="certGroupEdit(null)">${ic("plus",14)}${esc(t("ceNewGroup"))}</button>
-    </div></div>${groups}`;
+    </div></div>${groups}
+    ${isAdmin()?`<div class="panel"><div class="panel-b"
+      style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div class="rowgrow" style="min-width:240px"><b>${esc(t("ceReset"))}</b>
+        <div class="meta">${esc(t("ceResetHint"))}</div></div>
+      <button class="btn" style="border-color:var(--crit);color:var(--crit)"
+        onclick="certResetSheet()">${ic("trash",15)}${esc(t("ceResetBtn"))}</button>
+    </div></div>`:""}`;
 }
 async function certCfgSave(){
   try{
@@ -9192,6 +9320,46 @@ async function certCritDel(id){
     toast(d.archived?t("ceArchivedCrit",d.used):t("ceDeleted"), d.archived?"warn":"good");
   }catch(e){ toast("Fehler: "+e.message,"crit"); }
 }
+/* Vor dem Echtstart: alle Uebungs- und Beispieldaten der Zertifizierung
+   loeschen. Es gibt kein Rueckgaengig, deshalb erst zeigen, was weggeht. */
+async function certResetSheet(){
+  let c={};
+  try{ const d=await apiCall("cert.resetInfo"); c=d.counts||{}; }
+  catch(e){ toast("Fehler: "+e.message,"crit"); return; }
+  $("#sheetTitle").textContent=t("ceReset");
+  $("#sheetBody").innerHTML=`
+    <div class="ampel a-red" style="margin-bottom:14px"><span class="lamp"></span>
+      <div class="rowgrow"><b>${esc(t("ceResetWarn"))}</b>
+      <div class="meta">${esc(t("ceResetWarnSub"))}</div></div></div>
+    <table class="rptable"><tbody>
+      ${[["ceTabPeople",c.students],["ceResetParts",c.parts],["ceAssessments",c.assessments],
+         ["ceResetScores",c.scores],["ceDocs",c.certs]].map(([k,v])=>
+        `<tr><td>${esc(t(k))}</td><td class="num"><b>${v||0}</b></td></tr>`).join("")}
+    </tbody></table>
+    <label class="pptownrow" style="margin-top:14px">
+      <input type="checkbox" id="crCat"> ${esc(t("ceResetCat",(c.groups||0),(c.crits||0)))}</label>
+    <div class="meta" style="margin:4px 0 14px 9px">${esc(t("ceResetCatHint"))}</div>
+    <label class="fld">${esc(t("ceResetType"))}</label>
+    <input class="inp" id="crWord" placeholder="RESET" spellcheck="false"
+      style="font-family:var(--mono);letter-spacing:.08em">`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <div class="spacer"></div>
+    <button class="btn" style="border-color:var(--crit);color:var(--crit)"
+      onclick="certDoReset()">${ic("trash",15)}${esc(t("ceResetBtn"))}</button>`;
+  openSheet();
+}
+async function certDoReset(){
+  const word=val("crWord").trim();
+  if(word.toUpperCase()!=="RESET"){ toast(t("ceResetType"),"crit"); return; }
+  try{
+    const d=await apiCall("cert.reset",{confirm:"RESET",catalog:$("#crCat").checked?1:0});
+    closeSheet();
+    certAn=null; certDocs=null; certState.students=[]; certState.list=[];
+    certState.catalog=[]; certState.tg=null; certState.pick=null;
+    await certLoadStudents(true); await certReloadCatalog();
+    toast(t("ceResetDone",d.removed.students,d.removed.assessments),"good");
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
 async function certReloadCatalog(){
   try{
     const d=await apiCall("cert.catalog");
@@ -9255,18 +9423,21 @@ function certEvalHtml(){
   if(!certAn) return `<div class="panel"><div class="panel-b"><div class="empty">${esc(t("ceNoData"))}</div></div></div>`;
   const m=certState.evalMode||"block";
   const seg=`<span class="rpseg">
-    ${[["block","ceEvBlock"],["person","ceEvPerson"],["all","ceEvAll"]].map(([k,l])=>
+    ${[["block","ceEvBlock"],["person","ceEvPerson"],["all","ceEvAll"],["balance","ceEvBalance"]].map(([k,l])=>
       `<button${m===k?' class="on"':""} onclick="certEvGo('${k}')">${esc(t(l))}</button>`).join("")}</span>`;
   const head=`<div class="panel"><div class="panel-b" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       ${seg}<div class="spacer"></div>
-      ${(certState.evalMode||"block")==="all"?`
+      ${(certState.evalMode||"block")==="all"||certState.evalMode==="balance"?`
         <button class="btn sm" onclick="certDocBatch('programme')">${ic("cert",14)}${esc(t("ceBatchProg"))}</button>
         <button class="btn sm" onclick="certDocBatch('block')">${ic("cert",14)}${esc(t("ceBatchBlock"))}</button>`:""}
       <button class="btn sm" onclick="certEvCsv()">${ic("down",14)}${esc(t("ceCsv"))}</button>
       <button class="btn sm" onclick="certEvPrint()">${ic("printer",14)}${esc(t("cePrint"))}</button>
       <button class="btn sm" onclick="certAnLoad(true).then(renderCert)">${ic("sync",14)}</button>
     </div></div>`;
-  const body = m==="person" ? certEvPersonHtml() : m==="all" ? certEvAllHtml() : certEvBlockHtml();
+  const body = m==="person" ? certEvPersonHtml()
+             : m==="all" ? certEvAllHtml()
+             : m==="balance" ? certEvBalanceHtml()
+             : certEvBlockHtml();
   return head+body;
 }
 function certEvGo(m){ certState.evalMode=m; renderCert(); }
@@ -9586,7 +9757,7 @@ function certEvPersonHtml(){
     </div>
     ${certDocPanel(s)}
     <div class="panel" id="ce-blocks"><div class="panel-h"><h3>${esc(t("ceBlockList"))}</h3>
-      <span class="meta">${esc(t("ceGoRateHint"))}</span></div>
+      <span class="meta hintx">${esc(t("ceGoRateHint"))}</span></div>
       <div class="panel-b"><table class="rptable"><thead><tr>
         <th>${esc(t("ceBlock"))}</th><th class="num">${esc(t("ceDate"))}</th>
         <th class="num">${esc(t("ceRatedShort"))}</th><th class="num">${esc(t("ceAttend"))}</th>
@@ -9711,7 +9882,7 @@ function certEvAllHtml(){
         <th>${esc(t("ceReason"))}</th><th>${esc(t("ceTopics"))}</th></tr></thead>
         <tbody>${rRows}</tbody></table></div></div>
     <div class="panel" id="ce-rank"><div class="panel-h"><h3>${esc(t("ceRanking"))}</h3>
-      <span class="meta">${esc(t("ceGoPersonHint"))}</span></div>
+      <span class="meta hintx">${esc(t("ceGoPersonHint"))}</span></div>
       <div class="panel-b"><table class="rptable"><thead><tr>
         <th class="num">#</th><th>${esc(t("ceParticipant"))}</th><th></th>
         <th class="num">${esc(t("ceKpiBlocks"))}</th><th></th><th class="num">Ø</th>
@@ -9807,6 +9978,7 @@ function certLineSvg(pts,cfg){
 /* ---------- Export und Druck ---------- */
 function certEvCsv(){
   if(!certAn) return;
+  if(certState.evalMode==="balance"){ certBalanceCsv(); return; }
   const crits=certAnCrits();
   const sep=";";
   const esc2=v=>{const s=String(v==null?"":v); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
@@ -9833,11 +10005,14 @@ function certEvPrint(){
   setPageOrient(m==="block"?"landscape":"portrait");
   const title=m==="person"
     ? t("ceRepPerson")+" - "+((certAnStudent(certState.evalPick)||{}).name||"")
-    : m==="all" ? t("ceRepAll") : t("ceRepBlock")+" - "+certTgLbl(certAnTraining(certState.tg));
+    : m==="all" ? t("ceRepAll")
+    : m==="balance" ? t("ceRepBalance")+" - "+certPeriodRange().label
+    : t("ceRepBlock")+" - "+certTgLbl(certAnTraining(certState.tg));
   $("#repPrintBody").innerHTML=`<div class="cal-sheet rpsheet ceprint">
     <div class="ag-h1">${esc(title)}</div>
     <div class="meta" style="margin-bottom:14px">${esc(t("ceRepFoot",fmtWhen(new Date().toISOString())))}</div>
-    ${m==="person"?certEvPersonHtml():m==="all"?certEvAllHtml():certEvBlockHtml()}</div>`;
+    ${m==="person"?certEvPersonHtml():m==="all"?certEvAllHtml()
+      :m==="balance"?certEvBalanceHtml():certEvBlockHtml()}</div>`;
   setSheetTitle(title);
   $("#repPrint").classList.add("on");
 }
@@ -10040,6 +10215,294 @@ function certDocPanel(s){
           return `<button class="btn sm" onclick="certIssue('${s.id}','${b.training}','block')">${
             ic("cert",14)}${esc((tg&&tg.code)||"?")}</button>`;}).join("")}</div></div></div>`:""}
     </div></div>`;
+}
+
+
+/* ============================================================
+   ZWISCHENBILANZ
+   Ein Bericht, den man dem Kunden in die Hand geben kann: was ist im
+   gewaehlten Zeitraum passiert, wie hat es sich gegenueber dem Zeitraum
+   davor entwickelt, und wo steht jeder Einzelne.
+   Alle Zahlen kommen aus derselben Quelle wie die uebrige Auswertung -
+   der Bericht rechnet nichts eigenes, er schneidet nur nach Datum.
+   ============================================================ */
+const CE_PERIODS=["month","quarter","half","year","all","free"];
+function certPeriod(){
+  if(!certState.period) certState.period={mode:"all",offset:0,from:"",to:""};
+  return certState.period;
+}
+function certIso(d){ return d.toISOString().slice(0,10); }
+/* Zeitraum und der gleich lange davor - fuer den Vergleich. */
+function certPeriodRange(){
+  const P=certPeriod();
+  const now=new Date();
+  const y=now.getFullYear(), m=now.getMonth();
+  let from,to;
+  if(P.mode==="free"){
+    from=P.from||"0000-01-01"; to=P.to||"9999-12-31";
+    return {from,to,label:(P.from?fmtDate(from):"…")+" - "+(P.to?fmtDate(to):"…"),
+            prevFrom:null,prevTo:null};
+  }
+  if(P.mode==="all"){
+    return {from:"0000-01-01",to:"9999-12-31",label:t("cePerAllLbl"),prevFrom:null,prevTo:null};
+  }
+  const o=P.offset||0;
+  if(P.mode==="month"){ from=new Date(y,m+o,1); to=new Date(y,m+o+1,0); }
+  else if(P.mode==="quarter"){ const q=Math.floor(m/3)+o; from=new Date(y,q*3,1); to=new Date(y,q*3+3,0); }
+  else if(P.mode==="half"){ const h=Math.floor(m/6)+o; from=new Date(y,h*6,1); to=new Date(y,h*6+6,0); }
+  else { from=new Date(y+o,0,1); to=new Date(y+o,12,0); }
+  const span=(to-from);
+  const pTo=new Date(from.getTime()-86400000);
+  const pFrom=new Date(pTo.getTime()-span);
+  return {from:certIso(from),to:certIso(to),
+    label:certPeriodLabel(P.mode,from,to),
+    prevFrom:certIso(pFrom),prevTo:certIso(pTo),
+    prevLabel:certPeriodLabel(P.mode,pFrom,pTo)};
+}
+function certPeriodLabel(mode,from,to){
+  const y=from.getFullYear();
+  if(mode==="month") return t("ceMonth"+(from.getMonth()+1))+" "+y;
+  if(mode==="quarter") return "Q"+(Math.floor(from.getMonth()/3)+1)+" "+y;
+  if(mode==="half") return (from.getMonth()<6?"1":"2")+". "+t("ceHalf")+" "+y;
+  if(mode==="year") return String(y);
+  return fmtDate(certIso(from))+" - "+fmtDate(certIso(to));
+}
+function certSetPeriod(mode){
+  const P=certPeriod(); P.mode=mode; P.offset=0; renderCert();
+}
+function certShiftPeriod(d){ const P=certPeriod(); P.offset=(P.offset||0)+d; renderCert(); }
+function certFreeRange(which,v){ const P=certPeriod(); P.mode="free"; P[which]=v; renderCert(); }
+
+/* Alles, was im Zeitraum bewertet wurde, zusammenzaehlen. */
+function certAgg(from,to){
+  const cfg=certAn.cfg;
+  const A={blocks:[],avgPct:null,pass:0,merit:0,fail:0,people:0,
+           groups:{},crits:{},per:{},nRated:0,attLow:0};
+  if(!from) return A;
+  const inR=d=>d && d>=from && d<=to;
+  const tgIn=(certAn.trainings||[]).filter(x=>inR(x.date));
+  const ids=new Set(tgIn.map(x=>String(x.id)));
+  let sum=0,n=0; const seen=new Set();
+  (certAn.students||[]).forEach(s=>{
+    if(!s.active) return;
+    let ps=0,pn=0,att=[],ko=[],fails=0,merits=0,passes=0;
+    (s.blocks||[]).forEach(b=>{
+      if(!ids.has(String(b.training))||!b.rated) return;
+      seen.add(String(s.id));
+      sum+=b.pct; n++; ps+=b.pct; pn++;
+      att.push(b.attendance);
+      if(b.attendance<cfg.attend) A.attLow++;
+      certKoNames(b).forEach(x=>{ if(!ko.includes(x)) ko.push(x); });
+      if(b.result==="fail") { A.fail++; fails++; }
+      else if(b.result==="merit"){ A.merit++; merits++; }
+      else if(b.result==="pass"){ A.pass++; passes++; }
+      (b.groups||[]).forEach(g=>{ if(g.avg==null) return;
+        A.groups[g.id]=A.groups[g.id]||{sum:0,n:0}; A.groups[g.id].sum+=g.avg; A.groups[g.id].n++; });
+      Object.keys(b.scores||{}).forEach(cid=>{
+        A.crits[cid]=A.crits[cid]||{sum:0,n:0,low:0};
+        A.crits[cid].sum+=b.scores[cid]; A.crits[cid].n++;
+        if(b.scores[cid]<cfg.koMin) A.crits[cid].low++;
+      });
+    });
+    if(pn) A.per[String(s.id)]={s,pct:Math.round(ps/pn),n:pn,
+      att:Math.round(att.reduce((a,b)=>a+b,0)/att.length),ko,fails,merits,passes};
+  });
+  A.blocks=tgIn; A.nRated=n; A.people=seen.size;
+  A.avgPct=n?Math.round(sum/n):null;
+  Object.keys(A.groups).forEach(g=>A.groups[g]=A.groups[g].sum/A.groups[g].n);
+  return A;
+}
+/* Einordnung - die Regel steht im Bericht, damit sie nachvollziehbar ist. */
+function certClass(row,prevRow){
+  const cfg=certAn.cfg;
+  if(!row) return {k:"none",lbl:t("ceClsNone")};
+  if(row.fails||row.ko.length||row.att<cfg.attend) return {k:"red",lbl:t("ceClsRed")};
+  const trend=prevRow?row.pct-prevRow.pct:null;
+  if(row.pct<cfg.pass+10 || (trend!=null && trend<=-5)) return {k:"amber",lbl:t("ceClsAmber"),trend};
+  return {k:"green",lbl:t("ceClsGreen"),trend};
+}
+function certDelta(a,b,unit){
+  if(a==null||b==null) return "";
+  const d=a-b;
+  if(d===0) return `<span class="cedelta flat">±0</span>`;
+  return `<span class="cedelta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${Math.abs(d)}${unit||""}</span>`;
+}
+
+function certEvBalanceHtml(){
+  const cfg=certAn.cfg;
+  const R=certPeriodRange();
+  const A=certAgg(R.from,R.to);
+  const P=R.prevFrom?certAgg(R.prevFrom,R.prevTo):null;
+  const per=certPeriod();
+
+  /* Zeitraumwahl */
+  const seg=`<span class="rpseg">${CE_PERIODS.map(k=>
+    `<button${per.mode===k?' class="on"':""} onclick="certSetPeriod('${k}')">${esc(t("cePer_"+k))}</button>`).join("")}</span>`;
+  const nav=(per.mode==="all"||per.mode==="free")?"":`
+    <button class="btn sm" onclick="certShiftPeriod(-1)">${ic("back",14)}</button>
+    <b style="min-width:120px;text-align:center">${esc(R.label)}</b>
+    <button class="btn sm" onclick="certShiftPeriod(1)">${esc(t("ceNext"))}</button>`;
+  const free=per.mode!=="free"?"":`
+    <input class="inp" type="date" style="width:160px" value="${esc(per.from)}" onchange="certFreeRange('from',this.value)">
+    <span class="meta">-</span>
+    <input class="inp" type="date" style="width:160px" value="${esc(per.to)}" onchange="certFreeRange('to',this.value)">`;
+
+  const quota=(A.pass+A.merit+A.fail)?Math.round((A.pass+A.merit)/(A.pass+A.merit+A.fail)*100):null;
+  const pQuota=P&&(P.pass+P.merit+P.fail)?Math.round((P.pass+P.merit)/(P.pass+P.merit+P.fail)*100):null;
+
+  const kpis=`<div class="kpis">
+    <div class="kpi i hit" title="${esc(t("ceGoBlockCmp"))}" onclick="certGoTo('ceb-blocks')">
+      <span class="rail"></span><div class="lab">${esc(t("ceBalBlocks"))}</div>
+      <div class="val tnum">${A.blocks.filter(x=>x.rated>0).length}<small>/${A.blocks.length}</small></div></div>
+    <div class="kpi g hit" title="${esc(t("ceGoProfile"))}" onclick="certGoTo('ceb-profile')">
+      <span class="rail"></span><div class="lab">${esc(t("ceKpiAvg"))}</div>
+      <div class="val tnum">${A.avgPct!=null?A.avgPct+"<small>%</small>":"-"}</div>
+      ${P?certDelta(A.avgPct,P.avgPct,"%"):""}</div>
+    <div class="kpi w hit" title="${esc(t("ceGoRank"))}" onclick="certGoTo('ceb-people')">
+      <span class="rail"></span><div class="lab">${esc(t("ceKpiQuota"))}</div>
+      <div class="val tnum">${quota!=null?quota+"<small>%</small>":"-"}</div>
+      ${P?certDelta(quota,pQuota,"%"):""}</div>
+    <div class="kpi c hit" title="${esc(t("ceGoRetrain"))}" onclick="certGoTo('ceb-people')">
+      <span class="rail"></span><div class="lab">${esc(t("ceKpiRetrain"))}</div>
+      <div class="val tnum">${Object.values(A.per).filter(r=>certClass(r).k==="red").length}</div></div>
+  </div>`;
+
+  /* Fortschritt des Programms bis zum Ende des Zeitraums */
+  const allTg=(certAn.trainings||[]);
+  const done=allTg.filter(x=>x.rated>0&&x.date&&x.date<=R.to).length;
+  const planned=allTg.filter(x=>x.date&&x.date<=R.to).length;
+  const ahead=allTg.filter(x=>x.date&&x.date>R.to).slice(0,4);
+  const prog=`<div class="panel" id="ceb-progress"><div class="panel-h"><h3>${esc(t("ceBalProgress"))}</h3>
+      <span class="meta">${esc(t("ceBalProgressHint"))}</span></div>
+    <div class="panel-b">
+      <div class="rprow" style="grid-template-columns:minmax(150px,1fr) 3fr 60px 70px">
+        <div class="rplbl">${esc(t("ceBalDone"))}</div>
+        <div class="rpbar" style="height:14px"><i style="width:${
+          allTg.length?Math.round(done/allTg.length*100):0}%;background:var(--good)"></i></div>
+        <div class="rpval">${done}/${allTg.length}</div>
+        <div class="rpn">${allTg.length?Math.round(done/allTg.length*100):0}%</div>
+      </div>
+      ${planned>done?`<div class="rpnote" style="margin-top:12px">${ic("bell",16)}
+        <div class="rowgrow">${esc(t("ceBalBehind",planned-done))}</div></div>`:""}
+      ${ahead.length?`<div class="meta" style="margin-top:12px">${esc(t("ceBalNext"))}: ${
+        ahead.map(x=>esc((x.code||"")+" "+(x.date?fmtDate(x.date):""))).join(" · ")}</div>`:""}
+    </div></div>`;
+
+  /* Bloecke im Zeitraum */
+  const bRows=A.blocks.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(x=>`
+    <tr class="clickrow" onclick="certEvOpenBlock('${x.id}')">
+      <td>${esc(certTgLbl(x))}</td>
+      <td class="num">${x.date?esc(fmtDate(x.date)):""}</td>
+      <td class="num">${x.rated}/${x.people}</td>
+      <td class="num"><b>${x.avgPct!=null?x.avgPct+"%":"-"}</b></td>
+      <td style="min-width:90px"><div class="rpmeter"><i style="width:${x.avgPct||0}%;background:${
+        certPctHue(x.avgPct)}"></i></div></td>
+      <td class="nt">${x.merit?`<span style="color:var(--good)">${x.merit}★</span> `:""}${
+        x.pass?x.pass+"✓ ":""}${x.fail?`<span style="color:var(--crit)">${x.fail}✗</span>`:""}</td>
+    </tr>`).join("")||`<tr><td colspan="6" class="nt">${esc(t("ceBalNoBlocks"))}</td></tr>`;
+
+  /* Kompetenzprofil: Zeitraum gegen Vorzeitraum */
+  const gRows=(certAn.catalog||[]).map(g=>{
+    const a=A.groups[g.id], b=P?P.groups[g.id]:null;
+    const pa=a!=null?Math.round(a/cfg.scale*100):null;
+    const pb=b!=null?Math.round(b/cfg.scale*100):null;
+    return `<div class="rprow hit" onclick="certGoTo('ceb-people')">
+      <div class="rplbl">${esc(certLbl(g))}</div>
+      <div class="cetwin">
+        <i class="now" style="width:${pa||0}%;background:${certPctHue(pa)}"></i>
+        ${pb!=null?`<i class="prev" style="width:${pb}%"></i>`:""}
+      </div>
+      <div class="rpval">${a!=null?a.toFixed(1):"-"}</div>
+      <div class="rpn">${(pa!=null&&pb!=null)?certDelta(pa,pb,""):""}</div></div>`;
+  }).join("");
+
+  /* Einordnung je Teilnehmer - das Herzstueck fuer den Kunden */
+  const rows=Object.values(A.per).sort((a,b)=>b.pct-a.pct).map(r=>{
+    const pr=P?P.per[String(r.s.id)]:null;
+    const c=certClass(r,pr);
+    return `<tr class="clickrow" onclick="certEvPerson('${r.s.id}')">
+      <td><span class="celamp ${c.k}"></span></td>
+      <td><b>${esc(r.s.name)}</b><div class="meta">${esc([r.s.rank,r.s.unit].filter(Boolean).join(" · "))}</div></td>
+      <td class="num">${r.n}</td>
+      <td class="num">${r.att}%</td>
+      <td style="min-width:90px"><div class="rpmeter"><i style="width:${r.pct}%;background:${certPctHue(r.pct)}"></i></div></td>
+      <td class="num"><b>${r.pct}%</b></td>
+      <td class="num">${pr?certDelta(r.pct,pr.pct,""):`<span class="meta">-</span>`}</td>
+      <td>${esc(c.lbl)}</td>
+      <td class="nt">${r.ko.length?esc(r.ko.slice(0,2).join(", ")+(r.ko.length>2?" +"+(r.ko.length-2):"")):""}</td>
+    </tr>`;
+  }).join("")||`<tr><td colspan="9" class="nt">${esc(t("ceBalNoBlocks"))}</td></tr>`;
+
+  /* Ein paar Saetze, die den Stand zusammenfassen. */
+  const notes=certBalanceNotes(A,P,R);
+
+  return `<div class="panel"><div class="panel-b" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      ${seg}${nav}${free}<div class="spacer"></div>
+      <span class="meta">${esc(t("ceBalAsOf",fmtDate(certIso(new Date()))))}</span>
+    </div></div>
+    <div class="panel"><div class="panel-h" style="flex-wrap:wrap;gap:8px 12px">
+      <h3>${esc(t("ceBalTitle"))}</h3>
+      <span class="meta">${esc(R.label)}${P?" · "+esc(t("ceBalVs",R.prevLabel)):""}</span></div>
+      <div class="panel-b">${kpis}
+        ${notes.length?`<ul class="cenotes">${notes.map(x=>`<li class="${x.k}">${esc(x.txt)}</li>`).join("")}</ul>`:""}
+      </div></div>
+    ${prog}
+    <div class="panel" id="ceb-blocks"><div class="panel-h"><h3>${esc(t("ceBalBlockList"))}</h3>
+      <span class="meta hintx">${esc(t("ceGoRateHint"))}</span></div>
+      <div class="panel-b"><table class="rptable"><thead><tr>
+        <th>${esc(t("ceBlock"))}</th><th class="num">${esc(t("ceDate"))}</th>
+        <th class="num">${esc(t("ceRated"))}</th><th class="num">Ø</th><th></th>
+        <th>${esc(t("ceResult"))}</th></tr></thead><tbody>${bRows}</tbody></table></div></div>
+    <div class="panel" id="ceb-profile"><div class="panel-h"><h3>${esc(t("ceBalProfile"))}</h3>
+      <span class="meta">${P?esc(t("ceBalProfileHint")):esc(t("cePassLine",cfg.pass))}</span></div>
+      <div class="panel-b"><div class="rpbars">${gRows}</div></div></div>
+    <div class="panel" id="ceb-people"><div class="panel-h" style="flex-wrap:wrap;gap:8px 12px">
+      <h3>${esc(t("ceBalPeople"))}</h3><span class="meta">${esc(t("ceBalPeopleHint"))}</span></div>
+      <div class="panel-b"><table class="rptable"><thead><tr>
+        <th></th><th>${esc(t("ceParticipant"))}</th><th class="num">${esc(t("ceKpiBlocks"))}</th>
+        <th class="num">${esc(t("ceAttend"))}</th><th></th><th class="num">Ø</th>
+        <th class="num">${esc(t("ceBalTrend"))}</th><th>${esc(t("ceBalClass"))}</th>
+        <th>${esc(t("ceKoFail"))}</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="cerule">${esc(t("ceBalRule",cfg.pass,cfg.attend))}</div></div></div>`;
+}
+/* Kurze Saetze statt Zahlenwueste - was faellt in diesem Zeitraum auf? */
+function certBalanceNotes(A,P,R){
+  const cfg=certAn.cfg, out=[];
+  if(!A.nRated){ out.push({k:"i",txt:t("ceBalNoteEmpty")}); return out; }
+  if(P&&P.avgPct!=null&&A.avgPct!=null){
+    const d=A.avgPct-P.avgPct;
+    if(Math.abs(d)>=3) out.push({k:d>0?"g":"w",txt:t(d>0?"ceBalNoteUp":"ceBalNoteDown",Math.abs(d),R.prevLabel)});
+    else out.push({k:"i",txt:t("ceBalNoteFlat")});
+  }
+  const red=Object.values(A.per).filter(r=>certClass(r).k==="red");
+  if(red.length) out.push({k:"c",txt:t("ceBalNoteRed",red.length,red.slice(0,3).map(r=>r.s.name).join(", "))});
+  else out.push({k:"g",txt:t("ceBalNoteNoRed")});
+  if(A.attLow) out.push({k:"w",txt:t("ceBalNoteAtt",A.attLow,cfg.attend)});
+  const crits=Object.keys(A.crits).map(id=>{
+    const c=certAnCrits().find(x=>String(x.id)===String(id));
+    return c?{c,avg:A.crits[id].sum/A.crits[id].n}:null;
+  }).filter(Boolean).sort((a,b)=>a.avg-b.avg);
+  if(crits.length) out.push({k:"i",txt:t("ceBalNoteWeak",certLbl(crits[0].c),crits[0].avg.toFixed(1))});
+  if(crits.length>2) out.push({k:"g",txt:t("ceBalNoteStrong",certLbl(crits[crits.length-1].c),crits[crits.length-1].avg.toFixed(1))});
+  return out;
+}
+/* Die Zwischenbilanz als Tabelle zum Weiterrechnen. */
+function certBalanceCsv(){
+  const R=certPeriodRange(), A=certAgg(R.from,R.to);
+  const P=R.prevFrom?certAgg(R.prevFrom,R.prevTo):null;
+  const sep=";", esc2=v=>{const s=String(v==null?"":v); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+  const L=[[t("ceBalTitle"),R.label].map(esc2).join(sep),
+           [t("ceBalAsOf",fmtDate(certIso(new Date())))].map(esc2).join(sep),"",
+           [t("ceParticipant"),t("ceRank"),t("ceUnit"),t("ceKpiBlocks"),t("ceAttend"),
+            "%",t("ceBalTrend"),t("ceBalClass"),t("ceKoFail")].map(esc2).join(sep)];
+  Object.values(A.per).sort((a,b)=>b.pct-a.pct).forEach(r=>{
+    const pr=P?P.per[String(r.s.id)]:null;
+    L.push([r.s.name,r.s.rank,r.s.unit,r.n,r.att,r.pct,
+      pr?(r.pct-pr.pct>0?"+":"")+(r.pct-pr.pct):"",certClass(r,pr).lbl,r.ko.join(" | ")]
+      .map(esc2).join(sep));
+  });
+  download("etaf-zwischenbilanz.csv","﻿"+L.join("\r\n"),"text/csv;charset=utf-8");
+  toast(t("ceCsvOk"),"good");
 }
 
 function openSheet(){$("#scrim").classList.add("on");$("#sheet").classList.add("on");}

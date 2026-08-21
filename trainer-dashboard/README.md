@@ -95,6 +95,10 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
   Auswertung auf drei Ebenen (Block, Person, Programm) mit Kompetenzprofil, Verlauf,
   Kriterienspiegel, Nachschulungsbedarf und Bewerter-Kalibrierung; Zeugnisse und
   Abschlusszertifikate mit Prüfnummer, öffentlich prüfbar unter `backend/verify.php`.
+  Jede Kennzahl ist anklickbar und führt dorthin, wo sie herkommt. **Zwischenbilanz**
+  je Monat, Quartal, Halbjahr, Jahr oder freiem Zeitraum, mit Vergleich zum Zeitraum
+  davor und einer Ampel je Teilnehmer. **Excel-Vorlage** für die Teilnehmerdaten des
+  Kunden (mit Beispiel- und Hinweisblatt) samt Import der ausgefüllten Datei.
 - **Vorlagen** bearbeiten & speichern (je Sprache DE/EN)
 - **Import** (angedeutet): Excel/CSV, Angebot-PDF, KI-Extraktion aus Lebensläufen
 
@@ -113,7 +117,7 @@ Rücklauf. Über **◐ Design wechseln** hell/dunkel testen.
 | Kalender-Export | .ics-Download | **.ics + Abo-Link (`ics.php`)** | 2-Wege-Sync (CalDAV) |
 | Wandkalender | Druck (Querformat) | Druck (Querformat) | PDF-Serienexport |
 | Daten | localStorage | **MySQL @ artfiles** | Backups, Rollen |
-| Zertifizierung | - | **Katalog, Bewertung, Auswertung, Zertifikate mit Prüfnummer** | Unterschriftenbild, QR-Code |
+| Zertifizierung | - | **Katalog, Bewertung, Auswertung, Zwischenbilanz, Excel-Import, Zertifikate mit Prüfnummer** | Unterschriftenbild, QR-Code |
 | Login | jeder 6-stellige PIN | **PIN serverseitig geprüft + Rate-Limit** | + Magic-Link, Audit-Log |
 | E-Mail | simuliert | **PHP mail() / SMTP** | Vorlagen-Editor je Kampagne |
 | Verfügbarkeit | Zufalls-Simulation | **Magic-Link ✅/🤔/❌ → DB → Polling** | + KI-Parsing freier Antworten |
