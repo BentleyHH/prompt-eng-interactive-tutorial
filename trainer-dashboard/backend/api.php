@@ -897,7 +897,13 @@ switch($action){
     require_auth();
     $cohort=trim((string)($in['cohort']??''));
     $client=trim((string)($in['clientId']??''));
-    $tgId=(int)($in['training']??0);
+    // Blockzuordnung: eine Kennung, 'all' fuer alle Bloecke, leer fuer keine
+    $tgSel=(string)($in['training']??'');
+    $tgIds=[];
+    if($tgSel==='all'){
+      foreach(q("SELECT id FROM trainings".($client?" WHERE client_id=?":""),
+                $client?[$client]:[])->fetchAll() as $r) $tgIds[]=(int)$r['id'];
+    } elseif((int)$tgSel>0) $tgIds=[(int)$tgSel];
 
     $people=[]; $sheet=''; $cols=0;
     if(!empty($in['file'])){
@@ -938,11 +944,15 @@ switch($action){
            $f['email'],$f['phone'],$coh,$f['note'],now()]);
         $sid=(int)db()->lastInsertId(); $n++;
       }
-      if($tgId && !q("SELECT id FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId])->fetch())
-        q("INSERT INTO student_training(student_id,training_id,attendance,created_at) VALUES(?,?,100,?)",[$sid,$tgId,now()]);
+      foreach($tgIds as $tgId){
+        if(!q("SELECT id FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId])->fetch())
+          q("INSERT INTO student_training(student_id,training_id,attendance,created_at) VALUES(?,?,100,?)",[$sid,$tgId,now()]);
+      }
     }
-    audit('students.import','student','',$n.' Teilnehmer uebernommen ('.$sheet.')');
-    out(['ok'=>true,'added'=>$n,'skipped'=>$skip,'bad'=>$bad,'cols'=>$cols,'sheet'=>$sheet]);
+    audit('students.import','student','',$n.' Teilnehmer uebernommen ('.$sheet.')'
+      .($tgIds?(' · '.count($tgIds).' Bloecke zugeordnet'):''));
+    out(['ok'=>true,'added'=>$n,'skipped'=>$skip,'bad'=>$bad,'cols'=>$cols,'sheet'=>$sheet,
+         'blocks'=>count($tgIds)]);
 
   /* Teilnahme an einem Block setzen/entfernen */
   case 'student.part':

@@ -2046,53 +2046,69 @@ function stud_cols(): array {
   ];
 }
 
-/** Beispielzeilen - erfundene Personen, damit der Kunde das Format sieht. */
+/**
+ * 20 Beispielpersonen. Sie stehen direkt im Erfassungsblatt der Vorlage
+ * und werden beim Einlesen GANZ NORMAL uebernommen - das ist Absicht:
+ * Vorlage herunterladen, unveraendert einlesen, 20 Teilnehmer sehen.
+ * So prueft man in einer Minute, dass der Weg funktioniert. Der Kunde
+ * ersetzt die Zeilen einfach durch seine Leute.
+ */
 function stud_examples(): array {
   return [
-    ['Al Mazrouei','Ahmed','1988-04-12','Abu Dhabi','m','UAE','Captain','Forensic Unit','4412','ahmed.almazrouei@example.ae','+971 50 000 0001','ADP DVI 2026-A','Vorerfahrung Tatortarbeit'],
-    ['Al Suwaidi','Fatima','1991-11-03','Al Ain','w','UAE','Lieutenant','Family Liaison','4418','fatima.alsuwaidi@example.ae','+971 50 000 0002','ADP DVI 2026-A','Arabisch, Englisch'],
-    ['Al Nuaimi','Khalid','1985-02-27','Sharjah','m','UAE','Sergeant','Scene Recovery','04425','khalid.alnuaimi@example.ae','+971 50 000 0003','ADP DVI 2026-A',''],
-    ['Al Ketbi','Mariam','1993-07-19','Abu Dhabi','w','UAE','Lieutenant','Data Management','4431','mariam.alketbi@example.ae','+971 50 000 0004','ADP DVI 2026-A','PlassData geschult'],
-    ['Al Shamsi','Omar','1987-01-08','Dubai','m','UAE','Captain','Mortuary Operations','4437','omar.alshamsi@example.ae','+971 50 000 0005','ADP DVI 2026-A',''],
+    ['Al Mazrouei','Ahmed','1988-04-12','Abu Dhabi','m','UAE','Captain','Forensic Unit','4401','ahmed.almazrouei@example.ae','+971 50 000 0001','',''],
+    ['Al Suwaidi','Fatima','1991-11-03','Al Ain','w','UAE','Lieutenant','Family Liaison','4402','fatima.alsuwaidi@example.ae','+971 50 000 0002','','Arabisch, Englisch'],
+    ['Al Nuaimi','Khalid','1985-02-27','Sharjah','m','UAE','Sergeant','Scene Recovery','04403','khalid.alnuaimi@example.ae','+971 50 000 0003','',''],
+    ['Al Ketbi','Mariam','1993-07-19','Abu Dhabi','w','UAE','Lieutenant','Data Management','4404','mariam.alketbi@example.ae','+971 50 000 0004','','PlassData geschult'],
+    ['Al Shamsi','Omar','1987-01-08','Dubai','m','UAE','Captain','Mortuary Operations','4405','omar.alshamsi@example.ae','+971 50 000 0005','',''],
+    ['Al Marri','Yousef','1982-03-07','Abu Dhabi','m','UAE','Major','Identification Board','4406','yousef.almarri@example.ae','+971 50 000 0006','',''],
+    ['Al Blooshi','Noura','1990-12-01','Abu Dhabi','w','UAE','Captain','Ante Mortem','4407','noura.alblooshi@example.ae','+971 50 000 0007','',''],
+    ['Al Hosani','Saeed','1986-09-22','Al Ain','m','UAE','Sergeant','Scene Recovery','4408','saeed.alhosani@example.ae','+971 50 000 0008','',''],
+    ['Al Zaabi','Layla','1992-08-14','Dubai','w','UAE','Captain','Ante Mortem','4409','layla.alzaabi@example.ae','+971 50 000 0009','',''],
+    ['Al Rashid','Hassan','1989-05-05','Abu Dhabi','m','UAE','Major','CID','4410','hassan.alrashid@example.ae','+971 50 000 0010','',''],
+    ['Al Dhaheri','Aisha','1994-02-17','Abu Dhabi','w','UAE','Lieutenant','Post Mortem','4411','aisha.aldhaheri@example.ae','+971 50 000 0011','',''],
+    ['Al Kaabi','Salem','1983-10-30','Fujairah','m','UAE','Major','Logistics','4412','salem.alkaabi@example.ae','+971 50 000 0012','',''],
+    ['Al Mansoori','Hessa','1995-06-09','Abu Dhabi','w','UAE','Sergeant','Data Management','4413','hessa.almansoori@example.ae','+971 50 000 0013','',''],
+    ['Al Ameri','Rashid','1984-04-21','Al Ain','m','UAE','Captain','Scene Management','4414','rashid.alameri@example.ae','+971 50 000 0014','',''],
+    ['Al Falasi','Maitha','1990-01-25','Dubai','w','UAE','Lieutenant','Family Liaison','4415','maitha.alfalasi@example.ae','+971 50 000 0015','',''],
+    ['Al Habsi','Sultan','1988-07-13','Abu Dhabi','m','UAE','Sergeant','Mortuary Operations','4416','sultan.alhabsi@example.ae','+971 50 000 0016','',''],
+    ['Al Qubaisi','Salama','1992-11-28','Abu Dhabi','w','UAE','Captain','Quality Control','4417','salama.alqubaisi@example.ae','+971 50 000 0017','',''],
+    ['Al Muhairi','Tariq','1986-03-16','Sharjah','m','UAE','Lieutenant','Reconciliation','4418','tariq.almuhairi@example.ae','+971 50 000 0018','',''],
+    ['Al Romaithi','Shamma','1993-09-04','Abu Dhabi','w','UAE','Sergeant','Ante Mortem','4419','shamma.alromaithi@example.ae','+971 50 000 0019','',''],
+    ['Al Hammadi','Majid','1981-12-19','Ras Al Khaimah','m','UAE','Major','Command & Control','4420','majid.alhammadi@example.ae','+971 50 000 0020','',''],
   ];
 }
 
-/** Die Vorlage als xlsx: Erfassungsblatt, Beispiel, Hinweise. */
+/**
+ * Die Vorlage als xlsx: ein Erfassungsblatt mit 20 Beispielzeilen und ein
+ * Hinweisblatt. Bewusst kein getrenntes Beispielblatt mehr - was in der
+ * Datei steht, wird uebernommen. Unveraendert eingelesen ergibt die
+ * Vorlage also genau 20 Teilnehmer; das ist der eingebaute Selbsttest.
+ */
 function stud_template_xlsx(string $lang='de'): string {
   $de = $lang!=='en';
   $cols=stud_cols();
   $head=array_map(fn($c)=>[$de?$c['de']:$c['en'],1],$cols);
   $w=array_map(fn($c)=>$c['w'],$cols);
 
-  // Blatt 1: nur die Ueberschrift - hier traegt der Kunde ein. Die Spalten
-  // sind als Text formatiert, damit fuehrende Nullen erhalten bleiben.
   $sheet1=[$head];
+  foreach(stud_examples() as $r) $sheet1[]=$r;
 
-  // Blatt 2: Beispiel, klar als solches gekennzeichnet.
-  $note = ($de
-    ? 'BEISPIEL - erfundene Personen. Nur zur Anschauung; bitte im Blatt "Teilnehmer" eintragen.'
-    : 'EXAMPLE - fictitious people. For illustration only; please type into the "Participants" sheet.')
-    .'  ['.STUD_TPL_MARK.']';
-  $sheet2=[[[$note,2]],[],$head];
-  foreach(stud_examples() as $r) $sheet2[]=$r;
-
-  // Blatt 3: Hinweise
   $t = $de ? [
     'h'=>'So füllen Sie die Liste aus',
-    'i1'=>'1. Tragen Sie je Zeile eine Person im Blatt „Teilnehmer“ ein - eine Zeile, eine Person.',
+    'i1'=>'1. Im Blatt „Teilnehmer“ stehen 20 BEISPIELZEILEN (erfundene Personen). Ersetzen Sie sie durch Ihre Teilnehmer - eine Zeile, eine Person. Nicht gebrauchte Zeilen löschen.',
     'i2'=>'2. Nachname und Vorname sind Pflicht. Alles andere hilft uns, ist aber freiwillig.',
     'i3'=>'3. Die Spalten dürfen Sie umsortieren - wir erkennen sie an der Überschrift. Löschen Sie die Überschriftszeile bitte nicht.',
-    'i4'=>'4. Das Blatt „Beispiel“ dient nur der Anschauung. Es wird beim Einlesen nicht berücksichtigt.',
+    'i4'=>'4. Alles, was im Blatt „Teilnehmer“ steht, wird übernommen - auch nicht ersetzte Beispielzeilen. Bitte deshalb wirklich ersetzen oder löschen.',
     'i5'=>'5. Speichern Sie die Datei als .xlsx und senden Sie sie zurück. Auch .csv (Semikolon) geht.',
     'i6'=>'6. Die Angaben erscheinen auf Zeugnis und Zertifikat. Bitte in der Schreibweise, die dort stehen soll.',
     'ch'=>'Spalte','me'=>'Bedeutung',
     'p'=>'Datenschutz: Wir verarbeiten diese Angaben ausschließlich zur Durchführung und Zertifizierung des Lehrgangs.',
   ] : [
     'h'=>'How to fill in this list',
-    'i1'=>'1. Enter one person per row on the "Participants" sheet - one row, one person.',
+    'i1'=>'1. The "Participants" sheet contains 20 EXAMPLE ROWS (fictitious people). Replace them with your participants - one row, one person. Delete unused rows.',
     'i2'=>'2. Last name and first name are required. Everything else helps us but is optional.',
     'i3'=>'3. You may reorder the columns - we recognise them by their heading. Please do not delete the heading row.',
-    'i4'=>'4. The "Example" sheet is for illustration only. It is ignored on import.',
+    'i4'=>'4. Everything on the "Participants" sheet is imported - including example rows you did not replace. So please really replace or delete them.',
     'i5'=>'5. Save the file as .xlsx and send it back. A .csv (semicolon separated) also works.',
     'i6'=>'6. The details appear on the report and the certificate. Please use the spelling that should appear there.',
     'ch'=>'Column','me'=>'Meaning',
@@ -2107,12 +2123,8 @@ function stud_template_xlsx(string $lang='de'): string {
   $sheet3[]=[[$t['p'],2]];
 
   $n1 = $de?'Teilnehmer':'Participants';
-  $n2 = $de?'Beispiel':'Example';
   $n3 = $de?'Hinweise':'Notes';
-  return xlsx_build(
-    [$n1=>$sheet1, $n2=>$sheet2, $n3=>$sheet3],
-    [$n1=>$w, $n2=>$w, $n3=>[46,52]]
-  );
+  return xlsx_build([$n1=>$sheet1, $n3=>$sheet3], [$n1=>$w, $n3=>[46,60]]);
 }
 
 /** Ueberschrift einer Spalte auf einen Feldnamen abbilden. */
@@ -2163,18 +2175,18 @@ function stud_date(string $v): string {
 }
 
 /** Erkennungszeichen im Beispielblatt der Vorlage. */
-const STUD_TPL_MARK = 'ETAF-MUSTER';
 /** Erkennungszeichen im Hinweisblatt der Vorlage. */
 const STUD_TPL_HELP = 'ETAF-HINWEISE';
 
 /**
  * Aus einer hochgeladenen Datei die Teilnehmerzeilen herausschaelen.
  *
- * Gelesen werden ALLE Blaetter, nicht nur das erste. Das ist der
- * entscheidende Punkt: Wer die Vorlage bekommt, tippt seine Leute mal in
- * das leere Erfassungsblatt und mal unter die Beispielzeilen - beides muss
- * ankommen. Ueberspruengen werden nur Blaetter, die sich selbst als
- * Beispiel oder Hinweis ausweisen, und die fuenf erfundenen Musterpersonen.
+ * Gelesen werden ALLE Blaetter, nicht nur das erste - Deckblaetter,
+ * verschobene Blaetter und Titelzeilen stoeren nicht. Uebersprungen wird
+ * einzig das Hinweisblatt der eigenen Vorlage. Alles andere gilt:
+ * WAS IN DER DATEI STEHT, WIRD UEBERNOMMEN. Keine stillen Filter -
+ * wer die unveraenderte Vorlage einliest, bekommt ihre 20 Beispielzeilen
+ * und sieht damit sofort, dass der Weg funktioniert.
  *
  * Rueckgabe: sheets (mit Befund je Blatt), head, people, error.
  */
@@ -2190,9 +2202,6 @@ function stud_parse_file(string $bin): array {
     $sheets[]=['name'=>'CSV','rows'=>stud_csv_rows($bin)];
   }
 
-  $mustNames=[];
-  foreach(stud_examples() as $e) $mustNames[mb_strtolower_x(trim($e[1].' '.$e[0]))]=true;
-
   $all=[]; $seen=[]; $bestHead=[]; $bestSheet='';
   foreach($sheets as $s){
     $info=['name'=>$s['name'],'rows'=>count($s['rows']),'people'=>0,'skipped'=>''];
@@ -2204,7 +2213,6 @@ function stud_parse_file(string $bin): array {
     foreach($people as $p){
       if($p['skip']===''){
         $k=mb_strtolower_x($p['name']);
-        if(isset($mustNames[$k])) continue;      // die erfundenen Musterpersonen nie uebernehmen
         if(isset($seen[$k])) continue;           // dieselbe Person auf zwei Blaettern
         $seen[$k]=true; $take++;
       }
@@ -2225,12 +2233,12 @@ function stud_parse_file(string $bin): array {
     $R['rows']=array_slice($sheets[0]['rows'],0,8);
     return $R;
   }
-  // Doppelte und Musterpersonen aus der Ausgabe halten
+  // Doppelte ueber die Blaetter hinweg nur einmal ausgeben
   $out=[]; $seen2=[];
   foreach($all as $p){
     if($p['skip']===''){
       $k=mb_strtolower_x($p['name']);
-      if(isset($mustNames[$k]) || isset($seen2[$k])) continue;
+      if(isset($seen2[$k])) continue;
       $seen2[$k]=true;
     }
     $out[]=$p;

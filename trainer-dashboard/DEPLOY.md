@@ -159,10 +159,14 @@ automatisch nach der Adresse, unter der das Cockpit läuft.
 
 ### Teilnehmer einsammeln
 Unter **Zertifizierung -> Teilnehmer -> Liste einlesen** liegt eine **Excel-Vorlage**
-(deutsch oder englisch) zum Herunterladen. Sie hat drei Blaetter: ein leeres
-Erfassungsblatt, ein Beispielblatt mit fuenf erfundenen Personen und ein Blatt mit
-Ausfuellhinweisen. Die Vorlage geht an den Kunden; die ausgefuellte Datei wird an
-derselben Stelle wieder hochgeladen (.xlsx oder .csv).
+(deutsch oder englisch) zum Herunterladen. Sie hat zwei Blaetter: das Erfassungsblatt
+„Teilnehmer" mit **20 Beispielzeilen**, die der Kunde durch seine Leute ersetzt, und
+ein Hinweisblatt. Die ausgefuellte Datei wird an derselben Stelle wieder hochgeladen
+(.xlsx oder .csv).
+
+**Eingebauter Funktionstest:** die unveraenderte Vorlage einlesen muss genau
+**20 Teilnehmer** ergeben. Kommt etwas anderes heraus, laeuft auf dem Server noch
+ein alter Stand von `backend/lib.php` / `backend/api.php` - beide mit hochladen.
 
 Die Spalten werden an der Ueberschrift erkannt - deutsch wie englisch, in beliebiger
 Reihenfolge und auch mit den ueblichen Abweichungen wie „Pers.-Nr." oder
@@ -171,10 +175,11 @@ Excel-Tageszahl werden vereinheitlicht. Leerzeilen, doppelte Kopfzeilen und bere
 vorhandene Personen werden uebersprungen und in der Rueckmeldung gezaehlt.
 
 Gelesen werden **alle Tabellenblaetter**, nicht nur das erste: Deckblaetter, verschobene
-Blaetter und Titelzeilen ueber der Tabelle stoeren nicht, und wer seine Leute unter die
-Beispielzeilen tippt statt ins leere Blatt, bekommt sie trotzdem uebernommen. Die fuenf
-erfundenen Musterpersonen werden dabei immer herausgefiltert, das Hinweisblatt
-uebersprungen.
+Blaetter und Titelzeilen ueber der Tabelle stoeren nicht. Es gilt die einfache Regel:
+**was in der Datei steht, wird uebernommen** - es gibt keine stillen Filter. Nur das
+Hinweisblatt der eigenen Vorlage wird uebersprungen. Beim Einlesen ist „alle Bloecke
+des Programms" vorausgewaehlt und der Lehrgang vorbelegt; einzelne Bloecke lassen sich
+spaeter je Person abwaehlen.
 
 Sobald eine Datei gewaehlt ist, zeigt das Cockpit **vor dem Einlesen** eine Vorschau:
 welches Blatt, wie viele Zeilen, wie viele Personen je Blatt, welche Spalten zugeordnet

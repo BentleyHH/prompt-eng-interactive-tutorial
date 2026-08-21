@@ -1455,6 +1455,10 @@ function restoreView(){
    ============================================================ */
 const L={
  de:{
+  ceAllBlocks:n=>`- alle ${n} Blöcke des Programms -`,
+  ceAllBlocksHint:"Die Teilnehmer nehmen am ganzen Lehrgang teil - das ist der Normalfall. Einzelne Blöcke lassen sich später je Person abwählen.",
+  ceBlocksSet:n=>`${n} Blöcken zugeordnet`,
+
   /* ---- Zertifizierung: Import-Vorschau ---- */
   ceScanning:"Datei wird gelesen …",
   ceSheet:"Tabellenblatt", ceRowsN:"Zeilen",
@@ -1523,7 +1527,7 @@ const L={
   ceGender:"Geschlecht", ceGender_m:"männlich", ceGender_w:"weiblich", ceGender_d:"divers",
   ceNationality:"Nationalität", cePhone:"Telefon",
   ceTplTitle:"Excel-Vorlage für den Kunden",
-  ceTplHint:"Herunterladen, an den Kunden geben, ausgefüllt hier wieder einlesen. Enthält ein Beispielblatt und Ausfüllhinweise.",
+  ceTplHint:"Herunterladen, an den Kunden geben, ausgefüllt hier wieder einlesen. Enthält 20 Beispielzeilen zum Ersetzen und ein Hinweisblatt. Schnelltest: unverändert einlesen ergibt genau 20 Teilnehmer.",
   ceFile:"Ausgefüllte Datei", ceFileHint:"Excel (.xlsx) oder CSV - die Spalten werden an der Überschrift erkannt.",
   ceFileReady:n=>`Bereit: ${n}`,
   ceFileBig:"Die Datei ist größer als 8 MB - bitte kleiner speichern.",
@@ -2178,6 +2182,10 @@ const L={
   matSummary:(n,q)=>`${n} Positionen · ${q} Einheiten`, matColHead:"Material", matColQty:"Anzahl", matColUnit:"Einheit"
  },
  en:{
+  ceAllBlocks:n=>`- all ${n} blocks of the programme -`,
+  ceAllBlocksHint:"Participants attend the whole course - the usual case. Individual blocks can be deselected per person later.",
+  ceBlocksSet:n=>`assigned to ${n} blocks`,
+
   /* ---- Certification: import preview ---- */
   ceScanning:"Reading the file …",
   ceSheet:"Sheet", ceRowsN:"Rows",
@@ -2244,7 +2252,7 @@ const L={
   ceGender:"Gender", ceGender_m:"male", ceGender_w:"female", ceGender_d:"diverse",
   ceNationality:"Nationality", cePhone:"Phone",
   ceTplTitle:"Excel template for the client",
-  ceTplHint:"Download it, hand it to the client, import it here once filled in. It carries an example sheet and filling instructions.",
+  ceTplHint:"Download it, hand it to the client, import it here once filled in. It carries 20 example rows to replace and a notes sheet. Quick test: importing it unchanged yields exactly 20 participants.",
   ceFile:"Completed file", ceFileHint:"Excel (.xlsx) or CSV - columns are recognised by their heading.",
   ceFileReady:n=>`Ready: ${n}`,
   ceFileBig:"The file is larger than 8 MB - please save a smaller one.",
@@ -9153,6 +9161,16 @@ async function certPersonDel(id){
 }
 function certImportSheet(){
   const tgs=certTgList();
+  /* Lehrgang vorbelegen: was schon benutzt wird, sonst der Kundenname mit
+     Jahreszahl - der Nutzer soll nichts tippen muessen. */
+  const cohCnt={};
+  (certState.students||[]).forEach(p=>{ if(p.cohort) cohCnt[p.cohort]=(cohCnt[p.cohort]||0)+1; });
+  let cohDef=Object.keys(cohCnt).sort((a,b)=>cohCnt[b]-cohCnt[a])[0]||"";
+  if(!cohDef){
+    const cl=activeClient()||((S.clients||[])[0]||null);
+    const yrs=[...new Set(tgs.map(x=>String(x.date||"").slice(0,4)).filter(Boolean))].sort();
+    cohDef=((cl&&(cl.short||cl.name))||"DVI")+" "+(yrs.length?yrs[0]+(yrs.length>1?"/"+yrs[yrs.length-1].slice(2):""):"");
+  }
   $("#sheetTitle").textContent=t("ceImport");
   $("#sheetBody").innerHTML=`
     <div class="rpnote soft" style="margin-bottom:14px">${ic("down",16)}
@@ -9168,10 +9186,13 @@ function certImportSheet(){
     <div id="ciPreview"></div>
     <div class="meta" style="margin-bottom:10px">${esc(t("ceImportHint"))}</div>
     <label class="fld">${esc(t("ceCohort"))}</label>
-    <input class="inp" id="ciCoh" placeholder="ADP DVI 2026-A">
+    <input class="inp" id="ciCoh" value="${esc(cohDef)}">
     <label class="fld">${esc(t("ceBlockAssign"))}</label>
-    <select class="inp" id="ciTg"><option value="">${esc(t("ceNoBlock"))}</option>
-      ${tgs.map(tg=>`<option value="${tg.id}"${String(certState.tg)===String(tg.id)?" selected":""}>${esc((tg.code?tg.code+" - ":"")+tg.topic)}</option>`).join("")}</select>
+    <select class="inp" id="ciTg">
+      <option value="all" selected>${esc(t("ceAllBlocks",tgs.length))}</option>
+      <option value="">${esc(t("ceNoBlock"))}</option>
+      ${tgs.map(tg=>`<option value="${tg.id}">${esc((tg.code?tg.code+" - ":"")+tg.topic)}</option>`).join("")}</select>
+    <div class="meta" style="margin:4px 0 10px">${esc(t("ceAllBlocksHint"))}</div>
     <label class="fld">${esc(t("ceList"))}</label>
     <textarea id="ciTxt" style="min-height:180px;font-family:ui-monospace,monospace;font-size:13px"
       placeholder="Ahmed Al Mazrouei; Captain; Forensic Unit; 4412; ahmed@adp.ae"></textarea>`;
@@ -9253,12 +9274,13 @@ async function certDoImport(){
   try{
     const d=await apiCall("students.import",{...(certFileData?{file:certFileData}:{text}),
       cohort:val("ciCoh").trim(),
-      training:val("ciTg")||0,clientId:(S.clients&&S.clients[0]?S.clients[0].id:"")});
+      training:val("ciTg"),clientId:(activeClient()||{}).id||((S.clients||[])[0]||{}).id||""});
     certFileData=null;
     closeSheet(); await certLoadStudents(true);
     if(certState.tg) await certLoadTraining(certState.tg);
-    toast(t("ceImported",d.added,d.skipped)+(d.bad?" · "+t("ceImportBad",d.bad):""),
-      d.added?"good":"warn");
+    toast(t("ceImported",d.added,d.skipped)
+      +(d.blocks?" · "+t("ceBlocksSet",d.blocks):"")
+      +(d.bad?" · "+t("ceImportBad",d.bad):""), d.added?"good":"warn");
     certPrev=null; certAnInvalidate(); renderCert();
   }catch(e){ toast("Fehler: "+e.message,"crit"); }
 }
