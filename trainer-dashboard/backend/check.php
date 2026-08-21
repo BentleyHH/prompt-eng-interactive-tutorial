@@ -71,20 +71,37 @@ row('Zugriffsschutz backend/.htaccess vorhanden', is_file(__DIR__.'/.htaccess'),
     .'Notfalls als <code>htaccess.txt</code> hochladen und auf dem Server in <code>.htaccess</code> umbenennen.');
 
 /* 2c) Folien-Uploads: Ordner, Schreibrechte und Größengrenzen im Klartext.
-      Scheitert ein Upload, liegt es fast immer an einer dieser drei Zeilen. */
+      NUR nötig, wenn die Folien direkt ins Cockpit hochgeladen werden. Ist das
+      Folien-Postfach (content@…) eingerichtet, gehen die Folien per Mail ein -
+      dann ist der Upload-Ordner überflüssig und ein fehlender Ordner kein Fehler,
+      sondern nur ein Hinweis (⚠). */
+$cfgEarly = is_file(__DIR__.'/config.php') ? @include __DIR__.'/config.php' : [];
+$pmEarly  = is_array($cfgEarly) ? ($cfgEarly['ppt_mailbox'] ?? []) : [];
+$useMailbox = !empty($pmEarly['host']) && !empty($pmEarly['user']) && !empty($pmEarly['pass']);
 $upd=__DIR__.'/uploads'; $pptd=$upd.'/ppt';
 if(!is_dir($pptd)) @mkdir($pptd,0775,true);
-row('Upload-Ordner vorhanden (backend/uploads/ppt)', is_dir($pptd),
-    is_dir($pptd)?'':'Konnte nicht angelegt werden - bitte per FTP anlegen: <b>backend/uploads/ppt</b>');
+$dirOk=is_dir($pptd);
+row('Upload-Ordner backend/uploads/ppt'.($useMailbox?' (optional)':''),
+    $dirOk?true:($useMailbox?null:false),
+    $dirOk ? ($useMailbox?'Vorhanden. Nicht zwingend nötig - die Folien kommen über das Postfach.':'')
+           : ($useMailbox
+              ? 'Nicht vorhanden - <b>egal</b>, weil die Folien über das eingerichtete Postfach eingehen. '
+                .'Nur falls jemand doch direkt im Cockpit hochladen soll: per FTP <b>backend/uploads/ppt</b> anlegen.'
+              : 'Konnte nicht angelegt werden - bitte per FTP anlegen: <b>backend/uploads/ppt</b>'));
 // Echter Schreibtest: nur so zeigt sich, ob PHP wirklich hineinschreiben darf
 $wOk=false; $wErr='';
-if(is_dir($pptd)){
+if($dirOk){
   $tf=$pptd.'/.schreibtest-'.substr(md5((string)mt_rand()),0,6);
   $wOk=@file_put_contents($tf,'x')!==false;
   if($wOk) @unlink($tf); else $wErr='PHP darf nicht in den Ordner schreiben.';
 }
-row('Upload-Ordner beschreibbar (Schreibtest)', $wOk,
-    $wOk?'':'<b>'.esc($wErr).'</b> Bitte per FTP die Rechte auf <b>775</b> setzen (Ordner backend/uploads und backend/uploads/ppt).');
+if($dirOk || !$useMailbox){
+  row('Upload-Ordner beschreibbar'.($useMailbox?' (optional)':''),
+      $wOk?true:($useMailbox?null:false),
+      $wOk?'':'<b>'.esc($wErr?:'Ordner fehlt').'</b> '
+          .($useMailbox?'Nur nötig für direkten Upload; die Abgabe läuft über das Postfach.'
+                       :'Bitte per FTP die Rechte auf <b>775</b> setzen (Ordner backend/uploads und backend/uploads/ppt).'));
+}
 // Größengrenzen: der kleinste Wert gewinnt - ein 20-MB-Foliensatz scheitert
 // sonst lautlos, weil PHP die Übertragung komplett verwirft.
 $umf=trim((string)ini_get('upload_max_filesize'));
