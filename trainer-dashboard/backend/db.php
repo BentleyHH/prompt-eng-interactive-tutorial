@@ -349,6 +349,19 @@ function ensure_schema(): void {
   $d->exec("CREATE TABLE IF NOT EXISTS assessment_scores (
     id $pk, assessment_id INT, crit_id INT, score REAL, note VARCHAR(255))$eng");
 
+  // Ausgestellte Zeugnisse und Zertifikate. Der Inhalt wird beim Ausstellen
+  // eingefroren - ein spaeter geaenderter Katalog darf ein Papier nicht
+  // nachtraeglich umschreiben.
+  $d->exec("CREATE TABLE IF NOT EXISTS certificates (
+    id $pk, student_id INT, training_id INT DEFAULT 0, kind VARCHAR(16) DEFAULT 'block',
+    cert_no VARCHAR(40), pct INT DEFAULT 0, result VARCHAR(16) DEFAULT '',
+    student_name VARCHAR(160), student_rank VARCHAR(96), student_unit VARCHAR(160),
+    cohort VARCHAR(96), title VARCHAR(190), snapshot TEXT,
+    issued_at VARCHAR(20), issued_by VARCHAR(160),
+    revoked INT DEFAULT 0, revoked_at VARCHAR(20), revoke_reason VARCHAR(255))$eng");
+  try{ $d->exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_certno ON certificates(cert_no)"); }catch(Throwable $e){}
+  try{ $d->exec("CREATE INDEX IF NOT EXISTS ix_cert_stud ON certificates(student_id)"); }catch(Throwable $e){}
+
   // Schnellzugriff: eine Bewertung je Teilnehmer, Block und Bewerter
   try{ $d->exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_assess ON assessments(student_id,training_id,rater_id)"); }catch(Throwable $e){}
   try{ $d->exec("CREATE INDEX IF NOT EXISTS ix_scores ON assessment_scores(assessment_id)"); }catch(Throwable $e){}

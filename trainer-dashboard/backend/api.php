@@ -906,6 +906,50 @@ switch($action){
 
   /* ---- Bewertungen ---- */
   /* Alle Bewertungen eines Blocks - Grundlage der Erfassungsmaske. */
+  /* ---- Zeugnisse und Zertifikate ---- */
+  case 'cert.state':
+    require_auth();
+    $sid=(int)($in['student']??0);
+    if(!$sid) fail('Teilnehmer fehlt.');
+    out(['ok'=>true]+cert_student_state($sid));
+
+  case 'cert.issue':
+    require_auth();
+    $sid=(int)($in['student']??0);
+    $tgId=(int)($in['training']??0);
+    $kind=($in['kind']??'block')==='programme'?'programme':'block';
+    if(!$sid) fail('Teilnehmer fehlt.');
+    try{ $c=cert_issue($sid,$tgId,$kind,actor_name()); }
+    catch(RuntimeException $e){ fail($e->getMessage()); }
+    audit('cert.issue','student',(string)$sid,$c['no'].' ('.$kind.')');
+    out(['ok'=>true,'cert'=>$c]);
+
+  case 'cert.list':
+    require_auth();
+    $w=[]; $p=[];
+    if(!empty($in['student'])){ $w[]='student_id=?'; $p[]=(int)$in['student']; }
+    if(!empty($in['training'])){ $w[]='training_id=?'; $p[]=(int)$in['training']; }
+    if(empty($in['withRevoked'])) $w[]='revoked=0';
+    $sql="SELECT * FROM certificates".($w?" WHERE ".implode(' AND ',$w):"")." ORDER BY issued_at DESC, id DESC";
+    out(['ok'=>true,'certs'=>array_map(fn($r)=>cert_pub($r),q($sql,$p)->fetchAll())]);
+
+  case 'cert.get':
+    require_auth();
+    out(['ok'=>true,'cert'=>cert_row((int)($in['id']??0))]);
+
+  case 'cert.revoke':
+    require_auth();
+    $cid=(int)($in['id']??0);
+    $r=q("SELECT * FROM certificates WHERE id=?",[$cid])->fetch();
+    if(!$r) fail('Zertifikat nicht gefunden.');
+    q("UPDATE certificates SET revoked=1, revoked_at=?, revoke_reason=? WHERE id=?",
+      [now(),trim((string)($in['reason']??'')),$cid]);
+    if($r['kind']==='block')
+      q("UPDATE assessments SET cert_no='', cert_at='' WHERE student_id=? AND training_id=?",
+        [(int)$r['student_id'],(int)$r['training_id']]);
+    audit('cert.revoke','student',(string)$r['student_id'],$r['cert_no']);
+    out(['ok'=>true]);
+
   /* Gesamtauswertung ueber alle Bloecke - ein Aufruf, alle Ebenen. */
   case 'cert.analytics':
     require_auth();

@@ -90,6 +90,11 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
 - **Zweisprachig (DE/EN)**: Oberfläche per Umschalter (Login + Seitenleiste). Im E-Mail-Composer
   ist die **Sprache der Anfrage separat wählbar** (Standard Englisch) mit eigenen Vorlagen je Sprache —
   d. h. auf Deutsch planen, Anfragen auf Englisch versenden.
+- **Zertifizierung der Teilnehmer**: Kriterienkatalog (Hauptkriterien mit Unterkriterien, beide
+  gewichtet, K.-o.-Kriterien, DE/EN, frei änderbar), Bewertung je Teilnehmer oder je Kriterium,
+  Auswertung auf drei Ebenen (Block, Person, Programm) mit Kompetenzprofil, Verlauf,
+  Kriterienspiegel, Nachschulungsbedarf und Bewerter-Kalibrierung; Zeugnisse und
+  Abschlusszertifikate mit Prüfnummer, öffentlich prüfbar unter `backend/verify.php`.
 - **Vorlagen** bearbeiten & speichern (je Sprache DE/EN)
 - **Import** (angedeutet): Excel/CSV, Angebot-PDF, KI-Extraktion aus Lebensläufen
 
@@ -108,6 +113,7 @@ Rücklauf. Über **◐ Design wechseln** hell/dunkel testen.
 | Kalender-Export | .ics-Download | **.ics + Abo-Link (`ics.php`)** | 2-Wege-Sync (CalDAV) |
 | Wandkalender | Druck (Querformat) | Druck (Querformat) | PDF-Serienexport |
 | Daten | localStorage | **MySQL @ artfiles** | Backups, Rollen |
+| Zertifizierung | - | **Katalog, Bewertung, Auswertung, Zertifikate mit Prüfnummer** | Unterschriftenbild, QR-Code |
 | Login | jeder 6-stellige PIN | **PIN serverseitig geprüft + Rate-Limit** | + Magic-Link, Audit-Log |
 | E-Mail | simuliert | **PHP mail() / SMTP** | Vorlagen-Editor je Kampagne |
 | Verfügbarkeit | Zufalls-Simulation | **Magic-Link ✅/🤔/❌ → DB → Polling** | + KI-Parsing freier Antworten |

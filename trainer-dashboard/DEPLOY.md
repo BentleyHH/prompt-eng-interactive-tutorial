@@ -31,6 +31,7 @@ der Subdomain **`trainer.dvi-systems.com`**, sodass `index.html` direkt unter
   backend/
     api.php  respond.php  db.php  lib.php  mailer.php
     agenda.php  ics.php  cron.php  ai.php  automation.php
+    ppt.php  pptmail.php  verify.php  check.php
     config.php          ← aus config.sample.php erstellen (Schritt 3)
     .htaccess  schema.sql
 ```
@@ -133,6 +134,28 @@ Per Diem, Hinweise und das Programm ein; je Trainer (Status „zugesagt") Flug- 
 der Trainer eine E-Mail mit **Druck-Link** (`backend/agenda.php?token=…`) — die Seite öffnet ohne
 Login und lässt sich direkt ausdrucken. Der Token ist der der jeweiligen Anfrage; nichts weiter zu
 konfigurieren.
+
+## Zertifizierung der Teilnehmer
+Der Bereich **„Zertifizierung"** braucht keine zusätzliche Einrichtung - die Tabellen legt das
+Backend beim ersten Aufruf selbst an und füllt den Kriterienkatalog einmalig mit dem
+DVI-Startkatalog (5 Hauptkriterien, 22 Kriterien, davon 6 K.-o.-Kriterien). Danach ist der
+Katalog frei änderbar; wird ein Kriterium bereits benutzt, archiviert das Cockpit es statt
+es zu löschen, damit ältere Bewertungen lesbar bleiben.
+
+Unter **Katalog → Bewertungsregeln** stellst du Skala, Bestehensgrenze, Auszeichnungsgrenze,
+K.-o.-Schwelle und Mindestanwesenheit ein. Sie gelten für alle Blöcke.
+
+Zeugnisse (je Block) und Abschlusszertifikate (ganzer Lehrgang) bekommen eine fortlaufende
+**Prüfnummer**. Wer sie hat, kann die Echtheit ohne Login bestätigen lassen:
+
+```
+https://trainer.dvi-systems.com/backend/verify.php?nr=ETAF-2026-0001-AB12
+```
+
+Die Seite nennt Name, Umfang, Ergebnis und Ausstellungsdatum - **keine Einzelnoten**. Sie ist
+für Suchmaschinen gesperrt (`noindex`) und bremst Fehlversuche aus. Zurückgezogene Dokumente
+zeigt sie als ungültig an. Der Link steht am Fuß jedes gedruckten Papiers; er richtet sich
+automatisch nach der Adresse, unter der das Cockpit läuft.
 
 ## Visum-Workflow (Abu Dhabi)
 Im Reise-Editor je Trainer trägst du **Reisepass gültig bis** und **Visum-Status**

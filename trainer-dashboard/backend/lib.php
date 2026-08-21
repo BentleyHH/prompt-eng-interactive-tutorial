@@ -1411,15 +1411,162 @@ function cert_calc(array $catalog, array $scores, int $attendance=100): array {
           'attendOk'=>$attendance>=$cfg['attend']];
 }
 
-/** Fortlaufende Zeugnisnummer: ETAF-<Jahr>-<laufend>-<Pruefzeichen>. */
-function cert_number(int $assessmentId): string {
+/**
+ * Fortlaufende Pruefnummer: ETAF-<Jahr>-<laufend>-<Pruefzeichen>.
+ * Das Pruefzeichen erschwert das Erfinden von Nummern. Es ist kein
+ * Sicherheitsmerkmal - die Echtheit bestaetigt allein verify.php.
+ */
+function cert_number(string $seed): string {
   $y=gmdate('Y');
-  $n=(int)q("SELECT COUNT(*) c FROM assessments WHERE cert_no IS NOT NULL AND cert_no<>''")->fetch()['c'] + 1;
-  $base=sprintf('ETAF-%s-%04d',$y,$n);
-  // Pruefzeichen erschwert das Erfinden von Nummern (kein Sicherheitsmerkmal,
-  // die Echtheit bestaetigt die Verifikationsseite)
-  $chk=strtoupper(substr(hash('sha256',$base.'|'.$assessmentId.'|'.(config_get('pin_hash')??'')),0,4));
-  return $base.'-'.$chk;
+  $n=(int)q("SELECT COUNT(*) c FROM certificates")->fetch()['c'] + 1;
+  for($try=0;$try<50;$try++){
+    $base=sprintf('ETAF-%s-%04d',$y,$n+$try);
+    $chk=strtoupper(substr(hash('sha256',$base.'|'.$seed.'|'.(config_get('pin_hash')??'')),0,4));
+    $no=$base.'-'.$chk;
+    if(!q("SELECT id FROM certificates WHERE cert_no=?",[$no])->fetch()) return $no;
+  }
+  return sprintf('ETAF-%s-%s',$y,strtoupper(substr(bin2hex(random_bytes(6)),0,10)));
+}
+
+/**
+ * Stand einer Person: alle Bloecke zusammengefuehrt (mehrere Bewerter je
+ * Block werden auf Kriteriumsebene gemittelt). Grundlage von Zeugnis und
+ * Abschlusszertifikat.
+ */
+function cert_student_state(int $sid): array {
+  $cfg=cert_cfg(); $cat=cert_catalog(true);
+  $tg=[];
+  foreach(q("SELECT id,code,topic,start_date,end_date FROM trainings")->fetchAll() as $r)
+    $tg[(string)$r['id']]=$r;
+  $enrolled=[];
+  foreach(q("SELECT * FROM student_training WHERE student_id=?",[$sid])->fetchAll() as $r)
+    $enrolled[(string)$r['training_id']]=(int)$r['attendance'];
+
+  $rows=q("SELECT * FROM assessments WHERE student_id=?",[$sid])->fetchAll();
+  $ids=array_map(fn($r)=>(int)$r['id'],$rows);
+  $sc=[];
+  if($ids){
+    $ph=implode(',',array_fill(0,count($ids),'?'));
+    foreach(q("SELECT * FROM assessment_scores WHERE assessment_id IN ($ph)",$ids)->fetchAll() as $x)
+      $sc[(string)$x['assessment_id']][(string)$x['crit_id']]=(float)$x['score'];
+  }
+  $merge=[];
+  foreach($rows as $r){
+    $t=(string)$r['training_id'];
+    if(!isset($merge[$t])) $merge[$t]=['sum'=>[],'n'=>[],'final'=>true,'att'=>$enrolled[$t]??100,'raters'=>[]];
+    if($r['status']!=='final') $merge[$t]['final']=false;
+    if($r['rater_name']) $merge[$t]['raters'][]=$r['rater_name'];
+    if((int)$r['attendance']>0) $merge[$t]['att']=(int)$r['attendance'];
+    foreach($sc[(string)$r['id']]??[] as $cid=>$v){
+      $merge[$t]['sum'][$cid]=($merge[$t]['sum'][$cid]??0)+$v;
+      $merge[$t]['n'][$cid]=($merge[$t]['n'][$cid]??0)+1;
+    }
+  }
+  $blocks=[]; $gAcc=[]; $sumPct=0; $nPct=0; $anyFail=false; $allFinal=true;
+  foreach($enrolled as $t=>$att){
+    $m=$merge[$t]??null;
+    $scores=[];
+    if($m) foreach($m['sum'] as $cid=>$v) $scores[$cid]=$v/max(1,$m['n'][$cid]);
+    $calc=cert_calc($cat,$scores,$m?$m['att']:$att);
+    $fin=$m?$m['final']:false;
+    if(!$fin || $calc['rated']===0) $allFinal=false;
+    if($calc['result']==='fail') $anyFail=true;
+    if($calc['rated']>0){ $sumPct+=$calc['pct']; $nPct++;
+      foreach($calc['groups'] as $g){ if($g['avg']===null) continue;
+        $gAcc[$g['id']]=$gAcc[$g['id']]??['name'=>$g['name'],'sum'=>0,'n'=>0];
+        $gAcc[$g['id']]['sum']+=$g['avg']; $gAcc[$g['id']]['n']++; }
+    }
+    $blocks[]=['training'=>(string)$t,
+      'code'=>$tg[$t]['code']??'','topic'=>$tg[$t]['topic']??'',
+      'date'=>$tg[$t]['start_date']??'','end'=>$tg[$t]['end_date']??'',
+      'pct'=>$calc['pct'],'result'=>$calc['result'],'rated'=>$calc['rated'],
+      'total'=>$calc['total'],'attendance'=>$m?$m['att']:$att,'final'=>$fin,
+      'ko'=>$calc['koFail'],'koIds'=>$calc['koIds'],'groups'=>$calc['groups'],
+      'raters'=>array_values(array_unique($m['raters']??[]))];
+  }
+  usort($blocks, fn($a,$b)=>strcmp($a['date'],$b['date']));
+  $groups=[];
+  foreach($gAcc as $gid=>$g)
+    $groups[]=['id'=>(string)$gid,'name'=>$g['name'],'avg'=>round($g['sum']/max(1,$g['n']),2)];
+  $avg=$nPct?(int)round($sumPct/$nPct):0;
+  $result = $nPct===0 ? '' : ($anyFail ? 'fail' : ($avg>=$cfg['merit'] ? 'merit' : 'pass'));
+  return ['blocks'=>$blocks,'groups'=>$groups,'avgPct'=>$avg,'result'=>$result,
+          'blocksRated'=>$nPct,'blocksTotal'=>count($enrolled),
+          'allFinal'=>$allFinal && count($enrolled)>0,'cfg'=>$cfg];
+}
+
+/**
+ * Zeugnis (ein Block) oder Abschlusszertifikat (ganzer Lehrgang) ausstellen.
+ * Der Inhalt wird eingefroren, damit ein spaeter geaenderter Katalog das
+ * ausgestellte Papier nicht rueckwirkend veraendert.
+ */
+function cert_issue(int $sid, int $tgId, string $kind, string $by=''): array {
+  $st=q("SELECT * FROM students WHERE id=?",[$sid])->fetch();
+  if(!$st) throw new RuntimeException('Teilnehmer nicht gefunden.');
+  $state=cert_student_state($sid);
+  $kind = $kind==='programme' ? 'programme' : 'block';
+
+  if($kind==='block'){
+    $b=null; foreach($state['blocks'] as $x) if((string)$x['training']===(string)$tgId) $b=$x;
+    if(!$b) throw new RuntimeException('Fuer diesen Block ist der Teilnehmer nicht eingetragen.');
+    if(!$b['final']) throw new RuntimeException('Die Bewertung ist noch nicht abgeschlossen.');
+    $pct=$b['pct']; $result=$b['result'];
+    $title=trim(($b['code']?$b['code'].' - ':'').$b['topic']);
+    $snap=['block'=>$b,'groups'=>$b['groups'],'cfg'=>$state['cfg']];
+  } else {
+    if(!$state['allFinal']) throw new RuntimeException('Es sind noch nicht alle Bloecke abgeschlossen.');
+    $pct=$state['avgPct']; $result=$state['result'];
+    $title=$st['cohort'] ?: 'DVI-Programm';
+    $snap=['blocks'=>$state['blocks'],'groups'=>$state['groups'],
+           'avgPct'=>$state['avgPct'],'cfg'=>$state['cfg']];
+    $tgId=0;
+  }
+
+  // Ein zweites Papier fuer dieselbe Sache ersetzt das erste.
+  $old=q("SELECT * FROM certificates WHERE student_id=? AND kind=? AND training_id=? AND revoked=0",
+         [$sid,$kind,$tgId])->fetch();
+  if($old) q("UPDATE certificates SET revoked=1, revoked_at=?, revoke_reason=? WHERE id=?",
+             [now(),'Neuausstellung',$old['id']]);
+
+  $no=cert_number($sid.'|'.$tgId.'|'.$kind);
+  q("INSERT INTO certificates(student_id,training_id,kind,cert_no,pct,result,
+       student_name,student_rank,student_unit,cohort,title,snapshot,issued_at,issued_by)
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    [$sid,$tgId,$kind,$no,$pct,$result,$st['name'],$st['rank_title'],$st['unit'],
+     $st['cohort'],$title,json_encode($snap,JSON_UNESCAPED_UNICODE),now(),$by]);
+  $id=(int)db()->lastInsertId();
+  if($kind==='block')
+    q("UPDATE assessments SET cert_no=?, cert_at=? WHERE student_id=? AND training_id=?",
+      [$no,now(),$sid,$tgId]);
+  return cert_row((int)$id);
+}
+
+function cert_row(int $id): array {
+  $r=q("SELECT * FROM certificates WHERE id=?",[$id])->fetch();
+  if(!$r) throw new RuntimeException('Zertifikat nicht gefunden.');
+  return cert_pub($r,true);
+}
+function cert_pub(array $r, bool $full=false): array {
+  $out=['id'=>(string)$r['id'],'no'=>$r['cert_no'],'kind'=>$r['kind'],
+    'student'=>(string)$r['student_id'],'training'=>(string)$r['training_id'],
+    'name'=>$r['student_name'],'rank'=>$r['student_rank'],'unit'=>$r['student_unit'],
+    'cohort'=>$r['cohort'],'title'=>$r['title'],'pct'=>(int)$r['pct'],'result'=>$r['result'],
+    'issuedAt'=>$r['issued_at'],'issuedBy'=>$r['issued_by'],
+    'revoked'=>((int)$r['revoked'])===1,'revokedAt'=>$r['revoked_at'],
+    'revokeReason'=>$r['revoke_reason']];
+  if($full) $out['snapshot']=json_decode((string)$r['snapshot'],true) ?: [];
+  return $out;
+}
+/** Oeffentliche Pruefung - bewusst sparsam: bestaetigt, nennt keine Einzelnoten. */
+function cert_verify(string $no): ?array {
+  $no=strtoupper(trim($no));
+  if($no==='') return null;
+  $r=q("SELECT * FROM certificates WHERE UPPER(cert_no)=?",[$no])->fetch();
+  if(!$r) return null;
+  return ['no'=>$r['cert_no'],'kind'=>$r['kind'],'name'=>$r['student_name'],
+    'rank'=>$r['student_rank'],'unit'=>$r['student_unit'],'cohort'=>$r['cohort'],
+    'title'=>$r['title'],'result'=>$r['result'],'issuedAt'=>$r['issued_at'],
+    'revoked'=>((int)$r['revoked'])===1,'revokedAt'=>$r['revoked_at']];
 }
 
 /**

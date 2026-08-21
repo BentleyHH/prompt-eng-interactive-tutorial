@@ -840,6 +840,49 @@
   .ceprint select,.ceprint button,.ceprint .rpseg,.ceprint .spacer{display:none}
   .ceprint .panel{box-shadow:none;border-color:var(--line)}
   .ceprint td.cehc{cursor:default}
+  /* Zeugnis / Zertifikat - ein Blatt, ruhig gesetzt */
+  .certsheet{max-width:820px;padding:44px 52px}
+  .certtop{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+  .certlogo{font-weight:800;font-size:32px;letter-spacing:-.05em;color:var(--ink);line-height:1}
+  .certlogo span{color:var(--crit)}
+  .certeyebrow{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);display:block}
+  .certno{text-align:right}
+  .certno b{font-family:var(--mono);font-size:14px;letter-spacing:.04em}
+  .certbar{height:3px;background:var(--ink);border-radius:3px;margin:16px 0 26px}
+  .certkind{font-size:12.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--brand);text-align:center}
+  .certlead{text-align:center;color:var(--muted);margin-top:16px;font-size:14px}
+  .certname{text-align:center;font-size:31px;font-weight:750;letter-spacing:-.02em;margin-top:6px}
+  .certsub{text-align:center;color:var(--muted);font-size:13.5px;margin-top:3px}
+  .certlead2{text-align:center;color:var(--muted);margin-top:18px;font-size:14px}
+  .certtitle{text-align:center;font-size:18px;font-weight:700;margin-top:5px;line-height:1.35}
+  .certres{display:flex;justify-content:center;gap:34px;flex-wrap:wrap;margin:26px 0 8px;
+    padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center}
+  .certres b{display:block;font-size:22px;font-weight:750;margin-top:3px}
+  .certres b.good{color:var(--good)} .certres b.bad{color:var(--crit)}
+  .certko{border:1px solid var(--crit);border-left-width:4px;border-radius:9px;
+    background:var(--crit-bg);color:var(--crit);padding:11px 14px;margin:18px 0 4px;font-size:12.5px}
+  .certko b{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .certko div{color:var(--ink);margin-top:3px;line-height:1.5}
+  .certsign{display:flex;gap:44px;margin:38px 0 22px;font-size:12px;color:var(--muted)}
+  .certsign>div{flex:1}
+  .certline{border-top:1px solid var(--ink);margin-bottom:6px;height:34px}
+  .certfoot{border-top:1px solid var(--line);padding-top:12px;font-size:11.5px;
+    color:var(--muted);line-height:1.6}
+  .certfoot b{font-family:var(--mono);font-size:11px;overflow-wrap:anywhere}
+  .certtiny{margin-top:6px;font-size:10.5px;color:var(--faint)}
+  @media(max-width:600px){
+    .certsheet{padding:24px 20px}
+    .certname{font-size:24px} .certsign{gap:20px}
+  }
+  @media print{
+    .certsheet{padding:0;max-width:none;break-after:page;page-break-after:always}
+    .certsheet:last-child{break-after:auto;page-break-after:auto}
+    .certname{font-size:24pt} .certtitle{font-size:13pt}
+    .certres b{font-size:15pt}
+    .certsheet .rptable td,.certsheet .rptable th{padding:3px 6px;font-size:9pt}
+  }
   @media print{
     .ceprint .cehm th.cehc{height:96px}
     .ceprint .panel{break-inside:avoid;page-break-inside:avoid}
@@ -1369,6 +1412,36 @@ function restoreView(){
    ============================================================ */
 const L={
  de:{
+  /* ---- Zertifizierung: Zeugnisse und Zertifikate ---- */
+  ceDocs:"Zeugnisse und Zertifikate",
+  ceDocsHint:"ausgestellt mit Prüfnummer - jederzeit online prüfbar",
+  ceNoDocsYet:"Noch nichts ausgestellt.",
+  ceDocNo:"Prüfnummer", ceDocKind:"Dokument", ceDocIssuedAt:"ausgestellt",
+  ceDocCert:"Zertifikat", ceDocReport:"Zeugnis", ceDocRecord:"Bewertungsnachweis",
+  ceDocIssuer:"European Training and Assessment Facility",
+  ceDocLead:"hiermit wird bescheinigt, dass",
+  ceDocProgLead:"das folgende Programm vollständig durchlaufen hat:",
+  ceDocBlockLead:"den folgenden Trainingsblock durchlaufen hat:",
+  ceDocProgLeadFail:"am folgenden Programm teilgenommen hat:",
+  ceDocWhy:"Grund",
+  ceDocAttLow:(a,m)=>`Mindestanwesenheit nicht erreicht (${a} % statt ${m} %)`,
+  ceDocBlockLeadFail:"am folgenden Trainingsblock teilgenommen hat:",
+  ceDocProfile:"Kompetenzprofil",
+  ceDocSignLead:"Lehrgangsleitung", ceDocSignHead:"Fachliche Leitung",
+  ceDocIssued:d=>`Ausgestellt am ${d}`,
+  ceDocVerify:"Echtheit prüfen",
+  ceDocFoot:"Das Ergebnis beruht auf gewichteten Kriterien mit K.-o.-Regel und Mindestanwesenheit. Der Kriterienstand wurde bei der Ausstellung gesichert.",
+  ceIssueProg:"Abschlusszertifikat", ceDocNeedFinal:"Erst möglich, wenn alle Blöcke abgeschlossen sind.",
+  ceDocOpen:n=>`${n} abgeschlossene Bewertung${n===1?"":"en"} ohne Zeugnis`,
+  ceIssueAsk:k=>`${k} jetzt ausstellen? Der Inhalt wird dabei festgeschrieben.`,
+  ceIssued:no=>`Ausgestellt - Prüfnummer ${no}`,
+  ceRevoke:"Zurückziehen",
+  ceRevokeAsk:"Zurückziehen. Grund (erscheint nicht auf der Prüfseite):",
+  ceRevoked:"Zurückgezogen - die Prüfseite zeigt das Dokument jetzt als ungültig.",
+  ceBatchProg:"Zertifikate drucken", ceBatchBlock:"Zeugnisse drucken",
+  ceDocBatch:"Stapel", ceBatchN:n=>`${n} Dokumente im Stapel`,
+  ceNoDocs:"Dafür ist noch nichts ausgestellt.",
+
   /* ---- Zertifizierung: Auswertung ---- */
   ceEvBlock:"Block", ceEvPerson:"Person", ceEvAll:"Programm",
   ceNoData:"Noch keine Auswertung - sobald die erste Bewertung erfasst ist, steht sie hier.",
@@ -1974,6 +2047,36 @@ const L={
   matSummary:(n,q)=>`${n} Positionen · ${q} Einheiten`, matColHead:"Material", matColQty:"Anzahl", matColUnit:"Einheit"
  },
  en:{
+  /* ---- Certification: reports and certificates ---- */
+  ceDocs:"Reports and certificates",
+  ceDocsHint:"issued with a verification number - checkable online at any time",
+  ceNoDocsYet:"Nothing issued yet.",
+  ceDocNo:"Verification no.", ceDocKind:"Document", ceDocIssuedAt:"issued",
+  ceDocCert:"Certificate", ceDocReport:"Report", ceDocRecord:"Record of assessment",
+  ceDocIssuer:"European Training and Assessment Facility",
+  ceDocLead:"this is to certify that",
+  ceDocProgLead:"has completed the following programme:",
+  ceDocBlockLead:"has completed the following training block:",
+  ceDocProgLeadFail:"has attended the following programme:",
+  ceDocWhy:"Reason",
+  ceDocAttLow:(a,m)=>`Minimum attendance not reached (${a}% instead of ${m}%)`,
+  ceDocBlockLeadFail:"has attended the following training block:",
+  ceDocProfile:"Competence profile",
+  ceDocSignLead:"Course director", ceDocSignHead:"Head of training",
+  ceDocIssued:d=>`Issued on ${d}`,
+  ceDocVerify:"Verify authenticity",
+  ceDocFoot:"The result is based on weighted criteria with a knock-out rule and a minimum attendance requirement. The criteria in force were stored on issue.",
+  ceIssueProg:"Final certificate", ceDocNeedFinal:"Possible once every block has been completed.",
+  ceDocOpen:n=>`${n} completed assessment${n===1?"":"s"} without a report`,
+  ceIssueAsk:k=>`Issue the ${k} now? Its content will be fixed at this point.`,
+  ceIssued:no=>`Issued - verification number ${no}`,
+  ceRevoke:"Revoke",
+  ceRevokeAsk:"Revoke. Reason (not shown on the verification page):",
+  ceRevoked:"Revoked - the verification page now shows the document as invalid.",
+  ceBatchProg:"Print certificates", ceBatchBlock:"Print reports",
+  ceDocBatch:"Batch", ceBatchN:n=>`${n} documents in the batch`,
+  ceNoDocs:"Nothing has been issued for that yet.",
+
   /* ---- Certification: analysis ---- */
   ceEvBlock:"Block", ceEvPerson:"Person", ceEvAll:"Programme",
   ceNoData:"No analysis yet - it appears as soon as the first assessment is recorded.",
@@ -8463,7 +8566,7 @@ async function renderCert(){
   let body="";
   if(certTab==="rate")   body=certRateHtml();
   if(certTab==="people") body=certPeopleHtml();
-  if(certTab==="eval"){  await certAnLoad(); body=certEvalHtml(); }
+  if(certTab==="eval"){  await certAnLoad(); await certDocsLoad(); body=certEvalHtml(); }
   if(certTab==="cat")    body=certCatalogHtml();
   box.innerHTML=head+body;
 }
@@ -9022,6 +9125,9 @@ function certEvalHtml(){
       `<button${m===k?' class="on"':""} onclick="certEvGo('${k}')">${esc(t(l))}</button>`).join("")}</span>`;
   const head=`<div class="panel"><div class="panel-b" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       ${seg}<div class="spacer"></div>
+      ${(certState.evalMode||"block")==="all"?`
+        <button class="btn sm" onclick="certDocBatch('programme')">${ic("cert",14)}${esc(t("ceBatchProg"))}</button>
+        <button class="btn sm" onclick="certDocBatch('block')">${ic("cert",14)}${esc(t("ceBatchBlock"))}</button>`:""}
       <button class="btn sm" onclick="certEvCsv()">${ic("down",14)}${esc(t("ceCsv"))}</button>
       <button class="btn sm" onclick="certEvPrint()">${ic("printer",14)}${esc(t("cePrint"))}</button>
       <button class="btn sm" onclick="certAnLoad(true).then(renderCert)">${ic("sync",14)}</button>
@@ -9264,6 +9370,7 @@ function certEvPersonHtml(){
         ${koGaps.length?`<span class="tag ko">${esc(t("ceKoOpen",koGaps.length))}</span>`:""}</div>
         <div class="panel-b"><div class="rpbars">${gaps.map(bar).join("")||`<div class="empty">${esc(t("ceNoRated"))}</div>`}</div></div></div>
     </div>
+    ${certDocPanel(s)}
     <div class="panel"><div class="panel-h"><h3>${esc(t("ceBlockList"))}</h3></div>
       <div class="panel-b"><table class="rptable"><thead><tr>
         <th>${esc(t("ceBlock"))}</th><th class="num">${esc(t("ceDate"))}</th>
@@ -9511,6 +9618,203 @@ function certEvPrint(){
     ${m==="person"?certEvPersonHtml():m==="all"?certEvAllHtml():certEvBlockHtml()}</div>`;
   setSheetTitle(title);
   $("#repPrint").classList.add("on");
+}
+
+
+/* ============================================================
+   ZEUGNISSE UND ZERTIFIKATE
+   Zwei Papiere: ein Zeugnis je Trainingsblock und ein
+   Abschlusszertifikat ueber den ganzen Lehrgang. Beides bekommt eine
+   Pruefnummer; die Echtheit bestaetigt eine oeffentliche Seite, auf der
+   nur Name, Umfang und Ergebnis stehen - keine Einzelnoten.
+   Der Inhalt wird beim Ausstellen eingefroren.
+   ============================================================ */
+let certDocs=null;
+function certDocsInvalidate(){ certDocs=null; }
+async function certDocsLoad(force){
+  if(certDocs && !force) return certDocs;
+  if(!LIVE) return null;
+  try{ const d=await apiCall("cert.list",{withRevoked:1}); certDocs=d.certs||[]; }
+  catch(e){ certDocs=[]; }
+  return certDocs;
+}
+function certDocsOf(sid){
+  return (certDocs||[]).filter(c=>String(c.student)===String(sid)&&!c.revoked);
+}
+function certDocFor(sid,tgId,kind){
+  return certDocsOf(sid).find(c=>c.kind===kind &&
+    (kind==="programme"||String(c.training)===String(tgId))) || null;
+}
+/* Der Link, der auf dem Papier steht - dieselbe Adresse, unter der das
+   Cockpit laeuft, damit er auch ausgedruckt stimmt. */
+function certVerifyBase(){
+  try{ return new URL((window.ETAF&&ETAF.apiBase||"backend")+"/verify.php",location.href).href; }
+  catch(e){ return "backend/verify.php"; }
+}
+function certVerifyUrl(no){ return certVerifyBase()+"?nr="+encodeURIComponent(no||""); }
+/* Ohne Bestehen ist es kein Zertifikat, sondern ein Nachweis. */
+function certDocTitle(c){
+  return c.result==="fail" ? t("ceDocRecord")
+    : (c.kind==="programme" ? t("ceDocCert") : t("ceDocReport"));
+}
+
+async function certIssue(sid,tgId,kind){
+  const kindLbl=kind==="programme"?t("ceDocCert"):t("ceDocReport");
+  if(!confirm(t("ceIssueAsk",kindLbl))) return;
+  try{
+    const d=await apiCall("cert.issue",{student:sid,training:tgId||0,kind});
+    await certDocsLoad(true);
+    toast(t("ceIssued",d.cert.no),"good");
+    renderCert();
+    certDocPrint(d.cert.id);
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
+async function certRevoke(id){
+  const reason=prompt(t("ceRevokeAsk"),"");
+  if(reason===null) return;
+  try{
+    await apiCall("cert.revoke",{id,reason});
+    await certDocsLoad(true); certAnInvalidate();
+    toast(t("ceRevoked"),"warn"); renderCert();
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
+/* Ein Papier drucken - oder gleich einen ganzen Stapel. */
+async function certDocPrint(id){
+  try{
+    const d=await apiCall("cert.get",{id});
+    setPageOrient("portrait");
+    $("#repPrintBody").innerHTML=certDocHtml(d.cert);
+    setSheetTitle(certDocTitle(d.cert)+" "+d.cert.no);
+    $("#repPrint").classList.add("on");
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
+async function certDocBatch(kind){
+  const list=(certDocs||[]).filter(c=>!c.revoked&&c.kind===kind);
+  if(!list.length){ toast(t("ceNoDocs"),"warn"); return; }
+  const sheets=[];
+  for(const c of list){
+    try{ const d=await apiCall("cert.get",{id:c.id}); sheets.push(certDocHtml(d.cert)); }
+    catch(e){}
+  }
+  if(!sheets.length){ toast(t("ceNoDocs"),"warn"); return; }
+  setPageOrient("portrait");
+  $("#repPrintBody").innerHTML=sheets.join('<div class="dspage"></div>');
+  setSheetTitle(t("ceDocBatch")+" "+(kind==="programme"?t("ceDocCert"):t("ceDocReport")));
+  $("#repPrint").classList.add("on");
+  toast(t("ceBatchN",sheets.length),"good");
+}
+
+/* Das Papier selbst. Bewusst ruhig: Kopf, Anlass, Ergebnis, Profil,
+   Unterschriften, Pruefnummer. */
+function certDocHtml(c){
+  const sn=c.snapshot||{}, cfg=sn.cfg||{scale:5,pass:60,merit:85};
+  const isProg=c.kind==="programme";
+  const groups=(sn.groups||[]).map(g=>{
+    const p=Math.round(g.avg/cfg.scale*100);
+    return `<div class="rprow"><div class="rplbl">${esc(g.name)}</div>
+      <div class="rpbar"><i style="width:${p}%;background:${certPctHue(p)}"></i></div>
+      <div class="rpval">${g.avg.toFixed(1)}</div><div class="rpn">${p}%</div></div>`;
+  }).join("");
+  const blocks=isProg?(sn.blocks||[]):[sn.block].filter(Boolean);
+  const koAll=[];
+  let attLow=null;
+  if(c.result==="fail"){
+    blocks.forEach(b=>(b.ko||[]).forEach(x=>{ if(!koAll.includes(x)) koAll.push(x); }));
+    /* Die Anwesenheit ist ein eigener Grund - sie darf im Nachweis nicht fehlen. */
+    const low=blocks.filter(b=>b.attendance<(cfg.attend||80));
+    if(low.length) attLow=Math.min(...low.map(b=>b.attendance));
+  }
+  const blockRows=blocks.map(b=>`<tr>
+      <td>${esc((b.code?b.code+" - ":"")+(b.topic||""))}</td>
+      <td class="num">${b.date?esc(fmtDate(b.date)):""}</td>
+      <td class="num">${b.attendance}%</td>
+      <td class="num">${b.pct}%</td>
+      <td>${esc(t("ce"+String(b.result||"open").charAt(0).toUpperCase()+String(b.result||"open").slice(1)))}</td>
+    </tr>`).join("");
+  const resLbl=t("ce"+String(c.result||"open").charAt(0).toUpperCase()+String(c.result||"open").slice(1));
+  const url=certVerifyUrl(c.no);
+  return `<div class="cal-sheet certsheet">
+    <div class="certtop">
+      <div><div class="certlogo">ETAF<span>.</span></div>
+        <div class="certeyebrow">${esc(t("ceDocIssuer"))}</div></div>
+      <div class="certno"><div class="certeyebrow">${esc(t("ceDocNo"))}</div>
+        <b>${esc(c.no)}</b></div>
+    </div>
+    <div class="certbar"></div>
+    <div class="certkind">${esc(certDocTitle(c))}</div>
+    <div class="certlead">${esc(t("ceDocLead"))}</div>
+    <div class="certname">${esc(c.name)}</div>
+    <div class="certsub">${esc([c.rank,c.unit].filter(Boolean).join(" · "))}</div>
+    <div class="certlead2">${esc(c.result==="fail"
+      ? (isProg?t("ceDocProgLeadFail"):t("ceDocBlockLeadFail"))
+      : (isProg?t("ceDocProgLead"):t("ceDocBlockLead")))}</div>
+    <div class="certtitle">${esc(c.title||"")}</div>
+    ${c.cohort&&!isProg?`<div class="certsub">${esc(c.cohort)}</div>`:""}
+    <div class="certres">
+      <div><span class="certeyebrow">${esc(t("ceResult"))}</span>
+        <b class="${c.result==="fail"?"bad":"good"}">${esc(resLbl)}</b></div>
+      <div><span class="certeyebrow">${esc(t("ceKpiAvg"))}</span><b>${c.pct}%</b></div>
+      ${isProg?`<div><span class="certeyebrow">${esc(t("ceKpiBlocks"))}</span><b>${blocks.length}</b></div>`:""}
+    </div>
+    ${(koAll.length||attLow!=null)?`<div class="certko"><b>${esc(t("ceDocWhy"))}</b>
+      ${koAll.length?`<div>${esc(t("ceKoFail"))}: ${esc(koAll.join(" · "))}</div>`:""}
+      ${attLow!=null?`<div>${esc(t("ceDocAttLow",attLow,cfg.attend||80))}</div>`:""}</div></div>`:""}
+    ${groups?`<h2 class="ag-h2">${esc(t("ceDocProfile"))}</h2>
+      <div class="rpbars">${groups}</div>`:""}
+    ${blockRows?`<h2 class="ag-h2">${esc(isProg?t("ceBlockList"):t("ceBlock"))}</h2>
+      <table class="rptable"><thead><tr>
+        <th>${esc(t("ceBlock"))}</th><th class="num">${esc(t("ceDate"))}</th>
+        <th class="num">${esc(t("ceAttend"))}</th><th class="num">%</th>
+        <th>${esc(t("ceResult"))}</th></tr></thead><tbody>${blockRows}</tbody></table>`:""}
+    <div class="certsign">
+      <div><div class="certline"></div>${esc(t("ceDocSignLead"))}</div>
+      <div><div class="certline"></div>${esc(t("ceDocSignHead"))}</div>
+    </div>
+    <div class="certfoot">
+      <div>${esc(t("ceDocIssued",fmtDate(String(c.issuedAt||"").slice(0,10))))}${
+        c.issuedBy?" · "+esc(c.issuedBy):""}</div>
+      <div>${esc(t("ceDocVerify"))}: <b>${esc(url)}</b></div>
+      <div class="certtiny">${esc(t("ceDocFoot"))}</div>
+    </div>
+  </div>`;
+}
+
+/* Panel in der Personen-Auswertung: was ist ausgestellt, was fehlt noch. */
+function certDocPanel(s){
+  const docs=certDocsOf(s.id);
+  const prog=docs.find(c=>c.kind==="programme");
+  const rows=docs.map(c=>`<tr>
+      <td class="nr">${esc(c.no)}</td>
+      <td>${esc(certDocTitle(c))}${c.kind==="block"?" · "+esc(c.title||""):""}</td>
+      <td class="num">${esc(fmtDate(String(c.issuedAt||"").slice(0,10)))}</td>
+      <td class="num">${c.pct}%</td>
+      <td>${certResultPill(c.result)}</td>
+      <td class="num" style="white-space:nowrap">
+        <button class="btn sm" onclick="certDocPrint('${c.id}')">${ic("printer",14)}</button>
+        <button class="btn sm" onclick="certRevoke('${c.id}')" title="${esc(t("ceRevoke"))}">${ic("trash",14)}</button>
+      </td></tr>`).join("");
+  const openBlocks=(s.blocks||[]).filter(b=>b.status==="final"&&!certDocFor(s.id,b.training,"block"));
+  const allFinal=(s.blocks||[]).length>0 && (s.blocks||[]).every(b=>b.status==="final"&&b.rated>0);
+  return `<div class="panel"><div class="panel-h" style="flex-wrap:wrap;gap:8px 12px">
+      <h3>${esc(t("ceDocs"))}</h3><span class="meta">${esc(t("ceDocsHint"))}</span>
+      <div class="spacer"></div>
+      ${!prog?`<button class="btn sm${allFinal?" primary":""}" ${allFinal?"":"disabled"}
+        title="${esc(allFinal?"":t("ceDocNeedFinal"))}"
+        onclick="certIssue('${s.id}',0,'programme')">${ic("cert",14)}${esc(t("ceIssueProg"))}</button>`:""}
+    </div>
+    <div class="panel-b">
+      ${rows?`<table class="rptable"><thead><tr>
+        <th>${esc(t("ceDocNo"))}</th><th>${esc(t("ceDocKind"))}</th>
+        <th class="num">${esc(t("ceDocIssuedAt"))}</th><th class="num">%</th>
+        <th>${esc(t("ceResult"))}</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+        :`<div class="empty">${esc(t("ceNoDocsYet"))}</div>`}
+      ${openBlocks.length?`<div class="rpnote soft" style="margin-top:12px">
+        <div class="rowgrow"><b>${esc(t("ceDocOpen",openBlocks.length))}</b>
+        <div style="margin-top:7px;display:flex;gap:7px;flex-wrap:wrap">${openBlocks.map(b=>{
+          const tg=certAnTraining(b.training);
+          return `<button class="btn sm" onclick="certIssue('${s.id}','${b.training}','block')">${
+            ic("cert",14)}${esc((tg&&tg.code)||"?")}</button>`;}).join("")}</div></div></div>`:""}
+    </div></div>`;
 }
 
 function openSheet(){$("#scrim").classList.add("on");$("#sheet").classList.add("on");}
