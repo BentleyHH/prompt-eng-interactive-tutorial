@@ -1512,13 +1512,13 @@ function cert_issue(int $sid, int $tgId, string $kind, string $by=''): array {
     if(!$b['final']) throw new RuntimeException('Die Bewertung ist noch nicht abgeschlossen.');
     $pct=$b['pct']; $result=$b['result'];
     $title=trim(($b['code']?$b['code'].' - ':'').$b['topic']);
-    $snap=['block'=>$b,'groups'=>$b['groups'],'cfg'=>$state['cfg']];
+    $snap=['block'=>$b,'groups'=>$b['groups'],'cfg'=>$state['cfg'],'person'=>cert_person_snap($st)];
   } else {
     if(!$state['allFinal']) throw new RuntimeException('Es sind noch nicht alle Bloecke abgeschlossen.');
     $pct=$state['avgPct']; $result=$state['result'];
     $title=$st['cohort'] ?: 'DVI-Programm';
     $snap=['blocks'=>$state['blocks'],'groups'=>$state['groups'],
-           'avgPct'=>$state['avgPct'],'cfg'=>$state['cfg']];
+           'avgPct'=>$state['avgPct'],'cfg'=>$state['cfg'],'person'=>cert_person_snap($st)];
     $tgId=0;
   }
 
@@ -1541,20 +1541,28 @@ function cert_issue(int $sid, int $tgId, string $kind, string $by=''): array {
   return cert_row((int)$id);
 }
 
+/** Personenangaben, wie sie beim Ausstellen galten. */
+function cert_person_snap(array $st): array {
+  return ['firstName'=>$st['first_name']??'','lastName'=>$st['last_name']??'',
+    'birthDate'=>$st['birth_date']??'','birthPlace'=>$st['birth_place']??'',
+    'nationality'=>$st['nationality']??'','staffNo'=>$st['staff_no']??''];
+}
 function cert_row(int $id): array {
   $r=q("SELECT * FROM certificates WHERE id=?",[$id])->fetch();
   if(!$r) throw new RuntimeException('Zertifikat nicht gefunden.');
   return cert_pub($r,true);
 }
 function cert_pub(array $r, bool $full=false): array {
+  $snap=json_decode((string)$r['snapshot'],true) ?: [];
   $out=['id'=>(string)$r['id'],'no'=>$r['cert_no'],'kind'=>$r['kind'],
     'student'=>(string)$r['student_id'],'training'=>(string)$r['training_id'],
     'name'=>$r['student_name'],'rank'=>$r['student_rank'],'unit'=>$r['student_unit'],
+    'birthDate'=>$snap['person']['birthDate'] ?? '',
     'cohort'=>$r['cohort'],'title'=>$r['title'],'pct'=>(int)$r['pct'],'result'=>$r['result'],
     'issuedAt'=>$r['issued_at'],'issuedBy'=>$r['issued_by'],
     'revoked'=>((int)$r['revoked'])===1,'revokedAt'=>$r['revoked_at'],
     'revokeReason'=>$r['revoke_reason']];
-  if($full) $out['snapshot']=json_decode((string)$r['snapshot'],true) ?: [];
+  if($full) $out['snapshot']=$snap;
   return $out;
 }
 /** Oeffentliche Pruefung - bewusst sparsam: bestaetigt, nennt keine Einzelnoten. */
@@ -1730,4 +1738,371 @@ function cert_analytics(): array {
   return ['ok'=>true,'cfg'=>$cfg,'catalog'=>$catAct,
     'trainings'=>array_values($tg),'students'=>array_values($st),
     'crits'=>$crits,'raters'=>array_values($raters),'totals'=>$tot];
+}
+
+/* ============================================================
+   XLSX LESEN UND SCHREIBEN - ohne zusaetzliche Bibliothek.
+   Eine xlsx-Datei ist ein ZIP mit XML darin. Wir brauchen nur zwei
+   Eintraege: die Zeichenkettentabelle und das erste Arbeitsblatt.
+   ZipArchive ist auf gemieteten Servern nicht immer da, deshalb lesen
+   wir das ZIP notfalls selbst - zlib (gzinflate) genuegt dafuer.
+   ============================================================ */
+
+/** Einen Eintrag aus einem ZIP im Speicher holen. Null, wenn es ihn nicht gibt. */
+function zip_entry(string $bin, string $name): ?string {
+  if(class_exists('ZipArchive') && function_exists('sys_get_temp_dir')){
+    $tmp=tempnam(sys_get_temp_dir(),'xls');
+    if($tmp!==false){
+      file_put_contents($tmp,$bin);
+      $z=new ZipArchive();
+      if($z->open($tmp)===true){
+        $out=$z->getFromName($name);
+        $z->close(); @unlink($tmp);
+        if($out!==false) return $out;
+        return null;
+      }
+      @unlink($tmp);
+    }
+  }
+  // Eigener Weg: zentrales Verzeichnis am Dateiende suchen und rueckwaerts lesen
+  $eocd=strrpos($bin,"PK\x05\x06");
+  if($eocd===false) return null;
+  $cnt=unpack('v',substr($bin,$eocd+10,2))[1];
+  $off=unpack('V',substr($bin,$eocd+16,4))[1];
+  $p=$off;
+  for($i=0;$i<$cnt;$i++){
+    if(substr($bin,$p,4)!=="PK\x01\x02") return null;
+    $h=unpack('vmethod/vmtime/vmdate/Vcrc/Vcsize/Vusize/vnlen/velen/vclen/vdisk/viattr/Vattr/Vlocal',
+              substr($bin,$p+10,36));
+    $nm=substr($bin,$p+46,$h['nlen']);
+    if($nm===$name){
+      $lp=$h['local'];
+      if(substr($bin,$lp,4)!=="PK\x03\x04") return null;
+      $lh=unpack('vnlen/velen',substr($bin,$lp+26,4));
+      $data=substr($bin,$lp+30+$lh['nlen']+$lh['elen'],$h['csize']);
+      if($h['method']===0) return $data;
+      if($h['method']===8){ $out=@gzinflate($data); return $out===false?null:$out; }
+      return null;
+    }
+    $p += 46 + $h['nlen'] + $h['elen'] + $h['clen'];
+  }
+  return null;
+}
+
+/** Spaltenbuchstaben in einen Index umrechnen: A=0, B=1 … AA=26. */
+function xlsx_col(string $ref): int {
+  $n=0;
+  for($i=0;$i<strlen($ref);$i++){
+    $c=ord($ref[$i]);
+    if($c<65||$c>90) break;
+    $n=$n*26+($c-64);
+  }
+  return max(0,$n-1);
+}
+
+/**
+ * Erstes Arbeitsblatt einer xlsx-Datei als Zeilen-/Spaltenraster.
+ * Zahlen kommen als Text zurueck - fuer Stammdaten ist das richtig,
+ * eine Personalnummer ist keine Rechengroesse.
+ */
+function xlsx_rows(string $bin, int $maxRows=5000): array {
+  $sheet = zip_entry($bin,'xl/worksheets/sheet1.xml');
+  if($sheet===null) return [];
+  $shared=[];
+  $ss = zip_entry($bin,'xl/sharedStrings.xml');
+  if($ss!==null && preg_match_all('~<si>(.*?)</si>~s',$ss,$m)){
+    foreach($m[1] as $si){
+      $txt='';
+      if(preg_match_all('~<t[^>]*>(.*?)</t>~s',$si,$tm)) $txt=implode('',$tm[1]);
+      $shared[]=html_entity_decode($txt,ENT_QUOTES|ENT_XML1,'UTF-8');
+    }
+  }
+  $rows=[];
+  if(!preg_match_all('~<row[^>]*>(.*?)</row>~s',$sheet,$rm)) return [];
+  foreach($rm[1] as $ri=>$rowXml){
+    if($ri>=$maxRows) break;
+    $cells=[];
+    if(preg_match_all('~<c([^>]*)/>|<c([^>]*)>(.*?)</c>~s',$rowXml,$cm,PREG_SET_ORDER)){
+      foreach($cm as $c){
+        $attr = $c[1]!=='' ? $c[1] : ($c[2]??'');
+        $body = $c[3]??'';
+        $idx = preg_match('~r="([A-Z]+)~',$attr,$am) ? xlsx_col($am[1]) : count($cells);
+        $type = preg_match('~t="([^"]+)"~',$attr,$tm2) ? $tm2[1] : 'n';
+        $val='';
+        if($type==='inlineStr'){
+          if(preg_match_all('~<t[^>]*>(.*?)</t>~s',$body,$im)) $val=implode('',$im[1]);
+        } elseif(preg_match('~<v>(.*?)</v>~s',$body,$vm)){
+          $val=$vm[1];
+          if($type==='s'){ $val=$shared[(int)$val] ?? ''; }
+        }
+        $cells[$idx]=trim(html_entity_decode((string)$val,ENT_QUOTES|ENT_XML1,'UTF-8'));
+      }
+    }
+    if(!$cells){ $rows[]=[]; continue; }
+    $out=[];
+    for($i=0;$i<=max(array_keys($cells));$i++) $out[]=$cells[$i]??'';
+    $rows[]=$out;
+  }
+  return $rows;
+}
+
+/** Eine xlsx-Datei bauen. $sheets = ['Blattname'=>[[zelle,…],…], …] */
+function xlsx_build(array $sheets, array $colWidths=[]): string {
+  $names=array_keys($sheets);
+  $files=[];
+  $esc=fn($v)=>htmlspecialchars((string)$v,ENT_QUOTES|ENT_XML1,'UTF-8');
+  $files['[Content_Types].xml']=
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    .'<Default Extension="xml" ContentType="application/xml"/>'
+    .'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+    .'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+    .implode('',array_map(fn($i)=>'<Override PartName="/xl/worksheets/sheet'.($i+1).'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>',
+        array_keys($names)))
+    .'</Types>';
+  $files['_rels/.rels']=
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+    .'</Relationships>';
+  $files['xl/workbook.xml']=
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    .'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+    .'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'
+    .implode('',array_map(fn($i)=>'<sheet name="'.$esc($names[$i]).'" sheetId="'.($i+1).'" r:id="rId'.($i+1).'"/>',
+        array_keys($names)))
+    .'</sheets></workbook>';
+  $files['xl/_rels/workbook.xml.rels']=
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    .implode('',array_map(fn($i)=>'<Relationship Id="rId'.($i+1).'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'.($i+1).'.xml"/>',
+        array_keys($names)))
+    .'<Relationship Id="rId'.(count($names)+1).'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+    .'</Relationships>';
+  // Zwei Formate: 0 normal, 1 fett (Kopfzeile), 2 grau kursiv (Hinweis)
+  $files['xl/styles.xml']=
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    .'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    .'<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font>'
+    .'<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
+    .'<font><i/><sz val="10"/><color rgb="FF6E7A82"/><name val="Calibri"/></font></fonts>'
+    .'<fills count="3"><fill><patternFill patternType="none"/></fill>'
+    .'<fill><patternFill patternType="gray125"/></fill>'
+    .'<fill><patternFill patternType="solid"><fgColor rgb="FF3E4852"/><bgColor indexed="64"/></patternFill></fill></fills>'
+    .'<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+    .'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+    .'<cellXfs count="3">'
+    .'<xf numFmtId="49" fontId="0" fillId="0" borderId="0" applyNumberFormat="1"/>'
+    .'<xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyFont="1" applyFill="1"><alignment vertical="center" wrapText="1"/></xf>'
+    .'<xf numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1"><alignment wrapText="1"/></xf>'
+    .'</cellXfs></styleSheet>';
+
+  $i=0;
+  foreach($sheets as $name=>$rows){
+    $i++;
+    $cols='';
+    $w=$colWidths[$name]??[];
+    if($w){
+      $cols='<cols>';
+      foreach($w as $ci=>$width) $cols.='<col min="'.($ci+1).'" max="'.($ci+1).'" width="'.$width.'" customWidth="1" style="0"/>';
+      $cols.='</cols>';
+    }
+    $xml='';
+    foreach($rows as $r=>$row){
+      $cells='';
+      foreach(array_values($row) as $c=>$cell){
+        $style=0; $val=$cell;
+        if(is_array($cell)){ $val=$cell[0]; $style=(int)($cell[1]??0); }
+        if($val==='' && $style===0) continue;
+        $ref=xlsx_ref($c,$r+1);
+        $cells.='<c r="'.$ref.'" s="'.$style.'" t="inlineStr"><is><t xml:space="preserve">'
+               .$esc($val).'</t></is></c>';
+      }
+      $xml.='<row r="'.($r+1).'">'.$cells.'</row>';
+    }
+    $files['xl/worksheets/sheet'.$i.'.xml']=
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      .'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+      .$cols.'<sheetData>'.$xml.'</sheetData></worksheet>';
+  }
+  return zip_build($files);
+}
+/** Zellbezug aus Spalten- und Zeilenindex: 0,1 -> A1 */
+function xlsx_ref(int $col, int $row): string {
+  $s=''; $c=$col+1;
+  while($c>0){ $m=($c-1)%26; $s=chr(65+$m).$s; $c=intdiv($c-1-$m,26); }
+  return $s.$row;
+}
+/** Minimales ZIP (deflate) - genug fuer xlsx. */
+function zip_build(array $files): string {
+  $out=''; $cd=''; $n=0;
+  foreach($files as $name=>$data){
+    $crc=crc32($data);
+    $comp=gzdeflate($data,6);
+    if($comp===false){ $comp=$data; $method=0; } else { $method=8; }
+    $off=strlen($out);
+    $hdr=pack('vvvvvVVVvv',20,0,$method,0,0,$crc,strlen($comp),strlen($data),strlen($name),0);
+    $out.="PK\x03\x04".$hdr.$name.$comp;
+    $cd.="PK\x01\x02".pack('v',20).$hdr.pack('vvvVV',0,0,0,0,$off).$name;
+    $n++;
+  }
+  $out.=$cd;
+  $out.="PK\x05\x06".pack('vvvvVVv',0,0,$n,$n,strlen($cd),strlen($out)-strlen($cd),0);
+  return $out;
+}
+
+/* ============================================================
+   TEILNEHMER-VORLAGE UND IMPORT
+   Die Vorlage geht an den Kunden, ausgefuellt kommt sie zurueck.
+   Damit beides zusammenpasst, stehen Spalten und Bedeutung an
+   einer Stelle: STUD_COLS.
+   ============================================================ */
+
+/** Spalten der Vorlage. Der Import erkennt sie an der Ueberschrift,
+    deutsch oder englisch, in beliebiger Reihenfolge. */
+function stud_cols(): array {
+  return [
+    ['key'=>'last_name',  'de'=>'Nachname',       'en'=>'Last name',      'w'=>20,
+     'hint_de'=>'Pflichtfeld','hint_en'=>'required'],
+    ['key'=>'first_name', 'de'=>'Vorname',        'en'=>'First name',     'w'=>18,
+     'hint_de'=>'Pflichtfeld','hint_en'=>'required'],
+    ['key'=>'birth_date', 'de'=>'Geburtsdatum',   'en'=>'Date of birth',  'w'=>15,
+     'hint_de'=>'JJJJ-MM-TT, z.B. 1988-04-12','hint_en'=>'YYYY-MM-DD, e.g. 1988-04-12'],
+    ['key'=>'birth_place','de'=>'Geburtsort',     'en'=>'Place of birth', 'w'=>18,
+     'hint_de'=>'optional','hint_en'=>'optional'],
+    ['key'=>'gender',     'de'=>'Geschlecht',     'en'=>'Gender',         'w'=>12,
+     'hint_de'=>'m / w / d','hint_en'=>'m / f / d'],
+    ['key'=>'nationality','de'=>'Nationalität',   'en'=>'Nationality',    'w'=>16,
+     'hint_de'=>'optional','hint_en'=>'optional'],
+    ['key'=>'rank_title', 'de'=>'Dienstgrad',     'en'=>'Rank',           'w'=>16,
+     'hint_de'=>'erscheint auf dem Zertifikat','hint_en'=>'appears on the certificate'],
+    ['key'=>'unit',       'de'=>'Einheit',        'en'=>'Unit',           'w'=>22,
+     'hint_de'=>'Abteilung oder Dienststelle','hint_en'=>'department or station'],
+    ['key'=>'staff_no',   'de'=>'Personalnummer', 'en'=>'Staff number',   'w'=>16,
+     'hint_de'=>'als Text, führende Nullen bleiben erhalten','hint_en'=>'as text, leading zeros are kept'],
+    ['key'=>'email',      'de'=>'E-Mail',         'en'=>'E-mail',         'w'=>26,
+     'hint_de'=>'für Rückfragen','hint_en'=>'for queries'],
+    ['key'=>'phone',      'de'=>'Telefon',        'en'=>'Phone',          'w'=>18,
+     'hint_de'=>'optional','hint_en'=>'optional'],
+    ['key'=>'cohort',     'de'=>'Lehrgang',       'en'=>'Course',         'w'=>18,
+     'hint_de'=>'leer lassen, wenn im Cockpit gesetzt','hint_en'=>'leave empty if set in the cockpit'],
+    ['key'=>'note',       'de'=>'Bemerkung',      'en'=>'Note',           'w'=>26,
+     'hint_de'=>'z.B. Vorkenntnisse','hint_en'=>'e.g. prior knowledge'],
+  ];
+}
+
+/** Beispielzeilen - erfundene Personen, damit der Kunde das Format sieht. */
+function stud_examples(): array {
+  return [
+    ['Al Mazrouei','Ahmed','1988-04-12','Abu Dhabi','m','UAE','Captain','Forensic Unit','4412','ahmed.almazrouei@example.ae','+971 50 000 0001','ADP DVI 2026-A','Vorerfahrung Tatortarbeit'],
+    ['Al Suwaidi','Fatima','1991-11-03','Al Ain','w','UAE','Lieutenant','Family Liaison','4418','fatima.alsuwaidi@example.ae','+971 50 000 0002','ADP DVI 2026-A','Arabisch, Englisch'],
+    ['Al Nuaimi','Khalid','1985-02-27','Sharjah','m','UAE','Sergeant','Scene Recovery','04425','khalid.alnuaimi@example.ae','+971 50 000 0003','ADP DVI 2026-A',''],
+    ['Al Ketbi','Mariam','1993-07-19','Abu Dhabi','w','UAE','Lieutenant','Data Management','4431','mariam.alketbi@example.ae','+971 50 000 0004','ADP DVI 2026-A','PlassData geschult'],
+    ['Al Shamsi','Omar','1987-01-08','Dubai','m','UAE','Captain','Mortuary Operations','4437','omar.alshamsi@example.ae','+971 50 000 0005','ADP DVI 2026-A',''],
+  ];
+}
+
+/** Die Vorlage als xlsx: Erfassungsblatt, Beispiel, Hinweise. */
+function stud_template_xlsx(string $lang='de'): string {
+  $de = $lang!=='en';
+  $cols=stud_cols();
+  $head=array_map(fn($c)=>[$de?$c['de']:$c['en'],1],$cols);
+  $w=array_map(fn($c)=>$c['w'],$cols);
+
+  // Blatt 1: nur die Ueberschrift - hier traegt der Kunde ein. Die Spalten
+  // sind als Text formatiert, damit fuehrende Nullen erhalten bleiben.
+  $sheet1=[$head];
+
+  // Blatt 2: Beispiel, klar als solches gekennzeichnet.
+  $note = $de
+    ? 'BEISPIEL - erfundene Personen. Bitte NICHT übernehmen, nur als Muster ansehen.'
+    : 'EXAMPLE - fictitious people. Do NOT copy, look at it as a pattern only.';
+  $sheet2=[[[$note,2]],[],$head];
+  foreach(stud_examples() as $r) $sheet2[]=$r;
+
+  // Blatt 3: Hinweise
+  $t = $de ? [
+    'h'=>'So füllen Sie die Liste aus',
+    'i1'=>'1. Tragen Sie je Zeile eine Person im Blatt „Teilnehmer“ ein - eine Zeile, eine Person.',
+    'i2'=>'2. Nachname und Vorname sind Pflicht. Alles andere hilft uns, ist aber freiwillig.',
+    'i3'=>'3. Die Spalten dürfen Sie umsortieren - wir erkennen sie an der Überschrift. Löschen Sie die Überschriftszeile bitte nicht.',
+    'i4'=>'4. Das Blatt „Beispiel“ dient nur der Anschauung. Es wird beim Einlesen nicht berücksichtigt.',
+    'i5'=>'5. Speichern Sie die Datei als .xlsx und senden Sie sie zurück. Auch .csv (Semikolon) geht.',
+    'i6'=>'6. Die Angaben erscheinen auf Zeugnis und Zertifikat. Bitte in der Schreibweise, die dort stehen soll.',
+    'ch'=>'Spalte','me'=>'Bedeutung',
+    'p'=>'Datenschutz: Wir verarbeiten diese Angaben ausschließlich zur Durchführung und Zertifizierung des Lehrgangs.',
+  ] : [
+    'h'=>'How to fill in this list',
+    'i1'=>'1. Enter one person per row on the "Participants" sheet - one row, one person.',
+    'i2'=>'2. Last name and first name are required. Everything else helps us but is optional.',
+    'i3'=>'3. You may reorder the columns - we recognise them by their heading. Please do not delete the heading row.',
+    'i4'=>'4. The "Example" sheet is for illustration only. It is ignored on import.',
+    'i5'=>'5. Save the file as .xlsx and send it back. A .csv (semicolon separated) also works.',
+    'i6'=>'6. The details appear on the report and the certificate. Please use the spelling that should appear there.',
+    'ch'=>'Column','me'=>'Meaning',
+    'p'=>'Data protection: we process these details solely to run and certify the course.',
+  ];
+  $sheet3=[[[$t['h'],1],['',1]],[]];
+  foreach(['i1','i2','i3','i4','i5','i6'] as $k) $sheet3[]=[$t[$k]];
+  $sheet3[]=[];
+  $sheet3[]=[[$t['ch'],1],[$t['me'],1]];
+  foreach($cols as $c) $sheet3[]=[$de?$c['de']:$c['en'], $de?$c['hint_de']:$c['hint_en']];
+  $sheet3[]=[];
+  $sheet3[]=[[$t['p'],2]];
+
+  $n1 = $de?'Teilnehmer':'Participants';
+  $n2 = $de?'Beispiel':'Example';
+  $n3 = $de?'Hinweise':'Notes';
+  return xlsx_build(
+    [$n1=>$sheet1, $n2=>$sheet2, $n3=>$sheet3],
+    [$n1=>$w, $n2=>$w, $n3=>[46,52]]
+  );
+}
+
+/** Ueberschrift einer Spalte auf einen Feldnamen abbilden. */
+function stud_col_key(string $head): string {
+  $h=mb_strtolower(trim($head),'UTF-8');
+  $h=str_replace(['ä','ö','ü','ß','.','-','_','/','(',')'],['ae','oe','ue','ss','','','','','',''],$h);
+  $h=preg_replace('/\s+/','',$h);
+  static $map=null;
+  if($map===null){
+    $map=[];
+    foreach(stud_cols() as $c){
+      foreach([$c['de'],$c['en']] as $lbl){
+        $k=mb_strtolower($lbl,'UTF-8');
+        $k=str_replace(['ä','ö','ü','ß','.','-','_','/','(',')'],['ae','oe','ue','ss','','','','','',''],$k);
+        $map[preg_replace('/\s+/','',$k)]=$c['key'];
+      }
+    }
+    // haeufige Abweichungen, die Kunden so schreiben
+    $map += [
+      'name'=>'last_name','familienname'=>'last_name','surname'=>'last_name','nachnamefamilienname'=>'last_name',
+      'firstname'=>'first_name','givenname'=>'first_name','vornamen'=>'first_name',
+      'geburtstag'=>'birth_date','dob'=>'birth_date','geb'=>'birth_date','geburtsdatumjjjjmmtt'=>'birth_date',
+      'rang'=>'rank_title','dienstgradrang'=>'rank_title','grade'=>'rank_title',
+      'abteilung'=>'unit','dienststelle'=>'unit','department'=>'unit','einheitabteilung'=>'unit',
+      'personalnr'=>'staff_no','persnr'=>'staff_no','idnr'=>'staff_no','staffno'=>'staff_no','badgenumber'=>'staff_no',
+      'mail'=>'email','emailadresse'=>'email','emailaddress'=>'email',
+      'telefonnummer'=>'phone','mobil'=>'phone','mobile'=>'phone',
+      'kurs'=>'cohort','lehrgangkurs'=>'cohort','course'=>'cohort','kohorte'=>'cohort',
+      'bemerkungen'=>'note','notiz'=>'note','notes'=>'note','remark'=>'note',
+      'staatsangehoerigkeit'=>'nationality','citizenship'=>'nationality',
+      'sex'=>'gender','geschlechtmwd'=>'gender',
+    ];
+  }
+  return $map[$h] ?? '';
+}
+
+/** Datum vereinheitlichen: 12.04.1988, 12/04/1988 und Excel-Tageszahlen. */
+function stud_date(string $v): string {
+  $v=trim($v);
+  if($v==='') return '';
+  if(preg_match('/^(\d{4})-(\d{2})-(\d{2})/',$v,$m)) return $m[1].'-'.$m[2].'-'.$m[3];
+  if(preg_match('~^(\d{1,2})[./](\d{1,2})[./](\d{4})$~',$v,$m))
+    return sprintf('%04d-%02d-%02d',$m[3],$m[2],$m[1]);
+  // Excel zaehlt Tage ab dem 30.12.1899
+  if(ctype_digit($v) && (int)$v>10000 && (int)$v<80000)
+    return gmdate('Y-m-d', ((int)$v - 25569) * 86400);
+  return $v;
 }

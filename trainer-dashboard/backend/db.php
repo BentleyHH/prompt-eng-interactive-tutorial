@@ -221,6 +221,14 @@ function ensure_schema(): void {
     "undo_spec TEXT",           // welche Tabellen/Zeilen betroffen sind
     "undone_at VARCHAR(20)"
   ] as $col){ try{ db()->exec("ALTER TABLE activity ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Teilnehmer-Stammdaten fuer Zertifikate: getrennter Vor- und Nachname,
+  // Geburtsdatum zur Unterscheidung von Namensgleichen, Herkunft und Kontakt.
+  foreach([
+    "first_name VARCHAR(96)","last_name VARCHAR(96)",
+    "birth_date VARCHAR(12)","birth_place VARCHAR(120)",
+    "nationality VARCHAR(64)","gender VARCHAR(12)","phone VARCHAR(64)"
+  ] as $col){ try{ db()->exec("ALTER TABLE students ADD COLUMN $col"); }catch(Throwable $e){} }
+
   // Sitzung kennt den angemeldeten Benutzer
   try{ db()->exec("ALTER TABLE sessions ADD COLUMN user_id INT"); }catch(Throwable $e){}
   // Info-Mail (Digest) je Benutzer: Häufigkeit, Wochentag, gewählte Inhalte

@@ -826,8 +826,11 @@ switch($action){
         'attendance'=>(int)$r['attendance'],'note'=>$r['note']];
     out(['ok'=>true,'students'=>array_map(function($r) use($part){
       return ['id'=>(string)$r['id'],'clientId'=>$r['client_id'],'name'=>$r['name'],
+        'firstName'=>$r['first_name']??'','lastName'=>$r['last_name']??'',
+        'birthDate'=>$r['birth_date']??'','birthPlace'=>$r['birth_place']??'',
+        'gender'=>$r['gender']??'','nationality'=>$r['nationality']??'',
         'rank'=>$r['rank_title'],'unit'=>$r['unit'],'staffNo'=>$r['staff_no'],
-        'email'=>$r['email'],'cohort'=>$r['cohort'],'note'=>$r['note'],
+        'email'=>$r['email'],'phone'=>$r['phone']??'','cohort'=>$r['cohort'],'note'=>$r['note'],
         'active'=>((int)$r['active'])===1,
         'trainings'=>$part[(string)$r['id']]??[]];
     },$rows)]);
@@ -835,14 +838,26 @@ switch($action){
   case 'student.save':
     require_auth();
     $sid=(int)($in['id']??0);
-    $nm=trim((string)($in['name']??'')); if($nm==='') fail('Bitte einen Namen angeben.');
-    $f=[trim((string)($in['clientId']??'')),$nm,trim((string)($in['rank']??'')),
-        trim((string)($in['unit']??'')),trim((string)($in['staffNo']??'')),
-        trim((string)($in['email']??'')),trim((string)($in['cohort']??'')),
+    $first=trim((string)($in['firstName']??''));
+    $last =trim((string)($in['lastName']??''));
+    // Anzeigename: aus Vor- und Nachname, sonst das eingegebene Namensfeld
+    $nm=trim((string)($in['name']??''));
+    if($first!=='' || $last!=='') $nm=trim($first.' '.$last);
+    if($nm==='') fail('Bitte einen Namen angeben.');
+    $f=[trim((string)($in['clientId']??'')),$nm,$first,$last,
+        stud_date((string)($in['birthDate']??'')),trim((string)($in['birthPlace']??'')),
+        trim((string)($in['gender']??'')),trim((string)($in['nationality']??'')),
+        trim((string)($in['rank']??'')),trim((string)($in['unit']??'')),
+        trim((string)($in['staffNo']??'')),trim((string)($in['email']??'')),
+        trim((string)($in['phone']??'')),trim((string)($in['cohort']??'')),
         trim((string)($in['note']??'')), !empty($in['active'])?1:0];
-    if($sid) q("UPDATE students SET client_id=?,name=?,rank_title=?,unit=?,staff_no=?,email=?,cohort=?,note=?,active=? WHERE id=?",array_merge($f,[$sid]));
+    $cols="client_id=?,name=?,first_name=?,last_name=?,birth_date=?,birth_place=?,gender=?,".
+          "nationality=?,rank_title=?,unit=?,staff_no=?,email=?,phone=?,cohort=?,note=?,active=?";
+    if($sid) q("UPDATE students SET $cols WHERE id=?",array_merge($f,[$sid]));
     else {
-      q("INSERT INTO students(client_id,name,rank_title,unit,staff_no,email,cohort,note,active,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",array_merge($f,[now()]));
+      q("INSERT INTO students(client_id,name,first_name,last_name,birth_date,birth_place,gender,
+           nationality,rank_title,unit,staff_no,email,phone,cohort,note,active,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",array_merge($f,[now()]));
       $sid=(int)db()->lastInsertId();
     }
     audit('student.save','student',(string)$sid,$nm);
@@ -861,32 +876,86 @@ switch($action){
 
   /* Sammelanlage: eine Zeile je Teilnehmer, Felder mit Semikolon oder Tab.
      Reihenfolge: Name; Dienstgrad; Einheit; Personalnummer; E-Mail */
+  /* Liste einlesen: eingefuegter Text oder hochgeladene xlsx/csv.
+     Erkannt wird an der Ueberschrift, die Reihenfolge der Spalten ist egal. */
   case 'students.import':
     require_auth();
-    $txt=(string)($in['text']??'');
     $cohort=trim((string)($in['cohort']??''));
     $client=trim((string)($in['clientId']??''));
     $tgId=(int)($in['training']??0);
-    $n=0; $skip=0;
-    foreach(preg_split('/\r?\n/',$txt) as $line){
-      $line=trim($line); if($line==='') continue;
-      $p=preg_split('/\s*[;\t]\s*/',$line);
-      $nm=trim((string)($p[0]??'')); if($nm==='' ){ $skip++; continue; }
-      // Doppelte vermeiden: gleicher Name in derselben Kohorte
-      $ex=q("SELECT id FROM students WHERE name=? AND COALESCE(cohort,'')=?",[$nm,$cohort])->fetch();
+
+    $rows=[];
+    if(!empty($in['file'])){
+      $bin=base64_decode(preg_replace('~^data:[^,]*,~','',(string)$in['file']), true);
+      if($bin===false||$bin==='') fail('Die Datei konnte nicht gelesen werden.');
+      if(strlen($bin)>8*1024*1024) fail('Die Datei ist zu gross (mehr als 8 MB).');
+      if(substr($bin,0,2)==="PK"){
+        $rows=xlsx_rows($bin);
+        if(!$rows) fail('In der Excel-Datei war kein lesbares Tabellenblatt. Bitte als .xlsx speichern oder als CSV senden.');
+      } else {
+        // CSV: Zeichensatz und Trennzeichen erraten
+        if(substr($bin,0,3)==="\xEF\xBB\xBF") $bin=substr($bin,3);
+        if(!preg_match('//u',$bin)) $bin=mb_convert_encoding($bin,'UTF-8','Windows-1252');
+        $first=strtok($bin,"\n");
+        $sep = substr_count($first,';')>=substr_count($first,',') ? ';' : ',';
+        foreach(preg_split('/\r?\n/',$bin) as $line){
+          if(trim($line)==='') continue;
+          $rows[]=array_map(fn($x)=>trim($x,"\" \t"),str_getcsv($line,$sep,'"'));
+        }
+      }
+    } else {
+      foreach(preg_split('/\r?\n/',(string)($in['text']??'')) as $line){
+        if(trim($line)==='') continue;
+        $rows[]=preg_split('/\s*[;\t]\s*/',trim($line));
+      }
+    }
+    if(!$rows) fail('Es war nichts zu lesen.');
+
+    /* Kopfzeile suchen: die erste Zeile, in der mindestens zwei Spalten
+       als Ueberschrift erkannt werden. Fehlt sie, gilt die alte
+       Reihenfolge Name; Dienstgrad; Einheit; Personalnummer; E-Mail. */
+    $map=null; $start=0;
+    foreach($rows as $ri=>$r){
+      if($ri>4) break;
+      $m=[]; foreach($r as $ci=>$h){ $k=stud_col_key((string)$h); if($k) $m[$ci]=$k; }
+      if(count(array_unique($m))>=2){ $map=$m; $start=$ri+1; break; }
+    }
+    if($map===null){
+      $map=[0=>'last_name',1=>'rank_title',2=>'unit',3=>'staff_no',4=>'email'];
+      $start=0;
+    }
+
+    $n=0; $skip=0; $bad=0;
+    for($ri=$start; $ri<count($rows); $ri++){
+      $r=$rows[$ri];
+      $f=['last_name'=>'','first_name'=>'','birth_date'=>'','birth_place'=>'','gender'=>'',
+          'nationality'=>'','rank_title'=>'','unit'=>'','staff_no'=>'','email'=>'',
+          'phone'=>'','cohort'=>'','note'=>''];
+      foreach($map as $ci=>$key) if(isset($r[$ci])) $f[$key]=trim((string)$r[$ci]);
+      if(implode('',$f)==='') continue;
+      // Wer aus Versehen die Kopfzeile doppelt einfuegt, soll keine Person "Nachname" bekommen
+      if(stud_col_key($f['last_name'])==='last_name'){ continue; }
+      $name=trim($f['first_name'].' '.$f['last_name']);
+      if($name===''){ $bad++; continue; }
+      $f['birth_date']=stud_date($f['birth_date']);
+      $coh = $f['cohort']!=='' ? $f['cohort'] : $cohort;
+
+      $ex=q("SELECT id FROM students WHERE name=? AND COALESCE(cohort,'')=?",[$name,$coh])->fetch();
       if($ex){ $sid=(int)$ex['id']; $skip++; }
       else{
-        q("INSERT INTO students(client_id,name,rank_title,unit,staff_no,email,cohort,active,created_at)
-           VALUES(?,?,?,?,?,?,?,1,?)",
-          [$client,$nm,trim((string)($p[1]??'')),trim((string)($p[2]??'')),
-           trim((string)($p[3]??'')),trim((string)($p[4]??'')),$cohort,now()]);
+        q("INSERT INTO students(client_id,name,first_name,last_name,birth_date,birth_place,
+             gender,nationality,rank_title,unit,staff_no,email,phone,cohort,note,active,created_at)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?)",
+          [$client,$name,$f['first_name'],$f['last_name'],$f['birth_date'],$f['birth_place'],
+           $f['gender'],$f['nationality'],$f['rank_title'],$f['unit'],$f['staff_no'],
+           $f['email'],$f['phone'],$coh,$f['note'],now()]);
         $sid=(int)db()->lastInsertId(); $n++;
       }
       if($tgId && !q("SELECT id FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId])->fetch())
         q("INSERT INTO student_training(student_id,training_id,attendance,created_at) VALUES(?,?,100,?)",[$sid,$tgId,now()]);
     }
-    audit('students.import','student','',$n.' Teilnehmer übernommen');
-    out(['ok'=>true,'added'=>$n,'skipped'=>$skip]);
+    audit('students.import','student','',$n.' Teilnehmer uebernommen');
+    out(['ok'=>true,'added'=>$n,'skipped'=>$skip,'bad'=>$bad,'cols'=>count(array_unique($map))]);
 
   /* Teilnahme an einem Block setzen/entfernen */
   case 'student.part':
