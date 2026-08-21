@@ -196,6 +196,22 @@ mit ankreuzt. Trainings, Trainer, Wochenplaene und Folien sind nicht betroffen.
 Der Vorgang laesst sich nicht rueckgaengig machen, verlangt deshalb das getippte
 Wort RESET und landet im Protokoll.
 
+### Zellen, Gruppen und Einzelboegen
+Jeder Teilnehmer kann einer **Zelle/Team** (z.B. „Zelle 1" bis „Zelle 8") und einer
+**Gruppe** (z.B. „Teilnehmer" oder „Train-the-Trainer") zugeordnet werden - per
+Excel-Spalte beim Import oder einzeln im Stammdatenblatt. Oben in der Auswertung
+laesst sich der Blick auf eine Gruppe oder Zelle eingrenzen; alle Kennzahlen,
+Ranglisten und die Zwischenbilanz rechnen dann nur diese Menge. Die Programmansicht
+zeigt zusaetzlich **„Zellen im Vergleich"** und **„Gruppen im Vergleich"**: Staerke,
+Bestehensquote und das schwaechste Hauptkriterium je Menge; ein Klick auf die Zeile
+setzt den Filter.
+
+In der Zwischenbilanz erzeugt **„Einzelboegen"** eine Druckseite je Teilnehmer fuer
+den gewaehlten Zeitraum: Einordnung (Ampel), Platz in der Gruppe, Anwesenheit,
+Kompetenzprofil gegen den Gruppenschnitt, Staerken, Luecken, alle Bloecke des
+Zeitraums und eine Empfehlung im Klartext. Ueber den Druckdialog des Browsers laesst
+sich der Stapel als **PDF** speichern - eine Datei, eine Seite je Person.
+
 ### Zwischenbilanz fuer den Kunden
 **Zertifizierung -> Auswertung -> Zwischenbilanz** schneidet alle Zahlen nach
 Zeitraum: Monat, Quartal, Halbjahr, Jahr, Gesamt oder frei gewaehlt, mit Pfeilen

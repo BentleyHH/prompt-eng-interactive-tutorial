@@ -1607,6 +1607,7 @@ function cert_analytics(): array {
   foreach(q("SELECT * FROM students ORDER BY name")->fetchAll() as $r)
     $st[(string)$r['id']]=['id'=>(string)$r['id'],'name'=>$r['name'],'rank'=>$r['rank_title'],
       'unit'=>$r['unit'],'cohort'=>$r['cohort'],'staffNo'=>$r['staff_no'],'email'=>$r['email'],
+      'team'=>$r['team']??'','track'=>$r['track']??'',
       'active'=>((int)$r['active'])===1,'blocks'=>[],'avgPct'=>null,'groups'=>[],'crits'=>[],
       'pass'=>0,'merit'=>0,'fail'=>0,'open'=>0,'final'=>0];
 
@@ -2033,6 +2034,10 @@ function stud_cols(): array {
      'hint_de'=>'erscheint auf dem Zertifikat','hint_en'=>'appears on the certificate'],
     ['key'=>'unit',       'de'=>'Einheit',        'en'=>'Unit',           'w'=>22,
      'hint_de'=>'Abteilung oder Dienststelle','hint_en'=>'department or station'],
+    ['key'=>'team',       'de'=>'Zelle/Team',     'en'=>'Cell/Team',      'w'=>13,
+     'hint_de'=>'z.B. Zelle 1 - kann auch später im Cockpit gesetzt werden','hint_en'=>'e.g. Cell 1 - can also be set later in the cockpit'],
+    ['key'=>'track',      'de'=>'Gruppe',         'en'=>'Group',          'w'=>17,
+     'hint_de'=>'z.B. Teilnehmer oder Train-the-Trainer','hint_en'=>'e.g. Participant or Train-the-Trainer'],
     ['key'=>'staff_no',   'de'=>'Personalnummer', 'en'=>'Staff number',   'w'=>16,
      'hint_de'=>'als Text, führende Nullen bleiben erhalten','hint_en'=>'as text, leading zeros are kept'],
     ['key'=>'email',      'de'=>'E-Mail',         'en'=>'E-mail',         'w'=>26,
@@ -2055,26 +2060,26 @@ function stud_cols(): array {
  */
 function stud_examples(): array {
   return [
-    ['Al Mazrouei','Ahmed','1988-04-12','Abu Dhabi','m','UAE','Captain','Forensic Unit','4401','ahmed.almazrouei@example.ae','+971 50 000 0001','',''],
-    ['Al Suwaidi','Fatima','1991-11-03','Al Ain','w','UAE','Lieutenant','Family Liaison','4402','fatima.alsuwaidi@example.ae','+971 50 000 0002','','Arabisch, Englisch'],
-    ['Al Nuaimi','Khalid','1985-02-27','Sharjah','m','UAE','Sergeant','Scene Recovery','04403','khalid.alnuaimi@example.ae','+971 50 000 0003','',''],
-    ['Al Ketbi','Mariam','1993-07-19','Abu Dhabi','w','UAE','Lieutenant','Data Management','4404','mariam.alketbi@example.ae','+971 50 000 0004','','PlassData geschult'],
-    ['Al Shamsi','Omar','1987-01-08','Dubai','m','UAE','Captain','Mortuary Operations','4405','omar.alshamsi@example.ae','+971 50 000 0005','',''],
-    ['Al Marri','Yousef','1982-03-07','Abu Dhabi','m','UAE','Major','Identification Board','4406','yousef.almarri@example.ae','+971 50 000 0006','',''],
-    ['Al Blooshi','Noura','1990-12-01','Abu Dhabi','w','UAE','Captain','Ante Mortem','4407','noura.alblooshi@example.ae','+971 50 000 0007','',''],
-    ['Al Hosani','Saeed','1986-09-22','Al Ain','m','UAE','Sergeant','Scene Recovery','4408','saeed.alhosani@example.ae','+971 50 000 0008','',''],
-    ['Al Zaabi','Layla','1992-08-14','Dubai','w','UAE','Captain','Ante Mortem','4409','layla.alzaabi@example.ae','+971 50 000 0009','',''],
-    ['Al Rashid','Hassan','1989-05-05','Abu Dhabi','m','UAE','Major','CID','4410','hassan.alrashid@example.ae','+971 50 000 0010','',''],
-    ['Al Dhaheri','Aisha','1994-02-17','Abu Dhabi','w','UAE','Lieutenant','Post Mortem','4411','aisha.aldhaheri@example.ae','+971 50 000 0011','',''],
-    ['Al Kaabi','Salem','1983-10-30','Fujairah','m','UAE','Major','Logistics','4412','salem.alkaabi@example.ae','+971 50 000 0012','',''],
-    ['Al Mansoori','Hessa','1995-06-09','Abu Dhabi','w','UAE','Sergeant','Data Management','4413','hessa.almansoori@example.ae','+971 50 000 0013','',''],
-    ['Al Ameri','Rashid','1984-04-21','Al Ain','m','UAE','Captain','Scene Management','4414','rashid.alameri@example.ae','+971 50 000 0014','',''],
-    ['Al Falasi','Maitha','1990-01-25','Dubai','w','UAE','Lieutenant','Family Liaison','4415','maitha.alfalasi@example.ae','+971 50 000 0015','',''],
-    ['Al Habsi','Sultan','1988-07-13','Abu Dhabi','m','UAE','Sergeant','Mortuary Operations','4416','sultan.alhabsi@example.ae','+971 50 000 0016','',''],
-    ['Al Qubaisi','Salama','1992-11-28','Abu Dhabi','w','UAE','Captain','Quality Control','4417','salama.alqubaisi@example.ae','+971 50 000 0017','',''],
-    ['Al Muhairi','Tariq','1986-03-16','Sharjah','m','UAE','Lieutenant','Reconciliation','4418','tariq.almuhairi@example.ae','+971 50 000 0018','',''],
-    ['Al Romaithi','Shamma','1993-09-04','Abu Dhabi','w','UAE','Sergeant','Ante Mortem','4419','shamma.alromaithi@example.ae','+971 50 000 0019','',''],
-    ['Al Hammadi','Majid','1981-12-19','Ras Al Khaimah','m','UAE','Major','Command & Control','4420','majid.alhammadi@example.ae','+971 50 000 0020','',''],
+    ['Al Mazrouei','Ahmed','1988-04-12','Abu Dhabi','m','UAE','Captain','Forensic Unit','Zelle 1','Teilnehmer','4401','ahmed.almazrouei@example.ae','+971 50 000 0001','',''],
+    ['Al Suwaidi','Fatima','1991-11-03','Al Ain','w','UAE','Lieutenant','Family Liaison','Zelle 1','Teilnehmer','4402','fatima.alsuwaidi@example.ae','+971 50 000 0002','','Arabisch, Englisch'],
+    ['Al Nuaimi','Khalid','1985-02-27','Sharjah','m','UAE','Sergeant','Scene Recovery','Zelle 1','Teilnehmer','04403','khalid.alnuaimi@example.ae','+971 50 000 0003','',''],
+    ['Al Ketbi','Mariam','1993-07-19','Abu Dhabi','w','UAE','Lieutenant','Data Management','Zelle 1','Teilnehmer','4404','mariam.alketbi@example.ae','+971 50 000 0004','','PlassData geschult'],
+    ['Al Shamsi','Omar','1987-01-08','Dubai','m','UAE','Captain','Mortuary Operations','Zelle 1','Teilnehmer','4405','omar.alshamsi@example.ae','+971 50 000 0005','',''],
+    ['Al Marri','Yousef','1982-03-07','Abu Dhabi','m','UAE','Major','Identification Board','Zelle 2','Teilnehmer','4406','yousef.almarri@example.ae','+971 50 000 0006','',''],
+    ['Al Blooshi','Noura','1990-12-01','Abu Dhabi','w','UAE','Captain','Ante Mortem','Zelle 2','Teilnehmer','4407','noura.alblooshi@example.ae','+971 50 000 0007','',''],
+    ['Al Hosani','Saeed','1986-09-22','Al Ain','m','UAE','Sergeant','Scene Recovery','Zelle 2','Teilnehmer','4408','saeed.alhosani@example.ae','+971 50 000 0008','',''],
+    ['Al Zaabi','Layla','1992-08-14','Dubai','w','UAE','Captain','Ante Mortem','Zelle 2','Teilnehmer','4409','layla.alzaabi@example.ae','+971 50 000 0009','',''],
+    ['Al Rashid','Hassan','1989-05-05','Abu Dhabi','m','UAE','Major','CID','Zelle 2','Teilnehmer','4410','hassan.alrashid@example.ae','+971 50 000 0010','',''],
+    ['Al Dhaheri','Aisha','1994-02-17','Abu Dhabi','w','UAE','Lieutenant','Post Mortem','Zelle 3','Teilnehmer','4411','aisha.aldhaheri@example.ae','+971 50 000 0011','',''],
+    ['Al Kaabi','Salem','1983-10-30','Fujairah','m','UAE','Major','Logistics','Zelle 3','Teilnehmer','4412','salem.alkaabi@example.ae','+971 50 000 0012','',''],
+    ['Al Mansoori','Hessa','1995-06-09','Abu Dhabi','w','UAE','Sergeant','Data Management','Zelle 3','Teilnehmer','4413','hessa.almansoori@example.ae','+971 50 000 0013','',''],
+    ['Al Ameri','Rashid','1984-04-21','Al Ain','m','UAE','Captain','Scene Management','Zelle 3','Teilnehmer','4414','rashid.alameri@example.ae','+971 50 000 0014','',''],
+    ['Al Falasi','Maitha','1990-01-25','Dubai','w','UAE','Lieutenant','Family Liaison','Zelle 3','Teilnehmer','4415','maitha.alfalasi@example.ae','+971 50 000 0015','',''],
+    ['Al Habsi','Sultan','1988-07-13','Abu Dhabi','m','UAE','Sergeant','Mortuary Operations','','Train-the-Trainer','4416','sultan.alhabsi@example.ae','+971 50 000 0016','',''],
+    ['Al Qubaisi','Salama','1992-11-28','Abu Dhabi','w','UAE','Captain','Quality Control','','Train-the-Trainer','4417','salama.alqubaisi@example.ae','+971 50 000 0017','',''],
+    ['Al Muhairi','Tariq','1986-03-16','Sharjah','m','UAE','Lieutenant','Reconciliation','','Train-the-Trainer','4418','tariq.almuhairi@example.ae','+971 50 000 0018','',''],
+    ['Al Romaithi','Shamma','1993-09-04','Abu Dhabi','w','UAE','Sergeant','Ante Mortem','','Train-the-Trainer','4419','shamma.alromaithi@example.ae','+971 50 000 0019','',''],
+    ['Al Hammadi','Majid','1981-12-19','Ras Al Khaimah','m','UAE','Major','Command & Control','','Train-the-Trainer','4420','majid.alhammadi@example.ae','+971 50 000 0020','',''],
   ];
 }
 
@@ -2155,6 +2160,8 @@ function stud_col_key(string $head): string {
       'kurs'=>'cohort','lehrgangkurs'=>'cohort','course'=>'cohort','kohorte'=>'cohort',
       'bemerkungen'=>'note','notiz'=>'note','notes'=>'note','remark'=>'note',
       'staatsangehoerigkeit'=>'nationality','citizenship'=>'nationality',
+      'zelle'=>'team','team'=>'team','cell'=>'team','zelleteam'=>'team','zellenr'=>'team',
+      'gruppe'=>'track','track'=>'track','programm'=>'track','ttt'=>'track','ausbildungsgang'=>'track',
       'sex'=>'gender','geschlechtmwd'=>'gender',
     ];
   }
@@ -2324,7 +2331,7 @@ function stud_rows_to_people(array $rows, array $map, int $start): array {
     if(!is_array($r)) continue;
     $f=['last_name'=>'','first_name'=>'','birth_date'=>'','birth_place'=>'','gender'=>'',
         'nationality'=>'','rank_title'=>'','unit'=>'','staff_no'=>'','email'=>'',
-        'phone'=>'','cohort'=>'','note'=>''];
+        'phone'=>'','cohort'=>'','note'=>'','team'=>'','track'=>''];
     foreach($map as $ci=>$key) if(isset($r[$ci])) $f[$key]=trim((string)$r[$ci]);
     if(implode('',$f)==='') continue;
     // Eine zweite Kopfzeile (kopierter Block) ist keine Person

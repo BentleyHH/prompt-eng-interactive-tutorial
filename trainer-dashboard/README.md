@@ -98,7 +98,9 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
   Jede Kennzahl ist anklickbar und führt dorthin, wo sie herkommt. **Zwischenbilanz**
   je Monat, Quartal, Halbjahr, Jahr oder freiem Zeitraum, mit Vergleich zum Zeitraum
   davor und einer Ampel je Teilnehmer. **Excel-Vorlage** für die Teilnehmerdaten des
-  Kunden (mit Beispiel- und Hinweisblatt) samt Import der ausgefüllten Datei.
+  Kunden samt Import der ausgefüllten Datei. **Zellen/Teams und Gruppen** (z.B.
+  Train-the-Trainer) als Filter- und Vergleichsdimension; **Einzelbögen** - eine
+  Druckseite je Teilnehmer mit Platz, Profil gegen den Gruppenschnitt und Empfehlung.
 - **Vorlagen** bearbeiten & speichern (je Sprache DE/EN)
 - **Import** (angedeutet): Excel/CSV, Angebot-PDF, KI-Extraktion aus Lebensläufen
 

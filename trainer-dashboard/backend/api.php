@@ -831,6 +831,7 @@ switch($action){
         'gender'=>$r['gender']??'','nationality'=>$r['nationality']??'',
         'rank'=>$r['rank_title'],'unit'=>$r['unit'],'staffNo'=>$r['staff_no'],
         'email'=>$r['email'],'phone'=>$r['phone']??'','cohort'=>$r['cohort'],'note'=>$r['note'],
+        'team'=>$r['team']??'','track'=>$r['track']??'',
         'active'=>((int)$r['active'])===1,
         'trainings'=>$part[(string)$r['id']]??[]];
     },$rows)]);
@@ -850,14 +851,16 @@ switch($action){
         trim((string)($in['rank']??'')),trim((string)($in['unit']??'')),
         trim((string)($in['staffNo']??'')),trim((string)($in['email']??'')),
         trim((string)($in['phone']??'')),trim((string)($in['cohort']??'')),
-        trim((string)($in['note']??'')), !empty($in['active'])?1:0];
+        trim((string)($in['note']??'')),
+        trim((string)($in['team']??'')),trim((string)($in['track']??'')),
+        !empty($in['active'])?1:0];
     $cols="client_id=?,name=?,first_name=?,last_name=?,birth_date=?,birth_place=?,gender=?,".
-          "nationality=?,rank_title=?,unit=?,staff_no=?,email=?,phone=?,cohort=?,note=?,active=?";
+          "nationality=?,rank_title=?,unit=?,staff_no=?,email=?,phone=?,cohort=?,note=?,team=?,track=?,active=?";
     if($sid) q("UPDATE students SET $cols WHERE id=?",array_merge($f,[$sid]));
     else {
       q("INSERT INTO students(client_id,name,first_name,last_name,birth_date,birth_place,gender,
-           nationality,rank_title,unit,staff_no,email,phone,cohort,note,active,created_at)
-         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",array_merge($f,[now()]));
+           nationality,rank_title,unit,staff_no,email,phone,cohort,note,team,track,active,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",array_merge($f,[now()]));
       $sid=(int)db()->lastInsertId();
     }
     audit('student.save','student',(string)$sid,$nm);
@@ -937,11 +940,11 @@ switch($action){
       if($ex){ $sid=(int)$ex['id']; $skip++; }
       else{
         q("INSERT INTO students(client_id,name,first_name,last_name,birth_date,birth_place,
-             gender,nationality,rank_title,unit,staff_no,email,phone,cohort,note,active,created_at)
-           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?)",
+             gender,nationality,rank_title,unit,staff_no,email,phone,cohort,note,team,track,active,created_at)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?)",
           [$client,$name,$f['first_name'],$f['last_name'],$f['birth_date'],$f['birth_place'],
            $f['gender'],$f['nationality'],$f['rank_title'],$f['unit'],$f['staff_no'],
-           $f['email'],$f['phone'],$coh,$f['note'],now()]);
+           $f['email'],$f['phone'],$coh,$f['note'],$f['team']??'',$f['track']??'',now()]);
         $sid=(int)db()->lastInsertId(); $n++;
       }
       foreach($tgIds as $tgId){
