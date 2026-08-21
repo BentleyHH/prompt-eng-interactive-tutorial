@@ -8,6 +8,12 @@ function out($data, int $code=200): void {
   if(!isset($data['ok']) || $data['ok']!==false) { try{ undo_commit(); }catch(Throwable $e){} }
   http_response_code($code);
   header('Content-Type: application/json; charset=utf-8');
+  // Schutz-Header: keine fremde Einbettung, kein MIME-Raten, keine Weitergabe
+  // der URL an Fremdseiten, nichts fuer Suchmaschinen.
+  header('X-Content-Type-Options: nosniff');
+  header('X-Frame-Options: DENY');
+  header('Referrer-Policy: same-origin');
+  header('X-Robots-Tag: noindex, nofollow');
   echo json_encode($data, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
   exit;
 }

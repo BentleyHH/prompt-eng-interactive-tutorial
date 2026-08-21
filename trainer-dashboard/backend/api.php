@@ -24,7 +24,12 @@ if($origin!==''){
 if(($_SERVER['REQUEST_METHOD']??'')==='OPTIONS') { http_response_code(204); exit; }
 
 try { ensure_schema(); }
-catch(Throwable $e){ fail('DB-Fehler: '.$e->getMessage(),500); }
+catch(Throwable $e){
+  // Interne Fehlertexte nie an den Client - sie koennen Tabellennamen,
+  // Pfade oder Zugangsdetails enthalten. Der Serverbetreiber sieht sie im Log.
+  error_log('ETAF ensure_schema: '.$e->getMessage());
+  fail('Die Datenbank ist zurzeit nicht erreichbar. Bitte spaeter erneut versuchen.',500);
+}
 
 $action = $_GET['action'] ?? '';
 $in = body();
@@ -1098,6 +1103,9 @@ switch($action){
     require_auth();
     $sid=(int)($in['student']??0); $tgId=(int)($in['training']??0);
     if(!$sid||!$tgId) fail('Teilnehmer oder Training fehlt.');
+    // Nur echte Teilnehmer und Trainings - keine Karteileichen durch getuerkte IDs.
+    if(!q("SELECT id FROM students WHERE id=?",[$sid])->fetch()) fail('Teilnehmer nicht gefunden.',404);
+    if(!q("SELECT id FROM trainings WHERE id=?",[$tgId])->fetch()) fail('Training nicht gefunden.',404);
     $me=current_user();
     $rid=(int)($me['id']??0);
     $rname=actor_name();
@@ -1112,10 +1120,15 @@ switch($action){
       $aid=(int)db()->lastInsertId();
     } else $aid=(int)$row['id'];
 
-    // Einzelwerte uebernehmen (nur die mitgeschickten)
+    // Einzelwerte uebernehmen (nur die mitgeschickten). Der Wert wird auf die
+    // konfigurierte Skala begrenzt, und nur bekannte Kriterien werden gespeichert -
+    // so kann keine krumme Zahl und kein erfundenes Kriterium die Rechnung verfaelschen.
     if(isset($in['scores']) && is_array($in['scores'])){
+      $scaleMax=max(2,(int)cert_cfg()['scale']);
+      $validCrit=[];
+      foreach(q("SELECT id FROM crits")->fetchAll() as $c) $validCrit[(int)$c['id']]=true;
       foreach($in['scores'] as $critId=>$val){
-        $cid=(int)$critId; if(!$cid) continue;
+        $cid=(int)$critId; if(!$cid || !isset($validCrit[$cid])) continue;
         $v=is_array($val)?($val['v']??null):$val;
         $note=is_array($val)?mb_substr(trim((string)($val['n']??'')),0,255):'';
         $has=q("SELECT id FROM assessment_scores WHERE assessment_id=? AND crit_id=?",[$aid,$cid])->fetch();
@@ -1123,8 +1136,9 @@ switch($action){
           if($has) q("DELETE FROM assessment_scores WHERE id=?",[$has['id']]);
           continue;
         }
-        if($has) q("UPDATE assessment_scores SET score=?,note=? WHERE id=?",[(float)$v,$note,$has['id']]);
-        else q("INSERT INTO assessment_scores(assessment_id,crit_id,score,note) VALUES(?,?,?,?)",[$aid,$cid,(float)$v,$note]);
+        $v=max(1.0, min((float)$scaleMax, (float)$v));   // innerhalb der Skala halten
+        if($has) q("UPDATE assessment_scores SET score=?,note=? WHERE id=?",[$v,$note,$has['id']]);
+        else q("INSERT INTO assessment_scores(assessment_id,crit_id,score,note) VALUES(?,?,?,?)",[$aid,$cid,$v,$note]);
       }
     }
     foreach(['comment','strengths','todo'] as $k){

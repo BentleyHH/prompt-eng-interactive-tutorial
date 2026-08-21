@@ -10,6 +10,9 @@
 require_once __DIR__.'/lib.php';
 require_once __DIR__.'/mailer.php';
 ensure_schema();
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: same-origin');
 
 $isCommit = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
 $tok  = $_POST['token'] ?? $_GET['token'] ?? '';

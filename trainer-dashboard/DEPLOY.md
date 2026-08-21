@@ -103,13 +103,37 @@ nächsten Poll (Standard alle 8 s) automatisch im Dashboard — auf allen Gerät
 Es muss niemand eine E-Mail lesen oder abtippen.
 
 ## Sicherheit & DSGVO (bitte beachten)
-- **HTTPS** verwenden (artfiles bietet Let's-Encrypt-Zertifikate).
-- 6-stelliger PIN ist bewusst niedrigschwellig — für sensible Bestände zusätzlich
-  auf HTTPS + ggf. IP-/Passwortschutz des Verzeichnisses setzen.
-- 50 Trainerprofile = personenbezogene Daten, teils Transfer nach Abu Dhabi:
-  Einwilligung der Trainer, Auftragsverarbeitung mit artfiles (AVV), Löschkonzept
-  und EU-Hosting mitdenken.
-- Regelmäßige DB-Backups im artfiles-Menü aktivieren.
+- **HTTPS** verwenden (artfiles bietet Let's-Encrypt-Zertifikate). **Ohne HTTPS keine
+  Teilnehmerdaten eingeben** - Anmeldung und Bewertungen liefen sonst unverschlüsselt.
+- **PIN nur zur Ersteinrichtung.** Sobald der erste Benutzer angelegt ist, ist der
+  PIN-Zugang automatisch deaktiviert; ab dann meldet sich jeder mit E-Mail und Passwort
+  an. Also **direkt beim Aufsetzen mindestens zwei Administratoren anlegen** und den
+  PIN damit stilllegen.
+- **`cron_key` und `ics_key` in `config.php` auf lange Zufallswerte setzen.** Sie
+  schützen `cron.php`, `backup.php`, `check.php`, `mailtest.php` und den Kalender-Abo-Link.
+  Mit leerem oder Standard-Schlüssel sind diese Endpunkte offen.
+- **`.htaccess` muss mit hochgeladen werden** (im FTP-Programm oft ausgeblendet, da mit
+  Punkt beginnend). Sie sperrt `config.php`, die Datenbankdateien und die Backups vor
+  direktem Zugriff und setzt die Schutz-Header (Clickjacking, MIME-Raten). Prüfen lässt
+  sich das mit `backend/check.php?key=DEIN_CRON_KEY`.
+- Personenbezogene Daten (Trainerprofile, Teilnehmerbewertungen, teils Transfer nach
+  Abu Dhabi): Einwilligung, Auftragsverarbeitung mit artfiles (AVV), Löschkonzept und
+  EU-Hosting mitdenken. Auf der öffentlichen Prüfseite (`verify.php`) stehen bewusst
+  **keine Einzelnoten** - nur Name, Umfang, Ergebnis.
+
+### Datensicherung (wichtig - hier steckt ein halbes Jahr Arbeit drin)
+- Das Cockpit legt **täglich automatisch** einen vollständigen Datenbank-Dump als
+  `.sql.gz` in `backend/backups/` ab (die letzten 14 Stände; der Ordner ist per
+  `.htaccess` gesperrt). Voraussetzung: der stündliche Cronjob läuft (siehe unten).
+  Der Dump umfasst **alle** Tabellen, auch Teilnehmer, Bewertungen und Zertifikate -
+  er wächst also automatisch mit, ohne dass etwas nachgetragen werden muss.
+- **Zusätzlich** die DB-Backups im artfiles-Kundenmenü aktivieren - zwei unabhängige
+  Sicherungen sind bei einem halben Jahr Daten kein Luxus.
+- Sicherung ansehen/herunterladen: `backend/backup.php?key=DEIN_CRON_KEY`.
+  Wiederherstellen: `.sql.gz` entpacken und die `.sql`-Datei in phpMyAdmin importieren.
+- **Vor dem Echtstart einmal testen:** `backend/backup.php?key=…&run=1` aufrufen, die
+  erzeugte Datei herunterladen und öffnen - dann weiß man, dass die Kette funktioniert,
+  bevor echte Daten drinstehen.
 
 ## KI-Import (Profile aus Lebenslauf / Excel / Angebot)
 - API-Key von **console.anthropic.com** holen und als `anthropic_key` in `config.php` eintragen

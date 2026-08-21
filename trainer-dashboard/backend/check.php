@@ -10,7 +10,31 @@
  */
 error_reporting(E_ALL); ini_set('display_errors','1');
 header('Content-Type: text/html; charset=utf-8');
+header('X-Robots-Tag: noindex, nofollow');
+header('X-Frame-Options: DENY');
 function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+
+/* Zugriffsschutz: Diese Seite verraet Server-Interna (PHP-Version, welche
+   Dateien fehlen, ob das Postfach eingerichtet ist). Sobald das System
+   eingerichtet ist - also config.php einen cron_key hat -, ist sie nur mit
+   diesem Schluessel erreichbar. Ist config.php dagegen kaputt oder fehlt der
+   Schluessel (Ersteinrichtung, Fehlersuche), bleibt sie offen - sonst waere
+   das Diagnosewerkzeug genau dann wertlos, wenn man es am dringendsten braucht. */
+$cronKey='';
+if(is_file(__DIR__.'/config.php')){
+  try{ $c=(static function(){ return include __DIR__.'/config.php'; })();
+       if(is_array($c)) $cronKey=(string)($c['cron_key']??''); }
+  catch(\Throwable $e){ $cronKey=''; }
+}
+if($cronKey!=='' && $cronKey!=='CHANGE_ME_zufälliger_wert'
+   && !hash_equals($cronKey,(string)($_GET['key']??''))){
+  http_response_code(403);
+  echo '<!doctype html><meta charset="utf-8"><body style="font:15px system-ui,Arial;padding:30px;color:#242b31">'
+     .'<h2>ETAF - Basis-Check</h2><p>Zugriff nur mit gueltigem <code>?key=</code> '
+     .'(entspricht <code>cron_key</code> aus config.php).</p>'
+     .'<p style="color:#8a939a">Aufruf: <code>check.php?key=DEIN_CRON_KEY</code></p></body>';
+  exit;
+}
 function row($label,$ok,$detail=''){
   $sym=$ok===true?'<b style="color:#2E9E6B">✓</b>':($ok===false?'<b style="color:#D81F26">✗</b>':'<b style="color:#C77E1E">⚠</b>');
   echo '<tr><td>'.$sym.'</td><td>'.esc($label).'</td><td>'.$detail.'</td></tr>';
