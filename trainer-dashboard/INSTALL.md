@@ -38,12 +38,12 @@ So bekommst du die App aufs Handy und optional das echte Backend (zentrale
 Datenbank, echte E-Mails, Mehrgeräte-Nutzung).
 
 1. **Inhalt von `trainer-dashboard/` hochladen** (FTP/SFTP oder Dateimanager) in
-   das Web-Verzeichnis (Document Root) der Subdomain **`trainer.dvi-systems.com`**,
-   sodass `index.html` direkt unter `https://trainer.dvi-systems.com/` liegt.
+   das Web-Verzeichnis (Document Root) der Subdomain **`cockpit.dvi-systems.com`**,
+   sodass `index.html` direkt unter `https://cockpit.dvi-systems.com/` liegt.
    Wichtig: `icons/` und `manifest.webmanifest` müssen **mit hoch** (für die
    App-Installation).
 2. Sicherstellen, dass die Subdomain über **HTTPS** läuft (Let's-Encrypt-Zertifikat).
-3. Aufrufen: `https://trainer.dvi-systems.com/` → PIN `481509` eingeben. Fertig für
+3. Aufrufen: `https://cockpit.dvi-systems.com/` → PIN `481509` eingeben. Fertig für
    den Demo-Betrieb auf dem Server.
 4. **Live-Backend** (optional, für zentrale DB + echten E-Mail-Rückkanal):
    Anleitung in **`DEPLOY.md`** — `backend/config.php` aus `config.sample.php`
