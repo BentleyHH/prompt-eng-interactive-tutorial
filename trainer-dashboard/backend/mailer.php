@@ -180,8 +180,10 @@ function send_reset_mail(array $u, string $purpose='reset'): bool {
   // Alte, noch offene Links dieses Kontos entwerten
   q("DELETE FROM reset_tokens WHERE user_id=? AND used_at IS NULL",[$u['id']]);
   $tok=token(48);
+  // In der Datenbank liegt nur der Hash - selbst ein Datenbank-Leck
+  // verraet damit keinen brauchbaren Link.
   q("INSERT INTO reset_tokens(tok,user_id,purpose,created_at) VALUES(?,?,?,?)",
-    [$tok,$u['id'],$purpose,now()]);
+    [hash('sha256',$tok),$u['id'],$purpose,now()]);
   $url=base_url().'/reset.php?token='.$tok;
   $first=explode(' ', preg_replace('/^Dr\.\s*/','',trim((string)($u['name']??''))))[0];
   $mins=RESET_TTL_MIN;

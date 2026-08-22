@@ -562,6 +562,13 @@ function run_automation(): array {
   try{
     $maxDays=(int)(cfg()['session_days']??14);
     q("DELETE FROM sessions WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-$maxDays*86400)]);
+    // Leerlauf-Sitzungen, alte Fehlversuch-Zaehler und liegengebliebene
+    // Zwei-Faktor-Anmeldungen ebenfalls entsorgen.
+    $idleH=(int)(cfg()['session_idle_hours']??24);
+    if($idleH>0) q("DELETE FROM sessions WHERE COALESCE(last_seen,created_at) < ?",
+      [gmdate('Y-m-d H:i:s', $now-$idleH*3600)]);
+    q("DELETE FROM login_attempts WHERE window_start < ?",[gmdate('Y-m-d H:i:s', $now-86400)]);
+    q("DELETE FROM tfa_challenges WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-900)]);
     q("DELETE FROM reset_tokens WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-86400)]);
     q("DELETE FROM login_attempts WHERE window_start < ?",[gmdate('Y-m-d H:i:s', $now-3600)]);
     // Rückgängig-Stände nur für die jüngsten 300 Änderungen vorhalten - die

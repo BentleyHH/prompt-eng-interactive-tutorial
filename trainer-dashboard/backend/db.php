@@ -232,6 +232,17 @@ function ensure_schema(): void {
 
   // Sitzung kennt den angemeldeten Benutzer
   try{ db()->exec("ALTER TABLE sessions ADD COLUMN user_id INT"); }catch(Throwable $e){}
+
+  // Zwei-Faktor-Anmeldung (TOTP, z.B. Google Authenticator): Geheimnis je Benutzer,
+  // aktiv erst nach bestaetigtem Einrichtungs-Code.
+  foreach([
+    "totp_secret VARCHAR(64)","totp_on INT DEFAULT 0"
+  ] as $col){ try{ db()->exec("ALTER TABLE users ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Offene Zwei-Faktor-Anmeldungen: Passwort war richtig, der Code fehlt noch.
+  // Kurzlebig (5 Minuten), begrenzte Versuche.
+  $d->exec("CREATE TABLE IF NOT EXISTS tfa_challenges (
+    tok VARCHAR(64) PRIMARY KEY, user_id INT, tries INT DEFAULT 0,
+    created_at VARCHAR(20))$eng");
   // Info-Mail (Digest) je Benutzer: Häufigkeit, Wochentag, gewählte Inhalte
   foreach([
     "digest_freq VARCHAR(12) DEFAULT 'off'",   // off | daily | every2 | weekly

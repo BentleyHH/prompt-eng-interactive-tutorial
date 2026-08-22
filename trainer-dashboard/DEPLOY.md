@@ -116,6 +116,22 @@ Es muss niemand eine E-Mail lesen oder abtippen.
   Punkt beginnend). Sie sperrt `config.php`, die Datenbankdateien und die Backups vor
   direktem Zugriff und setzt die Schutz-Header (Clickjacking, MIME-Raten). Prüfen lässt
   sich das mit `backend/check.php?key=DEIN_CRON_KEY`.
+- **HTTPS wird jetzt erzwungen**: Die mitgelieferte `.htaccess` leitet jeden
+  unverschluesselten Aufruf auf https um und setzt HSTS - der Browser laedt die
+  Domain danach grundsaetzlich nur noch verschluesselt. Zusaetzlich verbietet eine
+  Content-Security-Policy der Seite jeden Kontakt zu fremden Servern: selbst wenn
+  Schadcode in die Seite gelangen sollte, kann er keine Daten hinausschicken.
+- **Zwei-Faktor-Anmeldung (empfohlen fuer alle Konten!)**: Unter **Benutzer ->
+  Zwei-Faktor-Anmeldung** kann jede Person zusaetzlich zum Passwort einen
+  6-stelligen Code aus einer Authenticator-App verlangen lassen (Google/Microsoft
+  Authenticator, Apple-Passwoerter). Ein gestohlenes Passwort allein reicht dann
+  nicht mehr. Geht das Handy verloren, setzt ein Administrator die Zwei-Faktor-
+  Anmeldung der Person zurueck (Knopf in der Benutzerzeile). Fuer ein System mit
+  Regierungsdaten gehoert 2FA auf **jedes** Konto, mindestens auf alle Admins.
+- **Sitzungen laufen ab**: nach 14 Tagen grundsaetzlich, und nach 24 Stunden ohne
+  Aktivitaet (einstellbar ueber `session_idle_hours` in `config.php`). Einladungs-
+  und Passwort-Links gelten 60 Minuten, sind einmalig und liegen in der Datenbank
+  nur als Hash. Passwoerter brauchen mindestens 10 Zeichen.
 - Personenbezogene Daten (Trainerprofile, Teilnehmerbewertungen, teils Transfer nach
   Abu Dhabi): Einwilligung, Auftragsverarbeitung mit artfiles (AVV), Löschkonzept und
   EU-Hosting mitdenken. Auf der öffentlichen Prüfseite (`verify.php`) stehen bewusst

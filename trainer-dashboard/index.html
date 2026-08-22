@@ -1151,6 +1151,18 @@
       <button class="lnk lgforgot" id="lgForgot" onclick="openForgot()">Passwort vergessen?</button>
     </div>
 
+    <!-- Zwei-Faktor: zweiter Schritt mit dem Code aus der Authenticator-App -->
+    <div id="lg2fa" style="display:none;text-align:left;margin-top:16px">
+      <p class="meta" id="lg2faHint" style="margin:0 0 6px"></p>
+      <label class="fld" for="lgCode" id="lg2faLbl">Code</label>
+      <input class="inp" id="lgCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6"
+             autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter')do2faLogin()">
+      <div id="lg2faErr" class="lgerr" style="display:none"></div>
+      <button class="btn primary" id="lg2faBtn" style="width:100%;justify-content:center;margin-top:16px"
+              onclick="do2faLogin()">OK</button>
+      <button class="lnk lgforgot" id="lg2faBack" onclick="tfaBack()">Zurück</button>
+    </div>
+
     <!-- PIN-Feld: nur bei der Ersteinrichtung, solange noch kein Konto existiert -->
     <div id="lgPin" style="display:none">
       <p id="lgEnter">Bitte 6-stelligen PIN eingeben</p>
@@ -1848,8 +1860,27 @@ const L={
   usrYou:"du", usrLast:"angemeldet", usrNever:"noch nie angemeldet",
   usrBadMail:"Bitte eine gültige E-Mail-Adresse angeben.",
   usrNoRights:"Diesen Bereich dürfen nur Administratoren öffnen.",
-  usrOwnPw:"Eigenes Passwort ändern", usrCurPw:"Aktuelles Passwort", usrNewPw:"Neues Passwort (mind. 8 Zeichen)",
-  usrChangePw:"Passwort ändern", usrPwChanged:"Passwort geändert", usrPwShort:"Mindestens 8 Zeichen.",
+  usrOwnPw:"Eigenes Passwort ändern", usrCurPw:"Aktuelles Passwort", usrNewPw:"Neues Passwort (mind. 10 Zeichen)",
+  usrChangePw:"Passwort ändern", usrPwChanged:"Passwort geändert", usrPwShort:"Mindestens 10 Zeichen.",
+  tfaTitle:"Zwei-Faktor-Anmeldung", tfaOn:"eingeschaltet", tfaOff:"ausgeschaltet",
+  tfaOnT:"Zwei-Faktor-Anmeldung ist eingeschaltet",
+  tfaWhat:"Zusätzlich zum Passwort wird beim Anmelden ein 6-stelliger Code aus einer Authenticator-App verlangt (z.B. Google oder Microsoft Authenticator, Apple-Passwörter). Selbst mit gestohlenem Passwort kommt damit niemand hinein.",
+  tfaTurnOn:"Einschalten", tfaTurnOff:"Ausschalten",
+  tfaStep1:"Schritt 1: Öffne deine Authenticator-App und füge ein neues Konto hinzu - am Handy einfach den Knopf unten antippen oder den Schlüssel abtippen.",
+  tfaSecretLbl:"Geheimer Schlüssel (in der App eintragen)",
+  tfaOpenApp:"In der Authenticator-App öffnen",
+  tfaStep2:"Schritt 2: Gib den 6-stelligen Code ein, den die App jetzt anzeigt.",
+  tfaCode:"Code aus der App", tfaConfirm:"Bestätigen und einschalten",
+  tfaCodeShort:"Bitte den 6-stelligen Code eingeben.",
+  tfaKeepSecret:"Wichtig: Der Schlüssel gehört nur in deine App. Verlierst du das Handy, kann ein Administrator die Zwei-Faktor-Anmeldung für dich zurücksetzen.",
+  tfaEnabled:"Zwei-Faktor-Anmeldung ist jetzt aktiv.",
+  tfaDisabled:"Zwei-Faktor-Anmeldung ausgeschaltet.",
+  tfaOffAsk:"Zum Ausschalten bitte dein Passwort eingeben:",
+  tfaResetT:"Zwei-Faktor zurücksetzen (z.B. Handy verloren)",
+  tfaResetAsk:n=>`Zwei-Faktor-Anmeldung für ${n} zurücksetzen? Die Person meldet sich danach nur mit Passwort an und sollte 2FA neu einrichten.`,
+  tfaResetDone:n=>`Zwei-Faktor für ${n} zurückgesetzt.`,
+  tfaLoginHint:"Fast geschafft - bitte den 6-stelligen Code aus deiner Authenticator-App eingeben.",
+  tfaBackBtn:"Zurück zur Anmeldung",
   // Änderungsprotokoll
   actCount:n=>`${n} Einträge`, actHint:"Die letzten Änderungen aller Benutzer.",
   actEmpty:"Noch keine Einträge.",
@@ -2616,8 +2647,27 @@ const L={
   usrYou:"you", usrLast:"signed in", usrNever:"never signed in",
   usrBadMail:"Please enter a valid email address.",
   usrNoRights:"Only administrators can open this area.",
-  usrOwnPw:"Change your password", usrCurPw:"Current password", usrNewPw:"New password (min. 8 characters)",
-  usrChangePw:"Change password", usrPwChanged:"Password changed", usrPwShort:"At least 8 characters.",
+  usrOwnPw:"Change your password", usrCurPw:"Current password", usrNewPw:"New password (min. 10 characters)",
+  usrChangePw:"Change password", usrPwChanged:"Password changed", usrPwShort:"At least 10 characters.",
+  tfaTitle:"Two-factor sign-in", tfaOn:"enabled", tfaOff:"disabled",
+  tfaOnT:"Two-factor sign-in is enabled",
+  tfaWhat:"In addition to the password, signing in requires a 6-digit code from an authenticator app (e.g. Google or Microsoft Authenticator, Apple Passwords). Even a stolen password is useless without it.",
+  tfaTurnOn:"Enable", tfaTurnOff:"Disable",
+  tfaStep1:"Step 1: Open your authenticator app and add a new account - on the phone just tap the button below, or type in the key.",
+  tfaSecretLbl:"Secret key (enter it in the app)",
+  tfaOpenApp:"Open in authenticator app",
+  tfaStep2:"Step 2: Enter the 6-digit code the app shows now.",
+  tfaCode:"Code from the app", tfaConfirm:"Confirm and enable",
+  tfaCodeShort:"Please enter the 6-digit code.",
+  tfaKeepSecret:"Important: the key belongs only in your app. If you lose the phone, an administrator can reset two-factor sign-in for you.",
+  tfaEnabled:"Two-factor sign-in is now active.",
+  tfaDisabled:"Two-factor sign-in disabled.",
+  tfaOffAsk:"Please enter your password to disable it:",
+  tfaResetT:"Reset two-factor (e.g. phone lost)",
+  tfaResetAsk:n=>`Reset two-factor sign-in for ${n}? They will sign in with password only and should set up 2FA again.`,
+  tfaResetDone:n=>`Two-factor reset for ${n}.`,
+  tfaLoginHint:"Almost there - please enter the 6-digit code from your authenticator app.",
+  tfaBackBtn:"Back to sign-in",
   actCount:n=>`${n} entries`, actHint:"The most recent changes by all users.",
   actEmpty:"No entries yet.",
   act_login:"signed in", act_logout:"signed out", "act_login.failed":"sign-in failed",
@@ -3387,11 +3437,43 @@ async function doEmailLogin(){
   const b=$("#lgBtn"); if(b){b.disabled=true;b.textContent="…";}
   try{
     const d=await apiCall("auth.login",{email,password:pass});
+    if(d.need2fa){
+      // Passwort stimmt - jetzt fehlt noch der Code aus der Authenticator-App.
+      tfaTok=d.tfa; $("#lgErr").style.display="none"; $("#lgPass").value="";
+      $("#lgForm").style.display="none";
+      $("#lg2faHint").textContent=t("tfaLoginHint");
+      $("#lg2faLbl").textContent=t("tfaCode");
+      $("#lg2faBtn").textContent=t("lgSignIn");
+      $("#lg2faBack").textContent=t("tfaBackBtn");
+      $("#lg2faErr").style.display="none";
+      $("#lg2fa").style.display="block";
+      const c=$("#lgCode"); if(c){c.value="";setTimeout(()=>c.focus(),60);}
+      return;
+    }
     AUTH=d.token; try{localStorage.setItem("etaf_token",AUTH);}catch(e){}
     $("#lgErr").style.display="none"; $("#lgPass").value="";
     await pull(); unlock();
   }catch(e){ lgError(e.message||t("lgFailed")); }
   finally{ if(b){b.disabled=false;b.textContent=t("lgSignIn");} }
+}
+/* Zwei-Faktor: Code pruefen und Anmeldung abschliessen. */
+let tfaTok=null;
+async function do2faLogin(){
+  const code=($("#lgCode")?.value||"").trim();
+  if(code.length<6){ const e=$("#lg2faErr"); e.textContent=t("tfaCodeShort"); e.style.display="block"; return; }
+  const b=$("#lg2faBtn"); if(b){b.disabled=true;b.textContent="…";}
+  try{
+    const d=await apiCall("auth.login2fa",{tfa:tfaTok,code});
+    AUTH=d.token; try{localStorage.setItem("etaf_token",AUTH);}catch(e){}
+    tfaTok=null; $("#lg2fa").style.display="none"; $("#lgCode").value="";
+    await pull(); unlock();
+  }catch(e){ const el=$("#lg2faErr"); el.textContent=e.message||t("lgFailed"); el.style.display="block"; }
+  finally{ if(b){b.disabled=false;b.textContent=t("lgSignIn");} }
+}
+function tfaBack(){
+  tfaTok=null;
+  $("#lg2fa").style.display="none"; $("#lgForm").style.display="block";
+  setTimeout(()=>$("#lgPass")?.focus(),60);
 }
 /* Passwort vergessen: Link anfordern (Antwort ist immer gleich - keine Auskunft
    darüber, ob es die Adresse gibt). */
@@ -3496,7 +3578,7 @@ function drawMeBox(){
 /* Zusätzliche Menüpunkte: Protokoll für alle, Benutzer nur für Admins. */
 function extraNav(){
   const x=[{id:"activity",ic:IC.log}];
-  if(isAdmin()) x.push({id:"users",ic:IC.users});
+  x.push({id:"users",ic:IC.users});   // Nicht-Admins sehen dort nur die eigene Sicherheit
   return x;
 }
 function titleFor(r){
@@ -5498,8 +5580,32 @@ function usrOnline(u){
   const d=utcDate(u.lastSeen); if(!d) return false;
   return (Date.now()-d.getTime()) < 10*60000;
 }
+function usrSecurityHtml(){
+  const tfa=!!(S.me&&S.me.tfaOn);
+  return `
+    <div class="panel">
+      <div class="panel-h"><h3>${ic("lock",18)} ${t("usrOwnPw")}</h3></div>
+      <div class="panel-b">
+        <div class="kv"><span class="k">${t("usrCurPw")}</span>
+          <input class="inp" style="width:190px" type="password" id="pwCur" autocomplete="current-password"></div>
+        <div class="kv"><span class="k">${t("usrNewPw")}</span>
+          <input class="inp" style="width:190px" type="password" id="pwNew" autocomplete="new-password"></div>
+        <div style="margin-top:12px"><button class="btn" onclick="changeOwnPassword()">${ic("check",16)}${t("usrChangePw")}</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h3>${ic("id",18)} ${t("tfaTitle")}</h3>
+        <span class="pill ${tfa?"good":"neutral"}">${tfa?t("tfaOn"):t("tfaOff")}</span></div>
+      <div class="panel-b">
+        <div class="meta" style="margin-bottom:12px">${t("tfaWhat")}</div>
+        ${tfa
+          ? `<button class="btn" onclick="tfaDisable()">${ic("lock",15)}${t("tfaTurnOff")}</button>`
+          : `<button class="btn primary" onclick="tfaOpenSetup()">${ic("plus",15)}${t("tfaTurnOn")}</button>`}
+      </div>
+    </div>`;
+}
 async function renderUsers(){
-  if(!isAdmin()){ $("#v-users").innerHTML=`<div class="panel"><div class="panel-b meta" style="padding:22px">${t("usrNoRights")}</div></div>`; return; }
+  if(!isAdmin()){ $("#v-users").innerHTML=usrSecurityHtml(); return; }
   if(LIVE){ try{ const d=await apiCall("users.list"); usersCache=d.users||[]; }catch(e){ usersCache=[]; } }
   const me=meUser();
   const rows=usersCache.map(u=>`
@@ -5516,11 +5622,13 @@ async function renderUsers(){
           usrOnline(u) ? `<span><b style="color:var(--good)">● ${esc(t("usrOnline"))}</b></span>` : ""}</div>
       </div>
       <div class="rowacts">
+        ${u.tfaOn?`<span class="pill good" title="${esc(t("tfaOnT"))}">2FA</span>`:""}
         <span class="pill ${u.active?'good':'neutral'}">${u.active?t("usrActive"):t("usrBlocked")}</span>
         <button class="btn sm" onclick="openUserEdit('${u.id}')">${ic("pen",15)}${t("trEdit")}</button>
         <button class="btn sm" onclick="openDigestEdit('${u.id}')" title="${t("dgTitle")}">${ic("bell",15)}${t("dgBtn")}${u.digestFreq&&u.digestFreq!=="off"?` <b style="color:var(--good)">·</b>`:""}</button>
         <button class="btn sm" onclick="actShowLogins('${u.id}')" title="${esc(t("usrHistoryT"))}">${ic("log",15)}${t("usrHistory")}</button>
         <button class="btn sm" onclick="resendInvite('${u.id}')" title="${t("usrResend")}">${ic("send",15)}</button>
+        ${u.tfaOn?`<button class="btn sm" onclick="tfaAdminReset('${u.id}','${esc(u.name||u.email)}')" title="${esc(t("tfaResetT"))}">${ic("id",15)}</button>`:""}
         <button class="btn sm" onclick="toggleUser('${u.id}',${u.active?0:1})" ${me&&me.id===u.id?'disabled style="opacity:.4"':''}>
           ${u.active?t("usrBlock"):t("usrUnblock")}</button>
       </div>
@@ -5532,16 +5640,7 @@ async function renderUsers(){
       <button class="btn primary" onclick="openUserEdit(null)">${ic("plus")}${t("usrNew")}</button>
     </div></div>
     <div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">-</div>`}</div></div>
-    <div class="panel">
-      <div class="panel-h"><h3>${ic("lock",18)} ${t("usrOwnPw")}</h3></div>
-      <div class="panel-b">
-        <div class="kv"><span class="k">${t("usrCurPw")}</span>
-          <input class="inp" style="width:190px" type="password" id="pwCur" autocomplete="current-password"></div>
-        <div class="kv"><span class="k">${t("usrNewPw")}</span>
-          <input class="inp" style="width:190px" type="password" id="pwNew" autocomplete="new-password"></div>
-        <div style="margin-top:12px"><button class="btn" onclick="changeOwnPassword()">${ic("check",16)}${t("usrChangePw")}</button></div>
-      </div>
-    </div>`;
+    ${usrSecurityHtml()}`;
 }
 function openUserEdit(uid){
   const u=uid?usersCache.find(x=>x.id===uid):null;
@@ -5605,9 +5704,56 @@ async function resendInvite(uid){
     toast(d.sent?t("usrResent"):t("usrResendFail"), d.sent?"good":"warn");
   }catch(e){ toast(e.message,"crit"); }
 }
+/* Zwei-Faktor einrichten: Geheimnis holen, in der App eintragen, Code bestaetigen. */
+async function tfaOpenSetup(){
+  let d;
+  try{ d=await apiCall("tfa.setup"); }catch(e){ toast(e.message,"crit"); return; }
+  $("#sheetTitle").textContent=t("tfaTitle");
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:12px">${t("tfaStep1")}</div>
+    <div style="border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px">
+      <div class="meta" style="margin-bottom:6px">${t("tfaSecretLbl")}</div>
+      <b style="font-family:var(--mono);font-size:17px;letter-spacing:.06em;user-select:all">${esc(d.secret)}</b>
+      <div style="margin-top:10px"><a class="btn sm" href="${esc(d.uri)}">${ic("plus",14)}${t("tfaOpenApp")}</a></div>
+    </div>
+    <div class="meta" style="margin-bottom:8px">${t("tfaStep2")}</div>
+    <label class="fld">${t("tfaCode")}</label>
+    <input class="inp" id="tfaCodeIn" inputmode="numeric" maxlength="6" autocomplete="one-time-code"
+           onkeydown="if(event.key==='Enter')tfaEnable()">
+    <div class="meta" style="margin-top:12px">${t("tfaKeepSecret")}</div>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="tfaEnable()">${ic("check",15)}${t("tfaConfirm")}</button>`;
+  openSheet();
+  setTimeout(()=>$("#tfaCodeIn")?.focus(),120);
+}
+async function tfaEnable(){
+  const code=val("tfaCodeIn").trim();
+  if(code.length<6){ toast(t("tfaCodeShort"),"crit"); return; }
+  try{
+    await apiCall("tfa.enable",{code});
+    closeSheet();
+    if(S.me) S.me.tfaOn=true;
+    toast(t("tfaEnabled"),"good"); renderUsers();
+  }catch(e){ toast(e.message,"crit"); }
+}
+async function tfaDisable(){
+  const pw=prompt(t("tfaOffAsk"));
+  if(pw===null||pw==="") return;
+  try{
+    await apiCall("tfa.disable",{password:pw});
+    if(S.me) S.me.tfaOn=false;
+    toast(t("tfaDisabled"),"good"); renderUsers();
+  }catch(e){ toast(e.message,"crit"); }
+}
+async function tfaAdminReset(uid,name){
+  if(!confirm(t("tfaResetAsk",name))) return;
+  try{ await apiCall("user.tfaReset",{id:uid}); toast(t("tfaResetDone",name),"good"); renderUsers(); }
+  catch(e){ toast(e.message,"crit"); }
+}
 async function changeOwnPassword(){
   const cur=val("pwCur"), nw=val("pwNew");
-  if(nw.length<8){ toast(t("usrPwShort"),"crit"); return; }
+  if(nw.length<10){ toast(t("usrPwShort"),"crit"); return; }
   try{ await apiCall("auth.changePassword",{current:cur,new:nw});
     $("#pwCur").value=""; $("#pwNew").value=""; toast(t("usrPwChanged"),"good");
   }catch(e){ toast(e.message,"crit"); }
@@ -9420,10 +9566,20 @@ function certImportSheet(){
   openSheet();
 }
 /* Die Vorlage kommt aus dem Backend - so passt sie immer zum Import. */
-function certTemplate(lang){
+async function certTemplate(lang){
   const base=(window.ETAF&&ETAF.apiBase)||"backend";
-  const url=base+"/students-template.php?lang="+lang+"&token="+encodeURIComponent(AUTH||"");
-  window.open(url,"_blank");
+  // Kein Token in der URL (wuerde in Logs und Verlauf landen) - die Datei
+  // kommt per fetch mit Auth-Header und wird lokal gespeichert.
+  try{
+    const r=await fetch(base+"/students-template.php?lang="+lang,{headers:{"X-Auth-Token":AUTH||""}});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const blob=await r.blob();
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="ETAF-Teilnehmer-Vorlage"+(lang==="en"?"-EN":"")+".xlsx";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  }catch(e){ toast("Download fehlgeschlagen: "+e.message,"crit"); }
 }
 let certFileData=null, certPrev=null;
 function certPickFile(el){

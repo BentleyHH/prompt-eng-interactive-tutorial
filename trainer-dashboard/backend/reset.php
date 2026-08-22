@@ -20,7 +20,7 @@ $p1   = (string)($_POST['pw1'] ?? '');
 $p2   = (string)($_POST['pw2'] ?? '');
 
 $row = $tok ? q("SELECT r.*, u.email, u.name FROM reset_tokens r
-  JOIN users u ON u.id=r.user_id WHERE r.tok=?",[$tok])->fetch() : null;
+  JOIN users u ON u.id=r.user_id WHERE r.tok=?",[hash('sha256',$tok)])->fetch() : null;
 
 /* Gültigkeit: nicht benutzt und nicht älter als RESET_TTL_MIN Minuten */
 $valid = false;
@@ -31,12 +31,12 @@ $invite = ($row['purpose'] ?? 'reset') === 'invite';
 
 $done=false; $err='';
 if($isCommit && $valid){
-  if(strlen($p1) < 8)      $err='Bitte mindestens 8 Zeichen verwenden.';
+  if(strlen($p1) < 10)     $err='Bitte mindestens 10 Zeichen verwenden.';
   elseif($p1 !== $p2)      $err='Die beiden Eingaben stimmen nicht überein.';
   else {
     q("UPDATE users SET pass_hash=?, active=1 WHERE id=?",
       [password_hash($p1, PASSWORD_DEFAULT), $row['user_id']]);
-    q("UPDATE reset_tokens SET used_at=? WHERE tok=?",[now(),$tok]);
+    q("UPDATE reset_tokens SET used_at=? WHERE tok=?",[now(),hash('sha256',$tok)]);
     // Alle bestehenden Sitzungen dieses Kontos beenden (Sicherheit)
     q("DELETE FROM sessions WHERE user_id=?",[$row['user_id']]);
     audit_as(['id'=>$row['user_id'],'name'=>$row['name']], $invite?'password.set':'password.reset',
@@ -96,10 +96,10 @@ $etok   = esc($tok);
       <?php if($err): ?><div class="err"><?=esc($err)?></div><?php endif; ?>
       <form method="post" action="<?=$action?>">
         <input type="hidden" name="token" value="<?=$etok?>">
-        <label for="pw1">Neues Passwort (mind. 8 Zeichen)</label>
-        <input id="pw1" type="password" name="pw1" autocomplete="new-password" required minlength="8">
+        <label for="pw1">Neues Passwort (mind. 10 Zeichen)</label>
+        <input id="pw1" type="password" name="pw1" autocomplete="new-password" required minlength="10">
         <label for="pw2">Passwort wiederholen</label>
-        <input id="pw2" type="password" name="pw2" autocomplete="new-password" required minlength="8">
+        <input id="pw2" type="password" name="pw2" autocomplete="new-password" required minlength="10">
         <button type="submit"><?=stroke_icon('check')?>Passwort speichern</button>
       </form>
       <p class="hint">Aus Sicherheitsgründen wirst du auf allen Geräten neu angemeldet.</p>

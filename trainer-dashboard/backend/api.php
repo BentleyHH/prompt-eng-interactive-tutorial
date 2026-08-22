@@ -48,6 +48,69 @@ switch($action){
   case 'auth.mode':                   // Login-Maske: gibt es schon Konten?
     out(['ok'=>true,'setup'=>(user_count()===0)]);
 
+  /* ---- Zwei-Faktor: zweiter Anmeldeschritt (Code aus der Authenticator-App) ---- */
+  case 'auth.login2fa': {
+    login_guard_check();
+    $chTok=(string)($in['tfa']??''); $code=(string)($in['code']??'');
+    $ch=$chTok!=='' ? q("SELECT * FROM tfa_challenges WHERE tok=?",[$chTok])->fetch() : null;
+    $u=$ch ? q("SELECT * FROM users WHERE id=? AND active=1",[$ch['user_id']])->fetch() : null;
+    $fresh=$ch && (time()-ts($ch['created_at'])<=300) && ((int)$ch['tries']<5);
+    if(!$fresh || !$u || empty($u['totp_secret']) || !totp_verify((string)$u['totp_secret'],$code)){
+      if($ch) q("UPDATE tfa_challenges SET tries=tries+1 WHERE tok=?",[$chTok]);
+      login_guard_fail();
+      if($u) audit_as($u,'login.failed','user',(string)$u['id'],
+        $u['email'].' - Zwei-Faktor-Code falsch oder abgelaufen (IP '.client_ip().')');
+      fail('Der Code ist nicht korrekt oder abgelaufen. Bitte neu anmelden oder erneut eingeben.',401);
+    }
+    q("DELETE FROM tfa_challenges WHERE tok=?",[$chTok]);
+    login_guard_reset();
+    q("UPDATE users SET last_login=? WHERE id=?",[now(),$u['id']]);
+    $tok=issue_session((int)$u['id']);
+    audit_as($u,'login','user',(string)$u['id'],'angemeldet mit Zwei-Faktor (IP '.client_ip().')');
+    out(['ok'=>true,'token'=>$tok,'user'=>user_public($u)]);
+  }
+
+  /* ---- Zwei-Faktor einrichten (eigenes Konto) ---- */
+  case 'tfa.setup': {
+    require_auth();
+    $me=current_user(); if(!$me) fail('Nur für angemeldete Benutzer.',403);
+    $secret=b32_encode(random_bytes(20));
+    q("UPDATE users SET totp_secret=?, totp_on=0 WHERE id=?",[$secret,$me['id']]);
+    $label=rawurlencode('ETAF Cockpit ('.$me['email'].')');
+    out(['ok'=>true,'secret'=>trim(chunk_split($secret,4,' ')),
+         'uri'=>'otpauth://totp/'.$label.'?secret='.$secret.'&issuer='.rawurlencode('ETAF Cockpit').'&digits=6&period=30']);
+  }
+  case 'tfa.enable': {
+    require_auth();
+    $me=current_user(); if(!$me) fail('Nur für angemeldete Benutzer.',403);
+    if(empty($me['totp_secret'])) fail('Bitte zuerst die Einrichtung starten.');
+    if(!totp_verify((string)$me['totp_secret'],(string)($in['code']??'')))
+      fail('Der Code stimmt nicht - bitte den aktuellen Code aus der App eingeben.');
+    q("UPDATE users SET totp_on=1 WHERE id=?",[$me['id']]);
+    audit('tfa.enable','user',(string)$me['id'],'Zwei-Faktor-Anmeldung eingeschaltet');
+    out(['ok'=>true]);
+  }
+  case 'tfa.disable': {
+    require_auth();
+    $me=current_user(); if(!$me) fail('Nur für angemeldete Benutzer.',403);
+    if(!password_verify((string)($in['password']??''), $me['pass_hash']??''))
+      fail('Das Passwort ist nicht korrekt.',401);
+    q("UPDATE users SET totp_on=0, totp_secret=NULL WHERE id=?",[$me['id']]);
+    audit('tfa.disable','user',(string)$me['id'],'Zwei-Faktor-Anmeldung ausgeschaltet');
+    out(['ok'=>true]);
+  }
+  /* ---- Zwei-Faktor eines Benutzers zuruecksetzen (Admin, z.B. Handy verloren) ---- */
+  case 'user.tfaReset': {
+    require_admin();
+    $uid=(int)($in['id']??0);
+    $u=q("SELECT * FROM users WHERE id=?",[$uid])->fetch();
+    if(!$u) fail('Benutzer nicht gefunden.',404);
+    q("UPDATE users SET totp_on=0, totp_secret=NULL WHERE id=?",[$uid]);
+    q("DELETE FROM sessions WHERE user_id=?",[$uid]);
+    audit('tfa.reset','user',(string)$uid,'Zwei-Faktor zurückgesetzt für '.$u['email'].' (alle Sitzungen beendet)');
+    out(['ok'=>true]);
+  }
+
   case 'logout':
     if($t=auth_token()){
       $who=current_user();
@@ -77,7 +140,7 @@ switch($action){
     if(!$me) fail('Nur für angemeldete Benutzer.',403);
     $cur=(string)($in['current']??''); $new=(string)($in['new']??'');
     if(!password_verify($cur, $me['pass_hash']??'')) fail('Aktuelles Passwort ist nicht korrekt.',401);
-    if(strlen($new)<8) fail('Das neue Passwort muss mindestens 8 Zeichen haben.');
+    if(strlen($new)<10) fail('Das neue Passwort muss mindestens 10 Zeichen haben.');
     q("UPDATE users SET pass_hash=? WHERE id=?",[password_hash($new,PASSWORD_DEFAULT),$me['id']]);
     audit('password.change','user',(string)$me['id'],'Passwort geändert');
     out(['ok'=>true]);
@@ -1688,7 +1751,7 @@ switch($action){
 
   /* ---- Login-PIN ändern (im Dashboard) ---- */
   case 'pin.change':
-    require_auth();
+    require_admin();
     $cur = (string)($in['current'] ?? '');
     $new = trim((string)($in['new'] ?? ''));
     $hash = config_get('pin_hash');

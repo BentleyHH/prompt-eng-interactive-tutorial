@@ -26,6 +26,11 @@ function body(): array {
   return is_array($j)?$j:[];
 }
 
+/* Interne Fehlermeldungen gehoeren ins Server-Log, nie auf den Bildschirm -
+   sie koennten Pfade oder Tabellennamen verraten. (Diagnose-Seiten wie
+   mailtest.php schalten das gezielt und nur mit Schluessel wieder ein.) */
+@ini_set('display_errors','0');
+
 function client_ip(): string { return $_SERVER['REMOTE_ADDR'] ?? 'cli'; }
 
 /** Login mit PIN, gibt Session-Token zurück (mit einfachem Rate-Limit).
@@ -90,10 +95,57 @@ function do_login_email(string $email, string $pass): array {
     fail('E-Mail oder Passwort ist nicht korrekt.',401);
   }
   login_guard_reset();
+  // Zwei-Faktor aktiv? Dann gibt es hier noch KEINE Sitzung - erst der
+  // richtige Code aus der Authenticator-App schliesst die Anmeldung ab.
+  if(((int)($u['totp_on']??0))===1 && !empty($u['totp_secret'])){
+    q("DELETE FROM tfa_challenges WHERE user_id=? OR created_at < ?",
+      [$u['id'], gmdate('Y-m-d H:i:s', time()-900)]);
+    $ch=token(40);
+    q("INSERT INTO tfa_challenges(tok,user_id,tries,created_at) VALUES(?,?,0,?)",[$ch,$u['id'],now()]);
+    return ['ok'=>true,'need2fa'=>true,'tfa'=>$ch];
+  }
   q("UPDATE users SET last_login=? WHERE id=?",[now(),$u['id']]);
   $tok=issue_session((int)$u['id']);
   audit_as($u,'login','user',(string)$u['id'],'angemeldet (IP '.client_ip().')');
   return ['ok'=>true,'token'=>$tok,'user'=>user_public($u)];
+}
+
+/* ============================================================
+   ZWEI-FAKTOR (TOTP nach RFC 6238, ohne fremde Bibliotheken)
+   Funktioniert mit Google Authenticator, Microsoft Authenticator,
+   Apple-Passwoerter, Authy usw. - Geheimnis als Base32, 6 Stellen,
+   30-Sekunden-Fenster, Nachbarfenster wegen Uhrabweichung erlaubt.
+   ============================================================ */
+function b32_encode(string $bin): string {
+  $alph='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; $bits=''; $out='';
+  foreach(str_split($bin) as $c) $bits.=str_pad(decbin(ord($c)),8,'0',STR_PAD_LEFT);
+  foreach(str_split($bits,5) as $chunk) $out.=$alph[bindec(str_pad($chunk,5,'0'))];
+  return $out;
+}
+function b32_decode(string $s): string {
+  $alph='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; $bits=''; $out='';
+  $s=strtoupper(preg_replace('/[^A-Za-z2-7]/','',$s));
+  for($i=0;$i<strlen($s);$i++){
+    $v=strpos($alph,$s[$i]); if($v===false) continue;
+    $bits.=str_pad(decbin($v),5,'0',STR_PAD_LEFT);
+  }
+  foreach(str_split($bits,8) as $chunk) if(strlen($chunk)===8) $out.=chr(bindec($chunk));
+  return $out;
+}
+function totp_code(string $secretB32, int $slice): string {
+  $key=b32_decode($secretB32);
+  $bin=pack('N',0).pack('N',$slice);
+  $h=hash_hmac('sha1',$bin,$key,true);
+  $o=ord($h[19])&0xf;
+  $num=((ord($h[$o])&0x7f)<<24)|(ord($h[$o+1])<<16)|(ord($h[$o+2])<<8)|ord($h[$o+3]);
+  return str_pad((string)($num%1000000),6,'0',STR_PAD_LEFT);
+}
+function totp_verify(string $secretB32, string $code): bool {
+  $code=preg_replace('/\D/','',$code);
+  if(strlen($code)!==6) return false;
+  $slice=(int)floor(time()/30);
+  for($i=-1;$i<=1;$i++) if(hash_equals(totp_code($secretB32,$slice+$i),$code)) return true;
+  return false;
 }
 
 /** Login mit PIN - nur zur Ersteinrichtung, solange noch kein Konto existiert. */
@@ -111,13 +163,16 @@ function do_login(string $pin): array {
 function user_public(array $u): array {
   return ['id'=>(string)$u['id'],'email'=>$u['email'],'name'=>$u['name'],
           'role'=>$u['role']??'editor','active'=>((int)($u['active']??1))===1,
+          'tfaOn'=>((int)($u['totp_on']??0))===1,
           'lastLogin'=>$u['last_login']??'',
           'digestFreq'=>$u['digest_freq']??'off','digestDay'=>(int)($u['digest_day']??1),
           'digestParts'=>json_decode(($u['digest_parts']??'')?:'[]',true)?:[]];
 }
 
 function auth_token(): ?string {
-  $h=$_SERVER['HTTP_X_AUTH_TOKEN'] ?? ($_GET['token'] ?? '');
+  // Nur aus dem Header - Tokens in der URL wuerden in Server-Logs und
+  // Browser-Verlaeufen landen. Downloads holen die Datei per fetch mit Header.
+  $h=$_SERVER['HTTP_X_AUTH_TOKEN'] ?? '';
   return $h!=='' ? $h : null;
 }
 
@@ -136,12 +191,19 @@ function current_user(): ?array {
 function require_auth(): void {
   $tok=auth_token();
   if(!$tok) fail('Nicht angemeldet.',401);
-  $row=q("SELECT token,created_at,user_id FROM sessions WHERE token=?",[$tok])->fetch();
+  $row=q("SELECT token,created_at,last_seen,user_id FROM sessions WHERE token=?",[$tok])->fetch();
   if(!$row) fail('Sitzung ungültig.',401);
   $maxDays=(int)(cfg()['session_days']??14);
   if(ts($row['created_at']) < time()-$maxDays*86400){
     q("DELETE FROM sessions WHERE token=?",[$tok]);
     fail('Sitzung abgelaufen.',401);
+  }
+  // Leerlauf-Grenze: wer laenger nichts getan hat, muss sich neu anmelden.
+  // (session_idle_hours in config.php, Standard 24; 0 schaltet die Grenze ab.)
+  $idleH=(int)(cfg()['session_idle_hours']??24);
+  if($idleH>0 && ts($row['last_seen']?:$row['created_at']) < time()-$idleH*3600){
+    q("DELETE FROM sessions WHERE token=?",[$tok]);
+    fail('Sitzung abgelaufen - bitte neu anmelden.',401);
   }
   // Sitzung ohne Benutzer ist nur gültig, solange noch kein Konto existiert (Ersteinrichtung).
   if(!$row['user_id'] && user_count()>0){

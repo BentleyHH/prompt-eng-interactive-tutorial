@@ -103,4 +103,8 @@ return [
   // true = beim ersten Start Beispiel-Trainer/-Trainings anlegen.
   // Auf false stellen, sobald du echte Daten importiert hast.
   'seed_demo' => true,
+
+  // Nach wie vielen Stunden ohne Aktivitaet eine Sitzung ablaeuft (Neuanmeldung
+  // noetig). Standard 24. 0 = keine Leerlauf-Grenze (nicht empfohlen).
+  'session_idle_hours' => 24,
 ];
