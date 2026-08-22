@@ -11,3 +11,12 @@ AddDefaultCharset UTF-8
 <Files "htaccess.txt">
   Require all denied
 </Files>
+
+# Nach Updates sofort den neuen Stand zeigen: der Browser darf index.html und
+# config.js nicht stumpf aus dem Cache nehmen, sondern fragt kurz beim Server
+# nach, ob es eine neuere Fassung gibt (kostet fast nichts, verhindert alte Ansichten).
+<IfModule mod_headers.c>
+  <FilesMatch "^(index\.html|config\.js|manifest\.webmanifest)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
