@@ -1036,12 +1036,19 @@ switch($action){
     $cronRaw = config_get('last_cron');
     $cronTs  = $cronRaw ? ts($cronRaw) : 0;
     $cronAgeMin = $cronTs ? (int)floor((time()-$cronTs)/60) : null;
-    // Cron laeuft stuendlich: gruen bis 90 min, dann gelb, ueber 6 h oder nie = rot
-    $cronState = $cronTs===0 ? 'red' : ($cronAgeMin<=90 ? 'green' : ($cronAgeMin<=360 ? 'amber' : 'red'));
+    // Cron laeuft stuendlich. Grosszuegige Schwellen, damit ein einzelner
+    // verzoegerter Lauf keinen Fehlalarm ausloest: gruen bis gut 2 h, gelb
+    // bis 6 h, danach rot. "Noch nie gelaufen" ist KEIN Fehler, sondern der
+    // normale Zustand direkt nach dem Einrichten - eigener Zustand 'wait'.
+    if($cronTs===0)             $cronState='wait';
+    elseif($cronAgeMin<=130)    $cronState='green';
+    elseif($cronAgeMin<=360)    $cronState='amber';
+    else                        $cronState='red';
 
-    $order=['green'=>0,'amber'=>1,'red'=>2];
+    // 'wait' zaehlt fuer die Gesamt-Ampel wie 'amber' (Hinweis, kein Alarm).
+    $order=['green'=>0,'wait'=>1,'amber'=>1,'red'=>2];
     $overall=$backupState;
-    if($order[$cronState]>$order[$overall]) $overall=$cronState;
+    if($order[$cronState]>$order[$overall]) $overall = $cronState==='wait'?'amber':$cronState;
 
     out(['ok'=>true,
       'overall'=>$overall,

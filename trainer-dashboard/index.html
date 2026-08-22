@@ -865,7 +865,8 @@
   .sysbar .sysrows{display:flex;gap:8px 22px;flex-wrap:wrap;margin-top:3px;font-size:12.5px;color:var(--muted)}
   .sysbar .sysrows span{display:inline-flex;align-items:center;gap:6px}
   .sysdot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--line)}
-  .sysdot.green{background:var(--good)} .sysdot.amber{background:var(--warn)} .sysdot.red{background:var(--crit)}
+  .sysdot.green{background:var(--good)} .sysdot.amber{background:var(--warn)}
+  .sysdot.red{background:var(--crit)} .sysdot.wait{background:var(--info)}
   /* Zwischenbilanz */
   .cedelta{display:inline-block;font-size:11.5px;font-weight:700;margin-top:3px;
     font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -1478,6 +1479,7 @@ const L={
   sysBackupNever:"noch keine vorhanden - bitte „Jetzt sichern“",
   sysCronAt:ago=>`aktiv, zuletzt ${ago}`,
   sysCronNever:"kein Lebenszeichen - läuft der stündliche Cron-Job?",
+  sysCronWait:"eingerichtet - wartet auf den ersten Lauf (bis zu 1 Std)",
   sysBackupNow:"Jetzt sichern", sysBackupDone:"Sicherung erstellt",
   sysNever:"nie", sysAgoMin:n=>`vor ${n} Min`, sysAgoH:n=>`vor ${n} Std`, sysAgoD:n=>`vor ${n} Tg`,
 
@@ -2232,6 +2234,7 @@ const L={
   sysBackupNever:"none yet - please use \"Back up now\"",
   sysCronAt:ago=>`active, last ${ago}`,
   sysCronNever:"no sign of life - is the hourly cron job running?",
+  sysCronWait:"set up - waiting for the first run (up to 1 h)",
   sysBackupNow:"Back up now", sysBackupDone:"Backup created",
   sysNever:"never", sysAgoMin:n=>`${n} min ago`, sysAgoH:n=>`${n} h ago`, sysAgoD:n=>`${n} d ago`,
 
@@ -3525,7 +3528,7 @@ function renderDash(){
       h.conflicts?`<button class="btn sm" onclick="bookingView='calendar';bookingStatus='all';go('bookings')">${t("ampelShow")}</button>`:""}
   </div>`;
 
-  const kpis=`${ampel}${isAdmin()?'<div id="v-sysstatus"></div>':''}<div class="kpis">
+  const kpis=`${ampel}${isAdmin()?`<div id="v-sysstatus">${sysStatus?sysStatusHtml(sysStatus):""}</div>`:""}<div class="kpis">
     <div class="kpi i" style="cursor:pointer" onclick="kpiGo('all')" title="${t("kpiGoHint")}"><span class="rail"></span><div class="lab">${t("kpiTotal")}</div><div class="val tnum">${T.length}</div></div>
     <div class="kpi g" style="cursor:pointer" onclick="kpiGo('good')" title="${t("kpiGoHint")}"><span class="rail"></span><div class="lab">${t("kpiFull")}</div><div class="val tnum">${full}</div></div>
     <div class="kpi w" style="cursor:pointer" onclick="kpiGo('open')" title="${t("kpiGoHint")}"><span class="rail"></span><div class="lab">${t("kpiOpen")}</div><div class="val tnum">${openReq}</div></div>
@@ -3626,7 +3629,7 @@ function renderDash(){
   </div>`;
 
   $("#v-dash").innerHTML=kpis+portfolio+timeline+att;
-  if(isAdmin()) sysStatusRefresh();
+  if(isAdmin()) sysStatusRefresh();   // zeigt sofort den Cache, holt bei Bedarf neu
 }
 
 /* ============================================================
@@ -3634,13 +3637,22 @@ function renderDash(){
    Ein Blick auf der Uebersicht: Laeuft die taegliche Sicherung, lebt der
    Cron? Gruen = alles gut. Die Werte kommen frisch vom Server.
    ============================================================ */
-let sysStatus=null;
-async function sysStatusRefresh(){
-  const box=$("#v-sysstatus"); if(!box) return;
-  if(!LIVE){ box.innerHTML=""; return; }
-  try{ sysStatus=await apiCall("system.status"); }
-  catch(e){ box.innerHTML=""; return; }
-  box.innerHTML=sysStatusHtml(sysStatus);
+let sysStatus=null, sysStatusAt=0;
+async function sysStatusRefresh(force){
+  if(!LIVE) return;
+  // Hoechstens einmal pro Minute wirklich vom Server holen - der Rest
+  // zeigt den zuletzt bekannten Stand (kein Flackern beim Neuzeichnen).
+  const fresh = sysStatus && (Date.now()-sysStatusAt < 60000);
+  if(fresh && !force){
+    const box=$("#v-sysstatus"); if(box) box.innerHTML=sysStatusHtml(sysStatus);
+    return;
+  }
+  try{
+    const d=await apiCall("system.status");
+    sysStatus=d; sysStatusAt=Date.now();
+  }catch(e){ /* letzten Stand stehen lassen, nicht leeren */ }
+  const box=$("#v-sysstatus");
+  if(box && sysStatus) box.innerHTML=sysStatusHtml(sysStatus);
 }
 function sysAgo(iso){
   const d=utcDate(iso); if(!d) return t("sysNever");
@@ -3654,11 +3666,13 @@ function sysStatusHtml(d){
   if(!d) return "";
   const lvl=d.overall==="green"?"green":d.overall==="amber"?"amber":"red";
   const B=d.backup||{}, C=d.cron||{};
-  const dot=s2=>`<span class="sysdot ${s2}"></span>`;
+  // 'wait' bekommt einen eigenen, ruhigen Punkt (kein Alarmrot)
+  const dot=s2=>`<span class="sysdot ${s2==="wait"?"wait":s2}"></span>`;
   const backupTxt = B.at
     ? t("sysBackupAt",fmtWhen(B.at),sysAgo(B.at))+(B.count?` · ${t("sysBackupN",B.count)}`:"")
     : t("sysBackupNever");
-  const cronTxt = C.at ? t("sysCronAt",sysAgo(C.at)) : t("sysCronNever");
+  const cronTxt = C.state==="wait" ? t("sysCronWait")
+                : C.at ? t("sysCronAt",sysAgo(C.at)) : t("sysCronNever");
   const head = lvl==="green" ? t("sysAllGood")
              : lvl==="amber" ? t("sysCheck") : t("sysProblem");
   return `<div class="ampel a-${lvl} sysbar">
@@ -3667,7 +3681,7 @@ function sysStatusHtml(d){
       <b>${esc(head)}</b>
       <div class="sysrows">
         <span>${dot(B.state||"red")}${esc(t("sysBackup"))}: ${esc(backupTxt)}</span>
-        <span>${dot(C.state||"red")}${esc(t("sysCron"))}: ${esc(cronTxt)}</span>
+        <span>${dot(C.state||"wait")}${esc(t("sysCron"))}: ${esc(cronTxt)}</span>
       </div>
     </div>
     <button class="btn sm" id="sysBkBtn" onclick="sysBackupNow()">${ic("down",14)}${esc(t("sysBackupNow"))}</button>
@@ -3678,7 +3692,7 @@ async function sysBackupNow(){
   try{
     await apiCall("system.backupNow");
     toast(t("sysBackupDone"),"good");
-    await sysStatusRefresh();
+    await sysStatusRefresh(true);
   }catch(e){ toast("Fehler: "+e.message,"crit"); await sysStatusRefresh(); }
 }
 
