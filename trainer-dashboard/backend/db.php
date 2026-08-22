@@ -158,8 +158,11 @@ function ensure_schema(): void {
   // Migrationen (idempotent): Visum-Spalten für travel
   foreach([
     "visa_status VARCHAR(16) DEFAULT 'none'","passport_expiry VARCHAR(20)",
-    "visa_notes TEXT","visa_reminded INT DEFAULT 0"
+    "visa_notes TEXT","visa_reminded INT DEFAULT 0",
+    "dep_airport VARCHAR(96)","ret_airport VARCHAR(96)"
   ] as $col){ try{ db()->exec("ALTER TABLE travel ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Heimatflughafen als Vorgabe fuer kuenftige Wochen
+  try{ db()->exec("ALTER TABLE trainers ADD COLUMN home_airport VARCHAR(96)"); }catch(Throwable $e){}
   // Migrationen (idempotent): Kontakt-Spalten für clients (Transferliste)
   foreach(["contact_name VARCHAR(160)","contact_email VARCHAR(190)"] as $col){
     try{ db()->exec("ALTER TABLE clients ADD COLUMN $col"); }catch(Throwable $e){}

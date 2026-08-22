@@ -486,6 +486,7 @@ function get_state(): array {
       'langs'=>json_decode($r['langs']?:'[]',true),
       'uae'=>(bool)$r['uae'], 'load'=>(int)$r['load_lvl'],
       'color'=>$r['color'], 'rating'=>$r['rating'],
+      'homeAirport'=>$r['home_airport']??'',
       'plan'=>$planBy[(string)$r['id']] ?? null,
       'passport'=>$pp,
       'notes'=>$r['notes']??'',
@@ -510,6 +511,7 @@ function get_state(): array {
       if($e['trainerId']===$trid){ $e['flight']=[
         'arrival'=>$tv['arrival'],'departure'=>$tv['departure'],
         'flightOut'=>$tv['flight_out'],'flightReturn'=>$tv['flight_return'],
+        'depAirport'=>$tv['dep_airport']??'','retAirport'=>$tv['ret_airport']??'',
         'room'=>$tv['room'],'notes'=>$tv['notes'],
         'visaStatus'=>$tv['visa_status']??'none','passportExpiry'=>$tv['passport_expiry']??'',
         'visaNotes'=>$tv['visa_notes']??'']; }
@@ -1995,13 +1997,17 @@ function flight_data(int $tgId, string $lang='de'): array {
     if(trim((string)($tr['passport_nationality']??''))==='') $miss[]=$de?'Nationalität':'nationality';
     if(trim((string)($tv['arrival']??''))==='')            $miss[]=$de?'Anreise':'arrival';
     if(trim((string)($tv['departure']??''))==='')          $miss[]=$de?'Abreise':'departure';
+    if(trim((string)($tv['dep_airport']??''))==='' && trim((string)($tr['home_airport']??''))==='')
+      $miss[]=$de?'Abflughafen':'departure airport';
     if($miss) $missing[]=['name'=>(string)$tr['name'],'fields'=>$miss];
     $note=trim((string)($tv['notes']??''));
     if(trim((string)($tv['room']??''))!=='') $note=trim((($de?'Zimmer: ':'Room: ').$tv['room'].($note!==''?' · ':'')).$note);
+    $dep=trim((string)($tv['dep_airport']??''))!==''?(string)$tv['dep_airport']:(string)($tr['home_airport']??'');
     $rows[]=[(string)(++$i),
       (string)($tr['passport_name']?:($tr['name'].($de?' (Name laut Pass fehlt)':' (name as in passport missing)'))),
       (string)($tr['passport_birthdate']??''),(string)($tr['passport_nationality']??''),
       (string)($tr['passport_number']??''),(string)($tr['passport_expiry']??''),
+      $dep, trim((string)($tv['ret_airport']??''))!==''?(string)$tv['ret_airport']:$dep,
       (string)($tv['arrival']??''),(string)($tv['departure']??''),
       (string)($tv['flight_out']??''),(string)($tv['flight_return']??''),
       $visa[(string)($tv['visa_status']??'none')]??(string)($tv['visa_status']??''),
@@ -2014,10 +2020,10 @@ function flight_xlsx(int $tgId, string $lang='de'): array {
   $d=flight_data($tgId,$lang); $tg=$d['tg'];
   $head=$de
     ?['Nr','Name laut Pass','Geburtsdatum','Nationalität','Passnummer','Pass gültig bis',
-      'Anreise','Abreise','Flugwunsch Hinflug','Flugwunsch Rückflug','Visum','E-Mail','Telefon','Bemerkung']
+      'Abflughafen','Rückflug nach','Anreise','Abreise','Flugwunsch Hinflug','Flugwunsch Rückflug','Visum','E-Mail','Telefon','Bemerkung']
     :['No','Name as in passport','Date of birth','Nationality','Passport no.','Passport valid until',
-      'Arrival','Departure','Outbound preference','Return preference','Visa','Email','Phone','Notes'];
-  $w=[5,30,13,14,16,15,12,12,26,26,11,30,18,32];
+      'From airport','Return to','Arrival','Departure','Outbound preference','Return preference','Visa','Email','Phone','Notes'];
+  $w=[5,30,13,14,16,15,16,16,12,12,26,26,11,30,18,32];
   $title=trim((($tg['code']??'')!==''?$tg['code'].' - ':'').(string)($tg['topic']??''));
   $period=trim((string)($tg['start_date']??'').' - '.(string)($tg['end_date']??''),' -');
   $line2=implode(' · ',array_filter([$period,(string)($tg['kw']??''),

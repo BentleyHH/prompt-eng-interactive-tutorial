@@ -323,6 +323,16 @@ Postfach laufen (z.B. fluege@dvi-systems.com), die Adresse in `config.php` als
 `'flight_from' => 'fluege@dvi-systems.com'` eintragen - sie muss zur eigenen
 Domain gehoeren. Jeder Download und Versand landet im Protokoll.
 
+Die Reisedaten sammelt das Cockpit direkt bei den Trainern ein: **Sagt ein
+Trainer per Antwort-Link zu, erscheint auf derselben Seite ein kurzes
+Reiseformular** - Abflughafen, Rueckflugziel, An-/Abreisetag (mit Trainingsdaten
+vorbelegt), Flugwuensche und, falls noch nicht hinterlegt, die Passangaben.
+Auch die Bestaetigungs-E-Mail enthaelt einen Button "Reisedaten angeben", ueber
+den der Trainer seine Angaben jederzeit nachtragen oder aendern kann - alles
+tokengebunden, ohne Anmeldung, nur fuer genau diese Woche. Der Abflughafen wird
+als Heimatflughafen gemerkt und in der naechsten Woche vorbelegt. Im Cockpit
+stehen dieselben Felder im Reise-Dialog je Trainer.
+
 ## Automatische Flugvorschläge
 Im Reise-Editor liefert **„Flüge vorschlagen"** aus Heimatregion → Zielflughafen passende
 Verbindungen (z. B. München → Abu Dhabi). Ein Klick auf **Übernehmen** trägt Hin-/Rückflug

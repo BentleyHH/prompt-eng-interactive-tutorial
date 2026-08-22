@@ -2138,6 +2138,7 @@ const L={
   tvFlightHead:"Deine Reisedaten", tvLogHead:"Reise & Logistik", agFor:"Für",
   visaLbl:"Visum", passportLbl:"Reisepass gültig bis", visaNotesLbl:"Visum-Notizen",
   visa_none:"-", visa_needed:"benötigt", visa_applied:"beantragt", visa_approved:"genehmigt", visa_rejected:"abgelehnt",
+  tvDepAirport:"Abflughafen", tvRetAirport:"Rückflug nach",
   fxBtn:"Flugdaten", fxTitle:"Flugdaten für die Buchung",
   fxHint:"Der Kunde bucht die Flüge selbst - diese Excel-Tabelle enthält alle buchungsrelevanten Angaben der bestätigten Trainer dieser Woche: Name laut Pass, Geburtsdatum, Nationalität, Passnummer, An- und Abreise, Flugwünsche, Visum und Kontakt.",
   fxCount:n=>n===1?"1 bestätigter Trainer in dieser Woche":`${n} bestätigte Trainer in dieser Woche`,
@@ -2950,6 +2951,7 @@ const L={
   tvFlightHead:"Your travel details", tvLogHead:"Travel & logistics", agFor:"For",
   visaLbl:"Visa", passportLbl:"Passport valid until", visaNotesLbl:"Visa notes",
   visa_none:"-", visa_needed:"needed", visa_applied:"applied", visa_approved:"approved", visa_rejected:"rejected",
+  tvDepAirport:"Departure airport", tvRetAirport:"Return to",
   fxBtn:"Flight data", fxTitle:"Flight data for booking",
   fxHint:"The client books the flights themselves - this Excel sheet contains everything needed to book for this week's confirmed trainers: name as in passport, date of birth, nationality, passport number, arrival and departure, flight preferences, visa and contact.",
   fxCount:n=>n===1?"1 confirmed trainer this week":`${n} confirmed trainers this week`,
@@ -6546,6 +6548,10 @@ function openTrainerTravel(tgId,trId){
   const uae=needsVisa((S.trainings.find(x=>x.id===tgId)||{}).country);
   $("#sheetTitle").textContent=t("tvFlightTitle",tr.name);
   $("#sheetBody").innerHTML=`
+    <div class="fldrow">
+      <div style="flex:1">${tvField("flFrom",t("tvDepAirport"),fl.depAirport||(tr.homeAirport||""))}</div>
+      <div style="flex:1">${tvField("flTo",t("tvRetAirport"),fl.retAirport)}</div>
+    </div>
     ${tvField("flArr",t("tvArrival"),fl.arrival)}
     ${tvField("flDep",t("tvDeparture"),fl.departure)}
     <div class="fldrow" style="margin-top:14px"><label class="fld" style="margin:0">${t("tvFlightOut")} / ${t("tvFlightReturn")}</label>
@@ -6567,6 +6573,7 @@ function openTrainerTravel(tgId,trId){
 async function saveTrainerTravel(tgId,trId){
   const flight={arrival:$("#flArr").value,departure:$("#flDep").value,flightOut:$("#flOut").value,
     flightReturn:$("#flRet").value,room:$("#flRoom").value,notes:$("#flNotes").value,
+    depAirport:$("#flFrom")?$("#flFrom").value:"",retAirport:$("#flTo")?$("#flTo").value:"",
     visaStatus:$("#flVisa")?$("#flVisa").value:"none",passportExpiry:$("#flPass")?$("#flPass").value:"",
     visaNotes:$("#flVisaNotes")?$("#flVisaNotes").value:""};
   let e=tvGet(tgId).roster.find(r=>r.trainerId===trId);
@@ -6575,6 +6582,7 @@ async function saveTrainerTravel(tgId,trId){
   if(LIVE){
     try{ await apiCall("trainer.travelSave",{training:tgId,trainer:trId,arrival:flight.arrival,departure:flight.departure,
       flightOut:flight.flightOut,flightReturn:flight.flightReturn,room:flight.room,notes:flight.notes,
+      depAirport:flight.depAirport,retAirport:flight.retAirport,
       visaStatus:flight.visaStatus,passportExpiry:flight.passportExpiry,visaNotes:flight.visaNotes}); }
     catch(err){ toast("Fehler: "+err.message,"crit"); return; }
   }

@@ -1829,12 +1829,16 @@ switch($action){
     $tgId=$in['training']??0; $trId=$in['trainer']??0;
     $ex=q("SELECT id FROM travel WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
     $vs=$in['visaStatus']??'none';
+    $dep=mb_substr(trim((string)($in['depAirport']??'')),0,96);
+    $ret=mb_substr(trim((string)($in['retAirport']??'')),0,96);
     $f=[$in['arrival']??'', $in['departure']??'', $in['flightOut']??'', $in['flightReturn']??'', $in['room']??'', $in['notes']??'',
-        $vs, $in['passportExpiry']??'', $in['visaNotes']??''];
-    if($ex) q("UPDATE travel SET arrival=?,departure=?,flight_out=?,flight_return=?,room=?,notes=?,visa_status=?,passport_expiry=?,visa_notes=?,updated_at=? WHERE id=?",
+        $vs, $in['passportExpiry']??'', $in['visaNotes']??'', $dep, $ret];
+    if($ex) q("UPDATE travel SET arrival=?,departure=?,flight_out=?,flight_return=?,room=?,notes=?,visa_status=?,passport_expiry=?,visa_notes=?,dep_airport=?,ret_airport=?,updated_at=? WHERE id=?",
       array_merge($f,[now(),$ex['id']]));
-    else q("INSERT INTO travel(training_id,trainer_id,arrival,departure,flight_out,flight_return,room,notes,visa_status,passport_expiry,visa_notes,updated_at)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", array_merge([$tgId,$trId],$f,[now()]));
+    else q("INSERT INTO travel(training_id,trainer_id,arrival,departure,flight_out,flight_return,room,notes,visa_status,passport_expiry,visa_notes,dep_airport,ret_airport,updated_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)", array_merge([$tgId,$trId],$f,[now()]));
+    // Abflughafen als Heimatflughafen merken - Vorgabe fuer die naechste Woche
+    if($dep!=='') q("UPDATE trainers SET home_airport=? WHERE id=? AND COALESCE(home_airport,'')<>?",[$dep,$trId,$dep]);
     out(['ok'=>true]);
 
   /* ---- Persönliche Reise-Agenda per E-Mail senden (mit Druck-Link) ---- */
