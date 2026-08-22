@@ -313,6 +313,8 @@ function ppt_chase(bool $force=false, int $onlyTraining=0): array {
 }
 
 function run_automation(): array {
+  // Lebenszeichen des Cron - der Systemstatus im Cockpit liest das aus.
+  config_set('last_cron', now());
   $reminderH=(int)(config_get('reminder_hours') ?? 48);
   $escalateH=(int)(config_get('escalate_hours') ?? 72);
   $autoAdv  =(config_get('auto_advance')==='1');

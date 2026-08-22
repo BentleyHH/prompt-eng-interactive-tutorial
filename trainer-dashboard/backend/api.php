@@ -1021,6 +1021,45 @@ switch($action){
       .($cat?', Kriterienkatalog neu':''));
     out(['ok'=>true,'removed'=>$before,'catalog'=>$cat]);
 
+  /* Systemstatus fuer die Ampel im Cockpit (nur Administration):
+     Laeuft die taegliche Sicherung? Lebt der Cron? Ein Blick genuegt. */
+  case 'system.status':
+    require_admin();
+    require_once __DIR__.'/backup.php';
+    $backups=backup_list();                 // neueste zuerst
+    $last=$backups[0]??null;
+    $lastTs=$last?(int)$last['mtime']:0;
+    $ageH = $lastTs? (int)floor((time()-$lastTs)/3600) : null;
+    // Sicherung: gruen bis 26 h (taeglich + Puffer), danach gelb, nie = rot
+    $backupState = $lastTs===0 ? 'red' : ($ageH<=26 ? 'green' : ($ageH<=50 ? 'amber' : 'red'));
+
+    $cronRaw = config_get('last_cron');
+    $cronTs  = $cronRaw ? ts($cronRaw) : 0;
+    $cronAgeMin = $cronTs ? (int)floor((time()-$cronTs)/60) : null;
+    // Cron laeuft stuendlich: gruen bis 90 min, dann gelb, ueber 6 h oder nie = rot
+    $cronState = $cronTs===0 ? 'red' : ($cronAgeMin<=90 ? 'green' : ($cronAgeMin<=360 ? 'amber' : 'red'));
+
+    $order=['green'=>0,'amber'=>1,'red'=>2];
+    $overall=$backupState;
+    if($order[$cronState]>$order[$overall]) $overall=$cronState;
+
+    out(['ok'=>true,
+      'overall'=>$overall,
+      'backup'=>['state'=>$backupState,'at'=>$lastTs?gmdate('Y-m-d H:i:s',$lastTs):null,
+                 'ageHours'=>$ageH,'count'=>count($backups),
+                 'file'=>$last['file']??null,'size'=>$last['size']??0],
+      'cron'=>['state'=>$cronState,'at'=>$cronRaw?:null,'ageMin'=>$cronAgeMin],
+      'now'=>now()]);
+
+  /* Sicherung sofort ausloesen - der Knopf hinter der Ampel (nur Admin). */
+  case 'system.backupNow':
+    require_admin();
+    require_once __DIR__.'/backup.php';
+    $r=backup_run();
+    if(empty($r['ok'])) fail($r['error']??'Sicherung fehlgeschlagen.');
+    audit('system.backupNow','', '', 'Sicherung manuell erstellt: '.$r['file']);
+    out(['ok'=>true]+$r);
+
   /* ---- Zeugnisse und Zertifikate ---- */
   case 'cert.state':
     require_auth();
