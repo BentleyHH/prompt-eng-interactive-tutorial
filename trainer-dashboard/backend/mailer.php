@@ -249,7 +249,7 @@ function build_mime_body(string $html, array $atts, string &$ctype): string {
   return $body."--$b--\r\n";
 }
 
-function send_email(string $toEmail, string $toName, string $subject, string $html, array $atts=[]): bool {
+function send_email(string $toEmail, string $toName, string $subject, string $html, array $atts=[], string $fromOverride=''): bool {
   $c=cfg();
   $mode=$c['mail_mode']??'mail';
   $GLOBALS['__mail_err']='';
@@ -268,6 +268,8 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
   }
 
   $from=$c['from_email']; $fromName=$c['from_name']??'ETAF';
+  // Eigener Absender fuer besondere Postfaecher (z.B. fluege@...), nur wenn gueltig
+  if($fromOverride!=='' && filter_var($fromOverride,FILTER_VALIDATE_EMAIL)) $from=$fromOverride;
   if($mode==='smtp') return smtp_send($toEmail,$subject,$html,$c['smtp']??[],$from,$fromName,$atts);
 
   // PHP mail()

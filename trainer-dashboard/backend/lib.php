@@ -1970,6 +1970,76 @@ function xlsx_rows(string $bin, int $maxRows=5000): array {
 }
 
 /** Eine xlsx-Datei bauen. $sheets = ['Blattname'=>[[zelle,…],…], …] */
+/* ============================================================
+   FLUGDATEN-EXPORT
+   Abu Dhabi bucht die Fluege selbst - je Trainingswoche eine Excel-
+   Tabelle mit allen buchungsrelevanten Angaben der bestaetigten
+   Trainer. Fehlende Angaben werden mit ausgewiesen (Gegencheck).
+   ============================================================ */
+function flight_data(int $tgId, string $lang='de'): array {
+  $de=$lang!=='en';
+  $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+  if(!$tg) fail('Training nicht gefunden.',404);
+  $ids=array_map('intval', q("SELECT trainer_id FROM requests WHERE training_id=? AND status IN('yes','confirmed')",
+    [$tgId])->fetchAll(PDO::FETCH_COLUMN));
+  $visa=$de?['none'=>'-','needed'=>'benötigt','applied'=>'beantragt','approved'=>'genehmigt','rejected'=>'abgelehnt']
+           :['none'=>'-','needed'=>'needed','applied'=>'applied','approved'=>'approved','rejected'=>'rejected'];
+  $rows=[]; $missing=[]; $i=0;
+  foreach($ids as $trId){
+    $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch(); if(!$tr) continue;
+    $tv=q("SELECT * FROM travel WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch()?:[];
+    $miss=[];
+    if(trim((string)($tr['passport_name']??''))==='')      $miss[]=$de?'Name laut Pass':'name as in passport';
+    if(trim((string)($tr['passport_number']??''))==='')    $miss[]=$de?'Passnummer':'passport number';
+    if(trim((string)($tr['passport_birthdate']??''))==='') $miss[]=$de?'Geburtsdatum':'date of birth';
+    if(trim((string)($tr['passport_nationality']??''))==='') $miss[]=$de?'Nationalität':'nationality';
+    if(trim((string)($tv['arrival']??''))==='')            $miss[]=$de?'Anreise':'arrival';
+    if(trim((string)($tv['departure']??''))==='')          $miss[]=$de?'Abreise':'departure';
+    if($miss) $missing[]=['name'=>(string)$tr['name'],'fields'=>$miss];
+    $note=trim((string)($tv['notes']??''));
+    if(trim((string)($tv['room']??''))!=='') $note=trim((($de?'Zimmer: ':'Room: ').$tv['room'].($note!==''?' · ':'')).$note);
+    $rows[]=[(string)(++$i),
+      (string)($tr['passport_name']?:($tr['name'].($de?' (Name laut Pass fehlt)':' (name as in passport missing)'))),
+      (string)($tr['passport_birthdate']??''),(string)($tr['passport_nationality']??''),
+      (string)($tr['passport_number']??''),(string)($tr['passport_expiry']??''),
+      (string)($tv['arrival']??''),(string)($tv['departure']??''),
+      (string)($tv['flight_out']??''),(string)($tv['flight_return']??''),
+      $visa[(string)($tv['visa_status']??'none')]??(string)($tv['visa_status']??''),
+      (string)($tr['email']??''),(string)($tr['phone']??''),$note];
+  }
+  return ['tg'=>$tg,'rows'=>$rows,'missing'=>$missing,'count'=>count($rows)];
+}
+function flight_xlsx(int $tgId, string $lang='de'): array {
+  $de=$lang!=='en';
+  $d=flight_data($tgId,$lang); $tg=$d['tg'];
+  $head=$de
+    ?['Nr','Name laut Pass','Geburtsdatum','Nationalität','Passnummer','Pass gültig bis',
+      'Anreise','Abreise','Flugwunsch Hinflug','Flugwunsch Rückflug','Visum','E-Mail','Telefon','Bemerkung']
+    :['No','Name as in passport','Date of birth','Nationality','Passport no.','Passport valid until',
+      'Arrival','Departure','Outbound preference','Return preference','Visa','Email','Phone','Notes'];
+  $w=[5,30,13,14,16,15,12,12,26,26,11,30,18,32];
+  $title=trim((($tg['code']??'')!==''?$tg['code'].' - ':'').(string)($tg['topic']??''));
+  $period=trim((string)($tg['start_date']??'').' - '.(string)($tg['end_date']??''),' -');
+  $line2=implode(' · ',array_filter([$period,(string)($tg['kw']??''),
+    trim((string)($tg['city']??'').' '.(string)($tg['country']??''))]));
+  $sheet=[
+    [[$de?'ETAF - Flugdaten der Trainer':'ETAF - Trainer flight data',1]],
+    [[$title,1]],
+    [$line2],
+    [($de?'Stand: ':'As of: ').gmdate('Y-m-d H:i').' UTC'.($de?' - bitte vor Buchung gegenprüfen':' - please cross-check before booking')],
+    [],
+    array_map(fn($h)=>[$h,1],$head)];
+  foreach($d['rows'] as $r) $sheet[]=$r;
+  if($d['missing']){
+    $sheet[]=[];
+    $sheet[]=[[$de?'Fehlende Angaben (bitte vor der Buchung klären):':'Missing details (please clarify before booking):',1]];
+    foreach($d['missing'] as $m) $sheet[]=[$m['name'].': '.implode(', ',$m['fields'])];
+  }
+  $name=$de?'Flugdaten':'Flight data';
+  $file='ETAF-Flugdaten-'.preg_replace('/[^A-Za-z0-9_-]/','',(string)($tg['code']?:$tgId)).'.xlsx';
+  return [$file, xlsx_build([$name=>$sheet],[$name=>$w]), $d];
+}
+
 function xlsx_build(array $sheets, array $colWidths=[]): string {
   $names=array_keys($sheets);
   $files=[];

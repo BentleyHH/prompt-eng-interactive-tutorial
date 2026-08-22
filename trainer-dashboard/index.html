@@ -2138,6 +2138,18 @@ const L={
   tvFlightHead:"Deine Reisedaten", tvLogHead:"Reise & Logistik", agFor:"Für",
   visaLbl:"Visum", passportLbl:"Reisepass gültig bis", visaNotesLbl:"Visum-Notizen",
   visa_none:"-", visa_needed:"benötigt", visa_applied:"beantragt", visa_approved:"genehmigt", visa_rejected:"abgelehnt",
+  fxBtn:"Flugdaten", fxTitle:"Flugdaten für die Buchung",
+  fxHint:"Der Kunde bucht die Flüge selbst - diese Excel-Tabelle enthält alle buchungsrelevanten Angaben der bestätigten Trainer dieser Woche: Name laut Pass, Geburtsdatum, Nationalität, Passnummer, An- und Abreise, Flugwünsche, Visum und Kontakt.",
+  fxCount:n=>n===1?"1 bestätigter Trainer in dieser Woche":`${n} bestätigte Trainer in dieser Woche`,
+  fxMissing:"Noch offene Angaben - werden im Export mit ausgewiesen:",
+  fxComplete:"Alle Angaben vollständig.",
+  fxDl:"Excel herunterladen",
+  fxMailTitle:"Per E-Mail an den Kunden senden",
+  fxTo:"Empfänger", fxNote:"Nachricht (optional)",
+  fxFrom:f=>`Absender: ${f}`,
+  fxSend:"Senden", fxToMissing:"Bitte eine Empfängeradresse eingeben.",
+  fxSent:to=>`Flugdaten an ${to} gesendet.`,
+  fxLogged:"Testmodus: nur protokolliert, nichts versendet (mail_mode 'log').",
   flSuggest:"Flug-Vorschläge", flSuggestHint:"Automatische Vorschläge nach Route (Region → Ziel). Zum Übernehmen anklicken.", flUse:"Übernehmen",
   nav_emails:"Protokolle", tp_emails:"E-Mail-Protokoll", tp_emailsSub:"Alle versendeten Anfragen, Erinnerungen und Agenden",
   /* ---- Trainingsbericht & Auswertung ---- */
@@ -2938,6 +2950,18 @@ const L={
   tvFlightHead:"Your travel details", tvLogHead:"Travel & logistics", agFor:"For",
   visaLbl:"Visa", passportLbl:"Passport valid until", visaNotesLbl:"Visa notes",
   visa_none:"-", visa_needed:"needed", visa_applied:"applied", visa_approved:"approved", visa_rejected:"rejected",
+  fxBtn:"Flight data", fxTitle:"Flight data for booking",
+  fxHint:"The client books the flights themselves - this Excel sheet contains everything needed to book for this week's confirmed trainers: name as in passport, date of birth, nationality, passport number, arrival and departure, flight preferences, visa and contact.",
+  fxCount:n=>n===1?"1 confirmed trainer this week":`${n} confirmed trainers this week`,
+  fxMissing:"Details still missing - also listed in the export:",
+  fxComplete:"All details complete.",
+  fxDl:"Download Excel",
+  fxMailTitle:"Send to the client by email",
+  fxTo:"Recipient", fxNote:"Message (optional)",
+  fxFrom:f=>`Sender: ${f}`,
+  fxSend:"Send", fxToMissing:"Please enter a recipient address.",
+  fxSent:to=>`Flight data sent to ${to}.`,
+  fxLogged:"Test mode: logged only, nothing sent (mail_mode 'log').",
   flSuggest:"Flight suggestions", flSuggestHint:"Auto suggestions by route (region → destination). Click to use.", flUse:"Use",
   nav_emails:"Logs", tp_emails:"Email log", tp_emailsSub:"All sent requests, reminders and agendas",
   /* ---- Training debrief & report ---- */
@@ -4083,8 +4107,11 @@ function renderDetail(){
 
   const roster=`<div class="panel">
     <div class="panel-h"><h3>${t("teamStatus")}</h3><div class="sub">${t("inProcess",inRoster.length)}</div>
+      <div class="spacer"></div>
+      ${inRoster.filter(x=>["yes","confirmed"].includes(x.status)).length
+        ? `<button class="btn sm" onclick="flightSheet('${tg.id}')">${ic("plane",14)}${esc(t("fxBtn"))}</button>` : ""}
       ${inRoster.filter(x=>["yes","confirmed"].includes(x.status)).length>1
-        ? `<div class="spacer"></div><button class="btn sm" onclick="sendAgendaAll('${tg.id}')">${ic("send",14)}${esc(t("agAllBtn"))}</button>` : ""}</div>
+        ? `<button class="btn sm" onclick="sendAgendaAll('${tg.id}')">${ic("send",14)}${esc(t("agAllBtn"))}</button>` : ""}</div>
     <div class="panel-b">${inRoster.length?inRoster.map(x=>rosterRow(x,tg)).join(""):`<div class="empty">${t("noneAsked")}</div>`}</div>
   </div>`;
 
@@ -6649,6 +6676,57 @@ function agMailTexts(tg,tr,lang,batch){
 /* Serienversand: derselbe Kontroll-Dialog, nur mit Empfängerliste.
    Betreff und Text dürfen Platzhalter enthalten - {{firstName}} wird je
    Trainer gefüllt, sonst stünde in allen Mails dieselbe Anrede. */
+/* ---------- Flugdaten je Woche: Excel + Versand an den Kunden ---------- */
+async function flightSheet(tgId){
+  let d;
+  try{ d=await apiCall("travel.flightData",{training:tgId,lang:S.lang}); }
+  catch(e){ toast(e.message,"crit"); return; }
+  $("#sheetTitle").textContent=t("fxTitle");
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:10px">${esc(t("fxHint"))}</div>
+    <div class="rpnote soft">${ic("users",16)}<div>${esc(t("fxCount",d.count))}</div></div>
+    ${d.missing&&d.missing.length?`<div class="rpnote" style="margin-top:10px">${ic("bell",16)}
+      <div><b>${esc(t("fxMissing"))}</b>
+        ${d.missing.map(m=>`<div class="meta">${esc(m.name)}: ${esc(m.fields.join(", "))}</div>`).join("")}</div></div>`
+      :`<div class="rpnote soft" style="margin-top:10px">${ic("check",16)}<div>${esc(t("fxComplete"))}</div></div>`}
+    <div style="margin:16px 0 4px"><button class="btn" onclick="flightDl('${tgId}')">${ic("down",15)}${esc(t("fxDl"))}</button></div>
+    <div style="border-top:1px solid var(--line);margin-top:14px;padding-top:14px">
+      <b>${esc(t("fxMailTitle"))}</b>
+      <label class="fld">${esc(t("fxTo"))}</label>
+      <input class="inp" id="fxTo" type="email" autocapitalize="off" spellcheck="false"
+             value="${esc(d.to||"")}" placeholder="booking@...">
+      <label class="fld">${esc(t("fxNote"))}</label>
+      <textarea id="fxNote" style="min-height:64px"></textarea>
+      ${d.from?`<div class="meta" style="margin-top:8px">${esc(t("fxFrom",d.from))}</div>`:""}
+    </div>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button>
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="flightSend('${tgId}')">${ic("send",15)}${esc(t("fxSend"))}</button>`;
+  openSheet();
+}
+async function flightDl(tgId){
+  try{
+    const base=(window.ETAF&&ETAF.apiBase)||"backend";
+    const r=await fetch(base+"/flight-export.php?training="+encodeURIComponent(tgId)+"&lang="+S.lang,
+      {headers:{"X-Auth-Token":AUTH||""}});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const blob=await r.blob();
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+    const cd=r.headers.get("Content-Disposition")||"", m=cd.match(/filename="([^"]+)"/);
+    a.download=m?m[1]:"ETAF-Flugdaten.xlsx";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  }catch(e){ toast("Download fehlgeschlagen: "+e.message,"crit"); }
+}
+async function flightSend(tgId){
+  const to=val("fxTo").trim();
+  if(!to){ toast(t("fxToMissing"),"warn"); return; }
+  try{
+    const d=await apiCall("travel.flightMail",{training:tgId,to,note:val("fxNote"),lang:S.lang});
+    closeSheet();
+    toast(d.status==="logged"?t("fxLogged"):t("fxSent",to),"good");
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
 function sendAgendaAll(tgId){
   const tg=S.trainings.find(x=>String(x.id)===String(tgId)); if(!tg) return;
   const list=(tg.roster||[]).filter(r=>["yes","confirmed"].includes(r.status))

@@ -1848,6 +1848,51 @@ switch($action){
   /* ---- Serienversand: Agenda an alle bestätigten Trainer eines Trainings.
          Betreff und Text kommen aus dem Kontroll-Dialog und dürfen Platzhalter
          wie {{firstName}} enthalten - je Trainer wird individuell gefüllt. ---- */
+  /* ---- Flugdaten je Woche: Vorschau (Vollstaendigkeit) und Versand ---- */
+  case 'travel.flightData': {
+    require_auth();
+    $d=flight_data((int)($in['training']??0), ($in['lang']??'de')==='en'?'en':'de');
+    out(['ok'=>true,'count'=>$d['count'],'missing'=>$d['missing'],
+         'to'=>(string)(config_get('flight_to')??''),
+         'from'=>(string)(cfg()['flight_from']??'')]);
+  }
+  case 'travel.flightMail': {
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $to=trim((string)($in['to']??''));
+    if(!filter_var($to,FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige Empfängeradresse angeben.');
+    $lang=($in['lang']??'de')==='en'?'en':'de'; $de=$lang!=='en';
+    [$file,$bin,$d]=flight_xlsx($tgId,$lang);
+    if(!$d['count']) fail($de?'Für dieses Training ist noch kein Trainer bestätigt.':'No trainer confirmed for this training yet.');
+    config_set('flight_to',$to);   // Empfaenger fuer das naechste Mal merken
+    $tg=$d['tg'];
+    $title=trim((($tg['code']??'')!==''?$tg['code'].' - ':'').(string)($tg['topic']??''));
+    $period=trim((string)($tg['start_date']??'').' - '.(string)($tg['end_date']??''),' -');
+    $subj=($de?'Flugdaten Trainer - ':'Trainer flight data - ').$title.($period!==''?' ('.$period.')':'');
+    $note=trim((string)($in['note']??''));
+    $nl="\n";
+    $bodyTxt=($de
+      ?'Guten Tag,'.$nl.$nl.'anbei die Flugdaten der bestätigten Trainer für "'.$title.'"'
+        .($period!==''?' ('.$period.')':'').' als Excel-Datei.'.$nl.$nl
+        .'Bitte prüfen Sie die Angaben vor der Buchung gegen.'
+      :'Hello,'.$nl.$nl.'please find attached the flight data of the confirmed trainers for "'.$title.'"'
+        .($period!==''?' ('.$period.')':'').'.'.$nl.$nl.'Please cross-check the details before booking.')
+      .($note!==''?$nl.$nl.$note:'')
+      .($d['missing']?($nl.$nl.($de?'Hinweis - noch offene Angaben: ':'Note - details still missing: ')
+        .implode('; ',array_map(fn($m)=>$m['name'].' ('.implode(', ',$m['fields']).')',$d['missing']))):'')
+      .$nl.$nl.($de?'Freundliche Grüße':'Best regards').$nl.'ETAF Coordination';
+    $ok=send_email($to,'',$subj,email_html($bodyTxt,''),
+      [['name'=>$file,'mime'=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'data_b64'=>base64_encode($bin)]],
+      (string)(cfg()['flight_from']??''));
+    $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[$tgId,0,$to,$subj,$bodyTxt,$lang,$st,now()]);
+    if(!$ok) fail('Versand fehlgeschlagen: '.($GLOBALS['__mail_err']??''));
+    audit('travel.flightMail','training',(string)$tgId,'Flugdaten an '.$to.' ('.$d['count'].' Trainer)');
+    out(['ok'=>true,'sent'=>$st!=='failed','status'=>$st,'count'=>$d['count'],'missing'=>count($d['missing'])]);
+  }
+
   case 'travel.sendAgendaAll':
     require_auth();
     $tgId=(int)($in['training']??0);

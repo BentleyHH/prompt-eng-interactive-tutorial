@@ -308,6 +308,21 @@ ohne genehmigtes Visum** einmalig automatisch an die Reisepass-Kopie — idempot
 also keine doppelte Erinnerung raus. Pass- und Visum-Angaben erscheinen auch auf der
 druckbaren Agenda (`agenda.php`).
 
+## Flugdaten-Export je Trainingswoche (Kunde bucht selbst)
+Bucht der Kunde die Fluege selbst (Abu Dhabi), liefert das Cockpit je Woche die
+komplette Buchungsgrundlage: im Training unter **Team / Status -> Flugdaten**
+oeffnet sich die Uebersicht mit allen **bestaetigten Trainern** der Woche.
+**Excel herunterladen** erzeugt eine Tabelle mit Name laut Pass, Geburtsdatum,
+Nationalitaet, Passnummer und Gueltigkeit, An- und Abreise, Flugwuenschen,
+Visum-Status und Kontakt - dazu Kopfzeilen mit Woche, Zeitraum und Ort.
+Fehlende Angaben (z.B. Passnummer nicht hinterlegt) zeigt der Dialog vorher an
+und weist sie auch in der Datei aus - so dient der Export zugleich als
+Gegencheck. **Per E-Mail senden** schickt die Excel direkt als Anhang an den
+Kunden; die Empfaengeradresse wird gemerkt. Soll der Versand ueber ein eigenes
+Postfach laufen (z.B. fluege@dvi-systems.com), die Adresse in `config.php` als
+`'flight_from' => 'fluege@dvi-systems.com'` eintragen - sie muss zur eigenen
+Domain gehoeren. Jeder Download und Versand landet im Protokoll.
+
 ## Automatische Flugvorschläge
 Im Reise-Editor liefert **„Flüge vorschlagen"** aus Heimatregion → Zielflughafen passende
 Verbindungen (z. B. München → Abu Dhabi). Ein Klick auf **Übernehmen** trägt Hin-/Rückflug

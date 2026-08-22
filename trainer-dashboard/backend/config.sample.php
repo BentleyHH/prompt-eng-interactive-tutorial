@@ -107,4 +107,9 @@ return [
   // Nach wie vielen Stunden ohne Aktivitaet eine Sitzung ablaeuft (Neuanmeldung
   // noetig). Standard 24. 0 = keine Leerlauf-Grenze (nicht empfohlen).
   'session_idle_hours' => 24,
+
+  // Absender fuer den Flugdaten-Versand an den Kunden (z.B. fluege@dvi-systems.com).
+  // Leer = normaler Absender (from_email). Die Adresse muss zur eigenen Domain
+  // gehoeren, sonst lehnen Empfaenger-Server die Mail ab.
+  'flight_from' => '',
 ];
