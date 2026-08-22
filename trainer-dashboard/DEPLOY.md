@@ -145,8 +145,19 @@ Es muss niemand eine E-Mail lesen oder abtippen.
   er wächst also automatisch mit, ohne dass etwas nachgetragen werden muss.
 - **Zusätzlich** die DB-Backups im artfiles-Kundenmenü aktivieren - zwei unabhängige
   Sicherungen sind bei einem halben Jahr Daten kein Luxus.
-- Sicherung ansehen/herunterladen: `backend/backup.php?key=DEIN_CRON_KEY`.
-  Wiederherstellen: `.sql.gz` entpacken und die `.sql`-Datei in phpMyAdmin importieren.
+- **Ansehen, Herunterladen und Wiederherstellen direkt im Cockpit** (nur als
+  Administrator): auf der Uebersicht in der Statusleiste den Knopf **Sicherungen**
+  druecken. Dort liegen alle Staende der letzten 14 Tage - je Stand **Herunterladen**
+  (die Datei getrennt vom Server aufbewahren!) und **Einspielen**. Einspielen ersetzt
+  den kompletten Datenbestand durch den gewaehlten Stand; direkt davor legt das
+  Cockpit automatisch eine Sicherheitskopie des jetzigen Stands an, verlangt das
+  getippte Wort WIEDERHERSTELLEN, protokolliert den Vorgang und meldet aus
+  Sicherheitsgruenden alle Benutzer ab. Unter **Sicherung von diesem Geraet
+  einspielen** laesst sich auch eine frueher heruntergeladene Datei hochladen -
+  der Weg zurueck nach einem Serverproblem oder Umzug.
+- Notweg ohne Cockpit (z.B. wenn gar nichts mehr laeuft):
+  `backend/backup.php?key=DEIN_CRON_KEY` herunterladen, `.sql.gz` entpacken und die
+  `.sql`-Datei in phpMyAdmin (artfiles-Kundenmenue) importieren.
 - **Vor dem Echtstart einmal testen:** `backend/backup.php?key=…&run=1` aufrufen, die
   erzeugte Datei herunterladen und öffnen - dann weiß man, dass die Kette funktioniert,
   bevor echte Daten drinstehen.

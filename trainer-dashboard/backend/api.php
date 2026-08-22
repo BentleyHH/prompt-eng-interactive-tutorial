@@ -1131,6 +1131,55 @@ switch($action){
     audit('system.backupNow','', '', 'Sicherung manuell erstellt: '.$r['file']);
     out(['ok'=>true]+$r);
 
+  /* ---- Sicherungen: Liste, Download und Wiederherstellung (nur Admin) ---- */
+  case 'system.backups': {
+    require_admin();
+    require_once __DIR__.'/backup.php';
+    out(['ok'=>true,'backups'=>array_map(fn($b)=>[
+      'file'=>$b['file'],'size'=>(int)$b['size'],
+      'at'=>gmdate('Y-m-d H:i:s',(int)$b['mtime'])],backup_list())]);
+  }
+  case 'system.backupGet': {
+    require_admin();
+    require_once __DIR__.'/backup.php';
+    $name=(string)($in['name']??'');
+    if(!preg_match('/^etaf-backup-\d{8}-\d{6}\.sql\.gz$/',$name)) fail('Ungültiger Dateiname.');
+    $path=backup_dir().'/'.$name;
+    if(!is_file($path)) fail('Sicherung nicht gefunden.',404);
+    audit('system.backupGet','','', 'Sicherung heruntergeladen: '.$name);
+    out(['ok'=>true,'name'=>$name,'data'=>base64_encode((string)file_get_contents($path))]);
+  }
+  case 'system.restore': {
+    require_admin();
+    require_once __DIR__.'/backup.php';
+    // Doppelte Huerde: das getippte Wort muss exakt stimmen - ein versehentlicher
+    // Klick kann so nie den ganzen Datenbestand ueberschreiben.
+    if(trim((string)($in['confirm']??''))!=='WIEDERHERSTELLEN')
+      fail('Zur Bestätigung muss das Wort WIEDERHERSTELLEN eingegeben werden.');
+    $me=current_user();
+    $sql='';
+    $name=(string)($in['name']??'');
+    if($name!==''){
+      // Variante 1: eine Sicherung, die schon auf dem Server liegt
+      if(!preg_match('/^etaf-backup-\d{8}-\d{6}\.sql\.gz$/',$name)) fail('Ungültiger Dateiname.');
+      $path=backup_dir().'/'.$name;
+      if(!is_file($path)) fail('Sicherung nicht gefunden.',404);
+      $sql=(string)@gzdecode((string)file_get_contents($path));
+    } else {
+      // Variante 2: hochgeladene Datei (.sql.gz oder .sql)
+      $bin=stud_upload_bin($in);
+      $sql=(substr($bin,0,2)==="\x1f\x8b") ? (string)@gzdecode($bin) : $bin;
+      $name=preg_replace('/[^A-Za-z0-9._-]/','',(string)($in['fileName']??'Upload'));
+    }
+    if($sql==='') fail('Die Datei ließ sich nicht entpacken oder ist leer.');
+    $r=backup_restore($sql);
+    if(empty($r['ok'])) fail($r['error']??'Wiederherstellung fehlgeschlagen.');
+    // Protokoll landet bewusst NACH dem Einspielen im (wiederhergestellten) Bestand.
+    audit_as($me?:['id'=>null,'name'=>'Admin'],'system.restore','', '',
+      'Sicherung eingespielt: '.$name.' ('.$r['stmts'].' Anweisungen). Stand von davor: '.$r['preFile']);
+    out(['ok'=>true,'stmts'=>$r['stmts'],'preFile'=>$r['preFile'],'reloginNeeded'=>true]);
+  }
+
   /* ---- Zeugnisse und Zertifikate ---- */
   case 'cert.state':
     require_auth();

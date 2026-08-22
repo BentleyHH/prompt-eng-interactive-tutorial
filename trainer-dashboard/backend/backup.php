@@ -90,6 +90,77 @@ function backup_run(int $keep=14): array {
   return ['ok'=>true,'file'=>basename($file),'size'=>filesize($file),'kept'=>min(count($all),$keep)];
 }
 
+/** Dump in einzelne SQL-Anweisungen zerlegen. Zeilenweises Zerschneiden
+ *  reicht nicht: Textfelder koennen Zeilenumbrueche und Semikolons enthalten.
+ *  Deshalb wird der Anfuehrungszeichen-Zustand mitverfolgt (inkl. Backslash-
+ *  Escapes aus MySQL und verdoppelter Anfuehrungszeichen aus SQLite). */
+function backup_split_stmts(string $sql): array {
+  $out=[]; $buf=''; $in=false; $len=strlen($sql);
+  for($i=0;$i<$len;$i++){
+    $ch=$sql[$i]; $buf.=$ch;
+    if($in){
+      if($ch==='\\'){ if($i+1<$len) $buf.=$sql[++$i]; continue; }
+      if($ch==="'"){
+        if($i+1<$len && $sql[$i+1]==="'"){ $buf.=$sql[++$i]; }
+        else $in=false;
+      }
+    } else {
+      if($ch==="'") $in=true;
+      elseif($ch===';'){ $out[]=$buf; $buf=''; }
+    }
+  }
+  if(trim($buf)!=='') $out[]=$buf;
+  // Kommentarzeilen am Anfang jeder Anweisung entfernen, Leeres verwerfen
+  $clean=[];
+  foreach($out as $s){
+    $lines=preg_split('/\r?\n/',$s);
+    $lines=array_filter($lines, fn($l)=>strpos(ltrim($l),'--')!==0);
+    $s=trim(implode("\n",$lines));
+    if($s!=='') $clean[]=$s;
+  }
+  return $clean;
+}
+
+/** Sicherung einspielen: ueberschreibt den kompletten Datenbestand.
+ *  Vorher wird IMMER eine frische Sicherheitskopie des aktuellen Stands
+ *  angelegt - ein Fehlgriff laesst sich damit sofort wieder rueckgaengig machen. */
+function backup_restore(string $sqlText): array {
+  if(strpos(substr($sqlText,0,200),'ETAF Trainer-Koordination - Datensicherung')===false)
+    return ['ok'=>false,'error'=>'Das ist keine ETAF-Sicherungsdatei (Kopfzeile fehlt).'];
+  $stmts=backup_split_stmts($sqlText);
+  $hasInsert=false; $hasCreate=false;
+  foreach($stmts as $s){
+    $u=strtoupper(substr(ltrim($s),0,12));
+    if(strpos($u,'INSERT')===0) $hasInsert=true;
+    if(strpos($u,'CREATE')===0) $hasCreate=true;
+  }
+  if(!$hasCreate) return ['ok'=>false,'error'=>'Die Sicherung enthaelt keine Tabellen - Datei unvollstaendig?'];
+  // Sicherheitskopie des JETZIGEN Stands - ohne sie wird nicht wiederhergestellt.
+  $pre=backup_run();
+  if(empty($pre['ok'])) return ['ok'=>false,'error'=>'Abbruch: Sicherheitskopie vor dem Einspielen schlug fehl ('.($pre['error']??'').').'];
+  $done=0;
+  try{
+    if(!is_sqlite()) db()->exec('SET FOREIGN_KEY_CHECKS=0');
+    foreach($stmts as $s){
+      $u=strtoupper(substr(ltrim($s),0,4));
+      if($u==='SET ' || strpos(strtoupper($s),'SET NAMES')===0){ try{ db()->exec($s); }catch(Throwable $e){} continue; }
+      db()->exec($s); $done++;
+    }
+    if(!is_sqlite()) db()->exec('SET FOREIGN_KEY_CHECKS=1');
+  }catch(Throwable $e){
+    error_log('ETAF restore: '.$e->getMessage());
+    return ['ok'=>false,'error'=>'Einspielen abgebrochen (Anweisung '.($done+1).' von '.count($stmts).'). '
+      .'Der Stand von direkt vorher liegt als Sicherung bereit: '.$pre['file'],'preFile'=>$pre['file']];
+  }
+  // Schema-Nachzuegler ergaenzen (die Sicherung kann von einer aelteren Version stammen)
+  try{ ensure_schema(); }catch(Throwable $e){}
+  // Sicherheit: alle Sitzungen aus der eingespielten Sicherung beenden -
+  // niemand bleibt mit einem alten Token angemeldet.
+  try{ q("DELETE FROM sessions"); }catch(Throwable $e){}
+  try{ q("DELETE FROM tfa_challenges"); }catch(Throwable $e){}
+  return ['ok'=>true,'stmts'=>$done,'preFile'=>$pre['file']];
+}
+
 /* ================= Seite (nur bei direktem Aufruf, key-geschützt) ============ */
 if(basename($_SERVER['SCRIPT_NAME']??'')==='backup.php'){
   error_reporting(E_ALL); ini_set('display_errors','1');

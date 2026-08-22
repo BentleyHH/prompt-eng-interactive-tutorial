@@ -1510,7 +1510,21 @@ const L={
   sysCronAt:ago=>`aktiv, zuletzt ${ago}`,
   sysCronNever:"kein Lebenszeichen - läuft der stündliche Cron-Job?",
   sysCronWait:"eingerichtet - wartet auf den ersten Lauf (bis zu 1 Std)",
-  sysBackupNow:"Jetzt sichern", sysBackupDone:"Sicherung erstellt",
+  sysBackupNow:"Jetzt sichern",
+  sysBkList:"Sicherungen", sysBkTitle:"Sicherungen - ansehen, herunterladen, einspielen",
+  sysBkWarn:"Einspielen ersetzt den KOMPLETTEN Datenbestand durch den Stand der gewählten Sicherung. Direkt davor wird automatisch eine Sicherheitskopie des jetzigen Stands angelegt - ein Fehlgriff lässt sich damit rückgängig machen.",
+  sysBkNone:"Noch keine Sicherungen auf dem Server.",
+  sysBkDl:"Herunterladen (getrennt aufbewahren)",
+  sysBkUse:"Einspielen",
+  sysBkUpload:"Sicherung von diesem Gerät einspielen",
+  sysBkUploadHint:"Eine früher heruntergeladene Datei (etaf-backup-...sql.gz) auswählen - z.B. nach einem Serverwechsel oder wenn der Hoster ein Problem hatte.",
+  sysBkNoFile:"Bitte zuerst eine Datei auswählen.",
+  sysBkAsk1:"Wirklich den kompletten Datenbestand durch diese Sicherung ersetzen? Alle Änderungen seit dem Stand der Sicherung gehen verloren. Direkt vorher wird der jetzige Stand automatisch gesichert.",
+  sysBkAsk2:"Zur Bestätigung bitte WIEDERHERSTELLEN eingeben:",
+  sysBkWrongWord:"Abgebrochen - das Wort wurde nicht exakt eingegeben.",
+  sysBkRunning:"Sicherung wird eingespielt…",
+  sysBkDone:(n,f)=>`Fertig - die Sicherung wurde eingespielt (${n} Anweisungen). Der Stand von direkt davor liegt als ${f} bereit. Aus Sicherheitsgründen wurden alle Anmeldungen beendet - bitte neu anmelden.`,
+  sysBkFail:m=>`Wiederherstellung fehlgeschlagen: ${m}`, sysBackupDone:"Sicherung erstellt",
   sysNever:"nie", sysAgoMin:n=>`vor ${n} Min`, sysAgoH:n=>`vor ${n} Std`, sysAgoD:n=>`vor ${n} Tg`,
 
   /* ---- Zertifizierung: Zellen, Gruppen, Einzelboegen ---- */
@@ -2304,7 +2318,21 @@ const L={
   sysCronAt:ago=>`active, last ${ago}`,
   sysCronNever:"no sign of life - is the hourly cron job running?",
   sysCronWait:"set up - waiting for the first run (up to 1 h)",
-  sysBackupNow:"Back up now", sysBackupDone:"Backup created",
+  sysBackupNow:"Back up now",
+  sysBkList:"Backups", sysBkTitle:"Backups - view, download, restore",
+  sysBkWarn:"Restoring replaces the ENTIRE dataset with the state of the chosen backup. Right before that, a safety copy of the current state is created automatically - so a mistake can be undone.",
+  sysBkNone:"No backups on the server yet.",
+  sysBkDl:"Download (keep in a separate place)",
+  sysBkUse:"Restore",
+  sysBkUpload:"Restore a backup from this device",
+  sysBkUploadHint:"Choose a previously downloaded file (etaf-backup-...sql.gz) - e.g. after moving servers or if the hoster had a problem.",
+  sysBkNoFile:"Please choose a file first.",
+  sysBkAsk1:"Really replace the entire dataset with this backup? All changes since the backup will be lost. The current state is backed up automatically right before.",
+  sysBkAsk2:"To confirm, please type WIEDERHERSTELLEN:",
+  sysBkWrongWord:"Cancelled - the word was not typed exactly.",
+  sysBkRunning:"Restoring backup…",
+  sysBkDone:(n,f)=>`Done - the backup was restored (${n} statements). The state from right before is available as ${f}. For security, all sign-ins were ended - please sign in again.`,
+  sysBkFail:m=>`Restore failed: ${m}`, sysBackupDone:"Backup created",
   sysNever:"never", sysAgoMin:n=>`${n} min ago`, sysAgoH:n=>`${n} h ago`, sysAgoD:n=>`${n} d ago`,
 
   /* ---- Certification: cells, groups, individual sheets ---- */
@@ -3824,8 +3852,76 @@ function sysStatusHtml(d){
         <span>${dot(C.state||"wait")}${esc(t("sysCron"))}: ${esc(cronTxt)}</span>
       </div>
     </div>
+    <button class="btn sm" onclick="sysBackupsSheet()">${ic("clip",14)}${esc(t("sysBkList"))}</button>
     <button class="btn sm" id="sysBkBtn" onclick="sysBackupNow()">${ic("down",14)}${esc(t("sysBackupNow"))}</button>
   </div>`;
+}
+/* ---------- Sicherungen: Liste, Download, Wiederherstellung (nur Admin) ---------- */
+async function sysBackupsSheet(){
+  let d;
+  try{ d=await apiCall("system.backups"); }catch(e){ toast(e.message,"crit"); return; }
+  const rows=(d.backups||[]).map(b=>`
+    <div class="pptownrow" style="cursor:default">
+      ${ic("clip",15)}
+      <div class="rowgrow"><b>${esc(b.file)}</b>
+        <div class="meta">${esc(fmtWhen(b.at+"Z"))} · ${(b.size/1024/1024).toFixed(2)} MB</div></div>
+      <button class="btn sm" onclick="sysBkDl('${esc(b.file)}')" title="${esc(t("sysBkDl"))}">${ic("down",14)}</button>
+      <button class="btn sm" onclick="sysBkRestore('${esc(b.file)}')" style="border-color:var(--warn);color:var(--warn)">${esc(t("sysBkUse"))}</button>
+    </div>`).join("");
+  $("#sheetTitle").textContent=t("sysBkTitle");
+  $("#sheetBody").innerHTML=`
+    <div class="rpnote soft" style="margin-bottom:14px">${ic("bell",16)}
+      <div>${esc(t("sysBkWarn"))}</div></div>
+    ${rows||`<div class="empty">${esc(t("sysBkNone"))}</div>`}
+    <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+      <b>${esc(t("sysBkUpload"))}</b>
+      <div class="meta" style="margin:6px 0 10px">${esc(t("sysBkUploadHint"))}</div>
+      <input type="file" id="sysBkFile" accept=".gz,.sql" class="inp" style="padding:9px">
+      <button class="btn" style="margin-top:10px" onclick="sysBkRestoreFile()">${ic("sync",15)}${esc(t("sysBkUse"))}</button>
+    </div>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button>`;
+  openSheet();
+}
+async function sysBkDl(name){
+  try{
+    const d=await apiCall("system.backupGet",{name});
+    const bin=atob(d.data), arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([arr],{type:"application/gzip"}));
+    a.download=d.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  }catch(e){ toast(e.message,"crit"); }
+}
+/* Die doppelte Huerde: erst die Warnung lesen, dann das Wort tippen. */
+function sysBkConfirm(){
+  if(!confirm(t("sysBkAsk1"))) return null;
+  const w=prompt(t("sysBkAsk2"));
+  if(w===null) return null;
+  if(w.trim()!=="WIEDERHERSTELLEN"){ toast(t("sysBkWrongWord"),"warn"); return null; }
+  return w.trim();
+}
+async function sysBkRestore(name){
+  const confirmWord=sysBkConfirm(); if(!confirmWord) return;
+  await sysRestoreGo({name,confirm:confirmWord});
+}
+async function sysBkRestoreFile(){
+  const f=$("#sysBkFile")?.files?.[0];
+  if(!f){ toast(t("sysBkNoFile"),"warn"); return; }
+  const confirmWord=sysBkConfirm(); if(!confirmWord) return;
+  const data=await new Promise((res,rej)=>{
+    const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f); });
+  await sysRestoreGo({file:data,fileName:f.name,confirm:confirmWord});
+}
+async function sysRestoreGo(payload){
+  closeSheet(); toast(t("sysBkRunning"),"warn");
+  try{
+    const d=await apiCall("system.restore",payload);
+    // Alle Sitzungen sind nach dem Einspielen beendet - sauber neu anmelden.
+    alert(t("sysBkDone",d.stmts,d.preFile));
+    AUTH=""; try{localStorage.removeItem("etaf_token");}catch(e){}
+    location.reload();
+  }catch(e){ alert(t("sysBkFail",e.message)); }
 }
 async function sysBackupNow(){
   const b=$("#sysBkBtn"); if(b){ b.disabled=true; b.textContent="…"; }
