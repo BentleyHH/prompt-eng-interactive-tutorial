@@ -227,7 +227,7 @@ function ensure_schema(): void {
     "first_name VARCHAR(96)","last_name VARCHAR(96)",
     "birth_date VARCHAR(12)","birth_place VARCHAR(120)",
     "nationality VARCHAR(64)","gender VARCHAR(12)","phone VARCHAR(64)",
-    "team VARCHAR(64)","track VARCHAR(64)"
+    "team VARCHAR(64)","track VARCHAR(64)","cell_role VARCHAR(64)"
   ] as $col){ try{ db()->exec("ALTER TABLE students ADD COLUMN $col"); }catch(Throwable $e){} }
 
   // Sitzung kennt den angemeldeten Benutzer

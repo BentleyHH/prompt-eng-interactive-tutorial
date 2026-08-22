@@ -236,6 +236,25 @@ Kompetenzprofil gegen den Gruppenschnitt, Staerken, Luecken, alle Bloecke des
 Zeitraums und eine Empfehlung im Klartext. Ueber den Druckdialog des Browsers laesst
 sich der Stapel als **PDF** speichern - eine Datei, eine Seite je Person.
 
+### Zellen-Planer (8 x 5 Aufstellung)
+**Zertifizierung -> Zellen-Planer** stellt die Einsatzzellen auf: acht Zellen mit
+denselben fuenf Positionen (Team Leader, Post Mortem, Ante Mortem, Daten & Abgleich,
+Logistik & Support), damit jede Zelle autark arbeiten kann. Jede Karte zeigt die
+fuenf Positionen, die Besetzung mit Staerkewert und eine Einordnung: **einsatzbereit**
+(voll besetzt, keine Nachschulung), offene Positionen, doppelte Besetzungen oder
+Nachschulungsbedarf. Oben steht das **Gleichgewicht der Zellen**: der Schnitt jeder
+Zelle als Balken, die Spannweite zwischen staerkster und schwaechster Zelle und die
+Einstufung ausgewogen/unausgewogen (Spannweite bis 8 Punkte gilt als ausgewogen).
+
+Ist das Gefuege schief, rechnet der Planer **Tauschvorschlaege**: nur Personen mit
+derselben Position, immer stark gegen schwach, und nur Zuege, die die Spannweite
+messbar verkleinern - ein Klick auf **Uebernehmen** fuehrt den Tausch aus. Genauso
+geht es von Hand: Person anklicken (Position oder Zelle aendern, direkt tauschen)
+oder eine unbesetzte Position anklicken und aus den passenden Kandidaten waehlen -
+gleiche Position zuerst, dann nach Staerke. **+ Zelle** legt eine weitere Zelle an;
+Teilnehmer ohne Zelle stehen im Pool darunter. Die Funktion je Person kommt auch
+aus der Excel-Vorlage (Spalte **Funktion**) mit.
+
 ### Zwischenbilanz fuer den Kunden
 **Zertifizierung -> Auswertung -> Zwischenbilanz** schneidet alle Zahlen nach
 Zeitraum: Monat, Quartal, Halbjahr, Jahr, Gesamt oder frei gewaehlt, mit Pfeilen

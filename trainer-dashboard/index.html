@@ -878,6 +878,18 @@
   .cetwin i.now{top:0;height:9px}
   .cetwin i.prev{bottom:0;height:4px;background:var(--faint);opacity:.6}
   .celamp{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--line)}
+  .clgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:14px}
+  .clgrid .panel{margin-bottom:0}
+  .clpool{border-style:dashed}
+  .clrow{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+  .clrow:first-child{border-top:0}
+  .clrole{flex:0 0 126px;color:var(--muted);font-size:12px}
+  .clrole.dim{opacity:.75}
+  .clname{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .clpct{font-variant-numeric:tabular-nums;font-weight:700}
+  .clrow.miss{color:var(--muted)}
+  .clrow.miss .clrole{color:var(--warn)}
+  .clrow.warnrow .clname{color:var(--crit)}
   .celamp.green{background:var(--good)} .celamp.amber{background:var(--warn)}
   .celamp.red{background:var(--crit)} .celamp.none{background:var(--line)}
   .cenotes{margin:16px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
@@ -1659,6 +1671,24 @@ const L={
   nav_cert:"Zertifizierung", nav_s_cert:"Zertifikate",
   tp_cert:"Zertifizierung", tp_certSub:"Bewerten, auswerten, zertifizieren - je Block und über den ganzen Lehrgang",
   ceTabRate:"Bewerten", ceTabPeople:"Teilnehmer", ceTabEval:"Auswertung", ceTabCat:"Katalog",
+  ceTabCells:"Zellen-Planer",
+  clIntro:"8 Zellen mit je 5 gleichen Positionen - jede Zelle arbeitet autark",
+  clBalance:"Gleichgewicht der Zellen", clBalanced:"ausgewogen", clUnbalanced:"unausgewogen",
+  clSpread:n=>`Spannweite ${n} Punkte`, clNoRated:"noch keine bewerteten Zellen",
+  clNoCells:"Noch keine Zellen - Teilnehmern eine Zelle zuweisen oder eine Zelle anlegen.",
+  clAddCell:"Zelle", clAddCellAsk:"Name der neuen Zelle:",
+  clSuggest:"Tauschvorschläge", clSuggestHint:"gleiche Position, gleicht die Zellen aus",
+  clSamePos:r=>`Position: ${r}`, clNoPos:"ohne Position", clNoPosShort:"ohne Position",
+  clSpreadTo:(b,a)=>`Spannweite ${b} auf ${a} Punkte`, clApply:"Übernehmen",
+  clEmpty:"unbesetzt", clReady:"einsatzbereit",
+  clHasRetrain:n=>n===1?"1 Nachschulung":`${n} Nachschulungen`,
+  clMissingN:n=>n===1?"1 Position offen":`${n} Positionen offen`,
+  clDoubled:"Position doppelt besetzt",
+  clPool:"ohne Zelle", clPoolHint:"Teilnehmer ohne Zellenzuordnung", clPoolEmpty:"keine Teilnehmer",
+  clSwapped:(a,b)=>`${a} und ${b} getauscht`,
+  clRoleLbl:"Funktion / Position", clMoveTo:"Zelle",
+  clSwapWith:r=>`Tauschen mit (${r})`,
+  clFillHint:"Kandidaten - passende Position zuerst, dann nach Stärke sortiert",
   ceByPerson:"je Teilnehmer", ceByCrit:"je Kriterium",
   ceProgress:(d,n)=>`${d} von ${n} abgeschlossen`,
   ceFinal:"final", ceOpen:"offen", cePass:"bestanden", ceMerit:"mit Auszeichnung", ceFail:"nicht bestanden",
@@ -2412,6 +2442,24 @@ const L={
   nav_cert:"Certification", nav_s_cert:"Certificates",
   tp_cert:"Certification", tp_certSub:"Assess, analyse, certify - per block and across the whole course",
   ceTabRate:"Assess", ceTabPeople:"Participants", ceTabEval:"Analysis", ceTabCat:"Catalogue",
+  ceTabCells:"Cell planner",
+  clIntro:"8 cells with the same 5 positions each - every cell works self-sufficiently",
+  clBalance:"Cell balance", clBalanced:"balanced", clUnbalanced:"unbalanced",
+  clSpread:n=>`spread ${n} points`, clNoRated:"no rated cells yet",
+  clNoCells:"No cells yet - assign participants to a cell or add one.",
+  clAddCell:"Cell", clAddCellAsk:"Name of the new cell:",
+  clSuggest:"Swap suggestions", clSuggestHint:"same position, evens out the cells",
+  clSamePos:r=>`position: ${r}`, clNoPos:"no position", clNoPosShort:"no position",
+  clSpreadTo:(b,a)=>`spread ${b} to ${a} points`, clApply:"Apply",
+  clEmpty:"vacant", clReady:"operational",
+  clHasRetrain:n=>n===1?"1 retraining":`${n} retrainings`,
+  clMissingN:n=>n===1?"1 position open":`${n} positions open`,
+  clDoubled:"position filled twice",
+  clPool:"no cell", clPoolHint:"participants without a cell", clPoolEmpty:"no participants",
+  clSwapped:(a,b)=>`${a} and ${b} swapped`,
+  clRoleLbl:"Position", clMoveTo:"Cell",
+  clSwapWith:r=>`Swap with (${r})`,
+  clFillHint:"Candidates - matching position first, then sorted by strength",
   ceByPerson:"by participant", ceByCrit:"by criterion",
   ceProgress:(d,n)=>`${d} of ${n} completed`,
   ceFinal:"final", ceOpen:"open", cePass:"passed", ceMerit:"passed with merit", ceFail:"not passed",
@@ -8916,7 +8964,7 @@ async function renderCert(){
     if(first) await certLoadTraining(first.id);
   }
   const tabs=[["rate",t("ceTabRate")],["people",t("ceTabPeople")],
-              ["eval",t("ceTabEval")],["cat",t("ceTabCat")]];
+              ["cells",t("ceTabCells")],["eval",t("ceTabEval")],["cat",t("ceTabCat")]];
   const head=`<div class="panel"><div class="panel-b" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <span class="chips rpchips">${tabs.map(([k,l])=>
         `<button${certTab===k?' class="on"':""} onclick="certGo('${k}')">${esc(l)}</button>`).join("")}</span>
@@ -8928,6 +8976,15 @@ async function renderCert(){
   let body="";
   if(certTab==="rate")   body=certRateHtml();
   if(certTab==="people") body=certPeopleHtml();
+  if(certTab==="cells"){ await certAnLoad();
+    const tracks=certVals("track");
+    body=`<div class="panel"><div class="panel-b" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <span class="meta">${esc(t("clIntro"))}</span><div class="spacer"></div>
+        ${tracks.length?`<select class="inp" style="max-width:190px" onchange="certSetFlt('fTrack',this.value)">
+          <option value="">${esc(t("ceFltAllTracks"))}</option>
+          ${tracks.map(x=>`<option value="${esc(x)}"${certState.fTrack===x?" selected":""}>${esc(x)}</option>`).join("")}</select>`:""}
+      </div></div><div id="certCellsBody">${certCellsHtml()}</div>`;
+  }
   if(certTab==="eval"){  await certAnLoad(); await certDocsLoad(); body=certEvalHtml(); }
   if(certTab==="cat")    body=certCatalogHtml();
   box.innerHTML=head+body;
@@ -9260,6 +9317,9 @@ function certPersonEdit(id){
       <div style="flex:1"><label class="fld">${esc(t("ceTrack"))}</label>
         <input class="inp" id="csTrack" list="ceTracksDl" value="${esc(p?p.track||"":"")}">
         <datalist id="ceTracksDl">${certVals("track").map(x=>`<option value="${esc(x)}">`).join("")}</datalist></div>
+      <div style="flex:1"><label class="fld">${esc(t("clRoleLbl"))}</label>
+        <input class="inp" id="csRole" list="ceRolesDl" value="${esc(p?p.role||"":"")}">
+        <datalist id="ceRolesDl">${certRoles().map(x=>`<option value="${esc(x)}">`).join("")}</datalist></div>
     </div>
     <div class="fldrow">
       <div style="flex:1.4"><label class="fld">${esc(t("ceEmail"))}</label>
@@ -9286,7 +9346,7 @@ async function certPersonSave(id){
     const d=await apiCall("student.save",{id:id||0,name:(first+" "+last).trim(),
       firstName:first,lastName:last,birthDate:val("csBirth"),birthPlace:val("csBirthPl"),
       gender:val("csGender"),nationality:val("csNat"),phone:val("csPhone"),
-      team:val("csTeam"),track:val("csTrack"),
+      team:val("csTeam"),track:val("csTrack"),role:val("csRole"),
       rank:val("csRank"),unit:val("csUnit"),
       staffNo:val("csNo"),cohort:val("csCoh"),email:val("csMail"),active:1});
     const sid=d.id;
@@ -10976,6 +11036,290 @@ function certPersonSheetHtml(r,pos,of,A,P,R){
     </div>
   </div>`;
 }
+
+
+/* ============================================================
+   ZELLEN-PLANER
+   Acht Zellen, fuenf gleiche Positionen - jede Zelle soll autark
+   arbeiten koennen. Hier wird aufgestellt, getauscht und die
+   Qualitaet der Zellen ins Gleichgewicht gebracht: Auswertung lesen,
+   einen Staerkeren in die schwache Zelle nehmen, den Schwaecheren
+   dort einsetzen, wo er aufgefangen wird.
+   ============================================================ */
+const CELL_ROLES=["Team Leader","Post Mortem","Ante Mortem","Daten & Abgleich","Logistik & Support"];
+
+/* Positionsliste: die fuenf Standardpositionen zuerst, dann alles,
+   was sonst noch als Funktion vergeben wurde. */
+function certRoles(){
+  const extra=[...new Set((certAn&&certAn.students||[])
+    .map(s=>String(s.role||"").trim()).filter(r=>r&&!CELL_ROLES.includes(r)))].sort();
+  return CELL_ROLES.concat(extra);
+}
+/* Personen des Planers: aktive, nach Gruppe gefiltert (fTrack). */
+function certCellPeople(){
+  return (certAn&&certAn.students||[]).filter(s=>s.active
+    && (!certState.fTrack || String(s.track||"")===certState.fTrack));
+}
+function certCellNames(){
+  const set=new Set(certCellPeople().map(s=>String(s.team||"").trim()).filter(Boolean));
+  (certState.extraCells||[]).forEach(c=>set.add(c));
+  return [...set].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+}
+/* Zell-Staerke: gewichteter Ø ueber alle bewerteten Bloecke der Mitglieder. */
+function certCellAvg(people){
+  let w=0,sum=0;
+  people.forEach(s=>{ if(s.avgPct!=null&&s.blocksRated){ sum+=s.avgPct*s.blocksRated; w+=s.blocksRated; }});
+  return w?Math.round(sum/w):null;
+}
+function certCellStats(){
+  const roles=certRoles();
+  return certCellNames().map(name=>{
+    const ppl=certCellPeople().filter(s=>String(s.team||"").trim()===name);
+    const byRole={};
+    ppl.forEach(s=>{ const r=String(s.role||"").trim();
+      (byRole[r||"__none"]=byRole[r||"__none"]||[]).push(s); });
+    const missing=CELL_ROLES.filter(r=>!(byRole[r]&&byRole[r].length));
+    const doubled=CELL_ROLES.filter(r=>byRole[r]&&byRole[r].length>1);
+    const retrain=ppl.filter(s=>certRetrainOne(s));
+    return {name,ppl,byRole,missing,doubled,retrain,
+      avg:certCellAvg(ppl),
+      ready: ppl.length>0 && missing.length===0 && doubled.length===0 && !retrain.length};
+  });
+}
+
+async function renderCertCells(){
+  await certAnLoad(); await certLoadStudents();
+  const box=$("#v-cert").querySelector("#certCellsBody");
+  if(box) box.innerHTML=certCellsHtml();
+}
+function certCellsHtml(){
+  if(!certAn) return `<div class="panel"><div class="panel-b"><div class="empty">${esc(t("ceNoData"))}</div></div></div>`;
+  const stats=certCellStats();
+  const rated=stats.filter(c=>c.avg!=null);
+  const spread=rated.length>1?Math.max(...rated.map(c=>c.avg))-Math.min(...rated.map(c=>c.avg)):0;
+  const balanced=spread<=8;
+  const pool=certCellPeople().filter(s=>!String(s.team||"").trim());
+  const best=rated.length?Math.max(...rated.map(c=>c.avg)):null;
+
+  /* Kopf: Gleichgewicht der Zellen */
+  const bars=stats.map(c=>`
+    <div class="rprow hit" onclick="certGoTo('cell-${esc(c.name).replace(/[^A-Za-z0-9]/g,'_')}')">
+      <div class="rplbl">${esc(c.name)}${c.avg===best&&rated.length>1?` <span class="tag" style="color:var(--good);border-color:var(--good)">${esc(t("ceSegBest"))}</span>`:""}</div>
+      <div class="rpbar"><i style="width:${c.avg||0}%;background:${certPctHue(c.avg)}"></i></div>
+      <div class="rpval">${c.avg!=null?c.avg+"%":"-"}</div>
+      <div class="rpn">${c.ppl.length}/5</div></div>`).join("");
+  const balance=`<div class="panel"><div class="panel-h" style="flex-wrap:wrap;gap:8px 12px">
+      <h3>${esc(t("clBalance"))}</h3>
+      ${rated.length>1?`<span class="pill ${balanced?"good":"warn"}">${esc(balanced?t("clBalanced"):t("clUnbalanced"))}</span>
+        <span class="meta">${esc(t("clSpread",spread))}</span>`:`<span class="meta">${esc(t("clNoRated"))}</span>`}
+      <div class="spacer"></div>
+      <button class="btn sm" onclick="certAddCell()">${ic("plus",14)}${esc(t("clAddCell"))}</button>
+    </div>
+    <div class="panel-b"><div class="rpbars">${bars||`<div class="empty">${esc(t("clNoCells"))}</div>`}</div></div></div>`;
+
+  /* Tauschvorschlaege */
+  const sug=certCellSuggest(stats);
+  const sugPanel=sug.length?`<div class="panel"><div class="panel-h"><h3>${esc(t("clSuggest"))}</h3>
+      <span class="meta">${esc(t("clSuggestHint"))}</span></div>
+    <div class="panel-b">${sug.map((x,i)=>`
+      <div class="rpnote soft" style="margin-bottom:${i<sug.length-1?10:0}px">${ic("sync",16)}
+        <div class="rowgrow"><b>${esc(x.a.name)}</b> (${x.a.avgPct}%, ${esc(x.a.team)}) ⇄
+          <b>${esc(x.b.name)}</b> (${x.b.avgPct}%, ${esc(x.b.team)})
+          <div class="meta">${esc(x.role?t("clSamePos",x.role):t("clNoPos"))} · ${esc(t("clSpreadTo",x.before,x.after))}</div></div>
+        <button class="btn sm primary" onclick="certCellSwap('${x.a.id}','${x.b.id}')">${esc(t("clApply"))}</button>
+      </div>`).join("")}</div></div>`:"";
+
+  /* Zellkarten: gleiche fuenf Positionen in jeder Zelle */
+  const roles=certRoles();
+  const cards=stats.map(c=>{
+    const anchor="cell-"+c.name.replace(/[^A-Za-z0-9]/g,"_");
+    const rows=roles.map(r=>{
+      const ppl=c.byRole[r]||[];
+      if(!ppl.length){
+        if(!CELL_ROLES.includes(r)) return "";
+        return `<div class="clrow miss hit" onclick="certCellFill('${esc(c.name)}','${esc(r)}')">
+          <span class="clrole">${esc(r)}</span>
+          <span class="meta">${esc(t("clEmpty"))}</span><span class="spacer"></span>
+          <span class="meta">+</span></div>`;
+      }
+      return ppl.map(s=>`<div class="clrow hit${certRetrainOne(s)?" warnrow":""}" onclick="certCellPerson('${s.id}')">
+        <span class="clrole">${esc(r)}</span>
+        <b class="clname">${esc(s.name)}</b>
+        ${certRetrainOne(s)?`<span class="celamp red" title="${esc(t("ceClsRed"))}"></span>`:""}
+        <span class="spacer"></span>
+        <span class="clpct" style="color:${certPctHue(s.avgPct)}">${s.avgPct!=null?s.avgPct+"%":"-"}</span>
+      </div>`).join("");
+    }).join("");
+    const extra=(c.byRole["__none"]||[]).map(s=>`
+      <div class="clrow hit" onclick="certCellPerson('${s.id}')">
+        <span class="clrole dim">${esc(t("clNoPosShort"))}</span>
+        <b class="clname">${esc(s.name)}</b><span class="spacer"></span>
+        <span class="clpct" style="color:${certPctHue(s.avgPct)}">${s.avgPct!=null?s.avgPct+"%":"-"}</span>
+      </div>`).join("");
+    const state = c.ready ? `<span class="pill good">${esc(t("clReady"))}</span>`
+      : c.retrain.length ? `<span class="pill crit">${esc(t("clHasRetrain",c.retrain.length))}</span>`
+      : c.missing.length ? `<span class="pill warn">${esc(t("clMissingN",c.missing.length))}</span>`
+      : c.doubled.length ? `<span class="pill warn">${esc(t("clDoubled"))}</span>`
+      : `<span class="pill neutral">${esc(t("ceOpen"))}</span>`;
+    return `<div class="panel clcard" id="${anchor}">
+      <div class="panel-h" style="gap:8px"><h3 style="min-width:0">${esc(c.name)}</h3>${state}
+        <div class="spacer"></div>
+        <b class="tnum" style="color:${certPctHue(c.avg)}">${c.avg!=null?c.avg+"%":""}</b></div>
+      <div class="panel-b" style="padding:8px 14px">${rows}${extra}</div>
+    </div>`;
+  }).join("");
+
+  /* Pool: Gruppe ohne Zelle */
+  const poolRows=pool.map(s=>`<div class="clrow hit" onclick="certCellPerson('${s.id}')">
+      <span class="clrole dim">${esc(String(s.role||"").trim()||t("clNoPosShort"))}</span>
+      <b class="clname">${esc(s.name)}</b><span class="spacer"></span>
+      <span class="clpct" style="color:${certPctHue(s.avgPct)}">${s.avgPct!=null?s.avgPct+"%":"-"}</span>
+    </div>`).join("");
+  const poolCard=`<div class="panel clcard clpool">
+    <div class="panel-h"><h3>${esc(t("clPool"))}</h3><span class="meta">${esc(t("clPoolHint"))}</span></div>
+    <div class="panel-b" style="padding:8px 14px">${poolRows||`<div class="empty">${esc(t("clPoolEmpty"))}</div>`}</div></div>`;
+
+  return balance+sugPanel+`<div class="clgrid">${cards}${poolCard}</div>`;
+}
+
+/* Tauschvorschlaege: positionsgleiche Paare aus verschiedenen Zellen
+   durchprobieren und die Zuege behalten, die die Spannweite zwischen
+   staerkster und schwaechster Zelle am meisten verkleinern. */
+function certCellSuggest(stats){
+  const rated=stats.filter(c=>c.avg!=null && c.ppl.length);
+  if(rated.length<2) return [];
+  const cur=Math.max(...rated.map(c=>c.avg))-Math.min(...rated.map(c=>c.avg));
+  if(cur<=8) return [];
+  const out=[];
+  for(let i=0;i<rated.length;i++) for(let j=0;j<rated.length;j++){
+    if(i===j) continue;
+    const A=rated[i], B=rated[j];
+    if(A.avg<=B.avg) continue;                    // nur stark -> schwach betrachten
+    A.ppl.forEach(a=>{ B.ppl.forEach(b=>{
+      if(a.avgPct==null||b.avgPct==null) return;
+      const ra=String(a.role||"").trim(), rb=String(b.role||"").trim();
+      if(ra!==rb) return;                         // Autarkie: nur gleiche Position tauschen
+      if(a.avgPct<=b.avgPct) return;
+      // Spannweite nach dem Tausch simulieren
+      const avgs=rated.map(c=>{
+        const ppl=c.ppl.map(p=>p===a?b:(p===b?a:p));
+        return certCellAvg(ppl);
+      }).filter(v=>v!=null);
+      const after=Math.max(...avgs)-Math.min(...avgs);
+      if(cur-after>=2) out.push({a,b,role:ra,before:cur,after});
+    });});
+  }
+  out.sort((x,y)=>x.after-y.after);
+  // je Person nur ein Vorschlag, hoechstens drei
+  const seen=new Set(), top=[];
+  for(const x of out){
+    if(seen.has(x.a.id)||seen.has(x.b.id)) continue;
+    seen.add(x.a.id); seen.add(x.b.id); top.push(x);
+    if(top.length>=3) break;
+  }
+  return top;
+}
+
+/* ---------- Aktionen ---------- */
+function certAddCell(){
+  const names=certCellNames();
+  let n=1; while(names.includes("Zelle "+n)) n++;
+  const name=prompt(t("clAddCellAsk"),"Zelle "+n);
+  if(!name||!name.trim()) return;
+  certState.extraCells=(certState.extraCells||[]);
+  if(!certState.extraCells.includes(name.trim())) certState.extraCells.push(name.trim());
+  renderCertCells();
+}
+/* Vollstaendige Stammdaten einer Person - student.save erwartet alle Felder. */
+function certPersonFull(id){
+  return (certState.students||[]).find(x=>String(x.id)===String(id))||null;
+}
+async function certCellSet(id, patch){
+  const p=certPersonFull(id);
+  if(!p){ toast(t("ceName")+"?","crit"); return false; }
+  try{
+    await apiCall("student.save",{id:p.id,name:p.name,firstName:p.firstName,lastName:p.lastName,
+      birthDate:p.birthDate,birthPlace:p.birthPlace,gender:p.gender,nationality:p.nationality,
+      rank:p.rank,unit:p.unit,staffNo:p.staffNo,email:p.email,phone:p.phone,
+      cohort:p.cohort,note:p.note,team:p.team||"",track:p.track||"",role:p.role||"",
+      active:1, ...patch});
+    return true;
+  }catch(e){ toast("Fehler: "+e.message,"crit"); return false; }
+}
+async function certCellsReload(){
+  certAnInvalidate(); await certLoadStudents(true); await certAnLoad(true);
+  renderCertCells();
+}
+async function certCellSwap(aId,bId){
+  const a=certPersonFull(aId), b=certPersonFull(bId);
+  if(!a||!b) return;
+  const ok1=await certCellSet(aId,{team:b.team||""});
+  const ok2=ok1&&await certCellSet(bId,{team:a.team||""});
+  if(ok2){ toast(t("clSwapped",a.name,b.name),"good"); await certCellsReload(); }
+}
+/* Person angeklickt: verschieben, tauschen oder Position aendern. */
+function certCellPerson(id){
+  const s=(certAn.students||[]).find(x=>String(x.id)===String(id)); if(!s) return;
+  const role=String(s.role||"").trim();
+  const cells=certCellNames();
+  const swaps=certCellPeople().filter(x=>String(x.id)!==String(id)
+    && String(x.team||"").trim() && String(x.team||"").trim()!==String(s.team||"").trim()
+    && String(x.role||"").trim()===role && role);
+  $("#sheetTitle").textContent=s.name;
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:12px">${esc([s.rank,s.unit,role||t("clNoPosShort"),
+      s.team||t("clPool")].filter(Boolean).join(" · "))} · Ø ${s.avgPct!=null?s.avgPct+"%":"-"}</div>
+    <label class="fld">${esc(t("clRoleLbl"))}</label>
+    <select class="inp" id="clRoleSel">
+      <option value="">${esc(t("clNoPosShort"))}</option>
+      ${certRoles().map(r=>`<option value="${esc(r)}"${r===role?" selected":""}>${esc(r)}</option>`).join("")}
+    </select>
+    <label class="fld">${esc(t("clMoveTo"))}</label>
+    <select class="inp" id="clTeamSel">
+      <option value="">${esc(t("clPool"))}</option>
+      ${cells.map(c=>`<option value="${esc(c)}"${c===(s.team||"")?" selected":""}>${esc(c)}</option>`).join("")}
+    </select>
+    ${swaps.length?`<label class="fld" style="margin-top:14px">${esc(t("clSwapWith",role))}</label>
+      ${swaps.map(x=>`<div class="pptownrow" onclick="closeSheet();certCellSwap('${s.id}','${x.id}')">
+        ${ic("sync",15)} <b>${esc(x.name)}</b>
+        <span class="meta">${esc(x.team)} · ${x.avgPct!=null?x.avgPct+"%":"-"}</span></div>`).join("")}`:""}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="certCellApply('${s.id}')">${ic("check",15)}${t("save")}</button>`;
+  openSheet();
+}
+async function certCellApply(id){
+  const team=val("clTeamSel"), role=val("clRoleSel");
+  closeSheet();
+  if(await certCellSet(id,{team,role})){ toast(t("ceSavedOk"),"good"); await certCellsReload(); }
+}
+/* Leere Position anklicken: passende Kandidaten anbieten. */
+function certCellFill(cell,role){
+  const cand=certCellPeople().filter(s=>{
+    const inCell=String(s.team||"").trim()===cell;
+    if(inCell) return false;
+    const r=String(s.role||"").trim();
+    return r===role || r==="" || !String(s.team||"").trim();
+  }).sort((a,b)=>{
+    const ra=String(a.role||"").trim()===role?0:1, rb=String(b.role||"").trim()===role?0:1;
+    if(ra!==rb) return ra-rb;
+    return (b.avgPct||0)-(a.avgPct||0);
+  });
+  $("#sheetTitle").textContent=cell+" · "+role;
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:10px">${esc(t("clFillHint"))}</div>
+    ${cand.length?cand.map(s=>`<div class="pptownrow" onclick="closeSheet();certCellFillGo('${s.id}','${esc(cell)}','${esc(role)}')">
+      <b>${esc(s.name)}</b>
+      <span class="meta">${esc([String(s.role||"").trim()||t("clNoPosShort"),
+        String(s.team||"").trim()||t("clPool")].join(" · "))} · ${s.avgPct!=null?s.avgPct+"%":"-"}</span>
+    </div>`).join(""):`<div class="empty">${esc(t("clPoolEmpty"))}</div>`}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>`;
+  openSheet();
+}
+async function certCellFillGo(id,cell,role){
+  if(await certCellSet(id,{team:cell,role})){ toast(t("ceSavedOk"),"good"); await certCellsReload(); }
+}
+
 
 function openSheet(){$("#scrim").classList.add("on");$("#sheet").classList.add("on");}
 function closeSheet(){$("#scrim").classList.remove("on");$("#sheet").classList.remove("on");}

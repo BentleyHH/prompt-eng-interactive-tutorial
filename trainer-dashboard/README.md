@@ -101,6 +101,9 @@ Kompletter Aufbau auf artfiles.de: siehe **`DEPLOY.md`**.
   Kunden samt Import der ausgefüllten Datei. **Zellen/Teams und Gruppen** (z.B.
   Train-the-Trainer) als Filter- und Vergleichsdimension; **Einzelbögen** - eine
   Druckseite je Teilnehmer mit Platz, Profil gegen den Gruppenschnitt und Empfehlung.
+  **Zellen-Planer**: 8 Zellen mit denselben 5 Positionen, Gleichgewicht der Zellen
+  mit Spannweite, automatische Tauschvorschläge (gleiche Position, stark gegen
+  schwach), Besetzen offener Positionen per Klick und Einsatzbereitschaft je Zelle.
 - **Vorlagen** bearbeiten & speichern (je Sprache DE/EN)
 - **Import** (angedeutet): Excel/CSV, Angebot-PDF, KI-Extraktion aus Lebensläufen
 
