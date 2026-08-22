@@ -336,6 +336,15 @@ schaltest du zwischen **„Alle Kunden"** und einem einzelnen Kunden um; bei „
 **⚙ Kunden verwalten** (Name, Kürzel, Farbe, Land). Ein Training ordnest du in der Detailansicht per
 Auswahlfeld einem Kunden zu.
 
+## Menue: vier Bloecke, einklappbar
+Die Seitenleiste ist in vier Bloecke gegliedert: **Planung** (Uebersicht, Trainings,
+Wochenplan, Belegung, Trainer, Berichte), **Teilnehmer** (Teilnehmer-Stammdaten als
+eigener Punkt, Zertifizierung), **Kommunikation** (Folien, Rueckmeldungen, Vorlagen)
+und **System** (Automatik, Protokolle, Benutzer). Jede Ueberschrift laesst sich per
+Klick ein- und ausklappen; der Zustand wird im Browser gemerkt. **System** startet
+zugeklappt - da muss man nicht staendig ran. Der Punkt **Protokolle** fasst
+E-Mail-Protokoll und Aenderungsprotokoll unter zwei Reitern zusammen.
+
 ## Trainings anlegen & bearbeiten
 Unter **Trainings → + Neues Training** legst du ein Training direkt im Dashboard an (Kunde, Thema,
 Ort, Land, Beginn/Ende als Datum, Schwerpunkt, benötigte Trainer, Teilnehmer). Aus dem Datum werden

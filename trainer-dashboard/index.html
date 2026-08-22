@@ -141,6 +141,12 @@
   .brand:hover{opacity:.72}
   .brand:focus-visible{outline:2px solid var(--brand-solid);outline-offset:2px}
   .nav{display:flex;flex-direction:column;gap:2px}
+  .navsec{display:flex;align-items:center;gap:8px;margin:15px 10px 4px;cursor:pointer;
+    font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);
+    user-select:none}
+  .navsec:first-child{margin-top:2px}
+  .navsec:hover{color:var(--muted)}
+  .navsec .navchev{margin-left:auto;font-style:normal;font-size:11px;opacity:.8}
   .nav button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
     padding:9px 11px;border:none;background:transparent;border-radius:9px;color:var(--muted);
     font-size:14px;font-weight:550}
@@ -1848,7 +1854,10 @@ const L={
   wkAiDone:"KI-Wochenrhythmus übernommen", wkAiDemo:"Im Demo-Modus ohne KI - stattdessen einfache Auto-Verteilung.",
   wkPrint:"Drucken", wkMat:"Benötigtes Material", wkMatPh:"z.B. 20× DVI-Kit, Beamer, Flipchart",
   wkPrintMat:"Material", wkPrintTrainer:"Trainer",
-  nav_users:"Benutzer", nav_activity:"Änderungen",
+  nav_users:"Benutzer", nav_activity:"Änderungen", nav_students:"Teilnehmer",
+  navg_plan:"Planung", navg_part:"Teilnehmer", navg_comm:"Kommunikation", navg_sys:"System",
+  ptTabMail:"E-Mail-Protokoll", ptTabAct:"Änderungsprotokoll",
+  tp_students:"Teilnehmer", tp_studentsSub:"Stammdaten, Lehrgänge und Zellen der Teilnehmer",
   tp_users:"Benutzer", tp_usersSub:"Wer darf sich anmelden - Rollen und Zugänge",
   tp_activity:"Änderungen", tp_activitySub:"Wer hat wann was geändert",
   // Anmeldung
@@ -2130,7 +2139,7 @@ const L={
   visaLbl:"Visum", passportLbl:"Reisepass gültig bis", visaNotesLbl:"Visum-Notizen",
   visa_none:"-", visa_needed:"benötigt", visa_applied:"beantragt", visa_approved:"genehmigt", visa_rejected:"abgelehnt",
   flSuggest:"Flug-Vorschläge", flSuggestHint:"Automatische Vorschläge nach Route (Region → Ziel). Zum Übernehmen anklicken.", flUse:"Übernehmen",
-  nav_emails:"Protokoll", tp_emails:"E-Mail-Protokoll", tp_emailsSub:"Alle versendeten Anfragen, Erinnerungen und Agenden",
+  nav_emails:"Protokolle", tp_emails:"E-Mail-Protokoll", tp_emailsSub:"Alle versendeten Anfragen, Erinnerungen und Agenden",
   /* ---- Trainingsbericht & Auswertung ---- */
   nav_reports:"Berichte", tp_reports:"Berichte & Auswertung",
   tp_reportsSub:"Trainings bewerten und über Wochen, Monate und Jahre auswerten",
@@ -2651,7 +2660,10 @@ const L={
   wkAiDone:"AI week rhythm applied", wkAiDemo:"Demo mode has no AI - using simple auto-distribute instead.",
   wkPrint:"Print", wkMat:"Required material", wkMatPh:"e.g. 20× DVI kit, projector, flip chart",
   wkPrintMat:"Material", wkPrintTrainer:"Trainer",
-  nav_users:"Users", nav_activity:"Changes",
+  nav_users:"Users", nav_activity:"Changes", nav_students:"Participants",
+  navg_plan:"Planning", navg_part:"Participants", navg_comm:"Communication", navg_sys:"System",
+  ptTabMail:"Email log", ptTabAct:"Change log",
+  tp_students:"Participants", tp_studentsSub:"Master data, courses and cells of the participants",
   tp_users:"Users", tp_usersSub:"Who can sign in - roles and access",
   tp_activity:"Changes", tp_activitySub:"Who changed what, and when",
   lgSignIn:"Sign in", lgMissing:"Please enter email and password.",
@@ -2927,7 +2939,7 @@ const L={
   visaLbl:"Visa", passportLbl:"Passport valid until", visaNotesLbl:"Visa notes",
   visa_none:"-", visa_needed:"needed", visa_applied:"applied", visa_approved:"approved", visa_rejected:"rejected",
   flSuggest:"Flight suggestions", flSuggestHint:"Auto suggestions by route (region → destination). Click to use.", flUse:"Use",
-  nav_emails:"Log", tp_emails:"Email log", tp_emailsSub:"All sent requests, reminders and agendas",
+  nav_emails:"Logs", tp_emails:"Email log", tp_emailsSub:"All sent requests, reminders and agendas",
   /* ---- Training debrief & report ---- */
   nav_reports:"Reports", tp_reports:"Reports & analysis",
   tp_reportsSub:"Rate trainings and analyse them across weeks, months and years",
@@ -3520,7 +3532,24 @@ document.addEventListener("keydown",e=>{
 /* ============================================================
    NAV / ROUTER
    ============================================================ */
-const NAV=[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"week",ic:IC.week},{id:"pptview",ic:IC.slides},{id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"cert",ic:IC.cert},{id:"reports",ic:IC.chart},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail},{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log}];
+/* Vier Bloecke, wie sie im Alltag zusammengehoeren. "System" ist standardmaessig
+   zugeklappt; jede Ueberschrift laesst sich per Klick ein-/ausklappen und der
+   Zustand wird im Browser gemerkt. */
+const NAV_GROUPS=[
+  {key:"plan", items:[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"week",ic:IC.week},
+                      {id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"reports",ic:IC.chart}]},
+  {key:"part", items:[{id:"students",ic:IC.id},{id:"cert",ic:IC.cert}]},
+  {key:"comm", items:[{id:"pptview",ic:IC.slides},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail}]},
+  {key:"sys",  items:[{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log},{id:"users",ic:IC.lock}]},
+];
+const NAV=NAV_GROUPS.flatMap(g=>g.items);
+let navCollapsed=(()=>{ try{ return JSON.parse(localStorage.getItem("etaf_nav_fold")||'{"sys":true}'); }
+  catch(e){ return {sys:true}; } })();
+function navFold(key){
+  navCollapsed[key]=!navCollapsed[key];
+  try{ localStorage.setItem("etaf_nav_fold",JSON.stringify(navCollapsed)); }catch(e){}
+  buildNav();
+}
 /* Offene Rückmeldungen (Trainer meldeten „stimmt nicht“, noch nicht erledigt). */
 function inboxItems(){ return (S.trainers||[]).filter(tr=>tr.plan&&tr.plan.status==="issue"&&tr.plan.note&&!tr.plan.resolvedAt)
   .map(tr=>({tr,note:tr.plan.note,at:tr.plan.confirmedAt})); }
@@ -3552,11 +3581,18 @@ function buildNav(){
   const badgeFor=n=> n.id==="trainings"&&crit ? `<span class="badge">${crit}</span>`
     : n.id==="inbox"&&inb ? `<span class="badge">${inb}</span>`
     : n.id==="pptview"&&pptDue ? `<span class="badge">${pptDue}</span>` : "";
-  $("#nav").innerHTML=NAV.concat(extraNav()).map(n=>`
-    <button class="${n.id===route?'active':''}" onclick="go('${n.id}')">
-      ${svg(n.ic)}<span>${t("nav_"+n.id)}</span>
-      ${badgeFor(n)}
-    </button>`).join("");
+  const isActive=n=> n.id===route || (n.id==="emails"&&route==="activity");
+  $("#nav").innerHTML=NAV_GROUPS.map(g=>{
+    const hasActive=g.items.some(isActive);
+    const open=!navCollapsed[g.key] || hasActive;   // aktive Gruppe nie verstecken
+    const body=open?g.items.map(n=>`
+      <button class="${isActive(n)?'active':''}" onclick="go('${n.id}')">
+        ${svg(n.ic)}<span>${t("nav_"+n.id)}</span>
+        ${badgeFor(n)}
+      </button>`).join(""):"";
+    return `<div class="navsec${open?' open':''}" onclick="navFold('${g.key}')">
+        <span>${esc(t("navg_"+g.key))}</span><i class="navchev">${open?"▾":"▸"}</i></div>${body}`;
+  }).join("");
   drawMeBox();
   const rest=NAV.filter(n=>!NAV_MOBILE.includes(n.id));
   const restActive=rest.some(n=>n.id===route);
@@ -3569,7 +3605,7 @@ function buildNav(){
 }
 /* „Mehr“-Blatt: restliche Bereiche + Einstellungen, mit großen Tap-Zielen. */
 function openMoreNav(){
-  const rest=NAV.filter(n=>!NAV_MOBILE.includes(n.id)).concat(extraNav());
+  const rest=NAV.filter(n=>!NAV_MOBILE.includes(n.id));
   $("#sheetTitle").textContent=t("nav_more");
   $("#sheetBody").innerHTML=rest.map(n=>`
     <button class="morerow ${n.id===route?'on':''}" onclick="closeSheet();go('${n.id}')">
@@ -3587,7 +3623,8 @@ function openMoreNav(){
 function navIcName(id){
   return {dash:"dash",trainings:"cal",week:"week",bookings:"book",trainers:"users",
           inbox:"inbox",templates:"mail",automation:"auto",emails:"log",
-          users:"users",activity:"log"}[id]||"dash";
+          users:"lock",activity:"log",cert:"cert",reports:"chart",
+          pptview:"slides",students:"id"}[id]||"dash";
 }
 /* Angemeldeter Benutzer unten in der Seitenleiste. */
 function drawMeBox(){
@@ -3603,12 +3640,7 @@ function drawMeBox(){
       <div class="meta" style="font-size:11px">${roleLabel(m.role)}</div>
     </div></div>`;
 }
-/* Zusätzliche Menüpunkte: Protokoll für alle, Benutzer nur für Admins. */
-function extraNav(){
-  const x=[{id:"activity",ic:IC.log}];
-  x.push({id:"users",ic:IC.users});   // Nicht-Admins sehen dort nur die eigene Sicherheit
-  return x;
-}
+
 function titleFor(r){
   const m={dash:["tp_dash","tp_dashSub"],trainings:["tp_trn","tp_trnSub"],
     week:["tp_week","tp_weekSub"],
@@ -3617,10 +3649,14 @@ function titleFor(r){
     automation:["tp_auto","tp_autoSub"],emails:["tp_emails","tp_emailsSub"],
     users:["tp_users","tp_usersSub"],activity:["tp_activity","tp_activitySub"],
     reports:["tp_reports","tp_reportsSub"],pptview:["tp_pptv","tp_pptvSub"],
-    cert:["tp_cert","tp_certSub"]};
+    cert:["tp_cert","tp_certSub"],students:["tp_students","tp_studentsSub"]};
   const k=m[r]||m.dash; return [t(k[0]),t(k[1])];
 }
-function go(r){route=r;render();}
+function go(r){
+  if(r==="students"){ certTab="people"; }
+  else if(r==="cert" && certTab==="people"){ certTab="rate"; }
+  route=r; render();
+}
 function render(){
   buildNav();buildClientBar();
   $$(".view").forEach(v=>v.classList.remove("on"));
@@ -3634,6 +3670,7 @@ function render(){
   else if(route==="inbox"){renderInbox();$("#v-inbox").classList.add("on");}
   else if(route==="users"){renderUsers();$("#v-users").classList.add("on");}
   else if(route==="activity"){renderActivity();$("#v-activity").classList.add("on");}
+  else if(route==="students"){renderCert();$("#v-cert").classList.add("on");}
   else if(route==="transfer"){renderTransfer();$("#v-transfer").classList.add("on");}
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
@@ -5892,7 +5929,7 @@ async function renderActivity(){
       <span class="meta nowrap">${fmtWhen(a.created_at)}</span>
     </div>`).join("");
   const chip=(k,lbl)=>`<button${actFilter.kind===k?' class="on"':""} onclick="actSetKind('${k}')">${esc(lbl)}</button>`;
-  $("#v-activity").innerHTML=`
+  $("#v-activity").innerHTML=protoTabs("activity")+`
     <div class="panel"><div class="panel-b" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div class="rowgrow"><b>${t("actCount",list.length)}</b><div class="meta">${
         actFilter.kind==="logins"?t("actLoginHint"):t("actHint")}</div></div>
@@ -6728,6 +6765,14 @@ function demoLog(to,subject,lang,status){
   S.emails.unshift({to_email:to,subject:subject,lang:lang||S.emailLang,status:status||"logged",created_at:ts});
   if(S.emails.length>200)S.emails.length=200; save();
 }
+/* Beide Protokolle teilen sich einen Menuepunkt - oben die Reiter. */
+function protoTabs(cur){
+  return `<div class="panel"><div class="panel-b" style="padding:10px 14px">
+    <span class="chips rpchips">
+      <button${cur==="emails"?' class="on"':""} onclick="go('emails')">${esc(t("ptTabMail"))}</button>
+      <button${cur==="activity"?' class="on"':""} onclick="go('activity')">${esc(t("ptTabAct"))}</button>
+    </span></div></div>`;
+}
 async function renderEmails(){
   let list=[];
   if(LIVE){ try{ const d=await apiCall("emails"); list=d.emails||[]; }catch(e){ list=[]; } }
@@ -6740,7 +6785,7 @@ async function renderEmails(){
         <div class="meta">${esc(e.to_email||"")} · ${esc((e.created_at||"").replace('T',' ').slice(0,16))} · ${esc((e.lang||"").toUpperCase())}</div></div>
       <span class="pill ${stCls[e.status]||'neutral'}">${t("em_"+e.status)!=="em_"+e.status?t("em_"+e.status):e.status}</span>
     </div>`).join("");
-  $("#v-emails").innerHTML=`<div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">${t("emNone")}</div>`}</div></div>`;
+  $("#v-emails").innerHTML=protoTabs("emails")+`<div class="panel"><div class="panel-b" style="padding:6px 18px">${rows||`<div class="empty">${t("emNone")}</div>`}</div></div>`;
 }
 
 /* ============================================================
