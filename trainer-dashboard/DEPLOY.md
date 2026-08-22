@@ -255,6 +255,16 @@ gleiche Position zuerst, dann nach Staerke. **+ Zelle** legt eine weitere Zelle 
 Teilnehmer ohne Zelle stehen im Pool darunter. Die Funktion je Person kommt auch
 aus der Excel-Vorlage (Spalte **Funktion**) mit.
 
+Am schnellsten geht die Aufstellung per **Ziehen und Ablegen** wie im Wochenplan:
+oben die **Anzahl der Zellen** eintragen (fehlende Zellen werden angelegt), dann
+Teilnehmer aus dem Pool oder aus anderen Zellen ziehen. Ablegen auf einer
+**Position** besetzt sie, Ablegen auf einer **Person** tauscht beide Plaetze
+(Zelle und Position), Ablegen auf dem **Pool** nimmt die Person aus der Zelle.
+Das **Diagramm-Symbol** an jeder Zelle oeffnet die Gesamtauswertung nur fuer
+diese Zelle, das kleine Diagramm an jeder Person ihre Einzelauswertung -
+auch aus dem Personen-Dialog heraus. Am Touch-Geraet ohne Maus funktioniert
+weiterhin alles per Klick (Person antippen, Zelle/Position waehlen).
+
 ### Zwischenbilanz fuer den Kunden
 **Zertifizierung -> Auswertung -> Zwischenbilanz** schneidet alle Zahlen nach
 Zeitraum: Monat, Quartal, Halbjahr, Jahr, Gesamt oder frei gewaehlt, mit Pfeilen

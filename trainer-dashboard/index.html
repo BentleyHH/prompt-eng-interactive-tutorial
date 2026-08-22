@@ -890,6 +890,12 @@
   .clrow.miss{color:var(--muted)}
   .clrow.miss .clrole{color:var(--warn)}
   .clrow.warnrow .clname{color:var(--crit)}
+  .clrow[draggable="true"]{cursor:grab}
+  .clrow.dragging{opacity:.45}
+  .cldrop{outline:2px dashed var(--info);outline-offset:-2px;border-radius:8px;background:var(--info-bg)}
+  .clbtn{cursor:pointer;color:var(--faint);display:inline-flex;align-items:center;padding:2px;border-radius:6px}
+  .clbtn:hover{color:var(--ink);background:var(--panel-2)}
+  .clbtn .ic{margin-right:0!important}
   .celamp.green{background:var(--good)} .celamp.amber{background:var(--warn)}
   .celamp.red{background:var(--crit)} .celamp.none{background:var(--line)}
   .cenotes{margin:16px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
@@ -1689,6 +1695,8 @@ const L={
   clRoleLbl:"Funktion / Position", clMoveTo:"Zelle",
   clSwapWith:r=>`Tauschen mit (${r})`,
   clFillHint:"Kandidaten - passende Position zuerst, dann nach Stärke sortiert",
+  clCellCount:"Zellen:", clEvalCell:"Auswertung dieser Zelle", clEvalPerson:"Auswertung",
+  clDragHint:"Teilnehmer per Ziehen aufstellen: auf einer Position ablegen besetzt sie, auf einer Person ablegen tauscht die Plätze",
   ceByPerson:"je Teilnehmer", ceByCrit:"je Kriterium",
   ceProgress:(d,n)=>`${d} von ${n} abgeschlossen`,
   ceFinal:"final", ceOpen:"offen", cePass:"bestanden", ceMerit:"mit Auszeichnung", ceFail:"nicht bestanden",
@@ -2460,6 +2468,8 @@ const L={
   clRoleLbl:"Position", clMoveTo:"Cell",
   clSwapWith:r=>`Swap with (${r})`,
   clFillHint:"Candidates - matching position first, then sorted by strength",
+  clCellCount:"Cells:", clEvalCell:"This cell's analysis", clEvalPerson:"Analysis",
+  clDragHint:"drag participants into place: drop on a position to fill it, drop on a person to swap places",
   ceByPerson:"by participant", ceByCrit:"by criterion",
   ceProgress:(d,n)=>`${d} of ${n} completed`,
   ceFinal:"final", ceOpen:"open", cePass:"passed", ceMerit:"passed with merit", ceFail:"not passed",
@@ -8979,7 +8989,7 @@ async function renderCert(){
   if(certTab==="cells"){ await certAnLoad();
     const tracks=certVals("track");
     body=`<div class="panel"><div class="panel-b" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <span class="meta">${esc(t("clIntro"))}</span><div class="spacer"></div>
+        <span class="meta">${esc(t("clIntro"))} · ${esc(t("clDragHint"))}</span><div class="spacer"></div>
         ${tracks.length?`<select class="inp" style="max-width:190px" onchange="certSetFlt('fTrack',this.value)">
           <option value="">${esc(t("ceFltAllTracks"))}</option>
           ${tracks.map(x=>`<option value="${esc(x)}"${certState.fTrack===x?" selected":""}>${esc(x)}</option>`).join("")}</select>`:""}
@@ -11113,6 +11123,9 @@ function certCellsHtml(){
       ${rated.length>1?`<span class="pill ${balanced?"good":"warn"}">${esc(balanced?t("clBalanced"):t("clUnbalanced"))}</span>
         <span class="meta">${esc(t("clSpread",spread))}</span>`:`<span class="meta">${esc(t("clNoRated"))}</span>`}
       <div class="spacer"></div>
+      <label class="meta" style="display:flex;align-items:center;gap:7px">${esc(t("clCellCount"))}
+        <input type="number" class="inp" style="width:76px" min="1" max="20" value="${stats.length||1}"
+          onchange="clCellCount(this.value)"></label>
       <button class="btn sm" onclick="certAddCell()">${ic("plus",14)}${esc(t("clAddCell"))}</button>
     </div>
     <div class="panel-b"><div class="rpbars">${bars||`<div class="empty">${esc(t("clNoCells"))}</div>`}</div></div></div>`;
@@ -11137,45 +11150,60 @@ function certCellsHtml(){
       const ppl=c.byRole[r]||[];
       if(!ppl.length){
         if(!CELL_ROLES.includes(r)) return "";
-        return `<div class="clrow miss hit" onclick="certCellFill('${esc(c.name)}','${esc(r)}')">
+        return `<div class="clrow miss hit" data-cell="${esc(c.name)}" data-role="${esc(r)}"
+            ondragover="clDragOver(event)" ondragleave="clDragLeave(event)" ondrop="clDrop(event)"
+            onclick="certCellFill('${esc(c.name)}','${esc(r)}')">
           <span class="clrole">${esc(r)}</span>
           <span class="meta">${esc(t("clEmpty"))}</span><span class="spacer"></span>
           <span class="meta">+</span></div>`;
       }
-      return ppl.map(s=>`<div class="clrow hit${certRetrainOne(s)?" warnrow":""}" onclick="certCellPerson('${s.id}')">
+      return ppl.map(s=>`<div class="clrow hit${certRetrainOne(s)?" warnrow":""}" draggable="true" data-sid="${s.id}"
+          ondragstart="clDragStart(event)" ondragend="clDragEnd()"
+          ondragover="clDragOver(event)" ondragleave="clDragLeave(event)" ondrop="clDrop(event)"
+          onclick="certCellPerson('${s.id}')">
         <span class="clrole">${esc(r)}</span>
         <b class="clname">${esc(s.name)}</b>
         ${certRetrainOne(s)?`<span class="celamp red" title="${esc(t("ceClsRed"))}"></span>`:""}
         <span class="spacer"></span>
         <span class="clpct" style="color:${certPctHue(s.avgPct)}">${s.avgPct!=null?s.avgPct+"%":"-"}</span>
+        <span class="clbtn" title="${esc(t("clEvalPerson"))}" onclick="event.stopPropagation();clPersonEval('${s.id}')">${ic("chart",13)}</span>
       </div>`).join("");
     }).join("");
     const extra=(c.byRole["__none"]||[]).map(s=>`
-      <div class="clrow hit" onclick="certCellPerson('${s.id}')">
+      <div class="clrow hit" draggable="true" data-sid="${s.id}"
+          ondragstart="clDragStart(event)" ondragend="clDragEnd()"
+          ondragover="clDragOver(event)" ondragleave="clDragLeave(event)" ondrop="clDrop(event)"
+          onclick="certCellPerson('${s.id}')">
         <span class="clrole dim">${esc(t("clNoPosShort"))}</span>
         <b class="clname">${esc(s.name)}</b><span class="spacer"></span>
         <span class="clpct" style="color:${certPctHue(s.avgPct)}">${s.avgPct!=null?s.avgPct+"%":"-"}</span>
+        <span class="clbtn" title="${esc(t("clEvalPerson"))}" onclick="event.stopPropagation();clPersonEval('${s.id}')">${ic("chart",13)}</span>
       </div>`).join("");
     const state = c.ready ? `<span class="pill good">${esc(t("clReady"))}</span>`
       : c.retrain.length ? `<span class="pill crit">${esc(t("clHasRetrain",c.retrain.length))}</span>`
       : c.missing.length ? `<span class="pill warn">${esc(t("clMissingN",c.missing.length))}</span>`
       : c.doubled.length ? `<span class="pill warn">${esc(t("clDoubled"))}</span>`
       : `<span class="pill neutral">${esc(t("ceOpen"))}</span>`;
-    return `<div class="panel clcard" id="${anchor}">
+    return `<div class="panel clcard" id="${anchor}" data-cell="${esc(c.name)}"
+        ondragover="clDragOver(event)" ondragleave="clDragLeave(event)" ondrop="clDrop(event)">
       <div class="panel-h" style="gap:8px"><h3 style="min-width:0">${esc(c.name)}</h3>${state}
         <div class="spacer"></div>
+        <span class="clbtn" title="${esc(t("clEvalCell"))}" onclick="clCellEval('${esc(c.name)}')">${ic("chart",15)}</span>
         <b class="tnum" style="color:${certPctHue(c.avg)}">${c.avg!=null?c.avg+"%":""}</b></div>
       <div class="panel-b" style="padding:8px 14px">${rows}${extra}</div>
     </div>`;
   }).join("");
 
   /* Pool: Gruppe ohne Zelle */
-  const poolRows=pool.map(s=>`<div class="clrow hit" onclick="certCellPerson('${s.id}')">
+  const poolRows=pool.map(s=>`<div class="clrow hit" draggable="true" data-sid="${s.id}"
+        ondragstart="clDragStart(event)" ondragend="clDragEnd()" onclick="certCellPerson('${s.id}')">
       <span class="clrole dim">${esc(String(s.role||"").trim()||t("clNoPosShort"))}</span>
       <b class="clname">${esc(s.name)}</b><span class="spacer"></span>
       <span class="clpct" style="color:${certPctHue(s.avgPct)}">${s.avgPct!=null?s.avgPct+"%":"-"}</span>
+      <span class="clbtn" title="${esc(t("clEvalPerson"))}" onclick="event.stopPropagation();clPersonEval('${s.id}')">${ic("chart",13)}</span>
     </div>`).join("");
-  const poolCard=`<div class="panel clcard clpool">
+  const poolCard=`<div class="panel clcard clpool" data-cell=""
+      ondragover="clDragOver(event)" ondragleave="clDragLeave(event)" ondrop="clDrop(event)">
     <div class="panel-h"><h3>${esc(t("clPool"))}</h3><span class="meta">${esc(t("clPoolHint"))}</span></div>
     <div class="panel-b" style="padding:8px 14px">${poolRows||`<div class="empty">${esc(t("clPoolEmpty"))}</div>`}</div></div>`;
 
@@ -11284,6 +11312,7 @@ function certCellPerson(id){
         ${ic("sync",15)} <b>${esc(x.name)}</b>
         <span class="meta">${esc(x.team)} · ${x.avgPct!=null?x.avgPct+"%":"-"}</span></div>`).join("")}`:""}`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <button class="btn" onclick="closeSheet();clPersonEval('${s.id}')">${ic("chart",15)}${esc(t("clEvalPerson"))}</button>
     <div class="spacer"></div>
     <button class="btn primary" onclick="certCellApply('${s.id}')">${ic("check",15)}${t("save")}</button>`;
   openSheet();
@@ -11318,6 +11347,72 @@ function certCellFill(cell,role){
 }
 async function certCellFillGo(id,cell,role){
   if(await certCellSet(id,{team:cell,role})){ toast(t("ceSavedOk"),"good"); await certCellsReload(); }
+}
+
+/* ---------- Ziehen und Ablegen (wie im Wochenplan) ----------
+   Person auf eine Position ziehen = dort einsetzen, auf eine andere
+   Person ziehen = Plaetze tauschen, auf den Pool ziehen = aus der
+   Zelle nehmen. */
+let clDragSid=null;
+function clDragStart(ev){
+  clDragSid=String(ev.currentTarget.dataset.sid);
+  ev.dataTransfer.setData("text/plain",clDragSid);
+  ev.dataTransfer.effectAllowed="move";
+  ev.currentTarget.classList.add("dragging");
+}
+function clDragEnd(){
+  clDragSid=null;
+  $$(".clrow.dragging").forEach(x=>x.classList.remove("dragging"));
+  $$(".cldrop").forEach(x=>x.classList.remove("cldrop"));
+}
+function clDragOver(ev){
+  if(!clDragSid) return;
+  ev.preventDefault(); ev.stopPropagation();
+  ev.dataTransfer.dropEffect="move";
+  ev.currentTarget.classList.add("cldrop");
+}
+function clDragLeave(ev){ ev.currentTarget.classList.remove("cldrop"); }
+async function clDrop(ev){
+  ev.preventDefault(); ev.stopPropagation();
+  const el=ev.currentTarget; el.classList.remove("cldrop");
+  const sid=clDragSid||ev.dataTransfer.getData("text/plain");
+  clDragEnd();
+  if(!sid) return;
+  const tgtSid=el.dataset.sid;
+  if(tgtSid){ if(String(tgtSid)!==String(sid)) await clExchange(sid,tgtSid); return; }
+  const p=certPersonFull(sid); if(!p) return;
+  const cell=el.dataset.cell||"";
+  const patch={team:cell};
+  if(el.dataset.role!==undefined) patch.role=el.dataset.role;
+  if(String(p.team||"")===cell && (patch.role===undefined||String(p.role||"")===patch.role)) return;
+  if(await certCellSet(sid,patch)){ toast(t("ceSavedOk"),"good"); await certCellsReload(); }
+}
+/* Kompletter Platztausch: beide Personen uebernehmen Zelle UND Position des anderen. */
+async function clExchange(aId,bId){
+  const a=certPersonFull(aId), b=certPersonFull(bId);
+  if(!a||!b) return;
+  const ok1=await certCellSet(aId,{team:b.team||"",role:b.role||""});
+  const ok2=ok1&&await certCellSet(bId,{team:a.team||"",role:a.role||""});
+  if(ok2){ toast(t("clSwapped",a.name,b.name),"good"); await certCellsReload(); }
+}
+/* "So viele Zellen habe ich": fehlende Zellen 1..n anlegen. */
+function clCellCount(n){
+  n=Math.max(1,Math.min(20,parseInt(n,10)||0));
+  if(!n) return;
+  certState.extraCells=(certState.extraCells||[]);
+  const have=certCellNames();
+  for(let i=1;i<=n;i++){
+    const nm="Zelle "+i;
+    if(!have.includes(nm)&&!certState.extraCells.includes(nm)) certState.extraCells.push(nm);
+  }
+  renderCertCells();
+}
+/* Auswertung direkt aus der Zelle heraus. */
+function clCellEval(name){
+  certState.fTeam=name; certState.evalMode="all"; certTab="eval"; renderCert();
+}
+function clPersonEval(id){
+  certState.evalMode="person"; certState.evalPick=String(id); certTab="eval"; renderCert();
 }
 
 
