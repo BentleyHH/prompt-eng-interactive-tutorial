@@ -1973,6 +1973,105 @@ function xlsx_rows(string $bin, int $maxRows=5000): array {
 
 /** Eine xlsx-Datei bauen. $sheets = ['Blattname'=>[[zelle,…],…], …] */
 /* ============================================================
+   WOCHEN-DREHBUCH (RUNNING ORDER)
+   Eine Agenda fuer die ganze Trainingswoche: Ankuenfte, Shuttle,
+   Treffpunkt, Vorlauf, Sessions, Mittagspause, Material - aus den
+   vorhandenen Daten vorgeschlagen, im Editor frei anpassbar.
+   ============================================================ */
+function running_day_dates(array $tg): array {
+  $t=strtotime((string)($tg['start_date']??''));
+  if(!$t) return [];
+  // Trainingstage sind Mo-Fr. Faellt das Startdatum auf Sa/So (Anreisetag),
+  // beginnt die Woche am folgenden Montag, sonst am Montag derselben Woche.
+  $w=(int)date('N',$t);
+  $t += ($w>=6) ? (8-$w)*86400 : -($w-1)*86400;
+  $out=[];
+  foreach(['mon','tue','wed','thu','fri'] as $i=>$d) $out[$d]=date('Y-m-d',$t+$i*86400);
+  return $out;
+}
+function running_suggest(int $tgId, array $cfg=[], string $lang='de'): array {
+  $de=$lang!=='en';
+  $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+  if(!$tg) fail('Training nicht gefunden.',404);
+  $start=preg_match('/^\d{1,2}:\d{2}$/',(string)($cfg['start']??''))?$cfg['start']:'09:00';
+  $lead=max(0,min(240,(int)($cfg['lead']??45)));
+  $lunchAt=preg_match('/^\d{1,2}:\d{2}$/',(string)($cfg['lunch']??''))?$cfg['lunch']:'12:30';
+  $lunchMin=max(15,min(180,(int)($cfg['lunchMin']??60)));
+  $toMin=function(string $hm){ $p=explode(':',$hm); return ((int)$p[0])*60+(int)($p[1]??0); };
+  $toHM=fn(int $m)=>sprintf('%02d:%02d',intdiv(max(0,$m),60)%24,max(0,$m)%60);
+  $items=[]; $dates=running_day_dates($tg);
+  $slots=json_decode((string)($tg['plan_slots']??''),true)?:[];
+  $sess=[]; foreach(q("SELECT * FROM training_sessions WHERE training_id=?",[$tgId])->fetchAll() as $s) $sess[(string)$s['id']]=$s;
+  $trName=[]; foreach(q("SELECT id,name FROM trainers")->fetchAll() as $r) $trName[(string)$r['id']]=$r['name'];
+  $mats=[];
+  try{ $mats=q("SELECT tm.qty,m.name FROM training_materials tm JOIN materials m ON m.id=tm.material_id WHERE tm.training_id=? ORDER BY m.sort_order",[$tgId])->fetchAll(); }catch(Throwable $e){}
+  $matLine=implode(', ',array_map(fn($m)=>((int)$m['qty']?((int)$m['qty']).'× ':'').$m['name'],$mats));
+  /* An- und Abreisen der bestaetigten Trainer */
+  $ids=array_map('intval', q("SELECT trainer_id FROM requests WHERE training_id=? AND status IN('yes','confirmed')",[$tgId])->fetchAll(PDO::FETCH_COLUMN));
+  foreach($ids as $trId){
+    $tv=q("SELECT * FROM travel WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+    $nm=$trName[(string)$trId]??('#'.$trId);
+    if($tv && trim((string)($tv['arrival']??''))!==''){
+      $det=trim(implode(' · ',array_filter([
+        trim((string)($tv['dep_airport']??''))!==''?(($de?'aus ':'from ').$tv['dep_airport']):'',
+        (string)($tv['flight_out']??'')])));
+      $items[]=['d'=>substr((string)$tv['arrival'],0,10),'t'=>'','cat'=>'arrive',
+        'title'=>($de?'Ankunft ':'Arrival ').$nm,'note'=>$det];
+    }
+    if($tv && trim((string)($tv['departure']??''))!==''){
+      $items[]=['d'=>substr((string)$tv['departure'],0,10),'t'=>'','cat'=>'arrive',
+        'title'=>($de?'Abreise ':'Departure ').$nm,'note'=>(string)($tv['flight_return']??'')];
+    }
+  }
+  if($dates){
+    $eve=date('Y-m-d',strtotime(reset($dates))-86400);
+    $items[]=['d'=>$eve,'t'=>'19:00','cat'=>'org',
+      'title'=>$de?'Team-Briefing im Hotel':'Team briefing at the hotel',
+      'note'=>trim((string)($tg['hotel']??''))];
+  }
+  $meet=trim((string)($tg['meeting_point']??'')); $venue=trim((string)($tg['venue']??''));
+  $firstDay=true;
+  foreach($dates as $day=>$date){
+    $am=array_values(array_filter(array_map(fn($id)=>$sess[(string)$id]??null,(array)($slots[$day.'_am']??[]))));
+    $pm=array_values(array_filter(array_map(fn($id)=>$sess[(string)$id]??null,(array)($slots[$day.'_pm']??[]))));
+    $s0=$toMin($start);
+    $items[]=['d'=>$date,'t'=>$toHM($s0-$lead-15),'cat'=>'shuttle',
+      'title'=>$de?'Shuttle Hotel → Trainingsort':'Shuttle hotel → venue','note'=>$venue];
+    $items[]=['d'=>$date,'t'=>$toHM($s0-$lead),'cat'=>'meet',
+      'title'=>$de?'Treffpunkt · Vorlauf: Aufbau, Technik- und Materialcheck':'Meeting point · lead time: set-up, tech and material check',
+      'note'=>trim(($meet!==''?$meet.' · ':'').($de?'Vorlauf ':'lead ').$lead.' min')];
+    if($firstDay && $matLine!==''){
+      $items[]=['d'=>$date,'t'=>$toHM($s0-$lead),'cat'=>'mat',
+        'title'=>$de?'Material bereitstellen':'Stage materials','note'=>$matLine];
+    }
+    $sessAdd=function(array $list,int $cur) use(&$items,$date,$trName,$toHM,$de){
+      foreach($list as $s){
+        $durM=(int)round((float)(($s['dur']!==''&&$s['dur']!==null)?$s['dur']:1)*60);
+        $nm=isset($s['trainer_id'],$trName[(string)$s['trainer_id']])?$trName[(string)$s['trainer_id']]:'';
+        $note=trim(implode(' · ',array_filter([$nm,
+          trim((string)($s['mat']??''))!==''?('Material: '.$s['mat']):''])));
+        $items[]=['d'=>$date,'t'=>$toHM($cur),'cat'=>'session','title'=>(string)$s['title'],'note'=>$note];
+        $cur+=$durM;
+      }
+      return $cur;
+    };
+    $cur=$sessAdd($am,$s0);
+    $lm=$toMin($lunchAt);
+    $lunchStart=max($cur,$lm);
+    $items[]=['d'=>$date,'t'=>$toHM($lunchStart),'cat'=>'break',
+      'title'=>$de?'Mittagspause':'Lunch break','note'=>$lunchMin.' min'];
+    $cur=$sessAdd($pm,$lunchStart+$lunchMin);
+    $items[]=['d'=>$date,'t'=>$toHM($cur),'cat'=>'org',
+      'title'=>$de?'Tagesabschluss & kurzes Debrief':'End of day & short debrief','note'=>''];
+    $items[]=['d'=>$date,'t'=>$toHM($cur+20),'cat'=>'shuttle',
+      'title'=>$de?'Shuttle zurück zum Hotel':'Shuttle back to hotel','note'=>''];
+    $firstDay=false;
+  }
+  usort($items,fn($a,$b)=>[$a['d'],$a['t']!==''?$a['t']:'00'] <=> [$b['d'],$b['t']!==''?$b['t']:'00']);
+  return $items;
+}
+
+/* ============================================================
    FLUGDATEN-EXPORT
    Abu Dhabi bucht die Fluege selbst - je Trainingswoche eine Excel-
    Tabelle mit allen buchungsrelevanten Angaben der bestaetigten

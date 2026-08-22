@@ -163,6 +163,8 @@ function ensure_schema(): void {
   ] as $col){ try{ db()->exec("ALTER TABLE travel ADD COLUMN $col"); }catch(Throwable $e){} }
   // Heimatflughafen als Vorgabe fuer kuenftige Wochen
   try{ db()->exec("ALTER TABLE trainers ADD COLUMN home_airport VARCHAR(96)"); }catch(Throwable $e){}
+  // Wochen-Drehbuch (Running Order) je Training: JSON {items,cfg,updatedAt,updatedBy}
+  try{ db()->exec("ALTER TABLE trainings ADD COLUMN running TEXT"); }catch(Throwable $e){}
   // Migrationen (idempotent): Kontakt-Spalten für clients (Transferliste)
   foreach(["contact_name VARCHAR(160)","contact_email VARCHAR(190)"] as $col){
     try{ db()->exec("ALTER TABLE clients ADD COLUMN $col"); }catch(Throwable $e){}

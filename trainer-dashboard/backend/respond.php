@@ -117,7 +117,7 @@ if($showTravel){
   $trRow=q("SELECT * FROM trainers WHERE id=?",[$req['trainer_id']])->fetch()?:[];
 }
 $tvDef=function(string $k,string $fallback='') use($tvRow){ return htmlspecialchars(trim((string)($tvRow[$k]??''))!==''?(string)$tvRow[$k]:$fallback,ENT_QUOTES,'UTF-8'); };
-$dayShift=function(?string $d,int $days){ if(!$d) return ''; $t=strtotime($d); return $t?gmdate('Y-m-d',$t+$days*86400):''; };
+$dayShift=function(?string $d,int $days){ if(!$d) return ''; $t=strtotime($d); return $t?date('Y-m-d',$t+$days*86400):''; };
 $passMissing = $showTravel && (trim((string)($trRow['passport_number']??''))==='' || trim((string)($trRow['passport_name']??''))==='');
 
 $L = $lang==='de' ? [

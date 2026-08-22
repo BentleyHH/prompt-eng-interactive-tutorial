@@ -333,6 +333,21 @@ tokengebunden, ohne Anmeldung, nur fuer genau diese Woche. Der Abflughafen wird
 als Heimatflughafen gemerkt und in der naechsten Woche vorbelegt. Im Cockpit
 stehen dieselben Felder im Reise-Dialog je Trainer.
 
+## Wochen-Drehbuch (Running Order)
+Im Training oeffnet **Wochen-Drehbuch** den kompletten Ablaufplan der Woche als
+eine Agenda: Wer kommt wann an (aus den Reisedaten der Trainer), Team-Briefing
+am Vorabend, je Trainingstag Shuttle, Treffpunkt mit **Vorlauf** (einstellbar,
+Standard 45 Minuten vor Beginn), die **Sessions aus dem Wochenplan** mit Trainer
+und Sessionmaterial, **Mittagspause** (Uhrzeit und Dauer einstellbar),
+Tagesabschluss und Rueckshuttle sowie am ersten Morgen die komplette
+**Materialliste**. Der Vorschlag kommt per Knopf **Aus Plan neu erzeugen** aus
+den vorhandenen Daten; danach ist jede Zeile im Editor frei anpassbar
+(Uhrzeit, Kategorie, Titel, Details), Zeilen und ganze Tage lassen sich
+ergaenzen. **Drucken / PDF** erzeugt das mehrseitige Dokument (ueber den
+Druckdialog als PDF speicherbar), **An Orga-Team senden** verschickt den Plan
+huebsch formatiert per E-Mail an einen oder mehrere Empfaenger (werden gemerkt).
+Speichern legt den Stand am Training ab; Aenderungen stehen im Protokoll.
+
 ## Automatische Flugvorschläge
 Im Reise-Editor liefert **„Flüge vorschlagen"** aus Heimatregion → Zielflughafen passende
 Verbindungen (z. B. München → Abu Dhabi). Ein Klick auf **Übernehmen** trägt Hin-/Rückflug

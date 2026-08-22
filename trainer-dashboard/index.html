@@ -896,6 +896,32 @@
   .clrow.miss{color:var(--muted)}
   .clrow.miss .clrole{color:var(--warn)}
   .clrow.warnrow .clname{color:var(--crit)}
+  /* Wochen-Drehbuch: Editor */
+  .rncfg{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;
+    padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+  .rncfg label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--muted)}
+  .rnday{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:12px}
+  .rndayh{display:flex;align-items:center;margin-bottom:6px}
+  .rnrow{display:flex;gap:6px;margin-bottom:6px}
+  .rnrow .rnt{flex:0 0 62px}
+  .rnrow .rnc{flex:0 0 118px}
+  .rnrow .rnti{flex:1.4}
+  .rnrow .rnno{flex:1.6}
+  /* Wochen-Drehbuch: Druck */
+  .rnsheet{font-size:12.5px;color:#242B31}
+  .rnsheet .rnhead{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #242B31;padding-bottom:10px;margin-bottom:10px}
+  .rnsheet .rninfo{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0 0 12px;color:#5C666E;font-size:11.5px}
+  .rnsheet .rnpday{break-inside:avoid;page-break-inside:avoid;margin-bottom:14px}
+  .rnsheet h3{margin:12px 0 4px;font-size:14px;border-bottom:1px solid #C6CCD1;padding-bottom:3px}
+  .rnsheet table{width:100%;border-collapse:collapse}
+  .rnsheet td{padding:4px 8px;border-bottom:1px solid #E2E5E8;vertical-align:top}
+  .rnsheet .c1{width:48px;white-space:nowrap;font-variant-numeric:tabular-nums;color:#5C666E}
+  .rnsheet .c2{width:84px;white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#8A939A}
+  .rnsheet .c3 .meta{color:#5C666E;font-size:11.5px}
+  .rnsheet tr.rncat-session .c3 b{color:#242B31}
+  .rnsheet tr.rncat-break td{background:#F6F7F8}
+  .rnsheet tr.rncat-arrive .c2, .rnsheet tr.rncat-arrive .c1{color:#3B6EA5}
+  .rnsheet tr.rncat-mat .c2{color:#C77E1E}
   .clrow[draggable="true"]{cursor:grab}
   .clrow.dragging{opacity:.45}
   .cldrop{outline:2px dashed var(--info);outline-offset:-2px;border-radius:8px;background:var(--info-bg)}
@@ -2139,6 +2165,22 @@ const L={
   visaLbl:"Visum", passportLbl:"Reisepass gültig bis", visaNotesLbl:"Visum-Notizen",
   visa_none:"-", visa_needed:"benötigt", visa_applied:"beantragt", visa_approved:"genehmigt", visa_rejected:"abgelehnt",
   tvDepAirport:"Abflughafen", tvRetAirport:"Rückflug nach",
+  rnBtn:"Wochen-Drehbuch", rnTitle:"Wochen-Drehbuch (Running Order)",
+  rnHint:"Der komplette Ablauf der Woche: Ankünfte, Shuttle, Treffpunkt, Vorlauf, Trainings, Pausen und Material - vorgeschlagen aus Wochenplan und Reisedaten, hier frei anpassbar. Drucken erzeugt das PDF, Senden verschickt alles an dein Orga-Team.",
+  rnStart:"Beginn", rnLead:"Vorlauf (min)", rnLunch:"Mittag", rnLunchMin:"Pause (min)",
+  rnRegen:"Aus Plan neu erzeugen",
+  rnRegenAsk:"Vorschlag neu aus Wochenplan und Reisedaten erzeugen? Deine manuellen Änderungen im Drehbuch werden dabei ersetzt.",
+  rnAddRow:"Eintrag", rnAddDay:"Tag hinzufügen",
+  rnAddDayAsk:"Datum des neuen Tages (JJJJ-MM-TT):", rnBadDate:"Bitte als JJJJ-MM-TT eingeben.",
+  rnWhat:"Was", rnDetail:"Details (Ort, Person, Material ...)",
+  rnPrint:"Drucken / PDF", rnMail:"An Orga-Team senden",
+  rnSave:"Speichern", rnSaved:n=>`Drehbuch gespeichert (${n} Einträge).`,
+  rnSaveFirst:"Bitte zuerst speichern - dann senden.",
+  rnMailAsk:"Empfänger (mehrere mit Komma trennen):",
+  rnMailed:n=>n===1?"Running Order an 1 Empfänger gesendet.":`Running Order an ${n} Empfänger gesendet.`,
+  rnAsOf:"Stand:",
+  rnCat_arrive:"An-/Abreise", rnCat_shuttle:"Shuttle", rnCat_meet:"Treffpunkt", rnCat_session:"Training",
+  rnCat_break:"Pause", rnCat_mat:"Material", rnCat_org:"Orga", rnCat_other:"Sonstiges",
   fxBtn:"Flugdaten", fxTitle:"Flugdaten für die Buchung",
   fxHint:"Der Kunde bucht die Flüge selbst - diese Excel-Tabelle enthält alle buchungsrelevanten Angaben der bestätigten Trainer dieser Woche: Name laut Pass, Geburtsdatum, Nationalität, Passnummer, An- und Abreise, Flugwünsche, Visum und Kontakt.",
   fxCount:n=>n===1?"1 bestätigter Trainer in dieser Woche":`${n} bestätigte Trainer in dieser Woche`,
@@ -2952,6 +2994,22 @@ const L={
   visaLbl:"Visa", passportLbl:"Passport valid until", visaNotesLbl:"Visa notes",
   visa_none:"-", visa_needed:"needed", visa_applied:"applied", visa_approved:"approved", visa_rejected:"rejected",
   tvDepAirport:"Departure airport", tvRetAirport:"Return to",
+  rnBtn:"Week running order", rnTitle:"Week running order",
+  rnHint:"The complete flow of the week: arrivals, shuttle, meeting point, lead time, sessions, breaks and materials - proposed from the week plan and travel data, fully editable here. Print creates the PDF, Send mails everything to your org team.",
+  rnStart:"Start", rnLead:"Lead (min)", rnLunch:"Lunch", rnLunchMin:"Break (min)",
+  rnRegen:"Rebuild from plan",
+  rnRegenAsk:"Rebuild the proposal from the week plan and travel data? Your manual edits will be replaced.",
+  rnAddRow:"Entry", rnAddDay:"Add day",
+  rnAddDayAsk:"Date of the new day (YYYY-MM-DD):", rnBadDate:"Please use YYYY-MM-DD.",
+  rnWhat:"What", rnDetail:"Details (place, person, material ...)",
+  rnPrint:"Print / PDF", rnMail:"Send to org team",
+  rnSave:"Save", rnSaved:n=>`Running order saved (${n} entries).`,
+  rnSaveFirst:"Please save first - then send.",
+  rnMailAsk:"Recipients (separate several with commas):",
+  rnMailed:n=>n===1?"Running order sent to 1 recipient.":`Running order sent to ${n} recipients.`,
+  rnAsOf:"As of:",
+  rnCat_arrive:"Arrival/Dep.", rnCat_shuttle:"Shuttle", rnCat_meet:"Meet", rnCat_session:"Training",
+  rnCat_break:"Break", rnCat_mat:"Material", rnCat_org:"Org", rnCat_other:"Other",
   fxBtn:"Flight data", fxTitle:"Flight data for booking",
   fxHint:"The client books the flights themselves - this Excel sheet contains everything needed to book for this week's confirmed trainers: name as in passport, date of birth, nationality, passport number, arrival and departure, flight preferences, visa and contact.",
   fxCount:n=>n===1?"1 confirmed trainer this week":`${n} confirmed trainers this week`,
@@ -4090,6 +4148,7 @@ function renderDetail(){
     <div class="panel-b" style="border-top:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn primary" onclick="composeFor('${tg.id}',null,'t1')">${svg(IC.mail)} ${t("btnBulk")}</button>
       <button class="btn" onclick="openTravel('${tg.id}')">${ic("plane")}${t("travelAgenda")}</button>
+      <button class="btn" onclick="runningSheet('${tg.id}')">${ic("list")}${t("rnBtn")}</button>
       <button class="btn amber" onclick="openQuick('${tg.id}')">⚡ ${t("btnFindRep")}</button>
       <button class="btn" onclick="openTrainingEditor('${tg.id}')">✎ ${t("editBtn")}</button>
     </div>
@@ -6733,6 +6792,156 @@ async function flightSend(tgId){
     const d=await apiCall("travel.flightMail",{training:tgId,to,note:val("fxNote"),lang:S.lang});
     closeSheet();
     toast(d.status==="logged"?t("fxLogged"):t("fxSent",to),"good");
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
+/* ============================================================
+   WOCHEN-DREHBUCH (RUNNING ORDER)
+   Der ganze Wochenablauf in einer Agenda: aus Reisedaten, Wochenplan
+   und Material vorgeschlagen, im Editor anpassbar, druckbar (PDF)
+   und als E-Mail an das Orga-Team versendbar.
+   ============================================================ */
+let rnState=null;
+const RN_CATS=["arrive","shuttle","meet","session","break","mat","org","other"];
+function rnCatLbl(c){ return t("rnCat_"+c); }
+async function runningSheet(tgId){
+  let d;
+  try{ d=await apiCall("running.get",{training:tgId}); }
+  catch(e){ toast(e.message,"crit"); return; }
+  let items=d.running&&d.running.items&&d.running.items.length?d.running.items:null;
+  const cfg=(d.running&&d.running.cfg)||{start:"09:00",lead:45,lunch:"12:30",lunchMin:60};
+  if(!items){
+    try{ const s2=await apiCall("running.suggest",{training:tgId,cfg,lang:S.lang}); items=s2.items||[]; }
+    catch(e){ items=[]; }
+  }
+  rnState={tg:tgId,items,cfg,to:d.to||"",saved:!!d.running};
+  rnRender();
+}
+function rnRender(){
+  const st=rnState; if(!st) return;
+  const tg=S.trainings.find(x=>String(x.id)===String(st.tg))||{};
+  $("#sheetTitle").textContent=t("rnTitle")+(tg.code?" - "+tg.code:"");
+  const days=[...new Set(st.items.map(x=>x.d))].sort();
+  const dayBlock=d2=>{
+    const rows=st.items.map((it,i)=>({it,i})).filter(x=>x.it.d===d2);
+    return `<div class="rnday">
+      <div class="rndayh"><b>${esc(rnDayName(d2))}</b><div class="spacer"></div>
+        <button class="btn sm" onclick="rnAdd('${esc(d2)}')">${ic("plus",13)}${t("rnAddRow")}</button></div>
+      ${rows.map(({it,i})=>`
+        <div class="rnrow">
+          <input class="inp rnt" value="${esc(it.t)}" placeholder="--:--" oninput="rnSet(${i},'t',this.value)">
+          <select class="inp rnc" onchange="rnSet(${i},'cat',this.value)">
+            ${RN_CATS.map(c=>`<option value="${c}"${it.cat===c?" selected":""}>${esc(rnCatLbl(c))}</option>`).join("")}
+          </select>
+          <input class="inp rnti" value="${esc(it.title)}" placeholder="${esc(t("rnWhat"))}" oninput="rnSet(${i},'title',this.value)">
+          <input class="inp rnno" value="${esc(it.note)}" placeholder="${esc(t("rnDetail"))}" oninput="rnSet(${i},'note',this.value)">
+          <button class="btn sm" onclick="rnDel(${i})" title="${esc(t("wkDelete"))}">✕</button>
+        </div>`).join("")||`<div class="meta" style="padding:6px 2px">-</div>`}
+    </div>`;
+  };
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:10px">${esc(t("rnHint"))}</div>
+    <div class="rncfg">
+      <label>${esc(t("rnStart"))}<input class="inp" id="rnCfgStart" value="${esc(st.cfg.start||"09:00")}" style="width:70px"></label>
+      <label>${esc(t("rnLead"))}<input class="inp" id="rnCfgLead" type="number" min="0" max="240" value="${st.cfg.lead??45}" style="width:70px"></label>
+      <label>${esc(t("rnLunch"))}<input class="inp" id="rnCfgLunch" value="${esc(st.cfg.lunch||"12:30")}" style="width:70px"></label>
+      <label>${esc(t("rnLunchMin"))}<input class="inp" id="rnCfgLunchMin" type="number" min="15" max="180" value="${st.cfg.lunchMin??60}" style="width:70px"></label>
+      <button class="btn sm" onclick="rnRegen()">${ic("sync",14)}${t("rnRegen")}</button>
+    </div>
+    ${days.map(dayBlock).join("")}
+    <div style="margin-top:10px"><button class="btn sm" onclick="rnAddDay()">${ic("plus",13)}${t("rnAddDay")}</button></div>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button>
+    <button class="btn" onclick="rnPrint()">${ic("printer",15)}${t("rnPrint")}</button>
+    <button class="btn" onclick="rnMailDlg()">${ic("send",15)}${t("rnMail")}</button>
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="rnSave()">${ic("check",15)}${t("save")}</button>`;
+  openSheet();
+}
+function rnDayName(d2){
+  const dt=new Date(d2+"T12:00:00Z");
+  if(isNaN(dt)) return d2;
+  const wd=(S.lang==="en"?["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]:["So","Mo","Di","Mi","Do","Fr","Sa"])[dt.getUTCDay()];
+  return wd+" "+String(dt.getUTCDate()).padStart(2,"0")+"."+String(dt.getUTCMonth()+1).padStart(2,"0")+"."+dt.getUTCFullYear();
+}
+function rnSet(i,k,v){ if(rnState&&rnState.items[i]) rnState.items[i][k]=v; }
+function rnDel(i){ if(!rnState) return; rnState.items.splice(i,1); rnRender(); }
+function rnAdd(d2){ if(!rnState) return; rnState.items.push({d:d2,t:"",cat:"other",title:"",note:""}); rnRender(); }
+function rnAddDay(){
+  if(!rnState) return;
+  const d2=prompt(t("rnAddDayAsk"),"2026-01-01");
+  if(!d2||!/^\d{4}-\d{2}-\d{2}$/.test(d2.trim())){ if(d2) toast(t("rnBadDate"),"warn"); return; }
+  rnState.items.push({d:d2.trim(),t:"",cat:"other",title:"",note:""}); rnRender();
+}
+function rnCfgRead(){
+  if(!rnState) return;
+  rnState.cfg={start:val("rnCfgStart")||"09:00",lead:parseInt(val("rnCfgLead"),10)||45,
+    lunch:val("rnCfgLunch")||"12:30",lunchMin:parseInt(val("rnCfgLunchMin"),10)||60};
+}
+async function rnRegen(){
+  if(!rnState) return;
+  if(rnState.items.length && !confirm(t("rnRegenAsk"))) return;
+  rnCfgRead();
+  try{
+    const d=await apiCall("running.suggest",{training:rnState.tg,cfg:rnState.cfg,lang:S.lang});
+    rnState.items=d.items||[]; rnRender();
+  }catch(e){ toast(e.message,"crit"); }
+}
+async function rnSave(){
+  if(!rnState) return;
+  rnCfgRead();
+  try{
+    const d=await apiCall("running.save",{training:rnState.tg,items:rnState.items,cfg:rnState.cfg});
+    rnState.saved=true;
+    toast(t("rnSaved",d.count),"good");
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+}
+/* Druckansicht - ueber den Browser auch als PDF speicherbar. */
+function rnPrint(){
+  if(!rnState) return;
+  const tg=S.trainings.find(x=>String(x.id)===String(rnState.tg))||{};
+  const tv=(tvGet(rnState.tg)||{}).travel||{};
+  const days=[...new Set(rnState.items.map(x=>x.d))].sort();
+  const info=[
+    tv.venue?`${t("tvVenue")}: ${tv.venue}`:"",
+    tv.hotel?`${t("tvHotel")}: ${tv.hotel}`:"",
+    tv.meetingPoint?`${t("tvMeet")}: ${tv.meetingPoint}`:"",
+    tv.contactName?`${t("tvContact")}: ${tv.contactName}${tv.contactPhone?" · "+tv.contactPhone:""}`:""
+  ].filter(Boolean);
+  const html=`<div class="rnsheet">
+    <div class="rnhead">
+      <div><b style="font-size:19px">${esc(t("rnTitle"))}</b>
+        <div style="font-size:14px;margin-top:2px">${esc((tg.code?tg.code+" - ":"")+(tg.topic||""))}</div>
+        <div class="meta">${esc([tg.city,fmtRange(tg),tg.kw].filter(Boolean).join(" · "))}</div></div>
+      <div style="text-align:right" class="meta">${esc(t("rnAsOf"))} ${esc(new Date().toLocaleDateString(S.lang==="en"?"en-GB":"de-DE"))}</div>
+    </div>
+    ${info.length?`<div class="rninfo">${info.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
+    ${days.map(d2=>`
+      <div class="rnpday">
+        <h3>${esc(rnDayName(d2))}</h3>
+        <table><tbody>
+          ${rnState.items.filter(x=>x.d===d2).map(it=>`
+            <tr class="rncat-${it.cat}">
+              <td class="c1">${esc(it.t)}</td>
+              <td class="c2">${esc(rnCatLbl(it.cat))}</td>
+              <td class="c3"><b>${esc(it.title)}</b>${it.note?`<div class="meta">${esc(it.note)}</div>`:""}</td>
+            </tr>`).join("")}
+        </tbody></table>
+      </div>`).join("")}
+  </div>`;
+  setPageOrient("portrait");
+  $("#repPrintBody").innerHTML=html;
+  setSheetTitle(t("rnTitle")+" "+(tg.code||""));
+  $("#repPrint").classList.add("on");
+}
+function fmtRange(tg){ return tg.month||tg.kw||""; }
+async function rnMailDlg(){
+  if(!rnState) return;
+  if(!rnState.saved){ toast(t("rnSaveFirst"),"warn"); return; }
+  const to=prompt(t("rnMailAsk"), rnState.to||"");
+  if(to===null||!to.trim()) return;
+  try{
+    const d=await apiCall("running.mail",{training:rnState.tg,to,lang:S.lang});
+    rnState.to=to;
+    toast(d.status==="logged"?t("fxLogged"):t("rnMailed",d.sent),"good");
   }catch(e){ toast("Fehler: "+e.message,"crit"); }
 }
 function sendAgendaAll(tgId){

@@ -1852,6 +1852,127 @@ switch($action){
   /* ---- Serienversand: Agenda an alle bestätigten Trainer eines Trainings.
          Betreff und Text kommen aus dem Kontroll-Dialog und dürfen Platzhalter
          wie {{firstName}} enthalten - je Trainer wird individuell gefüllt. ---- */
+  /* ---- Wochen-Drehbuch (Running Order) ---- */
+  case 'running.get': {
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $r=q("SELECT running FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$r) fail('Training nicht gefunden.',404);
+    $data=json_decode((string)($r['running']??''),true);
+    out(['ok'=>true,'running'=>$data?:null,'to'=>(string)(config_get('running_to')??'')]);
+  }
+  case 'running.suggest': {
+    require_auth();
+    $items=running_suggest((int)($in['training']??0),(array)($in['cfg']??[]),($in['lang']??'de')==='en'?'en':'de');
+    out(['ok'=>true,'items'=>$items]);
+  }
+  case 'running.save': {
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    if(!q("SELECT id FROM trainings WHERE id=?",[$tgId])->fetch()) fail('Training nicht gefunden.',404);
+    $items=[];
+    foreach((array)($in['items']??[]) as $it){
+      if(!is_array($it)) continue;
+      if(count($items)>=400) break;
+      $items[]=['d'=>mb_substr(trim((string)($it['d']??'')),0,10),
+                't'=>mb_substr(trim((string)($it['t']??'')),0,5),
+                'cat'=>in_array($it['cat']??'',['arrive','shuttle','meet','session','break','mat','org','other'],true)?$it['cat']:'other',
+                'title'=>mb_substr(trim((string)($it['title']??'')),0,190),
+                'note'=>mb_substr(trim((string)($it['note']??'')),0,400)];
+    }
+    $items=array_values(array_filter($items,fn($x)=>$x['title']!==''||$x['note']!==''));
+    usort($items,fn($a,$b)=>[$a['d'],$a['t']!==''?$a['t']:'00'] <=> [$b['d'],$b['t']!==''?$b['t']:'00']);
+    $cfg=(array)($in['cfg']??[]);
+    $data=['items'=>$items,'cfg'=>[
+      'start'=>mb_substr((string)($cfg['start']??'09:00'),0,5),
+      'lead'=>max(0,min(240,(int)($cfg['lead']??45))),
+      'lunch'=>mb_substr((string)($cfg['lunch']??'12:30'),0,5),
+      'lunchMin'=>max(15,min(180,(int)($cfg['lunchMin']??60)))],
+      'updatedAt'=>now(),'updatedBy'=>actor_name()];
+    q("UPDATE trainings SET running=? WHERE id=?",[json_encode($data,JSON_UNESCAPED_UNICODE),$tgId]);
+    audit('running.save','training',(string)$tgId,'Wochen-Drehbuch gespeichert ('.count($items).' Einträge)');
+    out(['ok'=>true,'count'=>count($items)]);
+  }
+  case 'running.mail': {
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $data=json_decode((string)($tg['running']??''),true);
+    $items=(array)($data['items']??[]);
+    if(!$items) fail('Bitte zuerst das Drehbuch speichern.');
+    $lang=($in['lang']??'de')==='en'?'en':'de'; $de=$lang!=='en';
+    $tos=array_values(array_filter(array_map('trim',preg_split('/[,;\s]+/',(string)($in['to']??''))),
+      fn($e)=>filter_var($e,FILTER_VALIDATE_EMAIL)));
+    $tos=array_slice(array_unique($tos),0,10);
+    if(!$tos) fail('Bitte mindestens eine gültige Empfängeradresse angeben.');
+    config_set('running_to', implode(', ',$tos));
+    $title=trim((($tg['code']??'')!==''?$tg['code'].' - ':'').(string)($tg['topic']??''));
+    $catLbl=$de?['arrive'=>'An-/Abreise','shuttle'=>'Shuttle','meet'=>'Treffpunkt','session'=>'Training',
+                 'break'=>'Pause','mat'=>'Material','org'=>'Orga','other'=>'']
+               :['arrive'=>'Arrival/Dep.','shuttle'=>'Shuttle','meet'=>'Meet','session'=>'Training',
+                 'break'=>'Break','mat'=>'Material','org'=>'Org','other'=>''];
+    $e=fn($v)=>htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8');
+    $byDay=[]; foreach($items as $it) $byDay[$it['d']][]=$it;
+    ksort($byDay);
+    $tbl='';
+    foreach($byDay as $d=>$list){
+      $ts=strtotime($d);
+      $dayName=$ts?($de?['So','Mo','Di','Mi','Do','Fr','Sa'][(int)date('w',$ts)]
+                       :['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][(int)date('w',$ts)]).' '.date('d.m.Y',$ts):$d;
+      $tbl.='<h3 style="margin:18px 0 6px;font:700 15px Arial,sans-serif;color:#242b31">'.$e($dayName).'</h3>'
+        .'<table style="width:100%;border-collapse:collapse;font:13px Arial,sans-serif">';
+      foreach($list as $it){
+        $tbl.='<tr>'
+          .'<td style="padding:5px 8px;border-bottom:1px solid #e2e5e8;white-space:nowrap;width:52px;color:#5c666e">'.$e($it['t']).'</td>'
+          .'<td style="padding:5px 8px;border-bottom:1px solid #e2e5e8;white-space:nowrap;width:86px;color:#8a939a;font-size:11px;text-transform:uppercase">'.$e($catLbl[$it['cat']]??'').'</td>'
+          .'<td style="padding:5px 8px;border-bottom:1px solid #e2e5e8"><b>'.$e($it['title']).'</b>'
+          .($it['note']!==''?'<br><span style="color:#5c666e">'.$e($it['note']).'</span>':'').'</td></tr>';
+      }
+      $tbl.='</table>';
+    }
+    $head=trim(implode(' · ',array_filter([
+      (string)($tg['city']??''),
+      trim((string)($tg['start_date']??'').' - '.(string)($tg['end_date']??''),' -'),
+      (string)($tg['kw']??'')])));
+    $info=array_filter([
+      trim((string)($tg['venue']??''))!==''?(($de?'Trainingsort: ':'Venue: ').$tg['venue']):'',
+      trim((string)($tg['hotel']??''))!==''?('Hotel: '.$tg['hotel']):'',
+      trim((string)($tg['meeting_point']??''))!==''?(($de?'Treffpunkt: ':'Meeting point: ').$tg['meeting_point']):'',
+      trim((string)($tg['contact_name']??''))!==''?(($de?'Kontakt vor Ort: ':'On-site contact: ').$tg['contact_name'].' '.($tg['contact_phone']??'')):'']);
+    $note=trim((string)($in['note']??''));
+    $intro=($de?"Hallo,
+
+anbei der Ablaufplan (Running Order) für die Woche:
+":"Hello,
+
+please find the running order for the week:
+")
+      .$title."
+".$head
+      .($info?"
+
+".implode("
+",$info):'')
+      .($note!==''?"
+
+".$note:'');
+    $subj=($de?'Running Order - ':'Running order - ').$title;
+    $html=email_html($intro,'').'<div style="max-width:640px;margin:0 auto;padding:0 10px 24px">'.$tbl.'</div>';
+    $sentN=0; $failN=[];
+    foreach($tos as $to){
+      $ok=send_email($to,'',$subj,$html);
+      $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+      if($st==='failed') $failN[]=$to; else $sentN++;
+      q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+         VALUES(?,?,?,?,?,?,?,?)",[$tgId,0,$to,$subj,$intro,$lang,$st,now()]);
+    }
+    if(!$sentN) fail('Versand fehlgeschlagen: '.($GLOBALS['__mail_err']??''));
+    audit('running.mail','training',(string)$tgId,'Running Order an '.implode(', ',$tos));
+    out(['ok'=>true,'sent'=>$sentN,'failed'=>$failN,
+         'status'=>(cfg()['mail_mode']??'mail')==='log'?'logged':'sent']);
+  }
+
   /* ---- Flugdaten je Woche: Vorschau (Vollstaendigkeit) und Versand ---- */
   case 'travel.flightData': {
     require_auth();
