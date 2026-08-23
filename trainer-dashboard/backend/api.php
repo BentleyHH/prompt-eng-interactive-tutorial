@@ -1895,7 +1895,11 @@ switch($action){
                 'note'=>mb_substr(trim((string)($it['note']??'')),0,400)];
     }
     $items=array_values(array_filter($items,fn($x)=>$x['title']!==''||$x['note']!==''));
-    usort($items,fn($a,$b)=>[$a['d'],$a['t']!==''?$a['t']:'00'] <=> [$b['d'],$b['t']!==''?$b['t']:'00']);
+    // Nur nach Tag gruppieren - die Reihenfolge INNERHALB des Tages bestimmt
+    // der Bearbeiter (Drag and Drop im Editor), nicht die Uhrzeit.
+    $i2=0; foreach($items as &$it){ $it['_i']=$i2++; } unset($it);
+    usort($items,fn($a,$b)=>[$a['d'],$a['_i']] <=> [$b['d'],$b['_i']]);
+    foreach($items as &$it){ unset($it['_i']); } unset($it);
     $cfg=(array)($in['cfg']??[]);
     $data=['items'=>$items,'cfg'=>[
       'start'=>mb_substr((string)($cfg['start']??'09:00'),0,5),

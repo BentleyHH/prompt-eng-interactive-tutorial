@@ -908,7 +908,15 @@
   .rncfg label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--muted)}
   .rnday{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:12px}
   .rndayh{display:flex;align-items:center;margin-bottom:6px}
-  .rnrow{display:flex;gap:6px;margin-bottom:6px}
+  .rnrow{display:flex;gap:6px;margin-bottom:6px;align-items:center;border-radius:8px}
+  .rnrow[draggable="true"]{cursor:default}
+  .rngrip{flex:0 0 16px;color:var(--faint);cursor:grab;font-size:13px;letter-spacing:-2px;
+    text-align:center;user-select:none}
+  .rnrow.dragging{opacity:.4}
+  .rnrow.rndropline{box-shadow:0 -2px 0 0 var(--info)}
+  .rnrow.rndropline.below{box-shadow:0 2px 0 0 var(--info)}
+  .rnday.rndrop{outline:2px dashed var(--info);outline-offset:-2px}
+  .rnrow .rnact{padding:6px 8px;flex:none}
   .rnrow .rnt{flex:0 0 62px}
   .rnrow .rnc{flex:0 0 118px}
   .rnrow .rnti{flex:1.4}
@@ -2180,6 +2188,10 @@ const L={
   rnRegen:"Aus Plan neu erzeugen",
   rnRegenAsk:"Vorschlag neu aus Wochenplan und Reisedaten erzeugen? Deine manuellen Änderungen im Drehbuch werden dabei ersetzt.",
   rnAddRow:"Eintrag", rnAddDay:"Tag hinzufügen",
+  rnCopyT:"Zeile kopieren - das Duplikat erscheint darunter und lässt sich verschieben, z.B. auf den nächsten Tag",
+  rnInsertT:"Leere Zeile direkt darunter einfügen",
+  rnDragT:"Ziehen zum Verschieben - auch auf einen anderen Tag",
+  rnSortTime:"nach Uhrzeit", rnSortTimeT:"Diesen Tag nach Uhrzeit ordnen",
   rnAddDayAsk:"Datum des neuen Tages (JJJJ-MM-TT):", rnBadDate:"Bitte als JJJJ-MM-TT eingeben.",
   rnWhat:"Was", rnDetail:"Details (Ort, Person, Material ...)",
   rnPrint:"Drucken / PDF", rnMail:"An Orga-Team senden",
@@ -3010,6 +3022,10 @@ const L={
   rnRegen:"Rebuild from plan",
   rnRegenAsk:"Rebuild the proposal from the week plan and travel data? Your manual edits will be replaced.",
   rnAddRow:"Entry", rnAddDay:"Add day",
+  rnCopyT:"Copy row - the duplicate appears below and can be dragged, e.g. to the next day",
+  rnInsertT:"Insert an empty row right below",
+  rnDragT:"Drag to move - also to another day",
+  rnSortTime:"by time", rnSortTimeT:"Order this day by time",
   rnAddDayAsk:"Date of the new day (YYYY-MM-DD):", rnBadDate:"Please use YYYY-MM-DD.",
   rnWhat:"What", rnDetail:"Details (place, person, material ...)",
   rnPrint:"Print / PDF", rnMail:"Send to org team",
@@ -6837,18 +6853,25 @@ function rnRender(){
   const days=[...new Set(st.items.map(x=>x.d))].sort();
   const dayBlock=d2=>{
     const rows=st.items.map((it,i)=>({it,i})).filter(x=>x.it.d===d2);
-    return `<div class="rnday">
+    return `<div class="rnday" data-day="${esc(d2)}"
+        ondragover="rnDayOver(event)" ondragleave="rnDragLeave(event)" ondrop="rnDayDrop(event)">
       <div class="rndayh"><b>${esc(rnDayName(d2))}</b><div class="spacer"></div>
+        <button class="btn sm" onclick="rnSortDay('${esc(d2)}')" title="${esc(t("rnSortTimeT"))}">${ic("auto",13)}${t("rnSortTime")}</button>
         <button class="btn sm" onclick="rnAdd('${esc(d2)}')">${ic("plus",13)}${t("rnAddRow")}</button></div>
       ${rows.map(({it,i})=>`
-        <div class="rnrow">
+        <div class="rnrow" data-idx="${i}"
+            ondragover="rnRowOver(event)" ondragleave="rnDragLeave(event)" ondrop="rnRowDrop(event)">
+          <span class="rngrip" draggable="true" data-idx="${i}" title="${esc(t("rnDragT"))}"
+            ondragstart="rnDragStart(event)" ondragend="rnDragEnd()">⋮⋮</span>
           <input class="inp rnt" value="${esc(it.t)}" placeholder="--:--" oninput="rnSet(${i},'t',this.value)">
           <select class="inp rnc" onchange="rnSet(${i},'cat',this.value)">
             ${RN_CATS.map(c=>`<option value="${c}"${it.cat===c?" selected":""}>${esc(rnCatLbl(c))}</option>`).join("")}
           </select>
           <input class="inp rnti" value="${esc(it.title)}" placeholder="${esc(t("rnWhat"))}" oninput="rnSet(${i},'title',this.value)">
           <input class="inp rnno" value="${esc(it.note)}" placeholder="${esc(t("rnDetail"))}" oninput="rnSet(${i},'note',this.value)">
-          <button class="btn sm" onclick="rnDel(${i})" title="${esc(t("wkDelete"))}">✕</button>
+          <button class="btn sm rnact" onclick="rnCopy(${i})" title="${esc(t("rnCopyT"))}">${ic("clip",13)}</button>
+          <button class="btn sm rnact" onclick="rnInsert(${i})" title="${esc(t("rnInsertT"))}">+</button>
+          <button class="btn sm rnact" onclick="rnDel(${i})" title="${esc(t("wkDelete"))}">✕</button>
         </div>`).join("")||`<div class="meta" style="padding:6px 2px">-</div>`}
     </div>`;
   };
@@ -6879,6 +6902,98 @@ function rnDayName(d2){
 function rnSet(i,k,v){ if(rnState&&rnState.items[i]) rnState.items[i][k]=v; }
 function rnDel(i){ if(!rnState) return; rnState.items.splice(i,1); rnRender(); }
 function rnAdd(d2){ if(!rnState) return; rnState.items.push({d:d2,t:"",cat:"other",title:"",note:""}); rnRender(); }
+/* Zeile duplizieren - landet direkt darunter und laesst sich dann frei
+   verschieben, z.B. auf den naechsten Tag ziehen. */
+function rnCopy(i){
+  if(!rnState||!rnState.items[i]) return;
+  rnState.items.splice(i+1,0,{...rnState.items[i]});
+  rnRender();
+}
+/* Leere Zeile direkt darunter einfuegen - fuer alles, was dazwischen muss. */
+function rnInsert(i){
+  if(!rnState||!rnState.items[i]) return;
+  rnState.items.splice(i+1,0,{d:rnState.items[i].d,t:"",cat:"other",title:"",note:""});
+  rnRender();
+}
+/* Einen Tag nach Uhrzeit ordnen (Zeilen ohne Uhrzeit zuerst). */
+function rnSortDay(d2){
+  if(!rnState) return;
+  const day=rnState.items.filter(x=>x.d===d2);
+  const rest=rnState.items.filter(x=>x.d!==d2);
+  day.sort((a,b)=>String(a.t||"00").localeCompare(String(b.t||"00")));
+  rnState.items=rest.concat(day); rnRender();
+}
+/* ---- Ziehen und Ablegen: innerhalb des Tages umsortieren oder auf einen
+   anderen Tag ziehen. Ablegen auf einer Zeile = davor/dahinter (Mitte
+   entscheidet), Ablegen auf der Tagesflaeche = ans Tagesende. ---- */
+/* Nicht den Index merken, sondern die Zeile selbst - falls waehrend des
+   Ziehens neu gezeichnet wird (oder ein Klick daneben etwas ausloest),
+   verschiebt sich sonst die Nummerierung und die falsche Zeile wandert. */
+let rnDragIt=null;
+function rnDragStart(ev){
+  rnDragIt=rnState?rnState.items[parseInt(ev.currentTarget.dataset.idx,10)]||null:null;
+  ev.dataTransfer.setData("text/plain","rn");
+  ev.dataTransfer.effectAllowed="move";
+  const row=ev.currentTarget.closest(".rnrow");
+  if(row){
+    row.classList.add("dragging");
+    try{ ev.dataTransfer.setDragImage(row,20,14); }catch(e){}
+  }
+}
+function rnDragEnd(){
+  rnDragIt=null;
+  $$(".rnrow.dragging").forEach(x=>x.classList.remove("dragging"));
+  $$(".rndropline").forEach(x=>x.classList.remove("rndropline","below"));
+  $$(".rnday.rndrop").forEach(x=>x.classList.remove("rndrop"));
+}
+function rnRowOver(ev){
+  if(!rnDragIt) return;
+  ev.preventDefault(); ev.stopPropagation();
+  ev.dataTransfer.dropEffect="move";
+  const r=ev.currentTarget.getBoundingClientRect();
+  const below=ev.clientY > r.top+r.height/2;
+  ev.currentTarget.classList.add("rndropline");
+  ev.currentTarget.classList.toggle("below",below);
+}
+function rnDayOver(ev){
+  if(!rnDragIt) return;
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect="move";
+  ev.currentTarget.classList.add("rndrop");
+}
+function rnDragLeave(ev){
+  ev.currentTarget.classList.remove("rndropline","below","rndrop");
+}
+function rnMove(it,to,day){
+  const from=rnState.items.indexOf(it);
+  if(from<0) return;
+  rnState.items.splice(from,1);
+  if(to>from) to--;
+  it.d=day;
+  rnState.items.splice(to,0,it);
+  rnRender();
+}
+function rnRowDrop(ev){
+  ev.preventDefault(); ev.stopPropagation();
+  const tgtIt=rnState.items[parseInt(ev.currentTarget.dataset.idx,10)];
+  const it=rnDragIt; rnDragEnd();
+  if(!it||!tgtIt||it===tgtIt) return;
+  const r=ev.currentTarget.getBoundingClientRect();
+  const below=ev.clientY > r.top+r.height/2;
+  rnMove(it, rnState.items.indexOf(tgtIt)+(below?1:0), tgtIt.d);
+}
+function rnDayDrop(ev){
+  ev.preventDefault();
+  const day=ev.currentTarget.dataset.day;
+  const it=rnDragIt; rnDragEnd();
+  if(!it||!day) return;
+  // ans Ende dieses Tages
+  let to=rnState.items.length;
+  for(let i=rnState.items.length-1;i>=0;i--){
+    if(rnState.items[i].d===day){ to=i+1; break; }
+  }
+  rnMove(it,to,day);
+}
 function rnAddDay(){
   if(!rnState) return;
   const d2=prompt(t("rnAddDayAsk"),"2026-01-01");

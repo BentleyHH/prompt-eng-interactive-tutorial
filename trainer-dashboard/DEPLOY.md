@@ -355,7 +355,12 @@ Tagesabschluss und Rueckshuttle sowie am ersten Morgen die komplette
 **Materialliste**. Der Vorschlag kommt per Knopf **Aus Plan neu erzeugen** aus
 den vorhandenen Daten; danach ist jede Zeile im Editor frei anpassbar
 (Uhrzeit, Kategorie, Titel, Details), Zeilen und ganze Tage lassen sich
-ergaenzen. **Drucken / PDF** erzeugt das mehrseitige Dokument (ueber den
+ergaenzen. Am Griff (Punkte links) laesst sich jede Zeile **per Ziehen**
+innerhalb des Tages umsortieren oder auf einen anderen Tag ziehen; die
+Knoepfe je Zeile **kopieren** sie (Duplikat darunter - z.B. fuer den
+naechsten Tag), **fuegen eine Leerzeile dazwischen ein** oder loeschen sie.
+Die selbst gewaehlte Reihenfolge bleibt beim Speichern erhalten;
+**nach Uhrzeit** ordnet einen Tag auf Wunsch wieder chronologisch. **Drucken / PDF** erzeugt das mehrseitige Dokument (ueber den
 Druckdialog als PDF speicherbar), **An Orga-Team senden** verschickt den Plan
 huebsch formatiert per E-Mail an einen oder mehrere Empfaenger (werden gemerkt).
 Speichern legt den Stand am Training ab; Aenderungen stehen im Protokoll.
