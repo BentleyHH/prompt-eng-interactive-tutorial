@@ -2059,7 +2059,7 @@ function running_suggest(int $tgId, array $cfg=[], string $lang='de'): array {
     $pm=array_values(array_filter(array_map(fn($id)=>$sess[(string)$id]??null,(array)($slots[$day.'_pm']??[]))));
     $s0=$toMin($start);
     $items[]=['d'=>$date,'t'=>$toHM($s0-$lead-15),'cat'=>'shuttle',
-      'title'=>$de?'Shuttle Hotel → Trainingsort':'Shuttle hotel → venue','note'=>$venue];
+      'title'=>$de?'Shuttle Hotel - Trainingsort':'Shuttle hotel - venue','note'=>$venue];
     $items[]=['d'=>$date,'t'=>$toHM($s0-$lead),'cat'=>'meet',
       'title'=>$de?'Treffpunkt · Vorlauf: Aufbau, Technik- und Materialcheck':'Meeting point · lead time: set-up, tech and material check',
       'note'=>trim(($meet!==''?$meet.' · ':'').($de?'Vorlauf ':'lead ').$lead.' min')];

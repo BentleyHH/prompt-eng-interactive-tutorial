@@ -409,7 +409,7 @@
     z-index:41;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4);transform:translateX(100%);
     transition:.26s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
   .sheet.on{transform:none}
-  .sheet.wide{width:min(940px,100vw)}
+  .sheet.wide{width:min(1280px,100vw)}
   .sheet-h{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
   .sheet-h h3{font-size:16px}
   .sheet-b{padding:18px 20px;overflow:auto;flex:1}
@@ -923,7 +923,9 @@
   .rnrow .rnno{flex:1.6}
   /* Wochen-Drehbuch: Druck */
   .rnsheet{font-size:12.5px;color:#242B31}
-  .rnsheet .rnhead{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #242B31;padding-bottom:10px;margin-bottom:10px}
+  .rnsheet .rnhead{display:flex;gap:16px;border-bottom:2px solid #242B31;padding-bottom:10px;margin-bottom:10px;align-items:flex-start}
+  .rnsheet .rnhead>div:last-child{margin-left:auto}
+  .rnsheet .rnlogo{color:#242B31;flex:none;margin-right:4px}
   .rnsheet .rninfo{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0 0 12px;color:#5C666E;font-size:11.5px}
   .rnsheet .rnpday{break-inside:avoid;page-break-inside:avoid;margin-bottom:14px}
   .rnsheet h3{margin:12px 0 4px;font-size:14px;border-bottom:1px solid #C6CCD1;padding-bottom:3px}
@@ -6838,6 +6840,10 @@ async function runningSheet(tgId){
   try{ d=await apiCall("running.get",{training:tgId}); }
   catch(e){ toast(e.message,"crit"); return; }
   let items=d.running&&d.running.items&&d.running.items.length?d.running.items:null;
+  if(items) items.forEach(it=>{                       // CI: kurze Bindestriche statt Pfeile
+    it.title=String(it.title||"").replace(/\s*→\s*/g," - ");
+    it.note=String(it.note||"").replace(/\s*→\s*/g," - ");
+  });
   const cfg=(d.running&&d.running.cfg)||{start:"09:00",lead:45,lunch:"12:30",lunchMin:60};
   if(!items){
     try{ const s2=await apiCall("running.suggest",{training:tgId,cfg,lang:S.lang}); items=s2.items||[]; }
@@ -7037,6 +7043,7 @@ function rnPrint(){
   ].filter(Boolean);
   const html=`<div class="rnsheet">
     <div class="rnhead">
+      <span class="rnlogo">${etafLogo(30)}</span>
       <div><b style="font-size:19px">${esc(t("rnTitle"))}</b>
         <div style="font-size:14px;margin-top:2px">${esc((tg.code?tg.code+" - ":"")+(tg.topic||""))}</div>
         <div class="meta">${esc([tg.city,fmtRange(tg),tg.kw].filter(Boolean).join(" · "))}</div></div>
