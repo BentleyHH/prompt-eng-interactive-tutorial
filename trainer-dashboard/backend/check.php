@@ -86,8 +86,17 @@ row('PHP-Version '.PHP_VERSION, version_compare(PHP_VERSION,'8.0','>='), version
 /* 1b) Serveruhr - wichtig fuer die Zwei-Faktor-Codes (30-Sekunden-Fenster).
    Diese Zeit mit einer Funkuhr/dem Handy vergleichen: weicht sie um mehr als
    etwa eine Minute ab, werden Codes abgelehnt. */
-row('Serveruhr (UTC): '.gmdate('Y-m-d H:i:s'), null,
-  'Mit der Uhr auf dem Handy vergleichen (Weltzeit/UTC). Mehr als ~1 Minute Abweichung lässt Zwei-Faktor-Codes scheitern - dann den Hoster auf die Serverzeit ansprechen.');
+/* Der Browser vergleicht die Serveruhr automatisch mit der Geraeteuhr -
+   niemand muss UTC im Kopf umrechnen. Die Anzeige ergaenzt sich per JS. */
+row('Serveruhr: '.gmdate('Y-m-d H:i:s').' UTC ('.date('H:i').' deutscher Zeit)', null,
+  '<span id="clockdiff" data-epoch="'.time().'">Abweichung zu deiner Geräteuhr wird geprüft …</span>'
+  .'<script>(function(){var el=document.getElementById("clockdiff");'
+  .'var d=Math.round(Date.now()/1000-parseInt(el.dataset.epoch,10));'
+  .'var a=Math.abs(d);var txt;'
+  .'if(a<=20)txt="<b style=\'color:#2E9E6B\'>✓ Serveruhr stimmt</b> (Abweichung "+a+" s zu diesem Gerät).";'
+  .'else if(a<=60)txt="<b style=\'color:#C77E1E\'>⚠ Serveruhr weicht "+a+" s ab</b> - Zwei-Faktor-Codes funktionieren noch (Toleranz ±60 s).";'
+  .'else txt="<b style=\'color:#D81F26\'>✗ Serveruhr weicht "+a+" s ab</b> - Zwei-Faktor-Codes scheitern. Bitte den Hoster auf die Serverzeit (NTP) ansprechen.";'
+  .'el.innerHTML=txt+" Zwei-Faktor braucht keine Zeitzone - nur eine genau gehende Uhr.";})();</script>');
 
 /* 2) Dateien vollständig? */
 $need=['config.php','db.php','lib.php','mailer.php','api.php','ai.php','automation.php',
