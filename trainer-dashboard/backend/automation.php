@@ -569,6 +569,7 @@ function run_automation(): array {
       [gmdate('Y-m-d H:i:s', $now-$idleH*3600)]);
     q("DELETE FROM login_attempts WHERE window_start < ?",[gmdate('Y-m-d H:i:s', $now-86400)]);
     q("DELETE FROM tfa_challenges WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-900)]);
+    q("DELETE FROM tfa_trust WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-tfa_trust_days()*86400)]);
     q("DELETE FROM reset_tokens WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-86400)]);
     q("DELETE FROM login_attempts WHERE window_start < ?",[gmdate('Y-m-d H:i:s', $now-3600)]);
     // Rückgängig-Stände nur für die jüngsten 300 Änderungen vorhalten - die

@@ -248,6 +248,11 @@ function ensure_schema(): void {
   $d->exec("CREATE TABLE IF NOT EXISTS tfa_challenges (
     tok VARCHAR(64) PRIMARY KEY, user_id INT, tries INT DEFAULT 0,
     created_at VARCHAR(20))$eng");
+  // Vertraute Geraete: nach erfolgreichem Zwei-Faktor-Login kann der Browser
+  // fuer tfa_trust_days (Standard 14) gemerkt werden - gespeichert nur als Hash.
+  $d->exec("CREATE TABLE IF NOT EXISTS tfa_trust (
+    tok VARCHAR(64) PRIMARY KEY, user_id INT,
+    created_at VARCHAR(20), last_used VARCHAR(20))$eng");
   // Info-Mail (Digest) je Benutzer: Häufigkeit, Wochentag, gewählte Inhalte
   foreach([
     "digest_freq VARCHAR(12) DEFAULT 'off'",   // off | daily | every2 | weekly

@@ -112,4 +112,8 @@ return [
   // Leer = normaler Absender (from_email). Die Adresse muss zur eigenen Domain
   // gehoeren, sonst lehnen Empfaenger-Server die Mail ab.
   'flight_from' => '',
+
+  // Zwei-Faktor: wie viele Tage ein Geraet nach erfolgreichem Code-Login
+  // gemerkt wird ("Dieses Geraet merken"). Standard 14, hoechstens 90.
+  'tfa_trust_days' => 14,
 ];

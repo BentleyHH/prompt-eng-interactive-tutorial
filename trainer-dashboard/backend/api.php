@@ -42,8 +42,9 @@ switch($action){
   case 'login':                       // PIN - nur zur Ersteinrichtung
     out(do_login((string)($in['pin']??'')));
 
-  case 'auth.login':                  // E-Mail + Passwort
-    out(do_login_email((string)($in['email']??''), (string)($in['password']??'')));
+  case 'auth.login':                  // E-Mail + Passwort (+ optional vertrautes Geraet)
+    out(do_login_email((string)($in['email']??''), (string)($in['password']??''),
+        (string)($in['trust']??'')));
 
   case 'auth.mode':                   // Login-Maske: gibt es schon Konten?
     out(['ok'=>true,'setup'=>(user_count()===0)]);
@@ -66,8 +67,19 @@ switch($action){
     login_guard_reset();
     q("UPDATE users SET last_login=? WHERE id=?",[now(),$u['id']]);
     $tok=issue_session((int)$u['id']);
-    audit_as($u,'login','user',(string)$u['id'],'angemeldet mit Zwei-Faktor (IP '.client_ip().')');
-    out(['ok'=>true,'token'=>$tok,'user'=>user_public($u)]);
+    // Auf Wunsch dieses Geraet merken - dann entfaellt der Code fuer tfa_trust_days Tage.
+    $trustTok='';
+    if(!empty($in['remember'])){
+      $trustTok=token(40);
+      q("INSERT INTO tfa_trust(tok,user_id,created_at,last_used) VALUES(?,?,?,?)",
+        [hash('sha256',$trustTok),$u['id'],now(),now()]);
+      // hoechstens 10 gemerkte Geraete je Konto - die aeltesten fliegen raus
+      $old=q("SELECT tok FROM tfa_trust WHERE user_id=? ORDER BY created_at DESC",[$u['id']])->fetchAll(PDO::FETCH_COLUMN);
+      foreach(array_slice($old,10) as $t2) q("DELETE FROM tfa_trust WHERE tok=?",[$t2]);
+    }
+    audit_as($u,'login','user',(string)$u['id'],'angemeldet mit Zwei-Faktor'
+      .($trustTok!==''?' (Gerät für '.tfa_trust_days().' Tage gemerkt)':'').' (IP '.client_ip().')');
+    out(['ok'=>true,'token'=>$tok,'user'=>user_public($u),'trustToken'=>$trustTok]);
   }
 
   /* ---- Zwei-Faktor einrichten (eigenes Konto) ---- */
@@ -96,6 +108,7 @@ switch($action){
     if(!password_verify((string)($in['password']??''), $me['pass_hash']??''))
       fail('Das Passwort ist nicht korrekt.',401);
     q("UPDATE users SET totp_on=0, totp_secret=NULL WHERE id=?",[$me['id']]);
+    q("DELETE FROM tfa_trust WHERE user_id=?",[$me['id']]);
     audit('tfa.disable','user',(string)$me['id'],'Zwei-Faktor-Anmeldung ausgeschaltet');
     out(['ok'=>true]);
   }
@@ -107,6 +120,7 @@ switch($action){
     if(!$u) fail('Benutzer nicht gefunden.',404);
     q("UPDATE users SET totp_on=0, totp_secret=NULL WHERE id=?",[$uid]);
     q("DELETE FROM sessions WHERE user_id=?",[$uid]);
+    q("DELETE FROM tfa_trust WHERE user_id=?",[$uid]);
     audit('tfa.reset','user',(string)$uid,'Zwei-Faktor zurückgesetzt für '.$u['email'].' (alle Sitzungen beendet)');
     out(['ok'=>true]);
   }

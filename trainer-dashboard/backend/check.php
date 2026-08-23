@@ -50,6 +50,7 @@ if($tfaoff!=='' && $cronKey!==''){
       q("UPDATE users SET totp_on=0, totp_secret=NULL WHERE id=?",[$u['id']]);
       q("DELETE FROM sessions WHERE user_id=?",[$u['id']]);
       q("DELETE FROM tfa_challenges WHERE user_id=?",[$u['id']]);
+      q("DELETE FROM tfa_trust WHERE user_id=?",[$u['id']]);
       audit_as(['id'=>null,'name'=>'Notausgang (cron_key)'],'tfa.reset','user',(string)$u['id'],
         'Zwei-Faktor per Notausgang abgeschaltet für '.$u['email']);
       echo '<!doctype html><meta charset="utf-8"><body style="font:15px system-ui,Arial;padding:30px;color:#242b31">'

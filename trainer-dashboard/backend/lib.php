@@ -78,8 +78,22 @@ function admin_count(): int { return (int)q("SELECT COUNT(*) c FROM users WHERE 
 /** Gültigkeit der Einladungs-/Zurücksetz-Links in Minuten. */
 const RESET_TTL_MIN = 60;
 
+function tfa_trust_days(): int { return max(1,min(90,(int)(cfg()['tfa_trust_days']??14))); }
+/** Ist dieses Geraet fuer den Benutzer noch als vertraut gemerkt? */
+function tfa_trusted(int $userId, string $trustTok): bool {
+  if($trustTok==='') return false;
+  $r=q("SELECT * FROM tfa_trust WHERE tok=? AND user_id=?",[hash('sha256',$trustTok),$userId])->fetch();
+  if(!$r) return false;
+  if(ts($r['created_at']) < time()-tfa_trust_days()*86400){
+    q("DELETE FROM tfa_trust WHERE tok=?",[$r['tok']]);
+    return false;
+  }
+  q("UPDATE tfa_trust SET last_used=? WHERE tok=?",[now(),$r['tok']]);
+  return true;
+}
+
 /** Login mit E-Mail + Passwort. */
-function do_login_email(string $email, string $pass): array {
+function do_login_email(string $email, string $pass, string $trustTok=''): array {
   login_guard_check();
   $email=strtolower(trim($email));
   $u=$email!=='' ? q("SELECT * FROM users WHERE email=?",[$email])->fetch() : null;
@@ -97,12 +111,19 @@ function do_login_email(string $email, string $pass): array {
   login_guard_reset();
   // Zwei-Faktor aktiv? Dann gibt es hier noch KEINE Sitzung - erst der
   // richtige Code aus der Authenticator-App schliesst die Anmeldung ab.
+  // Ausnahme: dieses Geraet wurde beim letzten Code-Login gemerkt.
+  if(((int)($u['totp_on']??0))===1 && !empty($u['totp_secret']) && tfa_trusted((int)$u['id'],$trustTok)){
+    q("UPDATE users SET last_login=? WHERE id=?",[now(),$u['id']]);
+    $tok=issue_session((int)$u['id']);
+    audit_as($u,'login','user',(string)$u['id'],'angemeldet - vertrautes Gerät, ohne neuen Code (IP '.client_ip().')');
+    return ['ok'=>true,'token'=>$tok,'user'=>user_public($u)];
+  }
   if(((int)($u['totp_on']??0))===1 && !empty($u['totp_secret'])){
     q("DELETE FROM tfa_challenges WHERE user_id=? OR created_at < ?",
       [$u['id'], gmdate('Y-m-d H:i:s', time()-900)]);
     $ch=token(40);
     q("INSERT INTO tfa_challenges(tok,user_id,tries,created_at) VALUES(?,?,0,?)",[$ch,$u['id'],now()]);
-    return ['ok'=>true,'need2fa'=>true,'tfa'=>$ch];
+    return ['ok'=>true,'need2fa'=>true,'tfa'=>$ch,'trustDays'=>tfa_trust_days()];
   }
   q("UPDATE users SET last_login=? WHERE id=?",[now(),$u['id']]);
   $tok=issue_session((int)$u['id']);

@@ -128,6 +128,10 @@ Es muss niemand eine E-Mail lesen oder abtippen.
   nicht mehr. Geht das Handy verloren, setzt ein Administrator die Zwei-Faktor-
   Anmeldung der Person zurueck (Knopf in der Benutzerzeile). Fuer ein System mit
   Regierungsdaten gehoert 2FA auf **jedes** Konto, mindestens auf alle Admins.
+  Beim Code-Schritt laesst sich **"Dieses Geraet 14 Tage merken"** ankreuzen -
+  dann verlangt genau dieser Browser 14 Tage lang keinen Code mehr (einstellbar
+  ueber `tfa_trust_days` in config.php, gespeichert nur als Hash; Abschalten
+  oder Zuruecksetzen der 2FA loescht alle gemerkten Geraete).
   Wird ein Code abgelehnt: zuerst pruefen, ob die **Handy-Uhr auf automatisch**
   steht, und in `check.php?key=...` die Zeile **Serveruhr (UTC)** mit einer
   verlaesslichen Uhr vergleichen - mehr als etwa eine Minute Abweichung laesst

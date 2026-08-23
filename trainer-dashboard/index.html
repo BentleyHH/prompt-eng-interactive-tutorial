@@ -409,6 +409,7 @@
     z-index:41;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4);transform:translateX(100%);
     transition:.26s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
   .sheet.on{transform:none}
+  .sheet.wide{width:min(940px,100vw)}
   .sheet-h{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
   .sheet-h h3{font-size:16px}
   .sheet-b{padding:18px 20px;overflow:auto;flex:1}
@@ -590,6 +591,11 @@
   .wktab.on{background:var(--brand-solid);border-color:var(--brand-solid);color:#fff}
   .wktab.on small{color:rgba(255,255,255,.75)}
   .wkgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px}
+  @media(min-width:1500px){
+    .wkgrid{gap:14px}
+    .sess{font-size:13.5px}
+    .zone{min-height:96px}
+  }
   .daycol{min-width:0}
   .daycol h4{margin:0 0 7px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:center}
   .daycol h4 small{display:block;color:var(--faint);font-weight:600;letter-spacing:0;text-transform:none}
@@ -1189,6 +1195,8 @@
       <label class="fld" for="lgCode" id="lg2faLbl">Code</label>
       <input class="inp" id="lgCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6"
              autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter')do2faLogin()">
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13.5px;color:#5c666e;cursor:pointer">
+        <input type="checkbox" id="lgTrust" checked style="width:16px;height:16px"><span id="lgTrustLbl"></span></label>
       <div id="lg2faErr" class="lgerr" style="display:none"></div>
       <button class="btn primary" id="lg2faBtn" style="width:100%;justify-content:center;margin-top:16px"
               onclick="do2faLogin()">OK</button>
@@ -1930,6 +1938,7 @@ const L={
   tfaResetDone:n=>`Zwei-Faktor für ${n} zurückgesetzt.`,
   tfaLoginHint:"Fast geschafft - bitte den 6-stelligen Code aus deiner Authenticator-App eingeben.",
   tfaBackBtn:"Zurück zur Anmeldung",
+  tfaRemember:d=>`Dieses Gerät ${d} Tage merken - dann ohne Code anmelden`,
   // Änderungsprotokoll
   actCount:n=>`${n} Einträge`, actHint:"Die letzten Änderungen aller Benutzer.",
   actEmpty:"Noch keine Einträge.",
@@ -2763,6 +2772,7 @@ const L={
   tfaResetDone:n=>`Two-factor reset for ${n}.`,
   tfaLoginHint:"Almost there - please enter the 6-digit code from your authenticator app.",
   tfaBackBtn:"Back to sign-in",
+  tfaRemember:d=>`Remember this device for ${d} days - sign in without a code`,
   actCount:n=>`${n} entries`, actHint:"The most recent changes by all users.",
   actEmpty:"No entries yet.",
   act_login:"signed in", act_logout:"signed out", "act_login.failed":"sign-in failed",
@@ -3560,7 +3570,8 @@ async function doEmailLogin(){
   if(!email||!pass){ lgError(t("lgMissing")); return; }
   const b=$("#lgBtn"); if(b){b.disabled=true;b.textContent="…";}
   try{
-    const d=await apiCall("auth.login",{email,password:pass});
+    let trust=""; try{ trust=localStorage.getItem("etaf_tfa_trust")||""; }catch(e){}
+    const d=await apiCall("auth.login",{email,password:pass,trust});
     if(d.need2fa){
       // Passwort stimmt - jetzt fehlt noch der Code aus der Authenticator-App.
       tfaTok=d.tfa; $("#lgErr").style.display="none"; $("#lgPass").value="";
@@ -3569,6 +3580,7 @@ async function doEmailLogin(){
       $("#lg2faLbl").textContent=t("tfaCode");
       $("#lg2faBtn").textContent=t("lgSignIn");
       $("#lg2faBack").textContent=t("tfaBackBtn");
+      $("#lgTrustLbl").textContent=t("tfaRemember",d.trustDays||14);
       $("#lg2faErr").style.display="none";
       $("#lg2fa").style.display="block";
       const c=$("#lgCode"); if(c){c.value="";setTimeout(()=>c.focus(),60);}
@@ -3587,8 +3599,10 @@ async function do2faLogin(){
   if(code.length<6){ const e=$("#lg2faErr"); e.textContent=t("tfaCodeShort"); e.style.display="block"; return; }
   const b=$("#lg2faBtn"); if(b){b.disabled=true;b.textContent="…";}
   try{
-    const d=await apiCall("auth.login2fa",{tfa:tfaTok,code});
+    const d=await apiCall("auth.login2fa",{tfa:tfaTok,code,
+      remember:$("#lgTrust")?.checked?1:0});
     AUTH=d.token; try{localStorage.setItem("etaf_token",AUTH);}catch(e){}
+    try{ if(d.trustToken) localStorage.setItem("etaf_tfa_trust",d.trustToken); }catch(e){}
     tfaTok=null; $("#lg2fa").style.display="none"; $("#lgCode").value="";
     await pull(); unlock();
   }catch(e){ const el=$("#lg2faErr"); el.textContent=e.message||t("lgFailed"); el.style.display="block"; }
@@ -5419,7 +5433,7 @@ function openSessEdit(sid){
     ${s?`<button class="btn" onclick="deleteSess()" style="border-color:var(--crit);color:var(--crit)">${ic("trash",15)}${t("wkDelete")}</button>`:""}
     <div class="spacer"></div>
     <button class="btn primary" onclick="saveSess()">${ic("check",15)}${t("save")}</button>`;
-  openSheet();
+  openSheet(true);
   wsDrawTrainers();
 }
 async function saveSess(){
@@ -6854,7 +6868,7 @@ function rnRender(){
     <button class="btn" onclick="rnMailDlg()">${ic("send",15)}${t("rnMail")}</button>
     <div class="spacer"></div>
     <button class="btn primary" onclick="rnSave()">${ic("check",15)}${t("save")}</button>`;
-  openSheet();
+  openSheet(true);
 }
 function rnDayName(d2){
   const dt=new Date(d2+"T12:00:00Z");
@@ -12008,7 +12022,12 @@ function clPersonEval(id){
 }
 
 
-function openSheet(){$("#scrim").classList.add("on");$("#sheet").classList.add("on");}
+function openSheet(wide){
+  $("#scrim").classList.add("on");
+  const sh=$("#sheet");
+  sh.classList.toggle("wide",!!wide);
+  sh.classList.add("on");
+}
 function closeSheet(){$("#scrim").classList.remove("on");$("#sheet").classList.remove("on");}
 let toastT;
 function toast(msg,kind){
