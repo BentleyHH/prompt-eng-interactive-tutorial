@@ -35,6 +35,36 @@ if($cronKey!=='' && $cronKey!=='CHANGE_ME_zufälliger_wert'
      .'<p style="color:#8a939a">Aufruf: <code>check.php?key=DEIN_CRON_KEY</code></p></body>';
   exit;
 }
+/* Notausgang Zwei-Faktor: check.php?key=<cron_key>&tfaoff=<email>
+   Fuer den Fall "Handy weg / Uhr verstellt / Code klappt nicht" und es gibt
+   keinen zweiten Admin mehr, der zuruecksetzen koennte. Nur mit dem
+   Server-Schluessel erreichbar (gleiches Vertrauensniveau wie das Backup),
+   beendet alle Sitzungen des Kontos und landet im Protokoll. */
+$tfaoff=trim((string)($_GET['tfaoff']??''));
+if($tfaoff!=='' && $cronKey!==''){
+  try{
+    require_once __DIR__.'/lib.php';
+    ensure_schema();
+    $u=q("SELECT * FROM users WHERE email=?",[strtolower($tfaoff)])->fetch();
+    if($u){
+      q("UPDATE users SET totp_on=0, totp_secret=NULL WHERE id=?",[$u['id']]);
+      q("DELETE FROM sessions WHERE user_id=?",[$u['id']]);
+      q("DELETE FROM tfa_challenges WHERE user_id=?",[$u['id']]);
+      audit_as(['id'=>null,'name'=>'Notausgang (cron_key)'],'tfa.reset','user',(string)$u['id'],
+        'Zwei-Faktor per Notausgang abgeschaltet für '.$u['email']);
+      echo '<!doctype html><meta charset="utf-8"><body style="font:15px system-ui,Arial;padding:30px;color:#242b31">'
+        .'<h2>Zwei-Faktor abgeschaltet</h2><p>Für <b>'.esc($u['email']).'</b> ist die Zwei-Faktor-Anmeldung jetzt aus. '
+        .'Alle Sitzungen wurden beendet - bitte neu mit E-Mail und Passwort anmelden und die '
+        .'Zwei-Faktor-Anmeldung unter Benutzer frisch einrichten.</p></body>';
+    } else {
+      echo '<!doctype html><meta charset="utf-8"><body style="font:15px system-ui,Arial;padding:30px;color:#242b31">'
+        .'<h2>Konto nicht gefunden</h2><p>Zu dieser E-Mail-Adresse gibt es kein Konto.</p></body>';
+    }
+  }catch(\Throwable $e){
+    echo '<!doctype html><meta charset="utf-8"><body style="font:15px system-ui,Arial;padding:30px">Fehler: '.esc($e->getMessage()).'</body>';
+  }
+  exit;
+}
 function row($label,$ok,$detail=''){
   $sym=$ok===true?'<b style="color:#2E9E6B">✓</b>':($ok===false?'<b style="color:#D81F26">✗</b>':'<b style="color:#C77E1E">⚠</b>');
   echo '<tr><td>'.$sym.'</td><td>'.esc($label).'</td><td>'.$detail.'</td></tr>';
@@ -52,6 +82,12 @@ function row($label,$ok,$detail=''){
 <?php
 /* 1) PHP-Version */
 row('PHP-Version '.PHP_VERSION, version_compare(PHP_VERSION,'8.0','>='), version_compare(PHP_VERSION,'8.0','>=')?'':'PHP 8 nötig - im artfiles-Menü umstellen.');
+
+/* 1b) Serveruhr - wichtig fuer die Zwei-Faktor-Codes (30-Sekunden-Fenster).
+   Diese Zeit mit einer Funkuhr/dem Handy vergleichen: weicht sie um mehr als
+   etwa eine Minute ab, werden Codes abgelehnt. */
+row('Serveruhr (UTC): '.gmdate('Y-m-d H:i:s'), null,
+  'Mit der Uhr auf dem Handy vergleichen (Weltzeit/UTC). Mehr als ~1 Minute Abweichung lässt Zwei-Faktor-Codes scheitern - dann den Hoster auf die Serverzeit ansprechen.');
 
 /* 2) Dateien vollständig? */
 $need=['config.php','db.php','lib.php','mailer.php','api.php','ai.php','automation.php',

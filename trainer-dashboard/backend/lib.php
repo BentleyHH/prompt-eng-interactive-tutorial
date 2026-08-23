@@ -144,7 +144,9 @@ function totp_verify(string $secretB32, string $code): bool {
   $code=preg_replace('/\D/','',$code);
   if(strlen($code)!==6) return false;
   $slice=(int)floor(time()/30);
-  for($i=-1;$i<=1;$i++) if(hash_equals(totp_code($secretB32,$slice+$i),$code)) return true;
+  // +/-2 Fenster: verkraftet gut eine Minute Uhrabweichung zwischen
+  // Server und Handy, ohne die Sicherheit nennenswert zu schwaechen.
+  for($i=-2;$i<=2;$i++) if(hash_equals(totp_code($secretB32,$slice+$i),$code)) return true;
   return false;
 }
 

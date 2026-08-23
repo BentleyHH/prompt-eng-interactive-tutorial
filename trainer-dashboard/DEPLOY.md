@@ -128,6 +128,14 @@ Es muss niemand eine E-Mail lesen oder abtippen.
   nicht mehr. Geht das Handy verloren, setzt ein Administrator die Zwei-Faktor-
   Anmeldung der Person zurueck (Knopf in der Benutzerzeile). Fuer ein System mit
   Regierungsdaten gehoert 2FA auf **jedes** Konto, mindestens auf alle Admins.
+  Wird ein Code abgelehnt: zuerst pruefen, ob die **Handy-Uhr auf automatisch**
+  steht, und in `check.php?key=...` die Zeile **Serveruhr (UTC)** mit einer
+  verlaesslichen Uhr vergleichen - mehr als etwa eine Minute Abweichung laesst
+  Codes scheitern (Toleranz: +/-60 Sekunden). Nach 5 Fehlversuchen ist die
+  Anmeldung 5 Minuten gesperrt - kurz warten. **Notausgang**, wenn kein zweiter
+  Admin zuruecksetzen kann: `backend/check.php?key=DEIN_CRON_KEY&tfaoff=deine@mail`
+  schaltet die 2FA dieses Kontos ab (beendet alle Sitzungen, steht im Protokoll) -
+  danach anmelden und 2FA frisch einrichten.
 - **Sitzungen laufen ab**: nach 14 Tagen grundsaetzlich, und nach 24 Stunden ohne
   Aktivitaet (einstellbar ueber `session_idle_hours` in `config.php`). Einladungs-
   und Passwort-Links gelten 60 Minuten, sind einmalig und liegen in der Datenbank
