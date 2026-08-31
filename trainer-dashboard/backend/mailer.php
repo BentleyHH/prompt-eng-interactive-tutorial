@@ -322,7 +322,15 @@ function smtp_send(string $to, string $subject, string $html, array $s, string $
   $cmd(base64_encode($s['user']??''),true);
   $r=$cmd(base64_encode($s['pass']??''),true);
   if(strpos($r,'235')===false){ $GLOBALS['__mail_err']='Login abgelehnt (kein 235). Benutzer/Passwort in config.php prüfen - user muss die volle E-Mail-Adresse sein.'; fclose($fp); return false; }
-  $cmd('MAIL FROM:<'.$from.'>');
+  $r=$cmd('MAIL FROM:<'.$from.'>');
+  if(strpos($r,'250')===false){
+    $GLOBALS['__mail_err']='Absender abgelehnt: <'.$from.'> ('.trim($r).'). '
+      .'Das SMTP-Konto "'.($s['user']??'').'" darf nicht unter dieser Adresse senden. '
+      .'Entweder die Adresse beim Hoster als Absender/Alias dieses Kontos freischalten - '
+      .'oder in config.php den Eintrag customer_from bzw. flight_from leeren, '
+      .'dann laeuft der Versand ueber from_email.';
+    fclose($fp); return false;
+  }
   $r=$cmd('RCPT TO:<'.$to.'>');
   if(strpos($r,'250')===false && strpos($r,'251')===false){ $GLOBALS['__mail_err']='Empfänger abgelehnt: '.trim($r); fclose($fp); return false; }
   $r=$cmd('DATA');

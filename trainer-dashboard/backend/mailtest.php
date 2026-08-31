@@ -48,14 +48,22 @@ $rows = [
   'SMTP secure' => $smtp['secure'] ?? '(leer)',
   'SMTP user'   => $smtp['user'] ?? '(leer)',
   'SMTP pass'   => !empty($smtp['pass']) ? '••• gesetzt ('.strlen((string)$smtp['pass']).' Zeichen)' : '⚠ LEER',
+  'customer_from (Kundenbereich)' => $c['customer_from'] ?? '(leer - Versand über from_email)',
+  'flight_from (Flugdaten)'       => $c['flight_from'] ?? '(leer - Versand über from_email)',
 ];
+
+/* Optionaler Absender-Test: &as=customer testet den adp@-Absender,
+   &as=flight den Flugdaten-Absender - sonst der Standard-Absender. */
+$as=$_GET['as']??'';
+$fromOv = $as==='customer' ? (string)($c['customer_from']??'')
+        : ($as==='flight'  ? (string)($c['flight_from']??'') : '');
 
 /* Optional: Test-Mail verschicken */
 $did=false; $ok=false; $err=''; $trace=[];
 if($to!==''){
   $did=true;
   $html = email_html("Dies ist eine Test-Mail aus der ETAF-Diagnose.\n\nWenn du das liest, funktioniert der Versand technisch.", '');
-  $ok   = send_email($to, 'Test', 'ETAF - Test-Mail (Diagnose)', $html);
+  $ok   = send_email($to, 'Test', 'ETAF - Test-Mail (Diagnose'.($fromOv!==''?' als '.$fromOv:'').')', $html, [], $fromOv);
   $err  = $GLOBALS['__mail_err'] ?? '';
   $trace= $GLOBALS['__smtp_trace'] ?? [];
 }
@@ -100,16 +108,23 @@ catch(Throwable $e){ $log=[]; }
 
  <?php if($did): ?>
  <div class="card">
-   <h3 style="margin:0 0 8px">Test-Versand an <?=esc($to)?></h3>
+   <h3 style="margin:0 0 8px">Test-Versand an <?=esc($to)?><?php if($fromOv!==''): ?> <span class="sub">(Absender: <?=esc($fromOv)?>)</span><?php endif; ?></h3>
    <p>Ergebnis: <?= $ok ? '<span class="ok">✓ Server hat die Mail angenommen</span>' : '<span class="bad">✗ Versand fehlgeschlagen</span>' ?></p>
    <?php if($err): ?><p class="hint"><b>Grund:</b> <?=esc($err)?></p><?php endif; ?>
    <?php if($ok): ?><p class="sub">Kommt sie trotzdem nicht an, liegt es an der <b>Zustellung</b> (Spam-Ordner prüfen; SPF/DKIM für dvi-systems.com im DNS setzen).</p><?php endif; ?>
    <?php if($trace): ?><pre><?php foreach($trace as $l) echo esc($l)."\n"; ?></pre><?php endif; ?>
+   <?php if($fromOv==='' && !empty($c['customer_from'])): ?>
+     <p class="sub" style="margin-top:10px">Getestet wurde der <b>Standard-Absender</b>. Der Kundenbereich sendet als
+     <b><?=esc($c['customer_from'])?></b> - diesen Weg extra testen:
+     <code>backend/mailtest.php?key=…&amp;to=<?=esc($to)?>&amp;as=customer</code></p>
+   <?php endif; ?>
  </div>
  <?php else: ?>
  <div class="card">
    <p>Zum Test eine Empfängeradresse anhängen:<br>
    <code>backend/mailtest.php?key=…&amp;to=deine@mail.de</code></p>
+   <p class="sub">Absender des Kundenbereichs (z.B. adp@…) testen: zusätzlich <code>&amp;as=customer</code> anhängen ·
+   Flugdaten-Absender: <code>&amp;as=flight</code></p>
  </div>
  <?php endif; ?>
 
@@ -154,6 +169,45 @@ catch(Throwable $e){ $log=[]; }
      <?php endforeach; ?></table>
    <?php elseif($mbConfigured): ?>
      <p class="sub" style="margin-top:10px">Noch keine Mails verarbeitet - im Dashboard unter <b>Antworten → Flugpost → „Postfach jetzt abrufen“</b> anstoßen (oder auf den Cron warten).</p>
+   <?php endif; ?>
+ </div>
+
+ <?php
+ /* ---- Kundenpostfach (adp@): POP3-Verbindungstest, holt nichts ab ---- */
+ $cm=$c['customer_mailbox']??[];
+ $cmConfigured=!empty($cm['host'])&&!empty($cm['user'])&&!empty($cm['pass']);
+ $cmTest=null;
+ if($cmConfigured){
+   if(!is_file(__DIR__.'/mailfetch.php')){
+     $cmTest=['ok'=>false,'error'=>'Datei backend/mailfetch.php fehlt auf dem Server - bitte das komplette ZIP hochladen.'];
+   } else {
+     require_once __DIR__.'/mailfetch.php';
+     try{ $cmTest=pop3_fetch_new($cm,0); }catch(Throwable $e){ $cmTest=['ok'=>false,'error'=>$e->getMessage()]; }
+   }
+ }
+ $cmLog=[];
+ try{ $cmLog=q("SELECT subject,status,created_at FROM cust_mail ORDER BY id DESC LIMIT 6")->fetchAll(); }catch(Throwable $e){}
+ ?>
+ <div class="card">
+   <h3 style="margin:0 0 8px">Kundenpostfach (Bereich Kunde/ADP)</h3>
+   <table>
+     <tr><td>Postfach-Host</td><td><?=esc(($cm['host']??'').':'.($cm['port']??''))?: '(leer)'?></td></tr>
+     <tr><td>Postfach-User</td><td><?=esc($cm['user']??'(leer)')?></td></tr>
+     <tr><td>Passwort</td><td><?= !empty($cm['pass']) ? '••• gesetzt' : '<span class="bad">⚠ LEER</span>' ?></td></tr>
+     <tr><td>Verbindung</td><td><?php
+       if(!$cmConfigured) echo '<span class="warn">nicht konfiguriert - customer_mailbox-Block in config.php ergänzen (nur nötig für den Posteingang)</span>';
+       elseif($cmTest['ok']) echo '<span class="ok">✓ Login ok - '.(int)($cmTest['total_new']??0).' neue Mail(s) warten</span>';
+       else echo '<span class="bad">✗ '.esc($cmTest['error']??'Fehler').'</span>';
+     ?></td></tr>
+   </table>
+   <?php if($cmLog): ?>
+     <h4 style="margin:14px 0 6px">Zuletzt eingelesene Kunden-Mails</h4>
+     <table><?php foreach($cmLog as $r): ?>
+       <tr><td><span class="pill logged"><?=esc($r['status'])?></span></td>
+           <td><?=esc($r['subject'])?><br><span class="sub" style="font-size:12px"><?=esc($r['created_at'])?></span></td></tr>
+     <?php endforeach; ?></table>
+   <?php elseif($cmConfigured): ?>
+     <p class="sub" style="margin-top:10px">Noch keine Mails eingelesen - im Bereich <b>Kunde (ADP) → Postfach abrufen</b> anstoßen (oder auf den Cron warten).</p>
    <?php endif; ?>
  </div>
 
