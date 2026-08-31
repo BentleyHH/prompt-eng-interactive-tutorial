@@ -1,0 +1,24 @@
+# ETAF backend — Zugriffsschutz
+# config.php, SQLite-Dateien, SQL-Dumps und reine Include-Dateien niemals ausliefern.
+<FilesMatch "^(config\.php|config\.sample\.php|htaccess\.txt|.*\.sqlite|.*\.sql|.*\.sql\.gz|db\.php|lib\.php|mailer\.php|mailfetch\.php|ai\.php|automation\.php|pptmail\.php)$">
+  Require all denied
+</FilesMatch>
+
+# Include-Dateien (db/lib/mailer/mailfetch/ai/automation) werden nur per include
+# genutzt, nie direkt. api.php, respond.php, plan.php usw. bleiben erreichbar.
+
+# UTF-8
+AddDefaultCharset UTF-8
+
+# Schutz-Header fuer alle ausgelieferten Seiten (Clickjacking, MIME-Raten,
+# Referrer-Weitergabe, Suchmaschinen). mod_headers ist bei artfiles aktiv;
+# fehlt es, ignoriert Apache diesen Block wirkungslos (kein Fehler).
+<IfModule mod_headers.c>
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "same-origin"
+  # verify.php und check.php sollen nicht in Suchmaschinen landen
+  <FilesMatch "^(verify|check)\.php$">
+    Header always set X-Robots-Tag "noindex, nofollow"
+  </FilesMatch>
+</IfModule>

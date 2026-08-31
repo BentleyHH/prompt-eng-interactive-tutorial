@@ -1,0 +1,271 @@
+<?php
+/**
+ * ETAF - E-Mail-Diagnose
+ * ---------------------------------------------------------------
+ * Zeigt die aktuelle Mail-Konfiguration, verschickt eine Test-Mail
+ * und protokolliert den kompletten SMTP-Dialog - damit man sofort
+ * sieht, WO es klemmt (Verbindung, Login, Empfänger, Zustellung).
+ *
+ * Aufruf:  backend/mailtest.php?key=<cron_key>&to=deine@mail.de
+ * Der key ist derselbe wie für den Cron-Job (cron_key in config.php).
+ * Das Passwort wird NIE angezeigt (nur, ob es gesetzt ist).
+ * ---------------------------------------------------------------
+ */
+/* Diagnose darf nie „weiß“ bleiben: Fehler auf den Bildschirm statt ins Nichts.
+   (Die Seite ist ohnehin key-geschützt; Passwörter werden nie ausgegeben.) */
+error_reporting(E_ALL); ini_set('display_errors','1');
+require_once __DIR__.'/lib.php';
+require_once __DIR__.'/mailer.php';
+header('Content-Type: text/html; charset=utf-8');
+
+$c   = cfg();
+$key = $_GET['key'] ?? '';
+$to  = trim($_GET['to'] ?? '');
+
+function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+
+/* Schlüssel-Schutz (wie beim Cron) */
+$need = (string)($c['cron_key'] ?? '');
+if($need==='' || !hash_equals($need,(string)$key)){
+  http_response_code(403);
+  echo '<meta charset="utf-8"><body style="font:15px system-ui;padding:30px;color:#242b31">'
+     .'<h2>ETAF - E-Mail-Diagnose</h2>'
+     .'<p>Zugriff nur mit gültigem <code>?key=</code> (entspricht <code>cron_key</code> aus config.php).</p>'
+     .'<p>Beispiel: <code>backend/mailtest.php?key=DEIN_CRON_KEY&amp;to=deine@mail.de</code></p>'
+     .'</body>';
+  exit;
+}
+
+$mode = $c['mail_mode'] ?? 'mail';
+$smtp = $c['smtp'] ?? [];
+$rows = [
+  'mail_mode'   => $mode,
+  'from_email'  => $c['from_email'] ?? '(leer)',
+  'from_name'   => $c['from_name'] ?? '(leer)',
+  'base_url'    => base_url(),
+  'SMTP host'   => $smtp['host'] ?? '(leer)',
+  'SMTP port'   => $smtp['port'] ?? '(leer)',
+  'SMTP secure' => $smtp['secure'] ?? '(leer)',
+  'SMTP user'   => $smtp['user'] ?? '(leer)',
+  'SMTP pass'   => !empty($smtp['pass']) ? '••• gesetzt ('.strlen((string)$smtp['pass']).' Zeichen)' : '⚠ LEER',
+  'customer_from (Kundenbereich)' => $c['customer_from'] ?? '(leer - Versand über from_email)',
+  'flight_from (Flugdaten)'       => $c['flight_from'] ?? '(leer - Versand über from_email)',
+];
+
+/* Optionaler Absender-Test: &as=customer testet den adp@-Absender,
+   &as=flight den Flugdaten-Absender - sonst der Standard-Absender. */
+$as=$_GET['as']??'';
+$fromOv = $as==='customer' ? (string)($c['customer_from']??'')
+        : ($as==='flight'  ? (string)($c['flight_from']??'') : '');
+
+/* Welche Absenderadresse geht je Bereich wirklich raus - und ueber welches
+   SMTP-Konto? Genau hier sieht man, ob customer_from ueberhaupt ankommt. */
+$senders=[
+  'Standard (Trainer, System)' => (string)($c['from_email']??''),
+  'Kundenbereich (ADP)'        => (string)($c['customer_from']??'')!=='' ? (string)$c['customer_from'] : (string)($c['from_email']??'').'  ← customer_from fehlt in config.php',
+  'Flugdaten'                  => (string)($c['flight_from']??'')!=='' ? (string)$c['flight_from'] : (string)($c['from_email']??'').'  ← flight_from fehlt in config.php',
+];
+
+/* Optional: Test-Mail verschicken */
+$did=false; $ok=false; $err=''; $trace=[];
+if($to!==''){
+  $did=true;
+  $html = email_html("Dies ist eine Test-Mail aus der ETAF-Diagnose.\n\nWenn du das liest, funktioniert der Versand technisch.", '');
+  $ok   = send_email($to, 'Test', 'ETAF - Test-Mail (Diagnose'.($fromOv!==''?' als '.$fromOv:'').')', $html, [], $fromOv);
+  $err  = $GLOBALS['__mail_err'] ?? '';
+  $trace= $GLOBALS['__smtp_trace'] ?? [];
+}
+
+/* Letzte Protokoll-Einträge */
+$log=[];
+try { ensure_schema(); $log=q("SELECT to_email,subject,status,created_at FROM email_log ORDER BY id DESC LIMIT 8")->fetchAll(); }
+catch(Throwable $e){ $log=[]; }
+?>
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>ETAF - E-Mail-Diagnose</title>
+<style>
+ body{font:15px/1.55 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#242b31;background:#f4f5f6;margin:0;padding:26px}
+ .wrap{max-width:760px;margin:auto}
+ h2{margin:0 0 4px}.sub{color:#8a939a;margin:0 0 20px}
+ .card{background:#fff;border:1px solid #e2e5e8;border-radius:12px;padding:18px 20px;margin:0 0 16px}
+ table{border-collapse:collapse;width:100%}td{padding:5px 8px;border-bottom:1px solid #eef0f2;vertical-align:top}
+ td:first-child{color:#5c666e;white-space:nowrap;width:130px}
+ .ok{color:#2E9E6B;font-weight:700}.bad{color:#D81F26;font-weight:700}.warn{color:#C77E1E;font-weight:700}
+ pre{background:#12171c;color:#d7e2ea;padding:14px 16px;border-radius:10px;overflow:auto;font-size:12.5px;line-height:1.5}
+ .hint{background:#fff8ec;border:1px solid #f0e0bd;border-radius:10px;padding:12px 14px;color:#7a5a12;font-size:14px}
+ code{background:#eef0f2;padding:1px 5px;border-radius:5px}
+ .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700}
+ .pill.sent{background:#e6f4ec;color:#2E9E6B}.pill.failed{background:#fdeaea;color:#D81F26}.pill.logged{background:#eef0f2;color:#5c666e}
+</style></head><body><div class="wrap">
+ <div style="color:#3e4852;margin:0 0 10px;display:flex"><?=etaf_logo_svg(26)?></div>
+ <h2>E-Mail-Diagnose</h2>
+ <p class="sub">Prüft Konfiguration und Versand. Passwort wird nicht angezeigt.</p>
+
+ <div class="card">
+   <h3 style="margin:0 0 8px">Aktuelle Konfiguration</h3>
+   <table><?php foreach($rows as $k=>$v): ?>
+     <tr><td><?=esc($k)?></td><td><?= $v==='⚠ LEER' ? '<span class="bad">'.esc($v).'</span>' : esc($v) ?></td></tr>
+   <?php endforeach; ?></table>
+   <?php if($mode==='log'): ?>
+     <p class="hint" style="margin-top:12px">⚠ <b>mail_mode ist <code>log</code></b> - es wird gar nichts versendet, nur protokolliert.
+        In <code>config.php</code> auf <code>'smtp'</code> stellen.</p>
+   <?php elseif($mode==='smtp' && empty($smtp['pass'])): ?>
+     <p class="hint" style="margin-top:12px">⚠ <b>SMTP-Passwort ist leer.</b> Trage in <code>config.php</code> unter <code>'smtp' =&gt; ['pass' =&gt; '…']</code> das Passwort des Postfachs <code><?=esc($smtp['user']??'')?></code> ein.</p>
+   <?php endif; ?>
+ </div>
+
+ <div class="card">
+   <h3 style="margin:0 0 8px">Absender je Bereich</h3>
+   <table>
+     <?php foreach($senders as $lbl=>$addr):
+       $plain=trim(explode(' ',$addr)[0]);
+       $accs=(array)($c['smtp_accounts']??[]);
+       $own=false; foreach($accs as $a=>$set){ if(strcasecmp(trim((string)$a),$plain)===0 && !empty($set['user'])) $own=true; }
+     ?>
+     <tr><td><?=esc($lbl)?></td><td>
+       <?php if(strpos($addr,'←')!==false): ?><span class="warn"><?=esc($addr)?></span>
+       <?php else: ?><b><?=esc($addr)?></b>
+         <?php if($mode==='smtp'): ?>
+           <span class="sub">· SMTP-Konto: <?= $own ? esc($plain).' (eigenes)' : esc($smtp['user']??'(Standard)') ?></span>
+         <?php endif; ?>
+       <?php endif; ?>
+     </td></tr>
+     <?php endforeach; ?>
+   </table>
+   <?php if($mode==='mail'): ?>
+     <p class="sub" style="margin-top:10px"><b>Hinweis zu mail_mode = "mail":</b> Beim Versand ueber die
+     PHP-Funktion <code>mail()</code> entscheidet der Hoster mit - viele Server tragen ihren eigenen
+     Kontonamen als Absender ein und ueberschreiben dabei auch das From-Feld. Kommt die Mail des
+     Kundenbereichs trotz gesetztem <code>customer_from</code> unter der Standardadresse an, ist das
+     der Grund. Abhilfe: auf <code>'mail_mode' =&gt; 'smtp'</code> umstellen und - falls das
+     SMTP-Konto nicht unter adp@ senden darf - unten ein eigenes Konto hinterlegen.</p>
+   <?php endif; ?>
+   <?php if($mode==='smtp' && empty($c['smtp_accounts'])): ?>
+     <p class="sub" style="margin-top:10px">Alle Adressen laufen ueber das eine SMTP-Konto
+     <b><?=esc($smtp['user']??'')?></b>. Darf dieses Konto nicht unter adp@ senden, lehnt der Server
+     ab oder schreibt den Absender um. Dann in config.php ein eigenes Konto hinterlegen:</p>
+     <pre>'smtp_accounts' =&gt; [
+  'adp@dvi-systems.com' =&gt; ['user' =&gt; 'adp@dvi-systems.com', 'pass' =&gt; 'POSTFACH_PASSWORT'],
+],</pre>
+     <p class="sub">Host/Port/Verschluesselung werden aus dem <code>smtp</code>-Block uebernommen.</p>
+   <?php endif; ?>
+ </div>
+
+ <?php if($did): ?>
+ <div class="card">
+   <h3 style="margin:0 0 8px">Test-Versand an <?=esc($to)?><?php if($fromOv!==''): ?> <span class="sub">(Absender: <?=esc($fromOv)?>)</span><?php endif; ?></h3>
+   <p>Ergebnis: <?= $ok ? '<span class="ok">✓ Server hat die Mail angenommen</span>' : '<span class="bad">✗ Versand fehlgeschlagen</span>' ?></p>
+   <?php if($err): ?><p class="hint"><b>Grund:</b> <?=esc($err)?></p><?php endif; ?>
+   <?php if($ok): ?><p class="sub">Kommt sie trotzdem nicht an, liegt es an der <b>Zustellung</b> (Spam-Ordner prüfen; SPF/DKIM für dvi-systems.com im DNS setzen).</p><?php endif; ?>
+   <?php if($trace): ?><pre><?php foreach($trace as $l) echo esc($l)."\n"; ?></pre><?php endif; ?>
+   <?php if($fromOv==='' && !empty($c['customer_from'])): ?>
+     <p class="sub" style="margin-top:10px">Getestet wurde der <b>Standard-Absender</b>. Der Kundenbereich sendet als
+     <b><?=esc($c['customer_from'])?></b> - diesen Weg extra testen:
+     <code>backend/mailtest.php?key=…&amp;to=<?=esc($to)?>&amp;as=customer</code></p>
+   <?php endif; ?>
+ </div>
+ <?php else: ?>
+ <div class="card">
+   <p>Zum Test eine Empfängeradresse anhängen:<br>
+   <code>backend/mailtest.php?key=…&amp;to=deine@mail.de</code></p>
+   <p class="sub">Absender des Kundenbereichs (z.B. adp@…) testen: zusätzlich <code>&amp;as=customer</code> anhängen ·
+   Flugdaten-Absender: <code>&amp;as=flight</code></p>
+ </div>
+ <?php endif; ?>
+
+ <?php
+ /* ---- Flugpost: POP3-Verbindungstest (holt nichts ab, zählt nur Neues) ---- */
+ $mb=$c['mailbox']??[];
+ $mbConfigured=!empty($mb['host'])&&!empty($mb['user'])&&!empty($mb['pass']);
+ $mbTest=null;
+ if($mbConfigured){
+   if(!is_file(__DIR__.'/mailfetch.php')){
+     $mbTest=['ok'=>false,'error'=>'Datei backend/mailfetch.php fehlt auf dem Server - bitte das komplette ZIP hochladen.'];
+   } else {
+     require_once __DIR__.'/mailfetch.php';
+     try{ $mbTest=pop3_fetch_new($mb,0); }catch(Throwable $e){ $mbTest=['ok'=>false,'error'=>$e->getMessage()]; }
+   }
+ }
+ $fmLog=[];
+ try{ $fmLog=q("SELECT subject,status,confidence,created_at FROM travel_mail ORDER BY id DESC LIMIT 6")->fetchAll(); }catch(Throwable $e){}
+ ?>
+ <div class="card">
+   <h3 style="margin:0 0 8px">Flugpost (Postfach-Abruf)</h3>
+   <table>
+     <tr><td>Postfach-Host</td><td><?=esc(($mb['host']??'').':'.($mb['port']??''))?: '(leer)'?></td></tr>
+     <tr><td>Postfach-User</td><td><?=esc($mb['user']??'(leer)')?></td></tr>
+     <tr><td>Passwort</td><td><?= !empty($mb['pass']) ? '••• gesetzt' : '<span class="bad">⚠ LEER</span>' ?></td></tr>
+     <tr><td>Verbindung</td><td><?php
+       if(!$mbConfigured) echo '<span class="warn">nicht konfiguriert - mailbox-Block in config.php ergänzen</span>';
+       elseif($mbTest['ok']) echo '<span class="ok">✓ Login ok - '.(int)($mbTest['total_new']??0).' neue Mail(s) warten</span>';
+       else echo '<span class="bad">✗ '.esc($mbTest['error']??'Fehler').'</span>';
+     ?></td></tr>
+     <tr><td>KI-Erkennung</td><td><?php
+       $aiKey=trim($c['anthropic_key']??'');
+       if($aiKey==='') echo '<span class="warn">kein anthropic_key - es greift nur die einfache Muster-Erkennung</span>';
+       else echo '<span class="ok">✓ Key gesetzt</span> · Modell: '.esc($c['anthropic_model']??'');
+     ?></td></tr>
+   </table>
+   <?php if($fmLog): ?>
+     <h4 style="margin:14px 0 6px">Zuletzt verarbeitete Mails</h4>
+     <table><?php foreach($fmLog as $r): ?>
+       <tr><td><span class="pill <?= $r['status']==='applied'?'sent':($r['status']==='new'?'logged':'logged') ?>"><?=esc($r['status'])?></span></td>
+           <td><?=esc($r['subject'])?><br><span class="sub" style="font-size:12px"><?=esc($r['created_at'])?><?= $r['confidence']?' · Zuordnung: '.esc($r['confidence']):''?></span></td></tr>
+     <?php endforeach; ?></table>
+   <?php elseif($mbConfigured): ?>
+     <p class="sub" style="margin-top:10px">Noch keine Mails verarbeitet - im Dashboard unter <b>Antworten → Flugpost → „Postfach jetzt abrufen“</b> anstoßen (oder auf den Cron warten).</p>
+   <?php endif; ?>
+ </div>
+
+ <?php
+ /* ---- Kundenpostfach (adp@): POP3-Verbindungstest, holt nichts ab ---- */
+ $cm=$c['customer_mailbox']??[];
+ $cmConfigured=!empty($cm['host'])&&!empty($cm['user'])&&!empty($cm['pass']);
+ $cmTest=null;
+ if($cmConfigured){
+   if(!is_file(__DIR__.'/mailfetch.php')){
+     $cmTest=['ok'=>false,'error'=>'Datei backend/mailfetch.php fehlt auf dem Server - bitte das komplette ZIP hochladen.'];
+   } else {
+     require_once __DIR__.'/mailfetch.php';
+     try{ $cmTest=pop3_fetch_new($cm,0); }catch(Throwable $e){ $cmTest=['ok'=>false,'error'=>$e->getMessage()]; }
+   }
+ }
+ $cmLog=[];
+ try{ $cmLog=q("SELECT subject,status,created_at FROM cust_mail ORDER BY id DESC LIMIT 6")->fetchAll(); }catch(Throwable $e){}
+ ?>
+ <div class="card">
+   <h3 style="margin:0 0 8px">Kundenpostfach (Bereich Kunde/ADP)</h3>
+   <table>
+     <tr><td>Postfach-Host</td><td><?=esc(($cm['host']??'').':'.($cm['port']??''))?: '(leer)'?></td></tr>
+     <tr><td>Postfach-User</td><td><?=esc($cm['user']??'(leer)')?></td></tr>
+     <tr><td>Passwort</td><td><?= !empty($cm['pass']) ? '••• gesetzt' : '<span class="bad">⚠ LEER</span>' ?></td></tr>
+     <tr><td>Verbindung</td><td><?php
+       if(!$cmConfigured) echo '<span class="warn">nicht konfiguriert - customer_mailbox-Block in config.php ergänzen (nur nötig für den Posteingang)</span>';
+       elseif($cmTest['ok']) echo '<span class="ok">✓ Login ok - '.(int)($cmTest['total_new']??0).' neue Mail(s) warten</span>';
+       else echo '<span class="bad">✗ '.esc($cmTest['error']??'Fehler').'</span>';
+     ?></td></tr>
+   </table>
+   <?php if($cmLog): ?>
+     <h4 style="margin:14px 0 6px">Zuletzt eingelesene Kunden-Mails</h4>
+     <table><?php foreach($cmLog as $r): ?>
+       <tr><td><span class="pill logged"><?=esc($r['status'])?></span></td>
+           <td><?=esc($r['subject'])?><br><span class="sub" style="font-size:12px"><?=esc($r['created_at'])?></span></td></tr>
+     <?php endforeach; ?></table>
+   <?php elseif($cmConfigured): ?>
+     <p class="sub" style="margin-top:10px">Noch keine Mails eingelesen - im Bereich <b>Kunde (ADP) → Postfach abrufen</b> anstoßen (oder auf den Cron warten).</p>
+   <?php endif; ?>
+ </div>
+
+ <div class="card">
+   <h3 style="margin:0 0 8px">Letzte 8 Protokoll-Einträge</h3>
+   <?php if(!$log): ?><p class="sub">Noch keine E-Mails protokolliert.</p><?php else: ?>
+   <table>
+     <?php foreach($log as $r): $st=$r['status']; ?>
+       <tr><td><span class="pill <?=esc($st)?>"><?=esc($st)?></span></td>
+           <td><?=esc($r['to_email'])?> · <?=esc($r['subject'])?><br><span class="sub" style="font-size:12px"><?=esc($r['created_at'])?></span></td></tr>
+     <?php endforeach; ?>
+   </table>
+   <p class="sub" style="margin-top:10px"><b>sent</b> = versendet · <b>failed</b> = Versand scheiterte · <b>logged</b> = nur protokolliert (mail_mode=log)</p>
+   <?php endif; ?>
+ </div>
+</div></body></html>

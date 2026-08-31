@@ -1,0 +1,2251 @@
+<?php
+/**
+ * ETAF - API-Router
+ * Aufruf: backend/api.php?action=<name>  (POST, JSON-Body)
+ * Antwort: JSON. Auth via Header X-Auth-Token (außer 'login').
+ */
+require_once __DIR__.'/lib.php';
+require_once __DIR__.'/mailer.php';
+require_once __DIR__.'/ai.php';
+require_once __DIR__.'/automation.php';
+
+/* CORS: nur die eigene Domain. Same-Origin-Aufrufe (Normalfall) brauchen gar
+   keine CORS-Header; fremde Seiten dürfen die API nicht aus dem Browser ansprechen. */
+$origin=(string)($_SERVER['HTTP_ORIGIN'] ?? '');
+if($origin!==''){
+  $o=parse_url($origin);
+  $oHost=($o['host']??'').(isset($o['port'])?':'.$o['port']:'');
+  if($oHost!=='' && strcasecmp($oHost, $_SERVER['HTTP_HOST']??'')===0){
+    header('Access-Control-Allow-Origin: '.$origin);
+    header('Access-Control-Allow-Headers: Content-Type, X-Auth-Token');
+    header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+  }
+}
+if(($_SERVER['REQUEST_METHOD']??'')==='OPTIONS') { http_response_code(204); exit; }
+
+try { ensure_schema(); }
+catch(Throwable $e){
+  // Interne Fehlertexte nie an den Client - sie koennen Tabellennamen,
+  // Pfade oder Zugangsdetails enthalten. Der Serverbetreiber sieht sie im Log.
+  error_log('ETAF ensure_schema: '.$e->getMessage());
+  fail('Die Datenbank ist zurzeit nicht erreichbar. Bitte spaeter erneut versuchen.',500);
+}
+
+$action = $_GET['action'] ?? '';
+$in = body();
+// Vor jeder ändernden Aktion den betroffenen Datenstand sichern (für „Rückgängig“)
+try{ undo_prepare($action,$in); }catch(Throwable $e){}
+
+try {
+switch($action){
+
+  case 'login':                       // PIN - nur zur Ersteinrichtung
+    out(do_login((string)($in['pin']??'')));
+
+  case 'auth.login':                  // E-Mail + Passwort (+ optional vertrautes Geraet)
+    out(do_login_email((string)($in['email']??''), (string)($in['password']??''),
+        (string)($in['trust']??'')));
+
+  case 'auth.mode':                   // Login-Maske: gibt es schon Konten?
+    out(['ok'=>true,'setup'=>(user_count()===0)]);
+
+  /* ---- Zwei-Faktor: zweiter Anmeldeschritt (Code aus der Authenticator-App) ---- */
+  case 'auth.login2fa': {
+    login_guard_check();
+    $chTok=(string)($in['tfa']??''); $code=(string)($in['code']??'');
+    $ch=$chTok!=='' ? q("SELECT * FROM tfa_challenges WHERE tok=?",[$chTok])->fetch() : null;
+    $u=$ch ? q("SELECT * FROM users WHERE id=? AND active=1",[$ch['user_id']])->fetch() : null;
+    $fresh=$ch && (time()-ts($ch['created_at'])<=300) && ((int)$ch['tries']<5);
+    if(!$fresh || !$u || empty($u['totp_secret']) || !totp_verify((string)$u['totp_secret'],$code)){
+      if($ch) q("UPDATE tfa_challenges SET tries=tries+1 WHERE tok=?",[$chTok]);
+      login_guard_fail();
+      if($u) audit_as($u,'login.failed','user',(string)$u['id'],
+        $u['email'].' - Zwei-Faktor-Code falsch oder abgelaufen (IP '.client_ip().')');
+      fail('Der Code ist nicht korrekt oder abgelaufen. Bitte neu anmelden oder erneut eingeben.',401);
+    }
+    q("DELETE FROM tfa_challenges WHERE tok=?",[$chTok]);
+    login_guard_reset();
+    q("UPDATE users SET last_login=? WHERE id=?",[now(),$u['id']]);
+    $tok=issue_session((int)$u['id']);
+    // Auf Wunsch dieses Geraet merken - dann entfaellt der Code fuer tfa_trust_days Tage.
+    $trustTok='';
+    if(!empty($in['remember'])){
+      $trustTok=token(40);
+      q("INSERT INTO tfa_trust(tok,user_id,created_at,last_used) VALUES(?,?,?,?)",
+        [hash('sha256',$trustTok),$u['id'],now(),now()]);
+      // hoechstens 10 gemerkte Geraete je Konto - die aeltesten fliegen raus
+      $old=q("SELECT tok FROM tfa_trust WHERE user_id=? ORDER BY created_at DESC",[$u['id']])->fetchAll(PDO::FETCH_COLUMN);
+      foreach(array_slice($old,10) as $t2) q("DELETE FROM tfa_trust WHERE tok=?",[$t2]);
+    }
+    audit_as($u,'login','user',(string)$u['id'],'angemeldet mit Zwei-Faktor'
+      .($trustTok!==''?' (Gerät für '.tfa_trust_days().' Tage gemerkt)':'').' (IP '.client_ip().')');
+    out(['ok'=>true,'token'=>$tok,'user'=>user_public($u),'trustToken'=>$trustTok]);
+  }
+
+  /* ---- Zwei-Faktor einrichten (eigenes Konto) ---- */
+  case 'tfa.setup': {
+    require_auth();
+    $me=current_user(); if(!$me) fail('Nur für angemeldete Benutzer.',403);
+    $secret=b32_encode(random_bytes(20));
+    q("UPDATE users SET totp_secret=?, totp_on=0 WHERE id=?",[$secret,$me['id']]);
+    $label=rawurlencode('ETAF Cockpit ('.$me['email'].')');
+    out(['ok'=>true,'secret'=>trim(chunk_split($secret,4,' ')),
+         'uri'=>'otpauth://totp/'.$label.'?secret='.$secret.'&issuer='.rawurlencode('ETAF Cockpit').'&digits=6&period=30']);
+  }
+  case 'tfa.enable': {
+    require_auth();
+    $me=current_user(); if(!$me) fail('Nur für angemeldete Benutzer.',403);
+    if(empty($me['totp_secret'])) fail('Bitte zuerst die Einrichtung starten.');
+    if(!totp_verify((string)$me['totp_secret'],(string)($in['code']??'')))
+      fail('Der Code stimmt nicht - bitte den aktuellen Code aus der App eingeben.');
+    q("UPDATE users SET totp_on=1 WHERE id=?",[$me['id']]);
+    audit('tfa.enable','user',(string)$me['id'],'Zwei-Faktor-Anmeldung eingeschaltet');
+    out(['ok'=>true]);
+  }
+  case 'tfa.disable': {
+    require_auth();
+    $me=current_user(); if(!$me) fail('Nur für angemeldete Benutzer.',403);
+    if(!password_verify((string)($in['password']??''), $me['pass_hash']??''))
+      fail('Das Passwort ist nicht korrekt.',401);
+    q("UPDATE users SET totp_on=0, totp_secret=NULL WHERE id=?",[$me['id']]);
+    q("DELETE FROM tfa_trust WHERE user_id=?",[$me['id']]);
+    audit('tfa.disable','user',(string)$me['id'],'Zwei-Faktor-Anmeldung ausgeschaltet');
+    out(['ok'=>true]);
+  }
+  /* ---- Zwei-Faktor eines Benutzers zuruecksetzen (Admin, z.B. Handy verloren) ---- */
+  case 'user.tfaReset': {
+    require_admin();
+    $uid=(int)($in['id']??0);
+    $u=q("SELECT * FROM users WHERE id=?",[$uid])->fetch();
+    if(!$u) fail('Benutzer nicht gefunden.',404);
+    q("UPDATE users SET totp_on=0, totp_secret=NULL WHERE id=?",[$uid]);
+    q("DELETE FROM sessions WHERE user_id=?",[$uid]);
+    q("DELETE FROM tfa_trust WHERE user_id=?",[$uid]);
+    audit('tfa.reset','user',(string)$uid,'Zwei-Faktor zurückgesetzt für '.$u['email'].' (alle Sitzungen beendet)');
+    out(['ok'=>true]);
+  }
+
+  case 'logout':
+    if($t=auth_token()){
+      $who=current_user();
+      if($who) audit_as($who,'logout','user',(string)$who['id'],'abgemeldet');
+      q("DELETE FROM sessions WHERE token=?",[$t]);
+    }
+    out(['ok'=>true]);
+
+  /* ---- Passwort vergessen: Link anfordern (verrät nie, ob die Adresse existiert) ---- */
+  case 'auth.requestReset':
+    login_guard_check();
+    $em=strtolower(trim((string)($in['email']??'')));
+    if($em!==''){
+      $u=q("SELECT * FROM users WHERE email=? AND active=1",[$em])->fetch();
+      if($u){
+        // Höchstens alle 2 Minuten ein Link pro Konto (verhindert Mail-Bombing).
+        $last=q("SELECT created_at FROM reset_tokens WHERE user_id=? ORDER BY created_at DESC LIMIT 1",[$u['id']])->fetch();
+        if(!$last || time()-ts($last['created_at'])>=120) send_reset_mail($u,'reset');
+      }
+    }
+    out(['ok'=>true]);
+
+  /* ---- Eigenes Passwort ändern ---- */
+  case 'auth.changePassword':
+    require_auth();
+    $me=current_user();
+    if(!$me) fail('Nur für angemeldete Benutzer.',403);
+    $cur=(string)($in['current']??''); $new=(string)($in['new']??'');
+    if(!password_verify($cur, $me['pass_hash']??'')) fail('Aktuelles Passwort ist nicht korrekt.',401);
+    if(strlen($new)<10) fail('Das neue Passwort muss mindestens 10 Zeichen haben.');
+    q("UPDATE users SET pass_hash=? WHERE id=?",[password_hash($new,PASSWORD_DEFAULT),$me['id']]);
+    audit('password.change','user',(string)$me['id'],'Passwort geändert');
+    out(['ok'=>true]);
+
+  /* ---- Benutzerverwaltung (nur Admin) ---- */
+  case 'users.list':
+    require_admin();
+    // Letzte Aktivität kommt aus den Sitzungen: sie sagt, ob jemand das
+    // Cockpit wirklich nutzt - die Anmeldung allein kann Wochen her sein.
+    $seen=[];
+    try{
+      foreach(q("SELECT user_id, MAX(last_seen) ls FROM sessions WHERE user_id IS NOT NULL GROUP BY user_id")->fetchAll() as $r)
+        $seen[(string)$r['user_id']]=(string)$r['ls'];
+    }catch(Throwable $e){}
+    out(['ok'=>true,'users'=>array_map(function($u) use($seen){
+      $p=user_public($u);
+      $p['lastSeen']=$seen[(string)$u['id']]??'';
+      return $p;
+    }, q("SELECT * FROM users ORDER BY (role='admin') DESC, name, id")->fetchAll())]);
+
+  case 'user.save':
+    require_admin();
+    $uid=$in['id']??null;
+    $em=strtolower(trim((string)($in['email']??'')));
+    $nm=trim((string)($in['name']??''));
+    $role=in_array($in['role']??'editor',['admin','editor'],true)?$in['role']:'editor';
+    if(!filter_var($em,FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige E-Mail-Adresse angeben.');
+    if($nm==='') fail('Bitte einen Namen angeben.');
+    $dupe=q("SELECT id FROM users WHERE email=?",[$em])->fetch();
+    if($dupe && (string)$dupe['id']!==(string)$uid) fail('Diese E-Mail-Adresse wird bereits verwendet.');
+    if($uid){
+      // Letzten Admin nicht zum Bearbeiter herabstufen
+      $old=q("SELECT * FROM users WHERE id=?",[$uid])->fetch();
+      if(!$old) fail('Benutzer nicht gefunden.',404);
+      if($old['role']==='admin' && $role!=='admin' && admin_count()<=1)
+        fail('Das ist der letzte Administrator - bitte zuerst einen anderen Admin ernennen.');
+      q("UPDATE users SET email=?,name=?,role=? WHERE id=?",[$em,$nm,$role,$uid]);
+      audit('user.update','user',(string)$uid,"$nm ($em, $role)");
+      out(['ok'=>true,'id'=>(string)$uid]);
+    }
+    q("INSERT INTO users(email,name,role,active,created_at) VALUES(?,?,?,1,?)",[$em,$nm,$role,now()]);
+    $uid=db()->lastInsertId();
+    $u=q("SELECT * FROM users WHERE id=?",[$uid])->fetch();
+    $sent=send_reset_mail($u,'invite');     // Einladung mit Link zum Passwort setzen
+    audit('user.create','user',(string)$uid,"$nm ($em, $role)");
+    out(['ok'=>true,'id'=>(string)$uid,'invited'=>$sent?1:0]);
+
+  case 'user.setActive':
+    require_admin();
+    $uid=$in['id']??0; $act=!empty($in['active'])?1:0;
+    $u=q("SELECT * FROM users WHERE id=?",[$uid])->fetch();
+    if(!$u) fail('Benutzer nicht gefunden.',404);
+    $me=current_user();
+    if($me && (string)$me['id']===(string)$uid && !$act) fail('Du kannst dich nicht selbst deaktivieren.');
+    if(!$act && $u['role']==='admin' && admin_count()<=1) fail('Das ist der letzte Administrator.');
+    q("UPDATE users SET active=? WHERE id=?",[$act,$uid]);
+    if(!$act) q("DELETE FROM sessions WHERE user_id=?",[$uid]);   // sofort abmelden
+    audit($act?'user.activate':'user.deactivate','user',(string)$uid,$u['name']??'');
+    out(['ok'=>true]);
+
+  /* ---- Info-Mail (Digest) je Benutzer: Rhythmus + Inhalte ---- */
+  case 'user.digestSave':
+    require_admin();
+    $uid=(int)($in['id']??0);
+    if(!q("SELECT id FROM users WHERE id=?",[$uid])->fetch()) fail('Benutzer nicht gefunden.',404);
+    $freq=in_array($in['freq']??'',['off','daily','every2','weekly'],true)?$in['freq']:'off';
+    $day=max(1,min(7,(int)($in['day']??1)));
+    $validParts=['staffing','ppt','travel','inbox','week','passport','reports'];
+    $dparts=array_values(array_intersect($validParts,(array)($in['parts']??[])));
+    q("UPDATE users SET digest_freq=?,digest_day=?,digest_parts=? WHERE id=?",[$freq,$day,json_encode($dparts),$uid]);
+    audit('user.digest','user',(string)$uid,'Info-Mail: '.$freq);
+    out(['ok'=>true]);
+
+  case 'digest.test':                 // Probe-Mail sofort verschicken
+    require_admin();
+    $u=q("SELECT * FROM users WHERE id=?",[$in['id']??0])->fetch();
+    if(!$u||empty($u['email'])) fail('Benutzer oder E-Mail-Adresse nicht gefunden.',404);
+    out(['ok'=>true,'sent'=>digest_send($u)?1:0]);
+
+  case 'user.sendInvite':             // Einladung/Zurücksetzen erneut schicken
+    require_admin();
+    $u=q("SELECT * FROM users WHERE id=?",[$in['id']??0])->fetch();
+    if(!$u) fail('Benutzer nicht gefunden.',404);
+    $sent=send_reset_mail($u, empty($u['pass_hash'])?'invite':'reset');
+    audit('user.invite','user',(string)$u['id'],$u['email']);
+    out(['ok'=>true,'sent'=>$sent?1:0]);
+
+  /* ---- Flugpost: erkannte Flugbuchungen prüfen & übernehmen ---- */
+  case 'mail.poll':
+    require_auth();
+    require_once __DIR__.'/mailfetch.php';
+    out(poll_mailbox());
+
+  case 'mail.list':
+    require_auth();
+    $rows=q("SELECT id,from_addr,subject,received_at,status,extracted,match_trainer_id,match_training_id,confidence,created_at
+             FROM travel_mail WHERE status IN('new','applied','ignored')
+             ORDER BY (status='new') DESC, id DESC LIMIT 60")->fetchAll();
+    $ids=array_column($rows,'id');
+    $attBy=[];
+    if($ids){
+      $ph=implode(',',array_fill(0,count($ids),'?'));
+      foreach(q("SELECT mail_id,name,mime,LENGTH(data) sz FROM travel_mail_att WHERE mail_id IN($ph)",$ids)->fetchAll() as $a)
+        $attBy[(string)$a['mail_id']][]=['name'=>$a['name'],'mime'=>$a['mime']];
+    }
+    out(['ok'=>true,'mails'=>array_map(function($r) use($attBy){
+      return ['id'=>(string)$r['id'],'from'=>$r['from_addr'],'subject'=>$r['subject'],
+        'status'=>$r['status'],'extracted'=>json_decode($r['extracted']?:'{}',true),
+        'trainerId'=>$r['match_trainer_id']?(string)$r['match_trainer_id']:null,
+        'trainingId'=>$r['match_training_id']?(string)$r['match_training_id']:null,
+        'confidence'=>$r['confidence'],'at'=>$r['created_at'],
+        'atts'=>$attBy[(string)$r['id']]??[]];
+    },$rows)]);
+
+  case 'mail.apply':
+    require_auth();
+    require_once __DIR__.'/mailfetch.php';
+    $trId=(int)($in['trainer']??0); $tgId=(int)($in['training']??0);
+    if(!$trId||!$tgId) fail('Bitte Trainer und Training auswählen.');
+    out(mail_apply((int)($in['id']??0), $trId, $tgId));
+
+  case 'mail.ignore':
+    require_auth();
+    q("UPDATE travel_mail SET status='ignored' WHERE id=?",[$in['id']??0]);
+    out(['ok'=>true]);
+
+  /* ---- Rückgängig / Wiederholen ---- */
+  case 'undo.do':
+    require_auth();
+    out(undo_apply(-1));
+
+  case 'redo.do':
+    require_auth();
+    out(undo_apply(+1));
+
+  /* ---- Änderungsprotokoll ---- */
+  case 'activity.list':
+    require_auth();
+    $lim=max(1,min(500,(int)($in['limit']??150)));
+    // Filter: 'logins' = An-/Abmeldungen samt Fehlversuchen, sonst alles.
+    // Zusaetzlich je Person - so laesst sich eine Anmelde-Historie lesen,
+    // ohne zwischen hunderten Aenderungen zu suchen.
+    $w=[]; $p=[];
+    // An- und Abmeldungen sind Personendaten (Zeitpunkt, IP) - die sieht nur
+    // die Administration. Fuer alle anderen bleiben sie ganz aussen vor.
+    if(($in['kind']??'')==='logins'){
+      require_admin();
+      $w[]="action IN('login','logout','login.failed')";
+    } elseif(!is_admin()){
+      $w[]="action NOT IN('login','logout','login.failed')";
+    }
+    if(!empty($in['user'])){ $w[]='user_id=?'; $p[]=(int)$in['user']; }
+    $sql='SELECT * FROM activity'.($w?' WHERE '.implode(' AND ',$w):'')." ORDER BY id DESC LIMIT $lim";
+    out(['ok'=>true,'activity'=>q($sql,$p)->fetchAll(),'admin'=>is_admin(),
+         'people'=>is_admin()
+           ? q("SELECT DISTINCT user_id, user_name FROM activity
+                WHERE user_id IS NOT NULL ORDER BY user_name")->fetchAll()
+           : []]);
+
+  case 'state':
+    require_auth();
+    out(get_state());
+
+  /* ---- Trainer anlegen/ändern ---- */
+  case 'trainer.save':
+    require_auth();
+    $id=$in['id']??null;
+    $pl=in_array($in['prefLang']??'',['de','en'],true) ? $in['prefLang'] : '';
+    $fields=[$in['name']??'', $in['email']??'', $in['phone']??'',
+      json_encode($in['spec']??[],JSON_UNESCAPED_UNICODE), $in['region']??'',
+      json_encode($in['langs']??[]), !empty($in['uae'])?1:0, (int)($in['load']??0),
+      $in['color']??'#3E4852', (string)($in['rating']??'4.5'), (string)($in['notes']??''), $pl];
+    if($id){
+      check_version('trainers',$id,$in['version']??null,!empty($in['force']));
+      q("UPDATE trainers SET name=?,email=?,phone=?,spec=?,region=?,langs=?,uae=?,load_lvl=?,color=?,rating=?,notes=?,pref_lang=? WHERE id=?",
+        array_merge($fields,[$id]));
+      bump_version('trainers',$id);
+      audit('trainer.update','trainer',(string)$id,(string)($in['name']??''));
+    } else {
+      q("INSERT INTO trainers(name,email,phone,spec,region,langs,uae,load_lvl,color,rating,notes,pref_lang,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", array_merge($fields,[now()]));
+      $id=db()->lastInsertId();
+      bump_version('trainers',$id);
+      audit('trainer.create','trainer',(string)$id,(string)($in['name']??''));
+    }
+    out(['ok'=>true,'id'=>(string)$id]);
+
+  /* ---- Interne Bewertungen je Trainer & Training (5 Sterne + Notiz) ---- */
+  case 'reviews.save':
+    require_auth();
+    $trId=(int)($in['trainer']??0);
+    if(!$trId) fail('Kein Trainer.');
+    $saved=0;
+    foreach(($in['items']??[]) as $it){
+      $tgId=(int)($it['training']??0); if(!$tgId) continue;
+      $stars=max(0,min(5,(int)($it['stars']??0)));
+      $note=trim((string)($it['note']??''));
+      $label=trim((string)($it['label']??''));
+      $ex=q("SELECT id FROM trainer_reviews WHERE trainer_id=? AND training_id=?",[$trId,$tgId])->fetch();
+      if($stars===0 && $note===''){
+        if($ex) q("DELETE FROM trainer_reviews WHERE id=?",[$ex['id']]);
+        continue;
+      }
+      if($ex) q("UPDATE trainer_reviews SET stars=?,note=?,label=?,updated_at=? WHERE id=?",[$stars,$note,$label,now(),$ex['id']]);
+      else    q("INSERT INTO trainer_reviews(trainer_id,training_id,label,stars,note,updated_at) VALUES(?,?,?,?,?,?)",[$trId,$tgId,$label,$stars,$note,now()]);
+      $saved++;
+    }
+    out(['ok'=>true,'saved'=>$saved]);
+
+  case 'trainer.delete':
+    require_auth();
+    q("DELETE FROM trainers WHERE id=?",[$in['id']??0]);
+    audit('trainer.delete','trainer',(string)($in['id']??0),'Trainer gelöscht');
+    out(['ok'=>true]);
+
+  /* ---- Kunde anlegen/ändern (Upsert per id) ---- */
+  case 'client.save':
+    require_auth();
+    $cid=$in['id']??''; if($cid==='') fail('Keine Kunden-ID.');
+    $f=[$in['name']??'', $in['short']??'', $in['color']??'#3E4852', $in['cal']??'slategray', $in['country']??'',
+        $in['contactName']??'', $in['contactEmail']??''];
+    $ex=q("SELECT id FROM clients WHERE id=?",[$cid])->fetch();
+    if($ex){
+      check_version('clients',$cid,$in['version']??null,!empty($in['force']));
+      q("UPDATE clients SET name=?,short=?,color=?,cal=?,country=?,contact_name=?,contact_email=? WHERE id=?", array_merge($f,[$cid]));
+    } else {
+      q("INSERT INTO clients(id,name,short,color,cal,country,contact_name,contact_email,sort_order) VALUES(?,?,?,?,?,?,?,?, (SELECT COALESCE(MAX(sort_order),0)+1 FROM clients c))",
+        array_merge([$cid],$f));
+    }
+    bump_version('clients',$cid);
+    audit($ex?'client.update':'client.create','client',(string)$cid,(string)($in['name']??''));
+    out(['ok'=>true,'id'=>$cid]);
+
+  case 'client.delete':
+    require_auth();
+    $cid=$in['id']??'';
+    $cnt=(int)q("SELECT COUNT(*) c FROM clients")->fetch()['c'];
+    if($cnt<=1) fail('Der letzte Kunde kann nicht entfernt werden.');
+    $fb=q("SELECT id FROM clients WHERE id<>? ORDER BY sort_order,id LIMIT 1",[$cid])->fetch();
+    if($fb) q("UPDATE trainings SET client_id=? WHERE client_id=?",[$fb['id'],$cid]);
+    q("DELETE FROM clients WHERE id=?",[$cid]);
+    audit('client.delete','client',(string)$cid,'Kunde entfernt');
+    out(['ok'=>true]);
+
+  case 'training.setClient':
+    require_auth();
+    q("UPDATE trainings SET client_id=? WHERE id=?",[$in['client']??null, $in['training']??0]);
+    out(['ok'=>true]);
+
+  /* ---- Training anlegen/ändern ---- */
+  case 'training.save':
+    require_auth();
+    $id=$in['id']??null;
+    $spec=$in['spec']??'';
+    $f=[$in['clientId']??($in['client']??null), $in['topic']??'', $in['city']??'', $in['country']??'',
+        $in['kw']??'', $in['month']??'', $in['date']??null, $in['dateEnd']??null, $in['code']??null,
+        $spec, (int)($in['need']??5), (int)($in['participants']??0)];
+    $prefilled=0;
+    if($id){
+      check_version('trainings',$id,$in['version']??null,!empty($in['force']));
+      q("UPDATE trainings SET client_id=?,topic=?,city=?,country=?,kw=?,month=?,start_date=?,end_date=?,code=?,spec=?,need_cnt=?,participants=? WHERE id=?",
+        array_merge($f,[$id]));
+      bump_version('trainings',$id);
+      audit('training.update','training',(string)$id,(string)($in['topic']??''));
+    } else {
+      q("INSERT INTO trainings(client_id,topic,city,country,kw,month,start_date,end_date,code,spec,need_cnt,participants,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", array_merge($f,[now()]));
+      $id=db()->lastInsertId();
+      bump_version('trainings',$id);
+      audit('training.create','training',(string)$id,(string)($in['topic']??''));
+      if($spec!==''){
+        foreach(q("SELECT material_id,qty FROM material_presets WHERE spec=?",[$spec])->fetchAll() as $p){
+          q("INSERT INTO training_materials(training_id,material_id,qty) VALUES(?,?,?)",[$id,$p['material_id'],$p['qty']]);
+          $prefilled++;
+        }
+      }
+    }
+    out(['ok'=>true,'id'=>(string)$id,'prefilled'=>$prefilled]);
+
+  /* ---- Wochenplan: Sessions + Platzierung je Training ---- */
+  case 'sessions.list':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    $tg=q("SELECT id,plan_slots,deliverable,deliverable_en,stage,star FROM trainings WHERE id=?",[$tid])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $rows=q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$tid])->fetchAll();
+    out(['ok'=>true,
+      'sessions'=>array_map(function($r){
+        $ids=json_decode(($r['trainer_ids']??'')?:'',true);
+        if(!is_array($ids)) $ids=$r['trainer_id']?[(string)$r['trainer_id']]:[];
+        return [
+        'id'=>(string)$r['id'],'title'=>$r['title'],'titleEn'=>$r['title_en'],
+        'type'=>$r['stype'],'dur'=>$r['dur'],'desc'=>$r['descr'],
+        'trainerIds'=>array_values(array_map('strval',$ids)),
+        'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,
+        'pptByIds'=>ppt_owner_explicit($r)?array_map('strval',ppt_owner_ids($r)):[],
+        'pptDue'=>$r['ppt_due']??'',
+        'pptNote'=>$r['ppt_note']??'','pptFile'=>$r['ppt_file']??'','pptFileName'=>$r['ppt_file_name']??'',
+        'pptFileSize'=>(int)($r['ppt_file_size']??0),'pptFileAt'=>$r['ppt_file_at']??'',
+        'mat'=>$r['mat']??''];},$rows),
+      'plan'=>json_decode($tg['plan_slots']?:'{}',true)?:[],
+      'deliverable'=>$tg['deliverable']??'','deliverableEn'=>$tg['deliverable_en']??'',
+      'stage'=>$tg['stage']??'','star'=>(int)($tg['star']??0)]);
+
+  /* ---- Alle Wochenpläne auf einmal (für den Wandkalender mit Inhalten) ---- */
+  case 'sessions.all':
+    require_auth();
+    $plans=[];
+    foreach(q("SELECT id,plan_slots FROM trainings")->fetchAll() as $tg)
+      $plans[(string)$tg['id']]=['plan'=>json_decode($tg['plan_slots']?:'{}',true)?:[], 'sessions'=>[]];
+    foreach(q("SELECT * FROM training_sessions ORDER BY sort,id")->fetchAll() as $r){
+      $tid=(string)$r['training_id'];
+      if(!isset($plans[$tid])) continue;
+      $ids=json_decode(($r['trainer_ids']??'')?:'',true);
+      if(!is_array($ids)) $ids=$r['trainer_id']?[(string)$r['trainer_id']]:[];
+      $plans[$tid]['sessions'][]=[
+        'id'=>(string)$r['id'],'title'=>$r['title'],'titleEn'=>$r['title_en'],
+        'type'=>$r['stype'],'dur'=>$r['dur'],
+        'trainerIds'=>array_values(array_map('strval',$ids)),
+        'ppt'=>$r['ppt']??'','pptBy'=>$r['ppt_by']?(string)$r['ppt_by']:null,
+        'pptByIds'=>ppt_owner_explicit($r)?array_map('strval',ppt_owner_ids($r)):[],
+        'pptDue'=>$r['ppt_due']??'',
+        'pptNote'=>$r['ppt_note']??'','pptFile'=>$r['ppt_file']??'','pptFileName'=>$r['ppt_file_name']??'',
+        'pptFileSize'=>(int)($r['ppt_file_size']??0),'pptFileAt'=>$r['ppt_file_at']??'',
+        'pptMailFrom'=>$r['ppt_mail_from']??'','pptMailAt'=>$r['ppt_mail_at']??'',
+        'pptMailFile'=>$r['ppt_mail_file']??'',
+        'mat'=>$r['mat']??''];
+    }
+    foreach(q("SELECT id,ppt_template,ppt_template_name FROM trainings")->fetchAll() as $tp){
+      if(isset($plans[(string)$tp['id']])){
+        $plans[(string)$tp['id']]['template']=$tp['ppt_template']?($tp['ppt_template_name']?:'Vorlage'):'';
+      }
+    }
+    out(['ok'=>true,'weeks'=>$plans,
+      'pptLeadDays'=>(int)(config_get('ppt_lead_days')??21),
+      'pptMaxMb'=>(int)round(ppt_max_bytes()/1048576),
+      'pptDelivery'=>ppt_delivery(), 'pptMail'=>ppt_mail_addr()]);
+
+  case 'session.save':
+    require_auth();
+    $tid=(int)($in['training']??0); $sid=(int)($in['id']??0);
+    if(!$tid || !q("SELECT id FROM trainings WHERE id=?",[$tid])->fetch()) fail('Training nicht gefunden.',404);
+    $title=trim((string)($in['title']??'')); if($title==='') fail('Bitte einen Titel angeben.');
+    $type=in_array($in['type']??'',['orga','theorie','uebung','praxis','simulation','assessment','deliverable'],true)?$in['type']:'theorie';
+    $ppt=in_array($in['ppt']??'',['','inArbeit','vorhanden'],true)?$in['ppt']:'';
+    $due=trim((string)($in['pptDue']??''));
+    if($due!=='' && !preg_match('/^\d{4}-\d{2}-\d{2}$/',$due)) $due='';
+    // Co-Teaching: Liste der Trainer (leer = noch offen)
+    $tids=array_values(array_unique(array_filter(array_map('intval',(array)($in['trainerIds']??[])))));
+    $tidsJson=json_encode(array_map('strval',$tids));
+    // Folien-Verantwortung: nur anfassen, wenn das Feld mitgeschickt wurde
+    // ("__multi" im Editor heißt: mehrere gesetzt, unverändert lassen).
+    $hasBy=array_key_exists('pptBy',$in) && (string)$in['pptBy']!=='__multi';
+    $byOne=$hasBy ? (((int)$in['pptBy'])?:null) : null;
+    $byIds=$hasBy ? ($byOne?json_encode([(string)$byOne]):'') : '';
+    $f=[$title, trim((string)($in['titleEn']??'')), $type, (string)($in['dur']??'1'),
+        (string)($in['desc']??''), $tidsJson, $ppt, $due,
+        trim((string)($in['mat']??''))];
+    if($sid && q("SELECT id FROM training_sessions WHERE id=? AND training_id=?",[$sid,$tid])->fetch()){
+      $bySql=$hasBy?'ppt_by=?,ppt_by_ids=?,':'';
+      $byPar=$hasBy?[$byOne,$byIds]:[];
+      q("UPDATE training_sessions SET title=?,title_en=?,stype=?,dur=?,descr=?,trainer_ids=?,ppt=?,{$bySql}ppt_due=?,mat=?,trainer_id=NULL WHERE id=?",
+        array_merge(array_slice($f,0,7),$byPar,array_slice($f,7),[$sid]));
+    } else {
+      $mx=(int)q("SELECT COALESCE(MAX(sort),0) m FROM training_sessions WHERE training_id=?",[$tid])->fetch()['m'];
+      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,trainer_ids,ppt,ppt_by,ppt_by_ids,ppt_due,mat,sort)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        array_merge([$tid],array_slice($f,0,7),[$byOne,$byIds],array_slice($f,7),[$mx+1]));
+      $sid=(int)db()->lastInsertId();
+    }
+    audit('session.save','training',(string)$tid,mb_substr($title,0,80));
+    out(['ok'=>true,'id'=>(string)$sid]);
+
+  case 'session.delete':
+    require_auth();
+    $sid=(int)($in['id']??0);
+    $s=q("SELECT training_id FROM training_sessions WHERE id=?",[$sid])->fetch();
+    q("DELETE FROM training_sessions WHERE id=?",[$sid]);
+    if($s){ // Platzierung bereinigen
+      $tg=q("SELECT plan_slots FROM trainings WHERE id=?",[$s['training_id']])->fetch();
+      $plan=json_decode($tg['plan_slots']?:'{}',true)?:[];
+      foreach($plan as $k=>$ids){ $plan[$k]=array_values(array_filter((array)$ids, fn($x)=>(string)$x!==(string)$sid)); }
+      q("UPDATE trainings SET plan_slots=? WHERE id=?",[json_encode($plan),$s['training_id']]);
+    }
+    out(['ok'=>true]);
+
+  /* ---- Nur den Agenda-Link holen (ohne zu senden) - für „mit eigenem
+         Mailprogramm verschicken" und zum Kopieren in eine laufende Mail ---- */
+  case 'travel.agendaLink':
+    require_auth();
+    $tgId=(int)($in['training']??0); $trId=(int)($in['trainer']??0);
+    if(!q("SELECT id FROM trainings WHERE id=?",[$tgId])->fetch()) fail('Training nicht gefunden.',404);
+    if(!q("SELECT id FROM trainers WHERE id=?",[$trId])->fetch()) fail('Trainer nicht gefunden.',404);
+    $rq=q("SELECT * FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+    $lang=in_array($in['lang']??'',['de','en'],true) ? $in['lang'] : (($rq['lang']??'en')==='de'?'de':'en');
+    $tok=$rq['tok']??'';
+    if(!$tok){ $tok=token(40);
+      q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at) VALUES(?,?,'yes',?,?,?)",
+        [$tgId,$trId,$lang,$tok,now()]); }
+    out(['ok'=>true,'link'=>base_url().'/agenda.php?token='.$tok]);
+
+  /* ---- Kalender-Abo-Link je Trainer (iCal) ---- */
+  case 'trainer.icsLink':
+    require_auth();
+    $trId=(int)($in['id']??0);
+    if(!q("SELECT id FROM trainers WHERE id=?",[$trId])->fetch()) fail('Trainer nicht gefunden.',404);
+    $ik=(string)(cfg()['ics_key']??'');
+    if($ik===''||$ik==='CHANGE_ME_kalender_schluessel') fail('Kein ics_key in config.php gesetzt - bitte einen zufälligen Wert eintragen.');
+    out(['ok'=>true,'link'=>base_url().'/ics.php?key='.rawurlencode($ik).'&trainer='.$trId]);
+
+  /* ============================================================
+     TRAININGSBERICHT (DEBRIEF)
+     ============================================================ */
+
+  /* ---- Bericht eines Trainings holen (leer = noch keiner vorhanden) ---- */
+  case 'debrief.get':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    $r=q("SELECT * FROM debriefs WHERE training_id=?",[$tid])->fetch();
+    out(['ok'=>true,'debrief'=>$r?debrief_public($r):null]);
+
+  /* ---- Alle Berichte (Liste für die Auswertung/Export) ---- */
+  case 'debriefs.list':
+    require_auth();
+    $rows=q("SELECT d.*, t.code, t.topic, t.city, t.start_date, t.client_id
+             FROM debriefs d JOIN trainings t ON t.id=d.training_id
+             ORDER BY t.start_date DESC, d.id DESC")->fetchAll();
+    out(['ok'=>true,'debriefs'=>array_map(function($r){
+      $d=debrief_public($r);
+      $d['code']=$r['code']??''; $d['topic']=$r['topic']??''; $d['city']=$r['city']??'';
+      $d['date']=$r['start_date']??''; $d['clientId']=$r['client_id']??'';
+      return $d; },$rows),
+      'missing'=>array_map(fn($m)=>['id'=>(string)$m['id'],'code'=>$m['code']??'','topic'=>$m['topic']??'',
+        'city'=>$m['city']??'','date'=>$m['start_date']??''], debriefs_missing(0))]);
+
+  /* ---- Bericht speichern (Entwurf oder abgeschlossen) ---- */
+  case 'debrief.save':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    if(!$tid || !q("SELECT id FROM trainings WHERE id=?",[$tid])->fetch()) fail('Training nicht gefunden.',404);
+    $status=in_array($in['status']??'',['draft','final'],true)?$in['status']:'draft';
+    $rec=in_array($in['recommend']??'',['yes','partly','no'],true)?$in['recommend']:'';
+    $ov=(int)($in['overall']??0); if($ov<0||$ov>5) $ov=0;
+
+    // Nur bekannte Kriterien mit Werten 1..5 übernehmen - alles andere fällt weg
+    $keys=debrief_keys(); $sc=[];
+    foreach((array)($in['scores']??[]) as $k=>$v){
+      if(in_array((string)$k,$keys,true) && is_numeric($v) && $v>=1 && $v<=5) $sc[(string)$k]=(int)$v;
+    }
+    $trs=[];
+    foreach((array)($in['trainers']??[]) as $tid2=>$tv){
+      if(!is_array($tv) || !ctype_digit((string)$tid2)) continue;
+      $e=[];
+      foreach(['teaching','behaviour','ppt','punctuality'] as $tk){
+        if(isset($tv[$tk]) && is_numeric($tv[$tk]) && $tv[$tk]>=1 && $tv[$tk]<=5) $e[$tk]=(int)$tv[$tk];
+      }
+      $nt=trim((string)($tv['note']??'')); if($nt!=='') $e['note']=mb_substr($nt,0,1000);
+      if($e) $trs[(string)$tid2]=$e;
+    }
+    $okFlags=array_column(debrief_catalog()['flags'],'key');
+    $fl=array_values(array_unique(array_filter(array_map('strval',(array)($in['flags']??[])),
+        fn($x)=>in_array($x,$okFlags,true))));
+    $okTexts=array_column(debrief_catalog()['texts'],'key');
+    $tx=[];
+    foreach((array)($in['texts']??[]) as $k=>$v){
+      if(in_array((string)$k,$okTexts,true)){ $v=trim((string)$v); if($v!=='') $tx[(string)$k]=mb_substr($v,0,4000); }
+    }
+    // Gesamtnote leer? Dann aus den Einzelwerten mitteln, damit der Bericht zählt.
+    if($ov===0 && $sc){ $ov=(int)round(debrief_avg(array_values($sc)) ?? 0); }
+
+    $me=current_user();
+    $who=$me['name']??($me['email']??'');
+    $old=q("SELECT * FROM debriefs WHERE training_id=?",[$tid])->fetch();
+    if($old){
+      if(isset($in['version']) && (int)$in['version'] && (int)$in['version']!==(int)($old['version']??1) && empty($in['force'])){
+        fail('Dieser Bericht wurde inzwischen von jemand anderem geändert.',409);
+      }
+      q("UPDATE debriefs SET status=?,overall=?,recommend=?,scores=?,trainers=?,flags=?,texts=?,
+           updated_at=?,version=version+1 WHERE id=?",
+        [$status,$ov,$rec,json_encode($sc),json_encode($trs,JSON_UNESCAPED_UNICODE),
+         json_encode($fl),json_encode($tx,JSON_UNESCAPED_UNICODE),now(),$old['id']]);
+      $did=(int)$old['id'];
+    } else {
+      q("INSERT INTO debriefs(training_id,status,overall,recommend,scores,trainers,flags,texts,
+           author_id,author_name,created_at,updated_at,version)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,1)",
+        [$tid,$status,$ov,$rec,json_encode($sc),json_encode($trs,JSON_UNESCAPED_UNICODE),
+         json_encode($fl),json_encode($tx,JSON_UNESCAPED_UNICODE),
+         $me?(int)$me['id']:null,$who,now(),now()]);
+      $did=(int)db()->lastInsertId();
+    }
+
+    // Maßnahmen komplett neu schreiben (die Liste kommt immer vollständig)
+    q("DELETE FROM debrief_actions WHERE debrief_id=?",[$did]);
+    $sort=0;
+    foreach((array)($in['actions']??[]) as $a){
+      $txt=trim((string)($a['text']??'')); if($txt==='') continue;
+      $due=trim((string)($a['due']??'')); if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$due)) $due='';
+      q("INSERT INTO debrief_actions(debrief_id,training_id,text,owner,due,done,created_at,sort)
+         VALUES(?,?,?,?,?,?,?,?)",
+        [$did,$tid,mb_substr($txt,0,500),mb_substr(trim((string)($a['owner']??'')),0,190),
+         $due,!empty($a['done'])?1:0,now(),$sort++]);
+    }
+    audit('debrief.save','training',(string)$tid,$status==='final'?'Bericht abgeschlossen':'Bericht als Entwurf gespeichert');
+    $rowNew=q("SELECT * FROM debriefs WHERE id=?",[$did])->fetch();
+    out(['ok'=>true,'debrief'=>debrief_public($rowNew)]);
+
+  case 'debrief.delete':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    $d=q("SELECT id FROM debriefs WHERE training_id=?",[$tid])->fetch();
+    if($d){
+      q("DELETE FROM debrief_actions WHERE debrief_id=?",[$d['id']]);
+      q("DELETE FROM debriefs WHERE id=?",[$d['id']]);
+      audit('debrief.delete','training',(string)$tid,'Bericht gelöscht');
+    }
+    out(['ok'=>true]);
+
+  /* ---- Maßnahme abhaken/aufmachen (aus der Berichtsansicht heraus) ---- */
+  case 'debrief.actionDone':
+    require_auth();
+    $aid=(int)($in['id']??0);
+    q("UPDATE debrief_actions SET done=? WHERE id=?",[!empty($in['done'])?1:0,$aid]);
+    out(['ok'=>true]);
+
+  /* ---- Auswertung über einen Zeitraum ---- */
+  case 'report.build':
+    require_auth();
+    $ymd=function($s){ $s=trim((string)$s); return preg_match('/^\d{4}-\d{2}-\d{2}$/',$s)?$s:''; };
+    $bucket=in_array($in['bucket']??'',['week','month','year'],true)?$in['bucket']:'month';
+    out(['ok'=>true,'report'=>debrief_report($ymd($in['from']??''),$ymd($in['to']??''),
+      trim((string)($in['client']??'')),$bucket, !empty($in['drafts']))]);
+
+  /* ============================================================
+     POWERPOINT-VERFOLGUNG
+     ============================================================ */
+
+  /* ---- Status/Zuständigkeit/Fälligkeit/Notiz einer Session pflegen ---- */
+  case 'ppt.setStatus':
+    require_auth();
+    $sid=(int)($in['session']??0);
+    $row=q("SELECT * FROM training_sessions WHERE id=?",[$sid])->fetch();
+    if(!$row) fail('Session nicht gefunden.',404);
+    $set=[]; $p=[];
+    if(isset($in['ppt']) && in_array($in['ppt'],['','inArbeit','vorhanden'],true)){ $set[]='ppt=?'; $p[]=$in['ppt']; }
+    if(array_key_exists('pptByIds',$in)){
+      // Mehrere Verantwortliche; leere Liste = zurück auf automatisch (Wochenplan)
+      $ids=array_values(array_unique(array_filter(array_map('intval',(array)$in['pptByIds']))));
+      $set[]='ppt_by_ids=?'; $p[]=$ids?json_encode(array_map('strval',$ids)):'';
+      $set[]='ppt_by=?';     $p[]=$ids[0]??null;
+    } elseif(array_key_exists('pptBy',$in)){
+      $one=((int)$in['pptBy'])?:null;
+      $set[]='ppt_by=?';     $p[]=$one;
+      $set[]='ppt_by_ids=?'; $p[]=$one?json_encode([(string)$one]):'';
+    }
+    if(array_key_exists('pptDue',$in)){
+      $d=trim((string)$in['pptDue']);
+      if($d!=='' && !preg_match('/^\d{4}-\d{2}-\d{2}$/',$d)) $d='';
+      $set[]='ppt_due=?'; $p[]=$d;
+    }
+    if(array_key_exists('note',$in)){ $set[]='ppt_note=?'; $p[]=mb_substr(trim((string)$in['note']),0,255); }
+    // Auf Wunsch die Folien-Verantwortlichen auch als Session-Trainer in den
+    // Wochenplan übernehmen (Vereinigung - bestehende Besetzung bleibt).
+    if(!empty($in['addTeam']) && is_array($in['addTeam'])){
+      $ids=json_decode(($row['trainer_ids']??'')?:'',true);
+      if(!is_array($ids)) $ids=$row['trainer_id']?[(string)$row['trainer_id']]:[];
+      $ids=array_map('strval',$ids);
+      foreach($in['addTeam'] as $a){ $a=(string)(int)$a; if($a!=='0'&&!in_array($a,$ids,true)) $ids[]=$a; }
+      $set[]='trainer_ids=?'; $p[]=json_encode(array_values($ids));
+    }
+    if($set){ $p[]=$sid; q("UPDATE training_sessions SET ".implode(',',$set)." WHERE id=?",$p); }
+    audit('ppt.setStatus','training',(string)$row['training_id'],mb_substr((string)$row['title'],0,80));
+    out(['ok'=>true]);
+
+  /* ---- Fertige Folie hochladen (multipart aus dem Cockpit) ---- */
+  case 'ppt.upload':
+    require_auth();
+    // Zu große Übertragung: PHP hat $_POST/$_FILES verworfen - ohne diesen Test
+    // käme nur ein irreführendes "Session nicht gefunden" zurück.
+    if(ppt_post_too_big())
+      fail('Die Datei war zu groß für den Server und wurde abgewiesen. '.ppt_limit_hint(),413);
+    $sid=(int)($in['session']??0);
+    $row=q("SELECT * FROM training_sessions WHERE id=?",[$sid])->fetch();
+    if(!$row) fail('Session nicht gefunden.',404);
+    $res=ppt_store_upload($_FILES['file']??[], 'tg'.$row['training_id'].'-s'.$sid);
+    if(is_string($res)) fail($res);
+    if(!empty($row['ppt_file'])) @unlink(ppt_dir().'/'.basename($row['ppt_file']));
+    q("UPDATE training_sessions SET ppt='vorhanden', ppt_file=?, ppt_file_name=?, ppt_file_size=?, ppt_file_at=? WHERE id=?",
+      [$res['name'],$res['orig'],$res['size'],now(),$sid]);
+    audit('ppt.upload','training',(string)$row['training_id'],mb_substr((string)$row['title'],0,60).' ('.$res['orig'].')');
+    out(['ok'=>true,'file'=>$res['orig'],'size'=>$res['size']]);
+
+  /* ---- Datei herunterladen (streamt; kein JSON) ---- */
+  case 'ppt.download':
+    require_auth();
+    $row=q("SELECT ppt_file,ppt_file_name FROM training_sessions WHERE id=?",[(int)($in['session']??0)])->fetch();
+    if(!$row) fail('Session nicht gefunden.',404);
+    ppt_stream((string)$row['ppt_file'],(string)$row['ppt_file_name']);
+
+  case 'ppt.fileDelete':
+    require_auth();
+    $sid=(int)($in['session']??0);
+    $row=q("SELECT * FROM training_sessions WHERE id=?",[$sid])->fetch();
+    if(!$row) fail('Session nicht gefunden.',404);
+    if(!empty($row['ppt_file'])) @unlink(ppt_dir().'/'.basename($row['ppt_file']));
+    q("UPDATE training_sessions SET ppt_file='', ppt_file_name='', ppt_file_size=0, ppt_file_at='', ppt='' WHERE id=?",[$sid]);
+    audit('ppt.fileDelete','training',(string)$row['training_id'],mb_substr((string)$row['title'],0,80));
+    out(['ok'=>true]);
+
+  /* ---- Basis-Vorlage je Training ---- */
+  case 'ppt.templateUpload':
+    require_auth();
+    if(ppt_post_too_big())
+      fail('Die Datei war zu groß für den Server und wurde abgewiesen. '.ppt_limit_hint(),413);
+    $tgId=(int)($in['training']??0);
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $res=ppt_store_upload($_FILES['file']??[], 'tpl-tg'.$tgId);
+    if(is_string($res)) fail($res);
+    if(!empty($tg['ppt_template'])) @unlink(ppt_dir().'/'.basename($tg['ppt_template']));
+    q("UPDATE trainings SET ppt_template=?, ppt_template_name=? WHERE id=?",[$res['name'],$res['orig'],$tgId]);
+    audit('ppt.templateUpload','training',(string)$tgId,$res['orig']);
+    out(['ok'=>true,'file'=>$res['orig']]);
+
+  case 'ppt.templateDownload':
+    require_auth();
+    $tg=q("SELECT ppt_template,ppt_template_name FROM trainings WHERE id=?",[(int)($in['training']??0)])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    ppt_stream((string)$tg['ppt_template'],(string)$tg['ppt_template_name']);
+
+  case 'ppt.templateDelete':
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $tg=q("SELECT ppt_template FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    if(!empty($tg['ppt_template'])) @unlink(ppt_dir().'/'.basename($tg['ppt_template']));
+    q("UPDATE trainings SET ppt_template='', ppt_template_name='' WHERE id=?",[$tgId]);
+    out(['ok'=>true]);
+
+  /* ---- Erinnerungen für ein Training sofort auslösen ---- */
+  case 'ppt.remindNow':
+    require_auth();
+    require_once __DIR__.'/automation.php';
+    $n=ppt_chase(true,(int)($in['training']??0));
+    out(['ok'=>true,'sent'=>$n['reminded']]);
+
+  /* ---- Folien-Anfrage an einen Trainer (aus der Besetzungsliste):
+         freundliche Erst-Anfrage mit Link zur persönlichen Folien-Seite
+         (inkl. Basis-Vorlage). Stempelt die Erinnerung, damit die Automatik
+         nicht direkt hinterherschickt - der Zähler bleibt unangetastet. ---- */
+  case 'ppt.requestTrainer':
+    require_auth();
+    $tgId=(int)($in['training']??0); $trId=(int)($in['trainer']??0);
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    if(!q("SELECT id FROM trainers WHERE id=?",[$trId])->fetch()) fail('Trainer nicht gefunden.',404);
+    $list=[];
+    foreach(q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$tgId])->fetchAll() as $s){
+      if(!ppt_relevant($s) || ($s['ppt']??'')==='vorhanden') continue;
+      if(in_array($trId, ppt_owner_ids($s), true)) $list[]=$s;
+    }
+    if(!$list) out(['ok'=>true,'sent'=>0,'open'=>0]);
+    $today=gmdate('Y-m-d');
+    $od=false; foreach($list as $s){ $d=ppt_due_of($s,$tg); if($d && $d<$today){ $od=true; break; } }
+    $ok=ppt_send_reminder($tg,$trId,$list,$od,'request',
+      (string)($in['lang']??''),(string)($in['subject']??''),(string)($in['text']??''));
+    if($ok) foreach($list as $s)
+      q("UPDATE training_sessions SET ppt_reminded_at=? WHERE id=?",[now(),$s['id']]);
+    audit('ppt.request','training',(string)$tgId,'Folien-Anfrage an Trainer '.$trId.' ('.count($list).')');
+    out(['ok'=>true,'sent'=>$ok?1:0,'open'=>count($list)]);
+
+  /* ============================================================
+     ZERTIFIZIERUNG: Katalog, Teilnehmer, Bewertungen
+     ============================================================ */
+  case 'cert.catalog':
+    require_auth();
+    out(['ok'=>true,'catalog'=>cert_catalog(false),'cfg'=>cert_cfg()]);
+
+  case 'cert.group.save':
+    require_admin();
+    $gid=(int)($in['id']??0);
+    $nm=trim((string)($in['name']??'')); if($nm==='') fail('Bitte einen Namen angeben.');
+    $f=[$nm, trim((string)($in['nameEn']??'')), max(1,(int)($in['weight']??1)),
+        (int)($in['sort']??0), !empty($in['active'])?1:0];
+    if($gid) q("UPDATE crit_groups SET name=?,name_en=?,weight=?,sort_order=?,active=? WHERE id=?",array_merge($f,[$gid]));
+    else {
+      q("INSERT INTO crit_groups(name,name_en,weight,sort_order,active) VALUES(?,?,?,?,?)",$f);
+      $gid=(int)db()->lastInsertId();
+    }
+    audit('cert.group.save','crit',(string)$gid,$nm);
+    out(['ok'=>true,'id'=>(string)$gid]);
+
+  case 'cert.group.delete':
+    require_admin();
+    $gid=(int)($in['id']??0);
+    // Nicht loeschen, wenn schon bewertet wurde - sonst fehlen alten
+    // Bewertungen die Bezugspunkte. Stattdessen stilllegen.
+    $used=(int)q("SELECT COUNT(*) c FROM assessment_scores s
+                  JOIN crits c ON c.id=s.crit_id WHERE c.group_id=?",[$gid])->fetch()['c'];
+    if($used){ q("UPDATE crit_groups SET active=0 WHERE id=?",[$gid]);
+      out(['ok'=>true,'archived'=>true,'used'=>$used]); }
+    q("DELETE FROM crits WHERE group_id=?",[$gid]);
+    q("DELETE FROM crit_groups WHERE id=?",[$gid]);
+    audit('cert.group.delete','crit',(string)$gid,'');
+    out(['ok'=>true]);
+
+  case 'cert.crit.save':
+    require_admin();
+    $cid=(int)($in['id']??0);
+    $nm=trim((string)($in['name']??'')); if($nm==='') fail('Bitte einen Namen angeben.');
+    $gid=(int)($in['group']??0);
+    if(!$gid || !q("SELECT id FROM crit_groups WHERE id=?",[$gid])->fetch()) fail('Hauptkriterium nicht gefunden.',404);
+    $f=[$gid,$nm,trim((string)($in['nameEn']??'')),trim((string)($in['descr']??'')),
+        max(1,(int)($in['weight']??1)),(int)($in['sort']??0),
+        !empty($in['ko'])?1:0, !empty($in['active'])?1:0];
+    if($cid) q("UPDATE crits SET group_id=?,name=?,name_en=?,descr=?,weight=?,sort_order=?,ko=?,active=? WHERE id=?",array_merge($f,[$cid]));
+    else {
+      q("INSERT INTO crits(group_id,name,name_en,descr,weight,sort_order,ko,active) VALUES(?,?,?,?,?,?,?,?)",$f);
+      $cid=(int)db()->lastInsertId();
+    }
+    audit('cert.crit.save','crit',(string)$cid,$nm);
+    out(['ok'=>true,'id'=>(string)$cid]);
+
+  case 'cert.crit.delete':
+    require_admin();
+    $cid=(int)($in['id']??0);
+    $used=(int)q("SELECT COUNT(*) c FROM assessment_scores WHERE crit_id=?",[$cid])->fetch()['c'];
+    if($used){ q("UPDATE crits SET active=0 WHERE id=?",[$cid]);
+      out(['ok'=>true,'archived'=>true,'used'=>$used]); }
+    q("DELETE FROM crits WHERE id=?",[$cid]);
+    audit('cert.crit.delete','crit',(string)$cid,'');
+    out(['ok'=>true]);
+
+  case 'cert.cfg.save':
+    require_admin();
+    foreach(['cert_scale'=>['scale',3,10],'cert_pass'=>['pass',1,100],
+             'cert_merit'=>['merit',1,100],'cert_attend'=>['attend',0,100]] as $k=>$m){
+      if(isset($in[$m[0]])) config_set($k,(string)max($m[1],min($m[2],(int)$in[$m[0]])));
+    }
+    if(isset($in['koMin'])) config_set('cert_ko_min',(string)max(0,(float)$in['koMin']));
+    audit('cert.cfg.save','','','Bewertungsregeln geändert');
+    out(['ok'=>true,'cfg'=>cert_cfg()]);
+
+  /* ---- Teilnehmer ---- */
+  case 'students.list':
+    require_auth();
+    $rows=q("SELECT * FROM students ORDER BY active DESC, name")->fetchAll();
+    $part=[];
+    foreach(q("SELECT * FROM student_training")->fetchAll() as $r)
+      $part[(string)$r['student_id']][]=['training'=>(string)$r['training_id'],
+        'attendance'=>(int)$r['attendance'],'note'=>$r['note']];
+    out(['ok'=>true,'students'=>array_map(function($r) use($part){
+      return ['id'=>(string)$r['id'],'clientId'=>$r['client_id'],'name'=>$r['name'],
+        'firstName'=>$r['first_name']??'','lastName'=>$r['last_name']??'',
+        'birthDate'=>$r['birth_date']??'','birthPlace'=>$r['birth_place']??'',
+        'gender'=>$r['gender']??'','nationality'=>$r['nationality']??'',
+        'rank'=>$r['rank_title'],'unit'=>$r['unit'],'staffNo'=>$r['staff_no'],
+        'email'=>$r['email'],'phone'=>$r['phone']??'','cohort'=>$r['cohort'],'note'=>$r['note'],
+        'team'=>$r['team']??'','track'=>$r['track']??'','role'=>$r['cell_role']??'',
+        'active'=>((int)$r['active'])===1,
+        'trainings'=>$part[(string)$r['id']]??[]];
+    },$rows)]);
+
+  case 'student.save':
+    require_auth();
+    $sid=(int)($in['id']??0);
+    $first=trim((string)($in['firstName']??''));
+    $last =trim((string)($in['lastName']??''));
+    // Anzeigename: aus Vor- und Nachname, sonst das eingegebene Namensfeld
+    $nm=trim((string)($in['name']??''));
+    if($first!=='' || $last!=='') $nm=trim($first.' '.$last);
+    if($nm==='') fail('Bitte einen Namen angeben.');
+    $f=[trim((string)($in['clientId']??'')),$nm,$first,$last,
+        stud_date((string)($in['birthDate']??'')),trim((string)($in['birthPlace']??'')),
+        trim((string)($in['gender']??'')),trim((string)($in['nationality']??'')),
+        trim((string)($in['rank']??'')),trim((string)($in['unit']??'')),
+        trim((string)($in['staffNo']??'')),trim((string)($in['email']??'')),
+        trim((string)($in['phone']??'')),trim((string)($in['cohort']??'')),
+        trim((string)($in['note']??'')),
+        trim((string)($in['team']??'')),trim((string)($in['track']??'')),
+        trim((string)($in['role']??'')),
+        !empty($in['active'])?1:0];
+    $cols="client_id=?,name=?,first_name=?,last_name=?,birth_date=?,birth_place=?,gender=?,".
+          "nationality=?,rank_title=?,unit=?,staff_no=?,email=?,phone=?,cohort=?,note=?,team=?,track=?,cell_role=?,active=?";
+    if($sid) q("UPDATE students SET $cols WHERE id=?",array_merge($f,[$sid]));
+    else {
+      q("INSERT INTO students(client_id,name,first_name,last_name,birth_date,birth_place,gender,
+           nationality,rank_title,unit,staff_no,email,phone,cohort,note,team,track,cell_role,active,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",array_merge($f,[now()]));
+      $sid=(int)db()->lastInsertId();
+    }
+    audit('student.save','student',(string)$sid,$nm);
+    out(['ok'=>true,'id'=>(string)$sid]);
+
+  case 'student.delete':
+    require_admin();
+    $sid=(int)($in['id']??0);
+    $used=(int)q("SELECT COUNT(*) c FROM assessments WHERE student_id=?",[$sid])->fetch()['c'];
+    if($used){ q("UPDATE students SET active=0 WHERE id=?",[$sid]);
+      out(['ok'=>true,'archived'=>true,'used'=>$used]); }
+    q("DELETE FROM student_training WHERE student_id=?",[$sid]);
+    q("DELETE FROM students WHERE id=?",[$sid]);
+    audit('student.delete','student',(string)$sid,'');
+    out(['ok'=>true]);
+
+  /* Sammelanlage: eine Zeile je Teilnehmer, Felder mit Semikolon oder Tab.
+     Reihenfolge: Name; Dienstgrad; Einheit; Personalnummer; E-Mail */
+  /* Datei ansehen, bevor etwas angelegt wird: welches Blatt, welche
+     Spalten, welche Zeilen. Das nimmt dem Import die Blackbox. */
+  case 'students.preview':
+    require_auth();
+    $bin=stud_upload_bin($in);
+    $R=stud_parse_file($bin);
+    out(['ok'=>true,'sheets'=>$R['sheets'],'sheet'=>$R['sheet'],
+      'head'=>array_values($R['head']),'headCols'=>count(array_unique($R['head'])),
+      'start'=>$R['start'],'error'=>$R['error'],
+      'sample'=>array_slice($R['rows'],0,8),
+      'people'=>array_slice(array_map(fn($p)=>[
+         'row'=>$p['row'],'skip'=>$p['skip'],'name'=>$p['name']??'',
+         'rank'=>$p['rank_title'],'unit'=>$p['unit'],'birth'=>$p['birth_date'],
+         'staffNo'=>$p['staff_no'],'email'=>$p['email']],$R['people']),0,200),
+      'total'=>count(array_filter($R['people'],fn($p)=>$p['skip']===''))]);
+
+  /* Liste einlesen: hochgeladene xlsx/csv oder eingefuegter Text. */
+  case 'students.import':
+    require_auth();
+    $cohort=trim((string)($in['cohort']??''));
+    $client=trim((string)($in['clientId']??''));
+    // Blockzuordnung: eine Kennung, 'all' fuer alle Bloecke, leer fuer keine
+    $tgSel=(string)($in['training']??'');
+    $tgIds=[];
+    if($tgSel==='all'){
+      foreach(q("SELECT id FROM trainings".($client?" WHERE client_id=?":""),
+                $client?[$client]:[])->fetchAll() as $r) $tgIds[]=(int)$r['id'];
+    } elseif((int)$tgSel>0) $tgIds=[(int)$tgSel];
+
+    $people=[]; $sheet=''; $cols=0;
+    if(!empty($in['file'])){
+      $R=stud_parse_file(stud_upload_bin($in));
+      if($R['error']==='nozip') fail('Die Datei liess sich nicht oeffnen. Bitte in Excel als .xlsx speichern oder als CSV senden.');
+      if($R['error']==='nohead')
+        fail('In der Datei war keine Kopfzeile zu finden. Erwartet werden Spaltenueberschriften wie "Nachname" und "Vorname" - am einfachsten mit unserer Vorlage.');
+      $people=$R['people']; $sheet=$R['sheet']; $cols=count(array_unique($R['head']));
+    } else {
+      $txt=(string)($in['text']??'');
+      if(trim($txt)==='') fail('Es war nichts zu lesen. Bitte eine Datei waehlen oder eine Liste einfuegen.');
+      $rows=[];
+      foreach(preg_split('/\r?\n/',$txt) as $line){
+        if(trim($line)==='') continue;
+        $rows[]=preg_split('/\s*[;\t]\s*/',trim($line));
+      }
+      $hit=stud_find_head($rows);
+      // Eingefuegter Text darf auch ohne Kopfzeile kommen - dann gilt die
+      // dokumentierte Reihenfolge Name; Dienstgrad; Einheit; Nr.; E-Mail.
+      $map = $hit ? $hit['map'] : [0=>'last_name',1=>'rank_title',2=>'unit',3=>'staff_no',4=>'email'];
+      $people=stud_rows_to_people($rows,$map,$hit?$hit['start']:0);
+      $sheet='Text'; $cols=count(array_unique($map));
+    }
+
+    $n=0; $skip=0; $bad=0;
+    foreach($people as $f){
+      if($f['skip']!==''){ $bad++; continue; }
+      $name=$f['name'];
+      $coh = $f['cohort']!=='' ? $f['cohort'] : $cohort;
+      $ex=q("SELECT id FROM students WHERE name=? AND COALESCE(cohort,'')=?",[$name,$coh])->fetch();
+      if($ex){ $sid=(int)$ex['id']; $skip++; }
+      else{
+        q("INSERT INTO students(client_id,name,first_name,last_name,birth_date,birth_place,
+             gender,nationality,rank_title,unit,staff_no,email,phone,cohort,note,team,track,cell_role,active,created_at)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?)",
+          [$client,$name,$f['first_name'],$f['last_name'],$f['birth_date'],$f['birth_place'],
+           $f['gender'],$f['nationality'],$f['rank_title'],$f['unit'],$f['staff_no'],
+           $f['email'],$f['phone'],$coh,$f['note'],$f['team']??'',$f['track']??'',$f['role']??'',now()]);
+        $sid=(int)db()->lastInsertId(); $n++;
+      }
+      foreach($tgIds as $tgId){
+        if(!q("SELECT id FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId])->fetch())
+          q("INSERT INTO student_training(student_id,training_id,attendance,created_at) VALUES(?,?,100,?)",[$sid,$tgId,now()]);
+      }
+    }
+    audit('students.import','student','',$n.' Teilnehmer uebernommen ('.$sheet.')'
+      .($tgIds?(' · '.count($tgIds).' Bloecke zugeordnet'):''));
+    out(['ok'=>true,'added'=>$n,'skipped'=>$skip,'bad'=>$bad,'cols'=>$cols,'sheet'=>$sheet,
+         'blocks'=>count($tgIds)]);
+
+  /* Teilnahme an einem Block setzen/entfernen */
+  case 'student.part':
+    require_auth();
+    $sid=(int)($in['student']??0); $tgId=(int)($in['training']??0);
+    if(!$sid||!$tgId) fail('Teilnehmer oder Training fehlt.');
+    if(!empty($in['remove'])){
+      q("DELETE FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId]);
+      out(['ok'=>true]);
+    }
+    $att=max(0,min(100,(int)($in['attendance']??100)));
+    if(q("SELECT id FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId])->fetch())
+      q("UPDATE student_training SET attendance=? WHERE student_id=? AND training_id=?",[$att,$sid,$tgId]);
+    else
+      q("INSERT INTO student_training(student_id,training_id,attendance,created_at) VALUES(?,?,?,?)",[$sid,$tgId,$att,now()]);
+    out(['ok'=>true]);
+
+  /* ---- Bewertungen ---- */
+  /* Alle Bewertungen eines Blocks - Grundlage der Erfassungsmaske. */
+  /* Was wuerde ein Zuruecksetzen kosten? Erst zeigen, dann fragen. */
+  case 'cert.resetInfo':
+    require_admin();
+    out(['ok'=>true,'counts'=>[
+      'students'    => (int)q("SELECT COUNT(*) c FROM students")->fetch()['c'],
+      'parts'       => (int)q("SELECT COUNT(*) c FROM student_training")->fetch()['c'],
+      'assessments' => (int)q("SELECT COUNT(*) c FROM assessments")->fetch()['c'],
+      'scores'      => (int)q("SELECT COUNT(*) c FROM assessment_scores")->fetch()['c'],
+      'certs'       => (int)q("SELECT COUNT(*) c FROM certificates")->fetch()['c'],
+      'groups'      => (int)q("SELECT COUNT(*) c FROM crit_groups")->fetch()['c'],
+      'crits'       => (int)q("SELECT COUNT(*) c FROM crits")->fetch()['c'],
+    ]]);
+
+  /* Vor dem Echtstart aufraeumen. Bewusst umstaendlich: es gibt kein
+     Rueckgaengig, deshalb muss ein Wort getippt werden. */
+  case 'cert.reset':
+    require_admin();
+    if(strtoupper(trim((string)($in['confirm']??''))) !== 'RESET')
+      fail('Zum Zurücksetzen bitte RESET eintippen.');
+    $before=[
+      'students'=>(int)q("SELECT COUNT(*) c FROM students")->fetch()['c'],
+      'assessments'=>(int)q("SELECT COUNT(*) c FROM assessments")->fetch()['c'],
+      'certs'=>(int)q("SELECT COUNT(*) c FROM certificates")->fetch()['c'],
+    ];
+    q("DELETE FROM assessment_scores");
+    q("DELETE FROM assessments");
+    q("DELETE FROM certificates");
+    q("DELETE FROM student_training");
+    q("DELETE FROM students");
+    $cat=false;
+    if(!empty($in['catalog'])){
+      q("DELETE FROM crits");
+      q("DELETE FROM crit_groups");
+      seed_crits();
+      $cat=true;
+    }
+    audit('cert.reset','','', 'Zertifizierung zurueckgesetzt: '.$before['students'].' Teilnehmer, '
+      .$before['assessments'].' Bewertungen, '.$before['certs'].' Zertifikate'
+      .($cat?', Kriterienkatalog neu':''));
+    out(['ok'=>true,'removed'=>$before,'catalog'=>$cat]);
+
+  /* Systemstatus fuer die Ampel im Cockpit (nur Administration):
+     Laeuft die taegliche Sicherung? Lebt der Cron? Ein Blick genuegt. */
+  case 'system.status':
+    require_admin();
+    require_once __DIR__.'/backup.php';
+    $backups=backup_list();                 // neueste zuerst
+    $last=$backups[0]??null;
+    $lastTs=$last?(int)$last['mtime']:0;
+    $ageH = $lastTs? (int)floor((time()-$lastTs)/3600) : null;
+    // Sicherung: gruen bis 26 h (taeglich + Puffer), danach gelb, nie = rot
+    $backupState = $lastTs===0 ? 'red' : ($ageH<=26 ? 'green' : ($ageH<=50 ? 'amber' : 'red'));
+
+    $cronRaw = config_get('last_cron');
+    $cronTs  = $cronRaw ? ts($cronRaw) : 0;
+    $cronAgeMin = $cronTs ? (int)floor((time()-$cronTs)/60) : null;
+    // Cron laeuft stuendlich. Grosszuegige Schwellen, damit ein einzelner
+    // verzoegerter Lauf keinen Fehlalarm ausloest: gruen bis gut 2 h, gelb
+    // bis 6 h, danach rot. "Noch nie gelaufen" ist KEIN Fehler, sondern der
+    // normale Zustand direkt nach dem Einrichten - eigener Zustand 'wait'.
+    if($cronTs===0)             $cronState='wait';
+    elseif($cronAgeMin<=130)    $cronState='green';
+    elseif($cronAgeMin<=360)    $cronState='amber';
+    else                        $cronState='red';
+
+    // 'wait' zaehlt fuer die Gesamt-Ampel wie 'amber' (Hinweis, kein Alarm).
+    $order=['green'=>0,'wait'=>1,'amber'=>1,'red'=>2];
+    $overall=$backupState;
+    if($order[$cronState]>$order[$overall]) $overall = $cronState==='wait'?'amber':$cronState;
+
+    out(['ok'=>true,
+      'overall'=>$overall,
+      'backup'=>['state'=>$backupState,'at'=>$lastTs?gmdate('Y-m-d H:i:s',$lastTs):null,
+                 'ageHours'=>$ageH,'count'=>count($backups),
+                 'file'=>$last['file']??null,'size'=>$last['size']??0],
+      'cron'=>['state'=>$cronState,'at'=>$cronRaw?:null,'ageMin'=>$cronAgeMin],
+      'now'=>now()]);
+
+  /* Sicherung sofort ausloesen - der Knopf hinter der Ampel (nur Admin). */
+  case 'system.backupNow':
+    require_admin();
+    require_once __DIR__.'/backup.php';
+    $r=backup_run();
+    if(empty($r['ok'])) fail($r['error']??'Sicherung fehlgeschlagen.');
+    audit('system.backupNow','', '', 'Sicherung manuell erstellt: '.$r['file']);
+    out(['ok'=>true]+$r);
+
+  /* ---- Sicherungen: Liste, Download und Wiederherstellung (nur Admin) ---- */
+  case 'system.backups': {
+    require_admin();
+    require_once __DIR__.'/backup.php';
+    out(['ok'=>true,'backups'=>array_map(fn($b)=>[
+      'file'=>$b['file'],'size'=>(int)$b['size'],
+      'at'=>gmdate('Y-m-d H:i:s',(int)$b['mtime'])],backup_list())]);
+  }
+  case 'system.backupGet': {
+    require_admin();
+    require_once __DIR__.'/backup.php';
+    $name=(string)($in['name']??'');
+    if(!preg_match('/^etaf-backup-\d{8}-\d{6}\.sql\.gz$/',$name)) fail('Ungültiger Dateiname.');
+    $path=backup_dir().'/'.$name;
+    if(!is_file($path)) fail('Sicherung nicht gefunden.',404);
+    audit('system.backupGet','','', 'Sicherung heruntergeladen: '.$name);
+    out(['ok'=>true,'name'=>$name,'data'=>base64_encode((string)file_get_contents($path))]);
+  }
+  case 'system.restore': {
+    require_admin();
+    require_once __DIR__.'/backup.php';
+    // Doppelte Huerde: das getippte Wort muss exakt stimmen - ein versehentlicher
+    // Klick kann so nie den ganzen Datenbestand ueberschreiben.
+    if(trim((string)($in['confirm']??''))!=='WIEDERHERSTELLEN')
+      fail('Zur Bestätigung muss das Wort WIEDERHERSTELLEN eingegeben werden.');
+    $me=current_user();
+    $sql='';
+    $name=(string)($in['name']??'');
+    if($name!==''){
+      // Variante 1: eine Sicherung, die schon auf dem Server liegt
+      if(!preg_match('/^etaf-backup-\d{8}-\d{6}\.sql\.gz$/',$name)) fail('Ungültiger Dateiname.');
+      $path=backup_dir().'/'.$name;
+      if(!is_file($path)) fail('Sicherung nicht gefunden.',404);
+      $sql=(string)@gzdecode((string)file_get_contents($path));
+    } else {
+      // Variante 2: hochgeladene Datei (.sql.gz oder .sql)
+      $bin=stud_upload_bin($in);
+      $sql=(substr($bin,0,2)==="\x1f\x8b") ? (string)@gzdecode($bin) : $bin;
+      $name=preg_replace('/[^A-Za-z0-9._-]/','',(string)($in['fileName']??'Upload'));
+    }
+    if($sql==='') fail('Die Datei ließ sich nicht entpacken oder ist leer.');
+    $r=backup_restore($sql);
+    if(empty($r['ok'])) fail($r['error']??'Wiederherstellung fehlgeschlagen.');
+    // Protokoll landet bewusst NACH dem Einspielen im (wiederhergestellten) Bestand.
+    audit_as($me?:['id'=>null,'name'=>'Admin'],'system.restore','', '',
+      'Sicherung eingespielt: '.$name.' ('.$r['stmts'].' Anweisungen). Stand von davor: '.$r['preFile']);
+    out(['ok'=>true,'stmts'=>$r['stmts'],'preFile'=>$r['preFile'],'reloginNeeded'=>true]);
+  }
+
+  /* ---- Zeugnisse und Zertifikate ---- */
+  case 'cert.state':
+    require_auth();
+    $sid=(int)($in['student']??0);
+    if(!$sid) fail('Teilnehmer fehlt.');
+    out(['ok'=>true]+cert_student_state($sid));
+
+  case 'cert.issue':
+    require_auth();
+    $sid=(int)($in['student']??0);
+    $tgId=(int)($in['training']??0);
+    $kind=($in['kind']??'block')==='programme'?'programme':'block';
+    if(!$sid) fail('Teilnehmer fehlt.');
+    try{ $c=cert_issue($sid,$tgId,$kind,actor_name()); }
+    catch(RuntimeException $e){ fail($e->getMessage()); }
+    audit('cert.issue','student',(string)$sid,$c['no'].' ('.$kind.')');
+    out(['ok'=>true,'cert'=>$c]);
+
+  case 'cert.list':
+    require_auth();
+    $w=[]; $p=[];
+    if(!empty($in['student'])){ $w[]='student_id=?'; $p[]=(int)$in['student']; }
+    if(!empty($in['training'])){ $w[]='training_id=?'; $p[]=(int)$in['training']; }
+    if(empty($in['withRevoked'])) $w[]='revoked=0';
+    $sql="SELECT * FROM certificates".($w?" WHERE ".implode(' AND ',$w):"")." ORDER BY issued_at DESC, id DESC";
+    out(['ok'=>true,'certs'=>array_map(fn($r)=>cert_pub($r),q($sql,$p)->fetchAll())]);
+
+  case 'cert.get':
+    require_auth();
+    out(['ok'=>true,'cert'=>cert_row((int)($in['id']??0))]);
+
+  case 'cert.revoke':
+    require_auth();
+    $cid=(int)($in['id']??0);
+    $r=q("SELECT * FROM certificates WHERE id=?",[$cid])->fetch();
+    if(!$r) fail('Zertifikat nicht gefunden.');
+    q("UPDATE certificates SET revoked=1, revoked_at=?, revoke_reason=? WHERE id=?",
+      [now(),trim((string)($in['reason']??'')),$cid]);
+    if($r['kind']==='block')
+      q("UPDATE assessments SET cert_no='', cert_at='' WHERE student_id=? AND training_id=?",
+        [(int)$r['student_id'],(int)$r['training_id']]);
+    audit('cert.revoke','student',(string)$r['student_id'],$r['cert_no']);
+    out(['ok'=>true]);
+
+  /* Gesamtauswertung ueber alle Bloecke - ein Aufruf, alle Ebenen. */
+  case 'cert.analytics':
+    require_auth();
+    out(cert_analytics());
+
+  case 'cert.assessments':
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    if(!$tgId) fail('Training fehlt.');
+    $cat=cert_catalog(true);
+    $rows=q("SELECT * FROM assessments WHERE training_id=?",[$tgId])->fetchAll();
+    $ids=array_map(fn($r)=>(int)$r['id'],$rows);
+    $sc=[];
+    if($ids){
+      $ph=implode(',',array_fill(0,count($ids),'?'));
+      foreach(q("SELECT * FROM assessment_scores WHERE assessment_id IN ($ph)",$ids)->fetchAll() as $x)
+        $sc[(string)$x['assessment_id']][(string)$x['crit_id']]=['v'=>(float)$x['score'],'n'=>$x['note']];
+    }
+    $part=[];
+    foreach(q("SELECT * FROM student_training WHERE training_id=?",[$tgId])->fetchAll() as $r)
+      $part[(string)$r['student_id']]=(int)$r['attendance'];
+    out(['ok'=>true,'catalog'=>$cat,'cfg'=>cert_cfg(),'attendance'=>$part,
+      'assessments'=>array_map(function($r) use($sc){
+        return ['id'=>(string)$r['id'],'student'=>(string)$r['student_id'],
+          'training'=>(string)$r['training_id'],'raterId'=>(string)$r['rater_id'],
+          'rater'=>$r['rater_name'],'status'=>$r['status'],'score'=>(float)$r['score'],
+          'pct'=>(int)$r['pct'],'result'=>$r['result'],'attendance'=>(int)$r['attendance'],
+          'comment'=>$r['comment'],'strengths'=>$r['strengths'],'todo'=>$r['todo'],
+          'certNo'=>$r['cert_no'],'certAt'=>$r['cert_at'],'updatedAt'=>$r['updated_at'],
+          'scores'=>$sc[(string)$r['id']]??[]];
+      },$rows)]);
+
+  /* Einzelne Bewertung speichern. Teilweise Eingaben sind ausdruecklich
+     erlaubt - im Kurs wird zwischendurch gespeichert. */
+  case 'cert.save':
+    require_auth();
+    $sid=(int)($in['student']??0); $tgId=(int)($in['training']??0);
+    if(!$sid||!$tgId) fail('Teilnehmer oder Training fehlt.');
+    // Nur echte Teilnehmer und Trainings - keine Karteileichen durch getuerkte IDs.
+    if(!q("SELECT id FROM students WHERE id=?",[$sid])->fetch()) fail('Teilnehmer nicht gefunden.',404);
+    if(!q("SELECT id FROM trainings WHERE id=?",[$tgId])->fetch()) fail('Training nicht gefunden.',404);
+    $me=current_user();
+    $rid=(int)($me['id']??0);
+    $rname=actor_name();
+    $row=q("SELECT * FROM assessments WHERE student_id=? AND training_id=? AND rater_id=?",[$sid,$tgId,$rid])->fetch();
+    $att=array_key_exists('attendance',$in)
+      ? max(0,min(100,(int)$in['attendance']))
+      : (int)(q("SELECT attendance FROM student_training WHERE student_id=? AND training_id=?",[$sid,$tgId])->fetchColumn() ?: 100);
+    $status=($in['status']??'draft')==='final'?'final':'draft';
+    if(!$row){
+      q("INSERT INTO assessments(student_id,training_id,rater_id,rater_name,status,attendance,created_at,updated_at)
+         VALUES(?,?,?,?,?,?,?,?)",[$sid,$tgId,$rid,$rname,'draft',$att,now(),now()]);
+      $aid=(int)db()->lastInsertId();
+    } else $aid=(int)$row['id'];
+
+    // Einzelwerte uebernehmen (nur die mitgeschickten). Der Wert wird auf die
+    // konfigurierte Skala begrenzt, und nur bekannte Kriterien werden gespeichert -
+    // so kann keine krumme Zahl und kein erfundenes Kriterium die Rechnung verfaelschen.
+    if(isset($in['scores']) && is_array($in['scores'])){
+      $scaleMax=max(2,(int)cert_cfg()['scale']);
+      $validCrit=[];
+      foreach(q("SELECT id FROM crits")->fetchAll() as $c) $validCrit[(int)$c['id']]=true;
+      foreach($in['scores'] as $critId=>$val){
+        $cid=(int)$critId; if(!$cid || !isset($validCrit[$cid])) continue;
+        $v=is_array($val)?($val['v']??null):$val;
+        $note=is_array($val)?mb_substr(trim((string)($val['n']??'')),0,255):'';
+        $has=q("SELECT id FROM assessment_scores WHERE assessment_id=? AND crit_id=?",[$aid,$cid])->fetch();
+        if($v===null || $v===''){
+          if($has) q("DELETE FROM assessment_scores WHERE id=?",[$has['id']]);
+          continue;
+        }
+        $v=max(1.0, min((float)$scaleMax, (float)$v));   // innerhalb der Skala halten
+        if($has) q("UPDATE assessment_scores SET score=?,note=? WHERE id=?",[$v,$note,$has['id']]);
+        else q("INSERT INTO assessment_scores(assessment_id,crit_id,score,note) VALUES(?,?,?,?)",[$aid,$cid,$v,$note]);
+      }
+    }
+    foreach(['comment','strengths','todo'] as $k){
+      if(array_key_exists($k,$in)) q("UPDATE assessments SET $k=? WHERE id=?",[mb_substr(trim((string)$in[$k]),0,4000),$aid]);
+    }
+
+    // Neu rechnen und Ergebnis festhalten
+    $cat=cert_catalog(true);
+    $cur=[];
+    foreach(q("SELECT * FROM assessment_scores WHERE assessment_id=?",[$aid])->fetchAll() as $x)
+      $cur[(string)$x['crit_id']]=(float)$x['score'];
+    $calc=cert_calc($cat,$cur,$att);
+    $snap=$status==='final' ? json_encode($cat,JSON_UNESCAPED_UNICODE) : null;
+    q("UPDATE assessments SET status=?,score=?,pct=?,result=?,attendance=?,updated_at=?".
+      ($snap!==null?",crit_snapshot=?":"")." WHERE id=?",
+      $snap!==null
+        ? [$status,$calc['avg'],$calc['pct'],$calc['result'],$att,now(),$snap,$aid]
+        : [$status,$calc['avg'],$calc['pct'],$calc['result'],$att,now(),$aid]);
+    audit('cert.save','student',(string)$sid,
+      ($status==='final'?'Bewertung abgeschlossen':'Bewertung gespeichert').' ('.$calc['pct'].'%)');
+    out(['ok'=>true,'id'=>(string)$aid,'calc'=>$calc,'status'=>$status]);
+
+  case 'cert.delete':
+    require_admin();
+    $aid=(int)($in['id']??0);
+    $a=q("SELECT * FROM assessments WHERE id=?",[$aid])->fetch();
+    if(!$a) fail('Bewertung nicht gefunden.',404);
+    q("DELETE FROM assessment_scores WHERE assessment_id=?",[$aid]);
+    q("DELETE FROM assessments WHERE id=?",[$aid]);
+    audit('cert.delete','student',(string)$a['student_id'],'Bewertung gelöscht');
+    out(['ok'=>true]);
+
+  /* ---- Folien-Postfach: abrufen, sichten, zuordnen ---- */
+  case 'pptmail.poll':
+    require_auth();
+    require_once __DIR__.'/pptmail.php';
+    out(pptmail_poll());
+
+  case 'pptmail.list':
+    require_auth();
+    require_once __DIR__.'/pptmail.php';
+    out(['ok'=>true,'ready'=>pptmail_ready(),'mails'=>pptmail_open_list()]);
+
+  case 'pptmail.assign':
+    require_auth();
+    require_once __DIR__.'/pptmail.php';
+    $r=pptmail_assign((int)($in['mail']??0),(int)($in['session']??0));
+    if(empty($r['ok'])) fail($r['error']??'Zuordnung fehlgeschlagen.',404);
+    out(['ok'=>true]);
+
+  case 'pptmail.ignore':
+    require_auth();
+    require_once __DIR__.'/pptmail.php';
+    out(pptmail_ignore((int)($in['mail']??0)));
+
+  /* ---- Wochenplan aus einer anderen Woche übernehmen (Vorlage kopieren) ---- */
+  case 'weekplan.copy':
+    require_auth();
+    $from=(int)($in['from']??0); $to=(int)($in['to']??0);
+    if(!$from||!$to||$from===$to) fail('Bitte Quell- und Zielwoche wählen.');
+    if(!q("SELECT id FROM trainings WHERE id=?",[$from])->fetch() || !q("SELECT id FROM trainings WHERE id=?",[$to])->fetch())
+      fail('Training nicht gefunden.',404);
+    $cnt=(int)q("SELECT COUNT(*) c FROM training_sessions WHERE training_id=?",[$to])->fetch()['c'];
+    if($cnt>0 && empty($in['force'])) out(['ok'=>true,'needsForce'=>true,'existing'=>$cnt]);
+    q("DELETE FROM training_sessions WHERE training_id=?",[$to]);
+    // Inhalte kopieren - Trainer-Zuordnung und PPT-Status bewusst NICHT (neue Woche, neues Team)
+    $map=[];
+    foreach(q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$from])->fetchAll() as $s){
+      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,mat,ppt,sort)
+         VALUES(?,?,?,?,?,?,?, '', ?)",
+        [$to,$s['title'],$s['title_en'],$s['stype'],$s['dur'],$s['descr'],$s['mat']??'',$s['sort']]);
+      $map[(string)$s['id']]=(string)db()->lastInsertId();
+    }
+    $src=q("SELECT plan_slots,deliverable,deliverable_en FROM trainings WHERE id=?",[$from])->fetch();
+    $srcPlan=json_decode($src['plan_slots']?:'{}',true)?:[];
+    $newPlan=[];
+    foreach($srcPlan as $k=>$ids){
+      $newPlan[$k]=array_values(array_filter(array_map(fn($x)=>$map[(string)$x]??null,(array)$ids)));
+    }
+    q("UPDATE trainings SET plan_slots=?, deliverable=COALESCE(NULLIF(deliverable,''),?),
+        deliverable_en=COALESCE(NULLIF(deliverable_en,''),?) WHERE id=?",
+      [json_encode($newPlan),$src['deliverable']??'',$src['deliverable_en']??'',$to]);
+    audit('weekplan.copy','training',(string)$to,'Wochenplan aus Training #'.$from.' übernommen');
+    out(['ok'=>true,'sessions'=>count($map)]);
+
+  /* ---- KI-Wochenrhythmus: Sessions didaktisch auf Mo-Fr verteilen lassen ---- */
+  case 'weekplan.suggest':
+    require_auth();
+    // Der KI-Aufruf kann bis zu ~90 s dauern - Standard-Zeitlimit (oft 60 s) reicht nicht.
+    @set_time_limit(180); @ini_set('max_execution_time','180');
+    $tid=(int)($in['training']??0);
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tid])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $rows=q("SELECT id,title,stype,dur FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$tid])->fetchAll();
+    if(!$rows) fail('Für diese Woche sind noch keine Sessions angelegt.');
+    if(trim(cfg()['anthropic_key']??'')==='') fail('KI nicht konfiguriert - trage anthropic_key in config.php ein.');
+    $sess=array_map(fn($r)=>['id'=>(string)$r['id'],'title'=>$r['title'],'type'=>$r['stype'],'dur'=>$r['dur']],$rows);
+    $slots=ai_suggest_week($sess,(string)$tg['topic']);
+    // Antwort absichern: nur echte IDs, keine Dubletten - Übriges landet auf der Bank
+    $valid=array_map(fn($r)=>(string)$r['id'],$rows);
+    $keys=['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm'];
+    $plan=[]; $seen=[];
+    foreach($keys as $k){
+      $plan[$k]=[];
+      foreach((array)($slots[$k]??[]) as $id){
+        $id=(string)(int)$id;
+        if(in_array($id,$valid,true)&&!isset($seen[$id])){ $plan[$k][]=$id; $seen[$id]=true; }
+      }
+    }
+    $plan['bench']=array_values(array_diff($valid,array_keys($seen)));
+    q("UPDATE trainings SET plan_slots=? WHERE id=?",[json_encode($plan),$tid]);
+    audit('weekplan.suggest','training',(string)$tid,'KI-Wochenrhythmus angewendet');
+    out(['ok'=>true,'plan'=>$plan,'unplaced'=>count($plan['bench'])]);
+
+  case 'weekplan.save':
+    require_auth();
+    $tid=(int)($in['training']??0);
+    if(!$tid || !q("SELECT id FROM trainings WHERE id=?",[$tid])->fetch()) fail('Training nicht gefunden.',404);
+    // Platzierung validieren: nur bekannte Slots, nur Sessions dieses Trainings, keine Dubletten
+    $valid=array_map('strval', q("SELECT id FROM training_sessions WHERE training_id=?",[$tid])->fetchAll(PDO::FETCH_COLUMN));
+    $keys=['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm','bench'];
+    $plan=[]; $seen=[];
+    foreach($keys as $k){
+      $plan[$k]=[];
+      foreach((array)(($in['plan']??[])[$k]??[]) as $id){
+        $id=(string)(int)$id;
+        if(in_array($id,$valid,true) && !isset($seen[$id])){ $plan[$k][]=$id; $seen[$id]=true; }
+      }
+    }
+    $sets=['plan_slots=?']; $vals=[json_encode($plan)];
+    if(array_key_exists('deliverable',$in)){ $sets[]='deliverable=?'; $vals[]=(string)$in['deliverable']; }
+    if(array_key_exists('deliverableEn',$in)){ $sets[]='deliverable_en=?'; $vals[]=(string)$in['deliverableEn']; }
+    $vals[]=$tid;
+    q("UPDATE trainings SET ".implode(',',$sets)." WHERE id=?",$vals);
+    audit('weekplan.update','training',(string)$tid,'Wochenplan aktualisiert');
+    out(['ok'=>true]);
+
+  case 'training.delete':
+    require_auth();
+    $tid=$in['id']??0;
+    q("DELETE FROM trainings WHERE id=?",[$tid]);
+    audit('training.delete','training',(string)$tid,'Training gelöscht');
+    q("DELETE FROM requests WHERE training_id=?",[$tid]);
+    q("DELETE FROM travel WHERE training_id=?",[$tid]);
+    q("DELETE FROM training_materials WHERE training_id=?",[$tid]);
+    q("DELETE FROM training_sessions WHERE training_id=?",[$tid]);
+    out(['ok'=>true]);
+
+  /* ---- Termin verschoben: betroffene Trainer informieren / neu anfragen ---- */
+  case 'training.notifyShift':
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $mode=($in['mode']??'info')==='reask'?'reask':'info';
+    $lang=($in['lang']??'de')==='en'?'en':'de';
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $newWhen=fmt_date_range($tg['start_date']??null,$tg['end_date']??null,$lang) ?: kw_label($tg['kw']??'',$lang);
+    $reqs=q("SELECT r.id AS rid, r.status, tr.email, tr.name, tr.id AS tr_id
+             FROM requests r JOIN trainers tr ON tr.id=r.trainer_id
+             WHERE r.training_id=? AND r.status IN ('yes','confirmed','maybe','asked')",[$tgId])->fetchAll();
+    $c=cfg(); $sent=0; $seen=[];
+    foreach($reqs as $r){
+      $email=strtolower(trim((string)($r['email']??''))); if($email===''||isset($seen[$email]))continue; $seen[$email]=true;
+      $tok=token(40);
+      if($mode==='reask') q("UPDATE requests SET status='asked', lang=?, tok=?, created_at=?, responded_at=NULL WHERE id=?",[$lang,$tok,now(),$r['rid']]);
+      else                q("UPDATE requests SET tok=? WHERE id=?",[$tok,$r['rid']]);
+      $first=explode(' ', preg_replace('/^Dr\.\s*/','',$r['name']))[0];
+      $subj = $lang==='de' ? 'Terminänderung - '.$tg['topic'].' ('.$tg['city'].')' : 'Schedule change - '.$tg['topic'].' ('.$tg['city'].')';
+      $intro = $lang==='de'
+        ? "Hallo $first,\n\nkurze Info: Der Termin für „{$tg['topic']}“ in {$tg['city']} hat sich geändert.\nNeuer Zeitraum: $newWhen.\n\n"
+          .($mode==='reask' ? "Bitte bestätige über die Buttons unten, ob du zum neuen Termin verfügbar bist." : "Deine Zusage bleibt bestehen - falls der neue Termin nicht passt, melde dich bitte kurz.")
+        : "Hi $first,\n\nquick note: the schedule for \"{$tg['topic']}\" in {$tg['city']} has changed.\nNew period: $newWhen.\n\n"
+          .($mode==='reask' ? "Please confirm your availability for the new date via the buttons below." : "Your commitment stands - if the new date doesn't work, please let us know.");
+      $html=email_html($intro, $mode==='reask' ? response_buttons($tok,$lang) : '');
+      $ok=send_email($r['email'],$r['name'],$subj,$html);
+      $st=$ok ? (($c['mail_mode']??'mail')==='log'?'logged':'sent') : 'failed';
+      q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+         VALUES(?,?,?,?,?,?,?,?)",[$tgId,$r['tr_id'],$r['email'],$subj,$intro,$lang,$st,now()]);
+      if($ok) $sent++;
+    }
+    out(['ok'=>true,'sent'=>$sent,'mode'=>$mode]);
+
+  /* ---- Material-Katalog + Materiallisten ---- */
+  case 'material.save':
+    require_auth();
+    $mid=$in['id']??''; if($mid==='') fail('Keine Material-ID.');
+    $mf=[$in['name']??'', $in['unit']??'', $in['cat']??''];
+    $ex=q("SELECT id FROM materials WHERE id=?",[$mid])->fetch();
+    if($ex) q("UPDATE materials SET name=?,unit=?,cat=? WHERE id=?", array_merge($mf,[$mid]));
+    else    q("INSERT INTO materials(id,name,unit,cat,sort_order) VALUES(?,?,?,?, (SELECT COALESCE(MAX(sort_order),0)+1 FROM materials m))",
+              array_merge([$mid],$mf));
+    out(['ok'=>true,'id'=>$mid]);
+
+  case 'material.delete':
+    require_auth();
+    $mid=$in['id']??'';
+    q("DELETE FROM materials WHERE id=?",[$mid]);
+    q("DELETE FROM training_materials WHERE material_id=?",[$mid]);
+    q("DELETE FROM material_presets WHERE material_id=?",[$mid]);
+    out(['ok'=>true]);
+
+  case 'training.materials.save':
+    require_auth();
+    $tid=$in['training']??0; $lines=$in['materials']??[];
+    q("DELETE FROM training_materials WHERE training_id=?",[$tid]);
+    foreach($lines as $l){
+      if(empty($l['matId'])) continue;
+      q("INSERT INTO training_materials(training_id,material_id,qty,ok) VALUES(?,?,?,?)",[$tid,$l['matId'],(int)($l['qty']??0),!empty($l['ok'])?1:0]);
+    }
+    out(['ok'=>true]);
+
+  case 'matpreset.save':
+    require_auth();
+    $spec=$in['spec']??''; if($spec==='') fail('Kein Schwerpunkt.');
+    $lines=$in['materials']??[];
+    q("DELETE FROM material_presets WHERE spec=?",[$spec]);
+    foreach($lines as $l){
+      if(empty($l['matId'])) continue;
+      q("INSERT INTO material_presets(spec,material_id,qty) VALUES(?,?,?)",[$spec,$l['matId'],(int)($l['qty']??0)]);
+    }
+    out(['ok'=>true]);
+
+  /* ---- Vorlage speichern (pro Sprache) ---- */
+  case 'template.save':
+    require_auth();
+    $id=$in['id']; $lang=($in['lang']??'de')==='en'?'en':'de';
+    q("UPDATE templates SET {$lang}_name=?, {$lang}_subject=?, {$lang}_body=? WHERE id=?",
+      [$in['name']??'', $in['subject']??'', $in['body']??'', $id]);
+    out(['ok'=>true]);
+
+  /* ---- Status manuell setzen (z.B. Bestätigung) ---- */
+  case 'request.setStatus':
+    require_auth();
+    $tg=$in['training']; $tr=$in['trainer']; $st=$in['status']??'asked';
+    $row=q("SELECT id FROM requests WHERE training_id=? AND trainer_id=?",[$tg,$tr])->fetch();
+    if($row) q("UPDATE requests SET status=?, responded_at=? WHERE id=?",[$st,now(),$row['id']]);
+    else q("INSERT INTO requests(training_id,trainer_id,status,tok,created_at) VALUES(?,?,?,?,?)",
+      [$tg,$tr,$st,token(40),now()]);
+    audit('request.status','training',(string)$tg,'Status → '.$st);
+    out(['ok'=>true]);
+
+  /* ---- Trainer über manuelle Statusänderung informieren (editierbarer Text,
+          mit den bekannten Bestätigungs-Buttons) ---- */
+  case 'request.notifyStatus':
+    require_auth();
+    $tgId=(int)($in['training']??0); $trId=(int)($in['trainer']??0);
+    $text=trim((string)($in['text']??''));
+    if(!$tgId||!$trId) fail('Training/Trainer fehlt.');
+    if($text==='') fail('Kein Text.');
+    $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
+    if(!$tr) fail('Trainer nicht gefunden.',404);
+    if(empty($tr['email'])) fail('Für diesen Trainer ist keine E-Mail-Adresse hinterlegt.');
+    $req=q("SELECT * FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+    if(!$req){ $tok=token(40);
+      q("INSERT INTO requests(training_id,trainer_id,status,tok,created_at) VALUES(?,?, 'asked',?,?)",[$tgId,$trId,$tok,now()]);
+    } elseif(empty($req['tok'])){ $tok=token(40); q("UPDATE requests SET tok=? WHERE id=?",[$tok,$req['id']]); }
+    else { $tok=$req['tok']; }
+    $lang=($in['lang']??'de')==='en'?'en':'de';
+    $tgRow=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    $subj=trim((string)($in['subject']??'')) ?: (($lang==='de'?'Änderung deines Einsatzes':'Change to your assignment')
+      .($tgRow?' - '.$tgRow['topic'].' ('.$tgRow['city'].')':''));
+    $html=email_html($text, response_buttons($tok,$lang));
+    $ok=send_email($tr['email'],$tr['name'],$subj,$html);
+    $st2=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[$tgId,$trId,$tr['email'],$subj,$text,$lang,$st2,now()]);
+    out(['ok'=>true,'sent'=>$ok?1:0]);
+
+  /* ---- Anfrage(n) versenden: Kern des Rückkanals ---- */
+  case 'request.create':
+    require_auth();
+    $tgId=$in['training']; $recips=$in['recipients']??[]; $lang=($in['lang']??'en')==='de'?'de':'en';
+    $subjTpl=$in['subject']??null; $bodyTpl=$in['body']??null;
+    // Optionaler Zielstatus: 'asked' (Standard, normale Anfrage) oder z.B. 'no' (Absage per Mail)
+    $forceStatus=in_array(($in['status']??''),['asked','yes','maybe','no'],true)?$in['status']:'asked';
+    $respondedAt=$forceStatus==='asked'?null:now();
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $tg['kw']=kw_label($tg['kw']??'',$lang);
+    $c=cfg(); $sent=0; $seenEmail=[];
+    foreach($recips as $trId){
+      $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
+      if(!$tr) continue;
+      // Dubletten-Schutz: pro E-Mail-Adresse nur EINE Anfrage senden
+      // (verhindert Mehrfach-Mails, wenn ein Trainer doppelt angelegt wurde).
+      $emKey=strtolower(trim((string)($tr['email']??'')));
+      if($emKey!=='' && isset($seenEmail[$emKey])) continue;
+      if($emKey!=='') $seenEmail[$emKey]=true;
+      $tok=token(40);
+      // Request-Zeile anlegen/aktualisieren
+      $ex=q("SELECT id FROM requests WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+      if($ex) q("UPDATE requests SET status=?, lang=?, tok=?, created_at=?, responded_at=? WHERE id=?",
+        [$forceStatus,$lang,$tok,now(),$respondedAt,$ex['id']]);
+      else q("INSERT INTO requests(training_id,trainer_id,status,lang,tok,created_at,responded_at) VALUES(?,?,?,?,?,?,?)",
+        [$tgId,$trId,$forceStatus,$lang,$tok,now(),$respondedAt]);
+      // Text füllen
+      $subject=fill_tpl($subjTpl ?? 'Anfrage - {{topic}}', $tg, $tr);
+      $bodyText=fill_tpl($bodyTpl ?? '', $tg, $tr);
+      // Bei einer Absage/Planänderung keine Verfügbarkeits-Buttons anhängen.
+      $html=email_html($bodyText, $forceStatus==='asked' ? response_buttons($tok,$lang) : '');
+      $ok=send_email($tr['email'],$tr['name'],$subject,$html);
+      q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+         VALUES(?,?,?,?,?,?,?,?)",[$tgId,$trId,$tr['email'],$subject,$bodyText,$lang,$ok?($c['mail_mode']==='log'?'logged':'sent'):'failed',now()]);
+      if($ok) $sent++;
+    }
+    out(['ok'=>true,'sent'=>$sent,'total'=>count($recips)]);
+
+  /* ---- Einsatzübersicht an den Trainer mailen (mit Gesamtbestätigung) ---- */
+  case 'plan.send':
+    require_auth();
+    $trId=(int)($in['trainer']??0);
+    $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
+    if(!$tr) fail('Trainer nicht gefunden.',404);
+    if(empty($tr['email'])) fail('Für diesen Trainer ist keine E-Mail-Adresse hinterlegt.');
+    $lang=($in['lang']??'de')==='en'?'en':'de';
+    $sched=trainer_schedule($trId);
+    // Token anlegen/erneuern (setzt eine evtl. frühere Bestätigung zurück)
+    $tok=token(40);
+    $ex=q("SELECT trainer_id FROM plan_tokens WHERE trainer_id=?",[$trId])->fetch();
+    if($ex) q("UPDATE plan_tokens SET tok=?, sent_at=?, confirmed_at=NULL, confirm_status=NULL, note=NULL, resolved_at=NULL WHERE trainer_id=?",[$tok,now(),$trId]);
+    else    q("INSERT INTO plan_tokens(trainer_id,tok,created_at,sent_at) VALUES(?,?,?,?)",[$trId,$tok,now(),now()]);
+    $first=explode(' ', preg_replace('/^Dr\.\s*/','',$tr['name']))[0];
+    $intro=$lang==='de'
+      ? "Hallo $first,\n\nhier ist deine persönliche Einsatzübersicht. Bitte prüfe kurz, ob alles stimmt, und bestätige den Plan über den Button unten - oder melde uns, falls etwas nicht passt."
+      : "Hi $first,\n\nhere is your personal assignment overview. Please check that everything is correct and confirm the plan via the button below - or let us know if something doesn't fit.";
+    $cta=$lang==='de' ? 'Einsatzplan ansehen & bestätigen' : 'View & confirm your plan';
+    $url=base_url().'/plan.php?token='.$tok;
+    $subject=$lang==='de' ? 'Deine Einsatzübersicht - bitte bestätigen' : 'Your assignment overview - please confirm';
+    $html=email_html($intro, plan_table_html($sched,$lang).cta_button($url,$cta));
+    $ok=send_email($tr['email'],$tr['name'],$subject,$html);
+    $st=$ok ? ((cfg()['mail_mode']??'mail')==='log'?'logged':'sent') : 'failed';
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[null,$trId,$tr['email'],$subject,$intro,$lang,$st,now()]);
+    out(['ok'=>true,'sent'=>$ok?1:0,'count'=>count($sched)]);
+
+  /* ---- Rückmeldungen der Trainer zur Einsatzübersicht (Dashboard-Posteingang) ---- */
+  case 'messages.list':
+    require_auth();
+    $rows=q("SELECT p.trainer_id, p.note, p.confirmed_at, p.resolved_at, t.name, t.email
+             FROM plan_tokens p JOIN trainers t ON t.id=p.trainer_id
+             WHERE p.confirm_status='issue' AND p.note IS NOT NULL AND p.note<>''
+             ORDER BY (p.resolved_at IS NULL) DESC, p.confirmed_at DESC")->fetchAll();
+    out(['ok'=>true,'messages'=>array_map(function($r){
+      return ['trainerId'=>(string)$r['trainer_id'],'trainerName'=>$r['name'],'email'=>$r['email'],
+              'note'=>$r['note'],'at'=>$r['confirmed_at'],'resolvedAt'=>$r['resolved_at']];
+    },$rows)]);
+
+  case 'message.resolve':
+    require_auth();
+    $trId=(int)($in['trainer']??0);
+    if(!$trId) fail('Kein Trainer.');
+    $resolved = array_key_exists('resolved',$in) ? !empty($in['resolved']) : true;
+    // Optional: Antwort an den Trainer mailen (Text kommt aus dem Erledigen-Dialog).
+    $sent=0;
+    if($resolved && !empty($in['sendMail']) && trim((string)($in['reply']??''))!==''){
+      $tr=q("SELECT * FROM trainers WHERE id=?",[$trId])->fetch();
+      if($tr && !empty($tr['email'])){
+        $lang=($in['lang']??'de')==='en'?'en':'de';
+        $reply=trim((string)$in['reply']);
+        // Link auf die (inzwischen korrigierte) Einsatzübersicht zum erneuten Bestätigen
+        $pt=q("SELECT tok FROM plan_tokens WHERE trainer_id=?",[$trId])->fetch();
+        $cta=($pt && $pt['tok'])
+          ? cta_button(base_url().'/plan.php?token='.$pt['tok'],
+              $lang==='de' ? 'Aktualisierte Einsatzübersicht ansehen & bestätigen' : 'View & confirm updated overview')
+          : '';
+        $subj=$lang==='de' ? 'Antwort auf deine Rückmeldung - Einsatzübersicht'
+                           : 'Reply to your feedback - assignment overview';
+        $ok=send_email($tr['email'],$tr['name'],$subj,email_html($reply,$cta));
+        $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+        q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+           VALUES(?,?,?,?,?,?,?,?)",[null,$trId,$tr['email'],$subj,$reply,$lang,$st,now()]);
+        $sent=$ok?1:0;
+      }
+    }
+    q("UPDATE plan_tokens SET resolved_at=? WHERE trainer_id=?",[$resolved?now():null,$trId]);
+    out(['ok'=>true,'sent'=>$sent]);
+
+  /* ---- Transfer-/Abholliste an den Kunden mailen (mit Empfangsbestätigung) ---- */
+  case 'transfer.send':
+    require_auth();
+    $r=transfer_send($in['client']??'', ($in['lang']??'en'), false);
+    if(!$r['ok']) fail($r['error'],400);
+    out($r);
+
+  /* ---- Erinnerung an den Kunden (Empfangsbestätigung ausstehend) ---- */
+  case 'transfer.remind':
+    require_auth();
+    $r=transfer_send($in['client']??'', ($in['lang']??'en'), true);
+    if(!$r['ok']) fail($r['error'],400);
+    out($r);
+
+  /* ---- E-Mail-Protokoll (Nachweis / Debug) ---- */
+  case 'emails':
+    require_auth();
+    out(['ok'=>true,'emails'=>q("SELECT * FROM email_log ORDER BY id DESC LIMIT 100")->fetchAll()]);
+
+  /* ---- KI: Profile aus Text extrahieren (zur Prüfung, noch nicht speichern) ---- */
+  case 'ai.extract':
+    require_auth();
+    $text=trim((string)($in['text']??''));
+    if($text==='') fail('Kein Text übergeben.');
+    out(['ok'=>true,'profiles'=>ai_extract_profiles($text)]);
+
+  /* ---- KI-Import bestätigen: Profile anlegen ---- */
+  case 'trainers.bulkCreate':
+    require_auth();
+    $profiles=$in['profiles']??[];
+    if(!is_array($profiles)||!count($profiles)) fail('Keine Profile übergeben.');
+    $colors=["#3E4852","#B23A42","#4E6E8E","#6E5A86","#3F7A5E","#A6642E","#557088","#8A5A52"];
+    $created=0;
+    foreach($profiles as $i=>$p){
+      if(empty($p['name'])) continue;
+      q("INSERT INTO trainers(name,email,phone,spec,region,langs,uae,load_lvl,color,rating,created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?)",[
+        $p['name'], $p['email']??'', $p['phone']??'',
+        json_encode($p['spec']??[],JSON_UNESCAPED_UNICODE), $p['region']??'',
+        json_encode($p['langs']??[]), !empty($p['uae'])?1:0, 0,
+        $colors[$i%count($colors)], (string)($p['rating']??'4.5'), now()
+      ]);
+      $created++;
+    }
+    out(['ok'=>true,'created'=>$created]);
+
+  /* ---- Reisepass je Trainer: Foto per KI auslesen (noch nicht speichern) ---- */
+  case 'passport.scan':
+    require_auth();
+    $img=(string)($in['image']??'');
+    if($img==='') fail('Kein Bild übergeben.');
+    out(['ok'=>true,'data'=>ai_extract_passport($img)]);
+
+  /* ---- Reisepass je Trainer speichern (Felder + optionales Foto) ---- */
+  case 'passport.save':
+    require_auth();
+    $trId=$in['id']??0;
+    if(!$trId || !q("SELECT id FROM trainers WHERE id=?",[$trId])->fetch()) fail('Trainer nicht gefunden.');
+    $exp=trim((string)($in['expiry']??''));
+    if($exp!=='' && !preg_match('/^\d{4}-\d{2}-\d{2}$/',$exp)) fail('Ablaufdatum bitte als YYYY-MM-DD.');
+    $sets=['passport_number=?','passport_name=?','passport_nationality=?','passport_birthdate=?',
+           'passport_expiry=?','passport_notes=?','passport_updated_at=?','passport_reminded_at=NULL'];
+    $vals=[(string)($in['number']??''), (string)($in['name']??''), (string)($in['nationality']??''),
+           (string)($in['birthdate']??''), $exp, (string)($in['notes']??''), now()];
+    // Foto nur überschreiben, wenn eines mitgeschickt wurde ('' = unverändert, 'null' = löschen)
+    if(array_key_exists('image',$in)){
+      $img=$in['image'];
+      if($img===null || $img==='null'){ $sets[]='passport_file=NULL'; }
+      elseif(is_string($img) && $img!==''){
+        // Nur Rasterformate - kein SVG (könnte Skripte enthalten). Das Frontend
+        // rechnet Fotos ohnehin vor dem Upload in JPEG um.
+        if(!preg_match('#^data:image/(jpe?g|png|webp|gif|heic|heif);base64,#i',$img)) fail('Ungültiges Bildformat.');
+        $sets[]='passport_file=?'; $vals[]=$img;
+      }
+    }
+    $vals[]=$trId;
+    q("UPDATE trainers SET ".implode(',',$sets)." WHERE id=?", $vals);
+    out(['ok'=>true]);
+
+  /* ---- Reisepass-Foto abrufen (nicht im State, um Payload klein zu halten) ---- */
+  case 'passport.image':
+    require_auth();
+    $r=q("SELECT passport_file FROM trainers WHERE id=?",[$in['id']??0])->fetch();
+    out(['ok'=>true,'image'=>$r['passport_file']??null]);
+
+  /* ---- Reisepass löschen ---- */
+  case 'passport.clear':
+    require_auth();
+    q("UPDATE trainers SET passport_number=NULL,passport_name=NULL,passport_nationality=NULL,
+       passport_birthdate=NULL,passport_expiry=NULL,passport_file=NULL,passport_notes=NULL,
+       passport_updated_at=NULL,passport_reminded_at=NULL WHERE id=?",[$in['id']??0]);
+    out(['ok'=>true]);
+
+  /* ---- Automatik-Einstellungen ---- */
+  case 'settings.get':
+    require_auth();
+    out(['ok'=>true,'settings'=>[
+      'reminder_hours'=>(int)(config_get('reminder_hours')??48),
+      'escalate_hours'=>(int)(config_get('escalate_hours')??72),
+      'auto_advance'=>(config_get('auto_advance')==='1'),
+      'passport_lead_days'=>(int)(config_get('passport_lead_days')??180),
+      'ppt_lead_days'=>(int)(config_get('ppt_lead_days')??21),
+      'ppt_delivery'=>ppt_delivery(),          // wirksamer Wert, nicht der rohe Eintrag
+      'ppt_mail'=>ppt_mail_addr(),
+      'ppt_mailbox_set'=>ppt_mailbox_set(),    // Zugangsdaten in der config.php vorhanden?
+      'ai_enabled'=>trim(cfg()['anthropic_key']??'')!=='',
+    ]]);
+
+  case 'settings.save':
+    require_auth();
+    if(isset($in['reminder_hours'])) config_set('reminder_hours',(string)max(1,(int)$in['reminder_hours']));
+    if(isset($in['escalate_hours'])) config_set('escalate_hours',(string)max(1,(int)$in['escalate_hours']));
+    if(isset($in['auto_advance']))   config_set('auto_advance', !empty($in['auto_advance'])?'1':'0');
+    if(isset($in['passport_lead_days'])) config_set('passport_lead_days',(string)max(14,(int)$in['passport_lead_days']));
+    if(isset($in['ppt_lead_days'])) config_set('ppt_lead_days',(string)max(3,(int)$in['ppt_lead_days']));
+    if(isset($in['ppt_delivery'])) config_set('ppt_delivery', $in['ppt_delivery']==='mail'?'mail':'upload');
+    if(isset($in['ppt_mail'])){
+      $m=trim((string)$in['ppt_mail']);
+      if($m!=='' && !filter_var($m,FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige E-Mail-Adresse für die Folien-Abgabe angeben.');
+      config_set('ppt_mail',$m);
+    }
+    out(['ok'=>true]);
+
+  /* ---- Login-PIN ändern (im Dashboard) ---- */
+  case 'pin.change':
+    require_admin();
+    $cur = (string)($in['current'] ?? '');
+    $new = trim((string)($in['new'] ?? ''));
+    $hash = config_get('pin_hash');
+    if($hash && !password_verify($cur, $hash)) fail('Aktueller PIN ist nicht korrekt.',401);
+    if(!preg_match('/^\d{4,8}$/', $new)) fail('Neuer PIN muss 4-8 Ziffern haben.');
+    config_set('pin_hash', password_hash($new, PASSWORD_DEFAULT));
+    out(['ok'=>true]);
+
+  /* ---- Automatik jetzt ausführen (Button) ---- */
+  case 'automation.run':
+    require_auth();
+    out(run_automation());
+
+  /* ---- Reisedaten & Agenda je Training speichern ---- */
+  case 'training.travelSave':
+    require_auth();
+    q("UPDATE trainings SET venue=?,hotel=?,hotel_addr=?,meeting_point=?,contact_name=?,contact_phone=?,dresscode=?,per_diem=?,travel_notes=?,agenda=? WHERE id=?",[
+      $in['venue']??'', $in['hotel']??'', $in['hotelAddr']??'', $in['meetingPoint']??'',
+      $in['contactName']??'', $in['contactPhone']??'', $in['dresscode']??'', $in['perDiem']??'',
+      $in['notes']??'', json_encode($in['agenda']??[],JSON_UNESCAPED_UNICODE), $in['training']??0]);
+    out(['ok'=>true]);
+
+  /* ---- Flug-/Zimmerdaten je Trainer speichern ---- */
+  case 'trainer.travelSave':
+    require_auth();
+    $tgId=$in['training']??0; $trId=$in['trainer']??0;
+    $ex=q("SELECT id FROM travel WHERE training_id=? AND trainer_id=?",[$tgId,$trId])->fetch();
+    $vs=$in['visaStatus']??'none';
+    $dep=mb_substr(trim((string)($in['depAirport']??'')),0,96);
+    $ret=mb_substr(trim((string)($in['retAirport']??'')),0,96);
+    $f=[$in['arrival']??'', $in['departure']??'', $in['flightOut']??'', $in['flightReturn']??'', $in['room']??'', $in['notes']??'',
+        $vs, $in['passportExpiry']??'', $in['visaNotes']??'', $dep, $ret];
+    if($ex) q("UPDATE travel SET arrival=?,departure=?,flight_out=?,flight_return=?,room=?,notes=?,visa_status=?,passport_expiry=?,visa_notes=?,dep_airport=?,ret_airport=?,updated_at=? WHERE id=?",
+      array_merge($f,[now(),$ex['id']]));
+    else q("INSERT INTO travel(training_id,trainer_id,arrival,departure,flight_out,flight_return,room,notes,visa_status,passport_expiry,visa_notes,dep_airport,ret_airport,updated_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)", array_merge([$tgId,$trId],$f,[now()]));
+    // Abflughafen als Heimatflughafen merken - Vorgabe fuer die naechste Woche
+    if($dep!=='') q("UPDATE trainers SET home_airport=? WHERE id=? AND COALESCE(home_airport,'')<>?",[$dep,$trId,$dep]);
+    out(['ok'=>true]);
+
+  /* ---- Persönliche Reise-Agenda per E-Mail senden (mit Druck-Link) ---- */
+  case 'travel.sendAgenda':
+    require_auth();
+    $r=send_agenda_mail((int)($in['training']??0), (int)($in['trainer']??0),
+        (string)($in['lang']??''), (string)($in['subject']??''), (string)($in['text']??''));
+    if(empty($r['ok'])) fail($r['error']??'Versand fehlgeschlagen.',404);
+    out(['ok'=>true,'link'=>$r['link'],'sent'=>$r['sent'],'attached'=>$r['attached']]);
+
+  /* ---- Serienversand: Agenda an alle bestätigten Trainer eines Trainings.
+         Betreff und Text kommen aus dem Kontroll-Dialog und dürfen Platzhalter
+         wie {{firstName}} enthalten - je Trainer wird individuell gefüllt. ---- */
+  /* ---- Kundenbereich: Freigaben je Benutzer (nur Admin) ---- */
+  case 'user.setCust': {
+    require_admin();
+    $uid=(int)($in['id']??0);
+    if(!q("SELECT id FROM users WHERE id=?",[$uid])->fetch()) fail('Benutzer nicht gefunden.',404);
+    $v=!empty($in['view'])?1:0; $s2=!empty($in['send'])?1:0;
+    if($s2) $v=1;                                   // Senden schliesst Sehen ein
+    q("UPDATE users SET cust_view=?, cust_send=? WHERE id=?",[$v,$s2,$uid]);
+    audit('cust.rights','user',(string)$uid,'Kundenbereich: sehen='.($v?'ja':'nein').', senden='.($s2?'ja':'nein'));
+    out(['ok'=>true]);
+  }
+
+  /* ---- Kundenbereich: Lieferplan ---- */
+  case 'cust.list': {
+    require_cust_view();
+    $made=cust_generate();
+    $rows=q("SELECT * FROM cust_items WHERE status<>'dropped' ORDER BY due, id")->fetchAll();
+    $today=date('Y-m-d');
+    $items=array_map(fn($r)=>[
+      'id'=>(string)$r['id'],'kind'=>$r['kind'],'training'=>$r['training_id']?(string)$r['training_id']:'',
+      'title'=>$r['title'],'note'=>$r['note']??'','due'=>$r['due'],'critical'=>((int)$r['critical'])===1,
+      'status'=>$r['status'],'confirmDays'=>(int)$r['confirm_days'],'graceDays'=>(int)$r['grace_days'],
+      'mailTo'=>$r['mail_to']??'','sentAt'=>$r['sent_at']??'','remindedAt'=>$r['reminded_at']??'',
+      'confirmedAt'=>$r['confirmed_at']??'','confirmedBy'=>$r['confirmed_by']??'',
+      'deemedAt'=>$r['deemed_at']??'','objection'=>$r['objection']??'','objectionAt'=>$r['objection_at']??'',
+      'auto'=>trim((string)($r['auto_key']??''))!==''],$rows);
+    out(['ok'=>true,'items'=>$items,'generated'=>$made,'today'=>$today,
+         'canSend'=>cust_can('send'),
+         'to'=>(string)(config_get('customer_to')??''),
+         'from'=>(string)(cfg()['customer_from']??'')]);
+  }
+  case 'cust.save': {
+    require_cust_send();
+    $id=(int)($in['id']??0);
+    $title=mb_substr(trim((string)($in['title']??'')),0,190);
+    $due=trim((string)($in['due']??''));
+    if($title==='') fail('Bitte einen Titel angeben.');
+    if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$due)) fail('Bitte die Fälligkeit als Datum angeben.');
+    $note=mb_substr(trim((string)($in['note']??'')),0,600);
+    $crit=!empty($in['critical'])?1:0;
+    $cd=max(1,min(60,(int)($in['confirmDays']??14))); $gd=max(1,min(60,(int)($in['graceDays']??7)));
+    if($id){
+      if(!q("SELECT id FROM cust_items WHERE id=?",[$id])->fetch()) fail('Position nicht gefunden.',404);
+      q("UPDATE cust_items SET title=?,due=?,note=?,critical=?,confirm_days=?,grace_days=?,updated_at=? WHERE id=?",
+        [$title,$due,$note,$crit,$cd,$gd,now(),$id]);
+      audit('cust.save','cust',(string)$id,'Position geändert: '.$title);
+    } else {
+      q("INSERT INTO cust_items(auto_key,kind,title,note,due,critical,status,confirm_days,grace_days,created_at,updated_at)
+         VALUES(NULL,'custom',?,?,?,?,'open',?,?,?,?)",[$title,$note,$due,$crit,$cd,$gd,now(),now()]);
+      $id=(int)db()->lastInsertId();
+      audit('cust.save','cust',(string)$id,'Position angelegt: '.$title);
+    }
+    out(['ok'=>true,'id'=>(string)$id]);
+  }
+  case 'cust.setStatus': {
+    require_cust_send();
+    $id=(int)($in['id']??0);
+    $st=(string)($in['status']??'');
+    if(!in_array($st,['open','prepared','done','dropped'],true)) fail('Dieser Status kann nicht von Hand gesetzt werden.');
+    $r=q("SELECT * FROM cust_items WHERE id=?",[$id])->fetch();
+    if(!$r) fail('Position nicht gefunden.',404);
+    q("UPDATE cust_items SET status=?, updated_at=? WHERE id=?",[$st,now(),$id]);
+    audit('cust.status','cust',(string)$id,$r['title'].': Status '.$st);
+    out(['ok'=>true]);
+  }
+  case 'cust.send': {
+    require_cust_send();
+    $id=(int)($in['id']??0);
+    $r=q("SELECT * FROM cust_items WHERE id=?",[$id])->fetch();
+    if(!$r) fail('Position nicht gefunden.',404);
+    $to=trim((string)($in['to']??''));
+    if(!filter_var($to,FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige Empfängeradresse angeben.');
+    config_set('customer_to',$to);
+    $subject=mb_substr(trim((string)($in['subject']??''))?:('ETAF - '.$r['title']),0,255);
+    $note=mb_substr(trim((string)($in['note']??'')),0,2000);
+    // Bestaetigungs-Link: Klartext nur in der Mail, in der Datenbank der Hash
+    $tok=token(48);
+    $link=base_url().'/ack.php?token='.$tok;
+    $cd=(int)$r['confirm_days']; $gd=(int)$r['grace_days'];
+    $body="Dear Sir or Madam,
+
+"
+      ."please find the following ETAF delivery / notification:
+
+"
+      .$r['title'].($r['due']?"
+Due/reference date: ".$r['due']:'')
+      .($note!==''?"
+
+".$note:'')
+      ."
+
+Please confirm receipt/acceptance via the button below. "
+      ."If no confirmation or objection is received within $cd days, a reminder follows; "
+      ."$gd days after the reminder the delivery is deemed accepted in line with the Service Agreement."
+      ."
+
+Kind regards
+ETAF Coordination";
+    $atts=[];
+    // Stufe 2: Anhaenge direkt aus den Cockpit-Daten erzeugen
+    foreach(array_slice(array_values(array_unique((array)($in['gen']??[]))),0,4) as $g){
+      [$gname,$gbin]=cust_gen_attachment((string)$g,(int)($r['training_id']??0));
+      $atts[]=['name'=>$gname,
+        'mime'=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'data_b64'=>base64_encode($gbin)];
+    }
+    if(!empty($in['file'])){
+      $bin=stud_upload_bin($in);
+      $fname=preg_replace('/[^A-Za-z0-9 ._()-]/','',(string)($in['fileName']??'attachment'))?:'attachment';
+      $atts[]=['name'=>mb_substr($fname,0,120),'mime'=>'application/octet-stream','data_b64'=>base64_encode($bin)];
+    }
+    $ok=send_email($to,'',$subject,
+      email_html($body, cta_button($link,'Confirm receipt / acceptance','#2E9E6B')),
+      $atts,(string)(cfg()['customer_from']??''));
+    $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[(int)($r['training_id']??0),0,$to,$subject,$body,'en',$st,now()]);
+    if(!$ok) fail('Versand fehlgeschlagen: '.($GLOBALS['__mail_err']??''));
+    q("UPDATE cust_items SET status='sent', mail_to=?, sent_subject=?, tok=?, sent_at=?,
+       reminded_at=NULL, confirmed_at=NULL, confirmed_by=NULL, deemed_at=NULL,
+       objection=NULL, objection_at=NULL, updated_at=? WHERE id=?",
+      [$to,$subject,hash('sha256',$tok),now(),now(),$id]);
+    audit('cust.send','cust',(string)$id,$r['title'].' an '.$to
+      .($atts?' ('.count($atts).' Anhänge: '.implode(', ',array_map(fn($a)=>$a['name'],$atts)).')':''));
+    out(['ok'=>true,'status'=>$st]);
+  }
+  /* ---- Stufe 2: Posteingang des Kunden-Postfachs ---- */
+  case 'cust.mail.list': {
+    require_cust_view();
+    $rows=q("SELECT * FROM cust_mail ORDER BY id DESC LIMIT 200")->fetchAll();
+    out(['ok'=>true,'ready'=>cust_mailbox_ready(),
+      'mails'=>array_map(fn($m)=>[
+        'id'=>(string)$m['id'],'from'=>$m['from_addr'],'subject'=>$m['subject'],
+        'at'=>$m['received_at'],'body'=>$m['body']??'',
+        'atts'=>json_decode($m['atts']?:'[]',true)?:[],
+        'item'=>$m['item_id']?(string)$m['item_id']:'','status'=>$m['status']],$rows)]);
+  }
+  case 'cust.mail.poll': {
+    require_cust_send();
+    $r=cust_mail_poll();
+    if(empty($r['ok'])) fail($r['error']??'Abruf fehlgeschlagen.');
+    out(['ok'=>true,'fetched'=>$r['fetched'],'linked'=>$r['linked']]);
+  }
+  case 'cust.mail.link': {
+    require_cust_send();
+    $mid=(int)($in['mail']??0); $iid=(int)($in['item']??0);
+    $m=q("SELECT * FROM cust_mail WHERE id=?",[$mid])->fetch();
+    if(!$m) fail('Mail nicht gefunden.',404);
+    if($iid && !q("SELECT id FROM cust_items WHERE id=?",[$iid])->fetch()) fail('Position nicht gefunden.',404);
+    q("UPDATE cust_mail SET item_id=?, status=? WHERE id=?",[$iid?:null,$iid?'linked':'open',$mid]);
+    if($iid) audit('cust.mailin','cust',(string)$iid,'Antwort zugeordnet: '.mb_substr((string)$m['subject'],0,100));
+    out(['ok'=>true]);
+  }
+  case 'cust.mail.setStatus': {
+    require_cust_send();
+    $mid=(int)($in['id']??0); $st=(string)($in['status']??'');
+    if(!in_array($st,['open','done','ignored'],true)) fail('Ungültiger Status.');
+    q("UPDATE cust_mail SET status=? WHERE id=?",[$st,$mid]);
+    out(['ok'=>true]);
+  }
+  /* ---- Stufe 2: Empfang/Abnahme von Hand erfassen (z.B. aus einer Mail) ---- */
+  case 'cust.confirmManual': {
+    require_cust_send();
+    $id=(int)($in['id']??0);
+    $r=q("SELECT * FROM cust_items WHERE id=?",[$id])->fetch();
+    if(!$r || !in_array($r['status'],['sent','reminded','objection','deemed'],true))
+      fail('Von Hand bestätigen geht nur bei gesendeten Positionen.');
+    $name=mb_substr(trim((string)($in['name']??'')),0,160)?:'Kunde';
+    $note=mb_substr(trim((string)($in['note']??'')),0,190);
+    q("UPDATE cust_items SET status='confirmed', confirmed_at=?, confirmed_by=?, updated_at=? WHERE id=?",
+      [now(), $name.' (manuell erfasst'.($note!==''?': '.$note:'').')', now(), $id]);
+    audit('cust.confirmed','cust',(string)$id,$r['title'].' - von Hand als bestätigt erfasst ('.$name.')');
+    out(['ok'=>true]);
+  }
+
+  case 'cust.remindNow': {
+    require_cust_send();
+    $id=(int)($in['id']??0);
+    $r=q("SELECT * FROM cust_items WHERE id=?",[$id])->fetch();
+    if(!$r || !in_array($r['status'],['sent','reminded'],true) || empty($r['mail_to']))
+      fail('Erinnern geht nur bei gesendeten, noch unbestätigten Positionen.');
+    $res=cust_send_reminder($r);
+    if(empty($res['ok'])) fail($res['error']??'Erinnerung fehlgeschlagen.');
+    out(['ok'=>true]);
+  }
+
+  /* ---- Wochen-Drehbuch (Running Order) ---- */
+  case 'running.get': {
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $r=q("SELECT running FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$r) fail('Training nicht gefunden.',404);
+    $data=json_decode((string)($r['running']??''),true);
+    out(['ok'=>true,'running'=>$data?:null,'to'=>(string)(config_get('running_to')??'')]);
+  }
+  case 'running.suggest': {
+    require_auth();
+    $items=running_suggest((int)($in['training']??0),(array)($in['cfg']??[]),($in['lang']??'de')==='en'?'en':'de');
+    out(['ok'=>true,'items'=>$items]);
+  }
+  case 'running.save': {
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    if(!q("SELECT id FROM trainings WHERE id=?",[$tgId])->fetch()) fail('Training nicht gefunden.',404);
+    $items=[];
+    foreach((array)($in['items']??[]) as $it){
+      if(!is_array($it)) continue;
+      if(count($items)>=400) break;
+      $items[]=['d'=>mb_substr(trim((string)($it['d']??'')),0,10),
+                't'=>mb_substr(trim((string)($it['t']??'')),0,5),
+                'cat'=>in_array($it['cat']??'',['arrive','shuttle','meet','session','break','mat','org','other'],true)?$it['cat']:'other',
+                'title'=>mb_substr(trim((string)($it['title']??'')),0,190),
+                'note'=>mb_substr(trim((string)($it['note']??'')),0,400)];
+    }
+    $items=array_values(array_filter($items,fn($x)=>$x['title']!==''||$x['note']!==''));
+    // Nur nach Tag gruppieren - die Reihenfolge INNERHALB des Tages bestimmt
+    // der Bearbeiter (Drag and Drop im Editor), nicht die Uhrzeit.
+    $i2=0; foreach($items as &$it){ $it['_i']=$i2++; } unset($it);
+    usort($items,fn($a,$b)=>[$a['d'],$a['_i']] <=> [$b['d'],$b['_i']]);
+    foreach($items as &$it){ unset($it['_i']); } unset($it);
+    $cfg=(array)($in['cfg']??[]);
+    $data=['items'=>$items,'cfg'=>[
+      'start'=>mb_substr((string)($cfg['start']??'09:00'),0,5),
+      'lead'=>max(0,min(240,(int)($cfg['lead']??45))),
+      'lunch'=>mb_substr((string)($cfg['lunch']??'12:30'),0,5),
+      'lunchMin'=>max(15,min(180,(int)($cfg['lunchMin']??60)))],
+      'updatedAt'=>now(),'updatedBy'=>actor_name()];
+    q("UPDATE trainings SET running=? WHERE id=?",[json_encode($data,JSON_UNESCAPED_UNICODE),$tgId]);
+    audit('running.save','training',(string)$tgId,'Wochen-Drehbuch gespeichert ('.count($items).' Einträge)');
+    out(['ok'=>true,'count'=>count($items)]);
+  }
+  case 'running.mail': {
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+    if(!$tg) fail('Training nicht gefunden.',404);
+    $data=json_decode((string)($tg['running']??''),true);
+    $items=(array)($data['items']??[]);
+    if(!$items) fail('Bitte zuerst das Drehbuch speichern.');
+    $lang=($in['lang']??'de')==='en'?'en':'de'; $de=$lang!=='en';
+    $tos=array_values(array_filter(array_map('trim',preg_split('/[,;\s]+/',(string)($in['to']??''))),
+      fn($e)=>filter_var($e,FILTER_VALIDATE_EMAIL)));
+    $tos=array_slice(array_unique($tos),0,10);
+    if(!$tos) fail('Bitte mindestens eine gültige Empfängeradresse angeben.');
+    config_set('running_to', implode(', ',$tos));
+    $title=trim((($tg['code']??'')!==''?$tg['code'].' - ':'').(string)($tg['topic']??''));
+    $catLbl=$de?['arrive'=>'An-/Abreise','shuttle'=>'Shuttle','meet'=>'Treffpunkt','session'=>'Training',
+                 'break'=>'Pause','mat'=>'Material','org'=>'Orga','other'=>'']
+               :['arrive'=>'Arrival/Dep.','shuttle'=>'Shuttle','meet'=>'Meet','session'=>'Training',
+                 'break'=>'Break','mat'=>'Material','org'=>'Org','other'=>''];
+    $e=fn($v)=>htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8');
+    $byDay=[]; foreach($items as $it) $byDay[$it['d']][]=$it;
+    ksort($byDay);
+    $tbl='';
+    foreach($byDay as $d=>$list){
+      $ts=strtotime($d);
+      $dayName=$ts?($de?['So','Mo','Di','Mi','Do','Fr','Sa'][(int)date('w',$ts)]
+                       :['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][(int)date('w',$ts)]).' '.date('d.m.Y',$ts):$d;
+      $tbl.='<h3 style="margin:18px 0 6px;font:700 15px Arial,sans-serif;color:#242b31">'.$e($dayName).'</h3>'
+        .'<table style="width:100%;border-collapse:collapse;font:13px Arial,sans-serif">';
+      foreach($list as $it){
+        $tbl.='<tr>'
+          .'<td style="padding:5px 8px;border-bottom:1px solid #e2e5e8;white-space:nowrap;width:52px;color:#5c666e">'.$e($it['t']).'</td>'
+          .'<td style="padding:5px 8px;border-bottom:1px solid #e2e5e8;white-space:nowrap;width:86px;color:#8a939a;font-size:11px;text-transform:uppercase">'.$e($catLbl[$it['cat']]??'').'</td>'
+          .'<td style="padding:5px 8px;border-bottom:1px solid #e2e5e8"><b>'.$e($it['title']).'</b>'
+          .($it['note']!==''?'<br><span style="color:#5c666e">'.$e($it['note']).'</span>':'').'</td></tr>';
+      }
+      $tbl.='</table>';
+    }
+    $head=trim(implode(' · ',array_filter([
+      (string)($tg['city']??''),
+      trim((string)($tg['start_date']??'').' - '.(string)($tg['end_date']??''),' -'),
+      (string)($tg['kw']??'')])));
+    $info=array_filter([
+      trim((string)($tg['venue']??''))!==''?(($de?'Trainingsort: ':'Venue: ').$tg['venue']):'',
+      trim((string)($tg['hotel']??''))!==''?('Hotel: '.$tg['hotel']):'',
+      trim((string)($tg['meeting_point']??''))!==''?(($de?'Treffpunkt: ':'Meeting point: ').$tg['meeting_point']):'',
+      trim((string)($tg['contact_name']??''))!==''?(($de?'Kontakt vor Ort: ':'On-site contact: ').$tg['contact_name'].' '.($tg['contact_phone']??'')):'']);
+    $note=trim((string)($in['note']??''));
+    $intro=($de?"Hallo,
+
+anbei der Ablaufplan (Running Order) für die Woche:
+":"Hello,
+
+please find the running order for the week:
+")
+      .$title."
+".$head
+      .($info?"
+
+".implode("
+",$info):'')
+      .($note!==''?"
+
+".$note:'');
+    $subj=($de?'Running Order - ':'Running order - ').$title;
+    $html=email_html($intro,'').'<div style="max-width:640px;margin:0 auto;padding:0 10px 24px">'.$tbl.'</div>';
+    $sentN=0; $failN=[];
+    foreach($tos as $to){
+      $ok=send_email($to,'',$subj,$html);
+      $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+      if($st==='failed') $failN[]=$to; else $sentN++;
+      q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+         VALUES(?,?,?,?,?,?,?,?)",[$tgId,0,$to,$subj,$intro,$lang,$st,now()]);
+    }
+    if(!$sentN) fail('Versand fehlgeschlagen: '.($GLOBALS['__mail_err']??''));
+    audit('running.mail','training',(string)$tgId,'Running Order an '.implode(', ',$tos));
+    out(['ok'=>true,'sent'=>$sentN,'failed'=>$failN,
+         'status'=>(cfg()['mail_mode']??'mail')==='log'?'logged':'sent']);
+  }
+
+  /* ---- Flugdaten je Woche: Vorschau (Vollstaendigkeit) und Versand ---- */
+  case 'travel.flightData': {
+    require_auth();
+    $d=flight_data((int)($in['training']??0), ($in['lang']??'de')==='en'?'en':'de');
+    out(['ok'=>true,'count'=>$d['count'],'missing'=>$d['missing'],
+         'to'=>(string)(config_get('flight_to')??''),
+         'from'=>(string)(cfg()['flight_from']??'')]);
+  }
+  case 'travel.flightMail': {
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    $to=trim((string)($in['to']??''));
+    if(!filter_var($to,FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige Empfängeradresse angeben.');
+    $lang=($in['lang']??'de')==='en'?'en':'de'; $de=$lang!=='en';
+    [$file,$bin,$d]=flight_xlsx($tgId,$lang);
+    if(!$d['count']) fail($de?'Für dieses Training ist noch kein Trainer bestätigt.':'No trainer confirmed for this training yet.');
+    config_set('flight_to',$to);   // Empfaenger fuer das naechste Mal merken
+    $tg=$d['tg'];
+    $title=trim((($tg['code']??'')!==''?$tg['code'].' - ':'').(string)($tg['topic']??''));
+    $period=trim((string)($tg['start_date']??'').' - '.(string)($tg['end_date']??''),' -');
+    $subj=($de?'Flugdaten Trainer - ':'Trainer flight data - ').$title.($period!==''?' ('.$period.')':'');
+    $note=trim((string)($in['note']??''));
+    $nl="\n";
+    $bodyTxt=($de
+      ?'Guten Tag,'.$nl.$nl.'anbei die Flugdaten der bestätigten Trainer für "'.$title.'"'
+        .($period!==''?' ('.$period.')':'').' als Excel-Datei.'.$nl.$nl
+        .'Bitte prüfen Sie die Angaben vor der Buchung gegen.'
+      :'Hello,'.$nl.$nl.'please find attached the flight data of the confirmed trainers for "'.$title.'"'
+        .($period!==''?' ('.$period.')':'').'.'.$nl.$nl.'Please cross-check the details before booking.')
+      .($note!==''?$nl.$nl.$note:'')
+      .($d['missing']?($nl.$nl.($de?'Hinweis - noch offene Angaben: ':'Note - details still missing: ')
+        .implode('; ',array_map(fn($m)=>$m['name'].' ('.implode(', ',$m['fields']).')',$d['missing']))):'')
+      .$nl.$nl.($de?'Freundliche Grüße':'Best regards').$nl.'ETAF Coordination';
+    $ok=send_email($to,'',$subj,email_html($bodyTxt,''),
+      [['name'=>$file,'mime'=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'data_b64'=>base64_encode($bin)]],
+      (string)(cfg()['flight_from']??''));
+    $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[$tgId,0,$to,$subj,$bodyTxt,$lang,$st,now()]);
+    if(!$ok) fail('Versand fehlgeschlagen: '.($GLOBALS['__mail_err']??''));
+    audit('travel.flightMail','training',(string)$tgId,'Flugdaten an '.$to.' ('.$d['count'].' Trainer)');
+    out(['ok'=>true,'sent'=>$st!=='failed','status'=>$st,'count'=>$d['count'],'missing'=>count($d['missing'])]);
+  }
+
+  case 'travel.sendAgendaAll':
+    require_auth();
+    $tgId=(int)($in['training']??0);
+    if(!q("SELECT id FROM trainings WHERE id=?",[$tgId])->fetch()) fail('Training nicht gefunden.',404);
+    $ids=array_values(array_filter(array_map('intval',(array)($in['trainers']??[]))));
+    if(!$ids){
+      $ids=array_map('intval', q("SELECT trainer_id FROM requests WHERE training_id=? AND status IN('yes','confirmed')",
+        [$tgId])->fetchAll(PDO::FETCH_COLUMN));
+    }
+    if(!$ids) fail('Für dieses Training ist noch niemand bestätigt.');
+    $done=[]; $failed=[]; $att=0;
+    foreach($ids as $trId){
+      $r=send_agenda_mail($tgId,$trId,(string)($in['lang']??''),
+          (string)($in['subject']??''),(string)($in['text']??''));
+      if(empty($r['ok'])||empty($r['sent'])) $failed[]=$r['name']??('#'.$trId);
+      else { $done[]=$r['name']; $att+=(int)$r['attached']; }
+    }
+    audit('travel.sendAgendaAll','training',(string)$tgId,count($done).' Agenden verschickt');
+    out(['ok'=>true,'sent'=>count($done),'failed'=>$failed,'names'=>$done,'attached'=>$att]);
+
+  default:
+    fail('Unbekannte Aktion: '.$action, 404);
+}
+} catch(Throwable $e){
+  fail('Serverfehler: '.$e->getMessage(),500);
+}

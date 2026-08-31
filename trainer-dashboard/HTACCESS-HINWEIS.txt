@@ -1,0 +1,34 @@
+ETAF Cockpit - die .htaccess-Dateien hochladen
+================================================
+
+Warum zwei Dateien und warum ".txt"?
+Die eigentlichen Schutzdateien heissen ".htaccess" (mit Punkt am Anfang).
+Solche Dateien blendet der Finder/FTP oft aus, deshalb liegen sie im Paket
+ZUSAETZLICH sichtbar als "htaccess.txt" bei. Inhalt ist identisch.
+
+Es gibt zwei davon - eine je Ordner:
+
+  htaccess.txt            (im Hauptordner, neben index.html)
+  backend/htaccess.txt    (im Ordner "backend")
+
+So gehst du vor (FTP zu artfiles):
+
+  1. htaccess.txt          -> in den Hauptordner hochladen,
+                              dort umbenennen in:  .htaccess
+
+  2. backend/htaccess.txt  -> in den Ordner "backend" hochladen,
+                              dort umbenennen in:  .htaccess
+
+Wichtig:
+- Beide behalten denselben Zielnamen ".htaccess" - sie liegen nur in
+  verschiedenen Ordnern, deshalb ueberschreiben sie sich NICHT.
+- Nach dem Umbenennen darf keine "htaccess.txt" mehr uebrig sein.
+  (Falls doch: die Regeln sperren sie sicherheitshalber selbst.)
+- Kontrolle, ob alles sitzt:
+      https://cockpit.dvi-systems.com/backend/check.php?key=DEIN_CRON_KEY
+  Dort steht in gruen "Zugriffsschutz backend/.htaccess vorhanden".
+
+Falls dein FTP-Programm das Umbenennen in einen Namen mit fuehrendem Punkt
+verweigert: In FileZilla unter "Server -> Auflistung versteckter Dateien
+erzwingen" einschalten, dann geht es. Notfalls im artfiles-Dateimanager
+(Webbrowser) umbenennen.

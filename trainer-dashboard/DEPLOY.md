@@ -1,0 +1,527 @@
+# Deployment auf artfiles.de (PHP + MySQL)
+
+Schritt-für-Schritt, um aus dem Prototyp ein echtes, von mehreren Geräten
+nutzbares Tool zu machen. Zeitaufwand: ~20–30 Minuten.
+
+## 0. Voraussetzungen
+- artfiles-Webhosting mit **PHP 8.x** und **einer MySQL-Datenbank**
+- FTP-/SFTP-Zugang (oder den artfiles-Dateimanager)
+- Eine E-Mail-Adresse `trainer@…` (für Versand & spätere Antworten)
+
+## 1. Datenbank anlegen
+Im artfiles-Kundenmenü eine MySQL-Datenbank erstellen. Du bekommst:
+- **Host** (oft `sql.local` oder `sqlXXX.artfiles.de`)
+- **Datenbankname**, **Benutzer**, **Passwort**
+
+> Das Schema musst du **nicht** von Hand einspielen — das Backend legt die
+> Tabellen beim ersten Aufruf automatisch an. (Wer möchte, kann `backend/schema.sql`
+> über phpMyAdmin importieren.)
+
+## 2. Dateien hochladen
+Lade den **Inhalt** von `trainer-dashboard/` in das Web-Verzeichnis (Document Root)
+der Subdomain **`cockpit.dvi-systems.com`**, sodass `index.html` direkt unter
+`https://cockpit.dvi-systems.com/` liegt. Wichtig: `icons/` und `manifest.webmanifest`
+**mit hochladen** (für die App-Installation aufs Handy). Struktur danach:
+```
+(Document Root von cockpit.dvi-systems.com)
+  index.html
+  manifest.webmanifest
+  icons/               ← App-Icons (ETAF)
+  config.js            ← aus config.js.sample erstellen (Schritt 4)
+  backend/
+    api.php  respond.php  db.php  lib.php  mailer.php
+    agenda.php  ics.php  cron.php  ai.php  automation.php
+    ppt.php  pptmail.php  verify.php  check.php
+    config.php          ← aus config.sample.php erstellen (Schritt 3)
+    .htaccess  schema.sql
+```
+
+## 3. Backend konfigurieren
+`backend/config.sample.php` → kopieren nach `backend/config.php` und ausfüllen:
+```php
+'driver'   => 'mysql',
+'db_host'  => 'sql.local',          // dein artfiles-Host
+'db_name'  => 'DEIN_DB_NAME',
+'db_user'  => 'DEIN_DB_USER',
+'db_pass'  => 'DEIN_DB_PASSWORT',
+'default_pin' => '481509',          // dein Wunsch-PIN (wird gehasht gespeichert)
+'from_email'  => 'trainer@dvi-systems.com',
+'base_url'    => 'https://cockpit.dvi-systems.com/backend',
+'mail_mode'   => 'mail',            // erst 'log' zum Testen, dann 'mail' oder 'smtp'
+'anthropic_key' => '',              // Claude-API-Key für KI-Import (leer = aus)
+'cron_key'    => 'ein-zufälliger-wert', // schützt backend/cron.php
+'ics_key'     => 'ein-kalender-schluessel', // schützt den iCal-Abo-Link (backend/ics.php)
+'seed_demo'   => true,              // Beispieldaten (inkl. 3 Kunden) beim ersten Start
+```
+> `config.php` wird durch `.htaccess` vor direktem Zugriff geschützt und ist im
+> Git ausgeschlossen. **Niemals Zugangsdaten committen.**
+
+## 4. Frontend auf Live-Modus stellen
+`config.js.sample` → kopieren nach `config.js` (neben `index.html`):
+```js
+window.ETAF = { apiBase: 'backend', pollMs: 8000 };
+```
+Ohne diese Datei läuft das Dashboard weiter als lokale Demo — praktisch zum Zeigen.
+
+## 5. Öffnen & testen
+- `https://cockpit.dvi-systems.com/` aufrufen → PIN eingeben.
+- Ein Training öffnen → **Sammelanfrage senden**. Bei `mail_mode='log'` wird
+  nichts verschickt, aber alles protokolliert — sichtbar unter **Protokoll** im
+  Dashboard (und in der DB-Tabelle `email_log`).
+- Auf `mail_mode='mail'` (oder `'smtp'`) umstellen, sobald der Versand echt sein soll.
+
+## 6. E-Mail-Versand
+- **`mail`** — nutzt PHP `mail()`. Auf artfiles für die eigene Domain meist ok.
+- **`smtp`** — zuverlässiger (empfohlen für `trainer@…`). SMTP-Daten in `config.php`:
+  ```php
+  'mail_mode' => 'smtp',
+  'smtp' => ['host'=>'smtp.artfiles.de','port'=>587,'secure'=>'tls',
+             'user'=>'trainer@dvi-systems.com','pass'=>'DEIN_MAIL_PASSWORT'],
+  ```
+
+### Kommen keine Mails an? → Diagnose-Seite
+Rufe auf:
+```
+https://cockpit.dvi-systems.com/backend/mailtest.php?key=DEIN_CRON_KEY&to=deine@mail.de
+```
+(`key` = `cron_key` aus `config.php`.) Die Seite zeigt die aktive Konfiguration,
+verschickt eine Test-Mail und protokolliert den **kompletten SMTP-Dialog** — so
+sieht man sofort, ob es an Verbindung, Login (Passwort!), Empfänger oder erst an
+der Zustellung (Spam / fehlendes SPF/DKIM) liegt. Das Passwort wird nie angezeigt.
+
+Häufigste Ursachen:
+- `mail_mode` steht auf `'log'` → es wird nichts versendet. Auf `'smtp'` stellen.
+- SMTP-`pass` ist leer oder falsch → „Login abgelehnt (kein 235)".
+- Mail wird angenommen, kommt aber nicht an → **Spam-Ordner** prüfen und
+  **SPF/DKIM** für `dvi-systems.com` im DNS setzen (siehe unten).
+
+## Wie der Verfügbarkeits-Rückkanal funktioniert
+Jede Anfrage-E-Mail enthält drei Buttons **✅ Ja / 🤔 Vielleicht / ❌ Nein**.
+Dahinter steckt ein persönlicher Magic-Link (`respond.php?token=…`). Klickt der
+Trainer, wird der Status **sofort in der Datenbank** gesetzt und erscheint beim
+nächsten Poll (Standard alle 8 s) automatisch im Dashboard — auf allen Geräten.
+Es muss niemand eine E-Mail lesen oder abtippen.
+
+## Sicherheit & DSGVO (bitte beachten)
+- **HTTPS** verwenden (artfiles bietet Let's-Encrypt-Zertifikate). **Ohne HTTPS keine
+  Teilnehmerdaten eingeben** - Anmeldung und Bewertungen liefen sonst unverschlüsselt.
+- **PIN nur zur Ersteinrichtung.** Sobald der erste Benutzer angelegt ist, ist der
+  PIN-Zugang automatisch deaktiviert; ab dann meldet sich jeder mit E-Mail und Passwort
+  an. Also **direkt beim Aufsetzen mindestens zwei Administratoren anlegen** und den
+  PIN damit stilllegen.
+- **`cron_key` und `ics_key` in `config.php` auf lange Zufallswerte setzen.** Sie
+  schützen `cron.php`, `backup.php`, `check.php`, `mailtest.php` und den Kalender-Abo-Link.
+  Mit leerem oder Standard-Schlüssel sind diese Endpunkte offen.
+- **`.htaccess` muss mit hochgeladen werden** (im FTP-Programm oft ausgeblendet, da mit
+  Punkt beginnend). Sie sperrt `config.php`, die Datenbankdateien und die Backups vor
+  direktem Zugriff und setzt die Schutz-Header (Clickjacking, MIME-Raten). Prüfen lässt
+  sich das mit `backend/check.php?key=DEIN_CRON_KEY`.
+- **HTTPS wird jetzt erzwungen**: Die mitgelieferte `.htaccess` leitet jeden
+  unverschluesselten Aufruf auf https um und setzt HSTS - der Browser laedt die
+  Domain danach grundsaetzlich nur noch verschluesselt. Zusaetzlich verbietet eine
+  Content-Security-Policy der Seite jeden Kontakt zu fremden Servern: selbst wenn
+  Schadcode in die Seite gelangen sollte, kann er keine Daten hinausschicken.
+- **Zwei-Faktor-Anmeldung (empfohlen fuer alle Konten!)**: Unter **Benutzer ->
+  Zwei-Faktor-Anmeldung** kann jede Person zusaetzlich zum Passwort einen
+  6-stelligen Code aus einer Authenticator-App verlangen lassen (Google/Microsoft
+  Authenticator, Apple-Passwoerter). Ein gestohlenes Passwort allein reicht dann
+  nicht mehr. Geht das Handy verloren, setzt ein Administrator die Zwei-Faktor-
+  Anmeldung der Person zurueck (Knopf in der Benutzerzeile). Fuer ein System mit
+  Regierungsdaten gehoert 2FA auf **jedes** Konto, mindestens auf alle Admins.
+  Beim Code-Schritt laesst sich **"Dieses Geraet 14 Tage merken"** ankreuzen -
+  dann verlangt genau dieser Browser 14 Tage lang keinen Code mehr (einstellbar
+  ueber `tfa_trust_days` in config.php, gespeichert nur als Hash; Abschalten
+  oder Zuruecksetzen der 2FA loescht alle gemerkten Geraete).
+  Wird ein Code abgelehnt: zuerst pruefen, ob die **Handy-Uhr auf automatisch**
+  steht, und in `check.php?key=...` die Zeile **Serveruhr (UTC)** mit einer
+  verlaesslichen Uhr vergleichen - mehr als etwa eine Minute Abweichung laesst
+  Codes scheitern (Toleranz: +/-60 Sekunden). Nach 5 Fehlversuchen ist die
+  Anmeldung 5 Minuten gesperrt - kurz warten. **Notausgang**, wenn kein zweiter
+  Admin zuruecksetzen kann: `backend/check.php?key=DEIN_CRON_KEY&tfaoff=deine@mail`
+  schaltet die 2FA dieses Kontos ab (beendet alle Sitzungen, steht im Protokoll) -
+  danach anmelden und 2FA frisch einrichten.
+- **Sitzungen laufen ab**: nach 14 Tagen grundsaetzlich, und nach 24 Stunden ohne
+  Aktivitaet (einstellbar ueber `session_idle_hours` in `config.php`). Einladungs-
+  und Passwort-Links gelten 60 Minuten, sind einmalig und liegen in der Datenbank
+  nur als Hash. Passwoerter brauchen mindestens 10 Zeichen.
+- Personenbezogene Daten (Trainerprofile, Teilnehmerbewertungen, teils Transfer nach
+  Abu Dhabi): Einwilligung, Auftragsverarbeitung mit artfiles (AVV), Löschkonzept und
+  EU-Hosting mitdenken. Auf der öffentlichen Prüfseite (`verify.php`) stehen bewusst
+  **keine Einzelnoten** - nur Name, Umfang, Ergebnis.
+
+### Datensicherung (wichtig - hier steckt ein halbes Jahr Arbeit drin)
+- Das Cockpit legt **täglich automatisch** einen vollständigen Datenbank-Dump als
+  `.sql.gz` in `backend/backups/` ab (die letzten 14 Stände; der Ordner ist per
+  `.htaccess` gesperrt). Voraussetzung: der stündliche Cronjob läuft (siehe unten).
+  Der Dump umfasst **alle** Tabellen, auch Teilnehmer, Bewertungen und Zertifikate -
+  er wächst also automatisch mit, ohne dass etwas nachgetragen werden muss.
+- **Zusätzlich** die DB-Backups im artfiles-Kundenmenü aktivieren - zwei unabhängige
+  Sicherungen sind bei einem halben Jahr Daten kein Luxus.
+- **Ansehen, Herunterladen und Wiederherstellen direkt im Cockpit** (nur als
+  Administrator): auf der Uebersicht in der Statusleiste den Knopf **Sicherungen**
+  druecken. Dort liegen alle Staende der letzten 14 Tage - je Stand **Herunterladen**
+  (die Datei getrennt vom Server aufbewahren!) und **Einspielen**. Einspielen ersetzt
+  den kompletten Datenbestand durch den gewaehlten Stand; direkt davor legt das
+  Cockpit automatisch eine Sicherheitskopie des jetzigen Stands an, verlangt das
+  getippte Wort WIEDERHERSTELLEN, protokolliert den Vorgang und meldet aus
+  Sicherheitsgruenden alle Benutzer ab. Unter **Sicherung von diesem Geraet
+  einspielen** laesst sich auch eine frueher heruntergeladene Datei hochladen -
+  der Weg zurueck nach einem Serverproblem oder Umzug.
+- Notweg ohne Cockpit (z.B. wenn gar nichts mehr laeuft):
+  `backend/backup.php?key=DEIN_CRON_KEY` herunterladen, `.sql.gz` entpacken und die
+  `.sql`-Datei in phpMyAdmin (artfiles-Kundenmenue) importieren.
+- **Vor dem Echtstart einmal testen:** `backend/backup.php?key=…&run=1` aufrufen, die
+  erzeugte Datei herunterladen und öffnen - dann weiß man, dass die Kette funktioniert,
+  bevor echte Daten drinstehen.
+
+## KI-Import (Profile aus Lebenslauf / Excel / Angebot)
+- API-Key von **console.anthropic.com** holen und als `anthropic_key` in `config.php` eintragen
+  (Modell: `claude-opus-4-8`).
+- Im Dashboard unter **Trainer → Profile importieren**: Text einfügen → **Mit KI analysieren** →
+  erkannte Profile prüfen → **übernehmen**. Ohne Key bleibt der Import deaktiviert (klarer Hinweis).
+
+## Automatik (Erinnerungen + Nachrücken) per Cron
+Im Dashboard unter **Automatik** einstellbar: Erinnerung nach X Stunden, „überfällig nach" X Stunden,
+und „automatisch nachrücken" (bei Absage/Überfälligkeit den nächstbesten Trainer anfragen).
+Manuell auslösbar über **Jetzt prüfen & senden**. Für den Automatikbetrieb im artfiles-Kundenmenü
+einen **Cronjob** anlegen, z. B. stündlich:
+```
+curl -s "https://cockpit.dvi-systems.com/backend/cron.php?key=DEIN_CRON_KEY"
+```
+Der `key` muss mit `cron_key` aus `config.php` übereinstimmen (schützt den Endpunkt).
+
+## Reiseplanung & druckbare Agenda
+Im Training unter **„✈ Reise & Agenda"** trägst du Hotel, Treffpunkt, Ansprechpartner, Dresscode,
+Per Diem, Hinweise und das Programm ein; je Trainer (Status „zugesagt") Flug- & Zimmerdaten.
+Über **🖨 Agenda** siehst/druckst du die persönliche Reise-Info; über **✉ Agenda senden** bekommt
+der Trainer eine E-Mail mit **Druck-Link** (`backend/agenda.php?token=…`) — die Seite öffnet ohne
+Login und lässt sich direkt ausdrucken. Der Token ist der der jeweiligen Anfrage; nichts weiter zu
+konfigurieren.
+
+## Zertifizierung der Teilnehmer
+Der Bereich **„Zertifizierung"** braucht keine zusätzliche Einrichtung - die Tabellen legt das
+Backend beim ersten Aufruf selbst an und füllt den Kriterienkatalog einmalig mit dem
+DVI-Startkatalog (5 Hauptkriterien, 22 Kriterien, davon 6 K.-o.-Kriterien). Danach ist der
+Katalog frei änderbar; wird ein Kriterium bereits benutzt, archiviert das Cockpit es statt
+es zu löschen, damit ältere Bewertungen lesbar bleiben.
+
+Unter **Katalog → Bewertungsregeln** stellst du Skala, Bestehensgrenze, Auszeichnungsgrenze,
+K.-o.-Schwelle und Mindestanwesenheit ein. Sie gelten für alle Blöcke.
+
+Zeugnisse (je Block) und Abschlusszertifikate (ganzer Lehrgang) bekommen eine fortlaufende
+**Prüfnummer**. Wer sie hat, kann die Echtheit ohne Login bestätigen lassen:
+
+```
+https://cockpit.dvi-systems.com/backend/verify.php?nr=ETAF-2026-0001-AB12
+```
+
+Die Seite nennt Name, Umfang, Ergebnis und Ausstellungsdatum - **keine Einzelnoten**. Sie ist
+für Suchmaschinen gesperrt (`noindex`) und bremst Fehlversuche aus. Zurückgezogene Dokumente
+zeigt sie als ungültig an. Der Link steht am Fuß jedes gedruckten Papiers; er richtet sich
+automatisch nach der Adresse, unter der das Cockpit läuft.
+
+### Teilnehmer einsammeln
+Unter **Zertifizierung -> Teilnehmer -> Liste einlesen** liegt eine **Excel-Vorlage**
+(deutsch oder englisch) zum Herunterladen. Sie hat zwei Blaetter: das Erfassungsblatt
+„Teilnehmer" mit **20 Beispielzeilen**, die der Kunde durch seine Leute ersetzt, und
+ein Hinweisblatt. Die ausgefuellte Datei wird an derselben Stelle wieder hochgeladen
+(.xlsx oder .csv).
+
+**Eingebauter Funktionstest:** die unveraenderte Vorlage einlesen muss genau
+**20 Teilnehmer** ergeben. Kommt etwas anderes heraus, laeuft auf dem Server noch
+ein alter Stand von `backend/lib.php` / `backend/api.php` - beide mit hochladen.
+
+Die Spalten werden an der Ueberschrift erkannt - deutsch wie englisch, in beliebiger
+Reihenfolge und auch mit den ueblichen Abweichungen wie „Pers.-Nr." oder
+„Einheit/Abteilung". Geburtsdaten in `12.04.1988`, `12/04/1988`, `1988-04-12` und als
+Excel-Tageszahl werden vereinheitlicht. Leerzeilen, doppelte Kopfzeilen und bereits
+vorhandene Personen werden uebersprungen und in der Rueckmeldung gezaehlt.
+
+Gelesen werden **alle Tabellenblaetter**, nicht nur das erste: Deckblaetter, verschobene
+Blaetter und Titelzeilen ueber der Tabelle stoeren nicht. Es gilt die einfache Regel:
+**was in der Datei steht, wird uebernommen** - es gibt keine stillen Filter. Nur das
+Hinweisblatt der eigenen Vorlage wird uebersprungen. Beim Einlesen ist „alle Bloecke
+des Programms" vorausgewaehlt und der Lehrgang vorbelegt; einzelne Bloecke lassen sich
+spaeter je Person abwaehlen.
+
+Sobald eine Datei gewaehlt ist, zeigt das Cockpit **vor dem Einlesen** eine Vorschau:
+welches Blatt, wie viele Zeilen, wie viele Personen je Blatt, welche Spalten zugeordnet
+wurden und die ersten Namen. Findet es nichts, sagt es warum. `backend/check.php` prueft
+ausserdem, ob dieser Server alles mitbringt, was der Import braucht (zlib, ZipArchive,
+mbstring, `post_max_size`).
+
+### Vor dem Echtstart aufraeumen
+Wenn der Auftrag steht und die echten Teilnehmer kommen, entfernt
+**Zertifizierung -> Katalog -> Daten zuruecksetzen** (nur fuer Administratoren) alle
+Uebungsdaten: Teilnehmer, Teilnahmen, Bewertungen, Einzelwertungen und ausgestellte
+Zertifikate. Der Kriterienkatalog bleibt erhalten, wenn du das nicht ausdruecklich
+mit ankreuzt. Trainings, Trainer, Wochenplaene und Folien sind nicht betroffen.
+Der Vorgang laesst sich nicht rueckgaengig machen, verlangt deshalb das getippte
+Wort RESET und landet im Protokoll.
+
+### Zellen, Gruppen und Einzelboegen
+Jeder Teilnehmer kann einer **Zelle/Team** (z.B. „Zelle 1" bis „Zelle 8") und einer
+**Gruppe** (z.B. „Teilnehmer" oder „Train-the-Trainer") zugeordnet werden - per
+Excel-Spalte beim Import oder einzeln im Stammdatenblatt. Oben in der Auswertung
+laesst sich der Blick auf eine Gruppe oder Zelle eingrenzen; alle Kennzahlen,
+Ranglisten und die Zwischenbilanz rechnen dann nur diese Menge. Die Programmansicht
+zeigt zusaetzlich **„Zellen im Vergleich"** und **„Gruppen im Vergleich"**: Staerke,
+Bestehensquote und das schwaechste Hauptkriterium je Menge; ein Klick auf die Zeile
+setzt den Filter.
+
+In der Zwischenbilanz erzeugt **„Einzelboegen"** eine Druckseite je Teilnehmer fuer
+den gewaehlten Zeitraum: Einordnung (Ampel), Platz in der Gruppe, Anwesenheit,
+Kompetenzprofil gegen den Gruppenschnitt, Staerken, Luecken, alle Bloecke des
+Zeitraums und eine Empfehlung im Klartext. Ueber den Druckdialog des Browsers laesst
+sich der Stapel als **PDF** speichern - eine Datei, eine Seite je Person.
+
+### Zellen-Planer (8 x 5 Aufstellung)
+**Zertifizierung -> Zellen-Planer** stellt die Einsatzzellen auf: acht Zellen mit
+denselben fuenf Positionen (Team Leader, Post Mortem, Ante Mortem, Daten & Abgleich,
+Logistik & Support), damit jede Zelle autark arbeiten kann. Jede Karte zeigt die
+fuenf Positionen, die Besetzung mit Staerkewert und eine Einordnung: **einsatzbereit**
+(voll besetzt, keine Nachschulung), offene Positionen, doppelte Besetzungen oder
+Nachschulungsbedarf. Oben steht das **Gleichgewicht der Zellen**: der Schnitt jeder
+Zelle als Balken, die Spannweite zwischen staerkster und schwaechster Zelle und die
+Einstufung ausgewogen/unausgewogen (Spannweite bis 8 Punkte gilt als ausgewogen).
+
+Ist das Gefuege schief, rechnet der Planer **Tauschvorschlaege**: nur Personen mit
+derselben Position, immer stark gegen schwach, und nur Zuege, die die Spannweite
+messbar verkleinern - ein Klick auf **Uebernehmen** fuehrt den Tausch aus. Genauso
+geht es von Hand: Person anklicken (Position oder Zelle aendern, direkt tauschen)
+oder eine unbesetzte Position anklicken und aus den passenden Kandidaten waehlen -
+gleiche Position zuerst, dann nach Staerke. **+ Zelle** legt eine weitere Zelle an;
+Teilnehmer ohne Zelle stehen im Pool darunter. Die Funktion je Person kommt auch
+aus der Excel-Vorlage (Spalte **Funktion**) mit.
+
+Am schnellsten geht die Aufstellung per **Ziehen und Ablegen** wie im Wochenplan:
+oben die **Anzahl der Zellen** eintragen (fehlende Zellen werden angelegt), dann
+Teilnehmer aus dem Pool oder aus anderen Zellen ziehen. Ablegen auf einer
+**Position** besetzt sie, Ablegen auf einer **Person** tauscht beide Plaetze
+(Zelle und Position), Ablegen auf dem **Pool** nimmt die Person aus der Zelle.
+Das **Diagramm-Symbol** an jeder Zelle oeffnet die Gesamtauswertung nur fuer
+diese Zelle, das kleine Diagramm an jeder Person ihre Einzelauswertung -
+auch aus dem Personen-Dialog heraus. Am Touch-Geraet ohne Maus funktioniert
+weiterhin alles per Klick (Person antippen, Zelle/Position waehlen).
+
+### Zwischenbilanz fuer den Kunden
+**Zertifizierung -> Auswertung -> Zwischenbilanz** schneidet alle Zahlen nach
+Zeitraum: Monat, Quartal, Halbjahr, Jahr, Gesamt oder frei gewaehlt, mit Pfeilen
+zum Blaettern. Verglichen wird automatisch mit dem gleich langen Zeitraum davor.
+Der Bericht zeigt Fortschritt, Entwicklung, Kompetenzprofil und je Teilnehmer eine
+Ampel mit Trend - die Regel dahinter steht unter der Tabelle, damit der Kunde die
+Einordnung nachvollziehen und selbst nachjustieren kann. Druck und CSV wie ueberall.
+
+## Visum-Workflow (Abu Dhabi)
+Im Reise-Editor je Trainer trägst du **Reisepass gültig bis** und **Visum-Status**
+(benötigt / beantragt / genehmigt / abgelehnt) samt Notizen ein; im Roster zeigt eine
+Statusampel den Stand. Die Automatik (siehe Cron oben) erinnert **bestätigte UAE-Trainer
+ohne genehmigtes Visum** einmalig automatisch an die Reisepass-Kopie — idempotent, es geht
+also keine doppelte Erinnerung raus. Pass- und Visum-Angaben erscheinen auch auf der
+druckbaren Agenda (`agenda.php`).
+
+## Flugdaten-Export je Trainingswoche (Kunde bucht selbst)
+Bucht der Kunde die Fluege selbst (Abu Dhabi), liefert das Cockpit je Woche die
+komplette Buchungsgrundlage: im Training unter **Team / Status -> Flugdaten**
+oeffnet sich die Uebersicht mit allen **bestaetigten Trainern** der Woche.
+**Excel herunterladen** erzeugt eine Tabelle mit Name laut Pass, Geburtsdatum,
+Nationalitaet, Passnummer und Gueltigkeit, An- und Abreise, Flugwuenschen,
+Visum-Status und Kontakt - dazu Kopfzeilen mit Woche, Zeitraum und Ort.
+Fehlende Angaben (z.B. Passnummer nicht hinterlegt) zeigt der Dialog vorher an
+und weist sie auch in der Datei aus - so dient der Export zugleich als
+Gegencheck. **Per E-Mail senden** schickt die Excel direkt als Anhang an den
+Kunden; die Empfaengeradresse wird gemerkt. Soll der Versand ueber ein eigenes
+Postfach laufen (z.B. fluege@dvi-systems.com), die Adresse in `config.php` als
+`'flight_from' => 'fluege@dvi-systems.com'` eintragen - sie muss zur eigenen
+Domain gehoeren. Jeder Download und Versand landet im Protokoll.
+
+Die Reisedaten sammelt das Cockpit direkt bei den Trainern ein: **Sagt ein
+Trainer per Antwort-Link zu, erscheint auf derselben Seite ein kurzes
+Reiseformular** - Abflughafen, Rueckflugziel, An-/Abreisetag (mit Trainingsdaten
+vorbelegt), Flugwuensche und, falls noch nicht hinterlegt, die Passangaben.
+Auch die Bestaetigungs-E-Mail enthaelt einen Button "Reisedaten angeben", ueber
+den der Trainer seine Angaben jederzeit nachtragen oder aendern kann - alles
+tokengebunden, ohne Anmeldung, nur fuer genau diese Woche. Der Abflughafen wird
+als Heimatflughafen gemerkt und in der naechsten Woche vorbelegt. Im Cockpit
+stehen dieselben Felder im Reise-Dialog je Trainer.
+
+## Kundenbereich (ADP): Lieferplan, Fristenwacht, Bestaetigungen
+Der Menuepunkt **Kunde (ADP)** ist nur mit Freigabe sichtbar. Admins haben ihn
+immer; allen anderen erteilt ein Admin unter **Benutzer** (Stern-Knopf je Zeile)
+getrennt **"darf sehen"** und **"darf senden"** - Senden schliesst Sehen ein.
+
+Der Bereich fuehrt den **Lieferplan aus dem Betriebs- und Pflichtenplan**:
+je Trainingswoche automatisch die Wochentakt-Positionen (T-8 Spezifikation,
+T-6 Pro-forma, T-4 Einsatzbestaetigung/Tickets, T-1 Teilnehmerliste,
+T+1 Wochendeliverable), dazu die 15 Monatsberichte und die Fixtermine aus
+Teil D. Kritische (rot hinterlegte) Fristen sind markiert; die Ampel oben
+zeigt Ueberfaelliges sofort. Eigene Positionen lassen sich ergaenzen.
+
+**Senden** verschickt eine Position (optional mit Anhang) an den Kunden -
+Absender ist `customer_from` aus config.php (z.B. adp@dvi-systems.com).
+Die Mail enthaelt einen **Bestaetigungslink** (backend/ack.php, zweistufig
+und scanner-sicher): der Kunde bestaetigt Empfang/Abnahme oder meldet einen
+Einwand. Ohne Reaktion erinnert der Cron nach der eingestellten Frist
+(Standard 14 Tage) automatisch; bleibt auch die Nachfrist (7 Tage) ohne
+Reaktion, setzt er den Status auf **"gilt als abgenommen"** - die komplette
+Kette (gesendet/erinnert/bestaetigt bzw. abgenommen, mit Daten und Namen)
+steht in der Position und im Aenderungsprotokoll. Fristen je Position sind
+einstellbar. Hinweis: die Formulierung der Mail sollte einmal juristisch
+gegen das Service Agreement gelesen werden - das Cockpit dokumentiert,
+die Rechtswirkung kommt aus dem Vertrag.
+
+## Kundenbereich Stufe 2: Berichte, Wochenpaket, Posteingang
+Aufbauend auf dem Lieferplan kann der Bereich **Kunde (ADP)** jetzt auch liefern
+und empfangen:
+
+- **Excel-Berichte per Klick**: Oben im Bereich stehen **Nachweisregister**
+  (komplette Lieferkette aller Positionen plus Wochenuebersicht - der
+  Pruefnachweis fuer Teil F des Pflichtenplans), **Teilnehmerstand** (alle
+  aktiven Teilnehmer mit Zelle, Position und Bewertungsstand) und
+  **Zertifikatsregister** (alle Zertifikate mit Pruefnummer und Pruef-Link)
+  als Download bereit. Jeder Download wird im Protokoll vermerkt.
+- **Berichte automatisch anhaengen**: Im Sende-Dialog laesst sich per Haekchen
+  waehlen, welche Berichte die Mail mitbekommt - bei Positionen mit
+  Trainingsbezug zusaetzlich das **Wochenpaket** (Wochenplan, Anwesenheit,
+  Endbewertungen in einer Datei - das Wochendeliverable T+1) und die
+  **Flugdaten der Trainer**. Das Cockpit erzeugt die Dateien beim Senden
+  frisch aus den aktuellen Daten; im Protokoll stehen die Dateinamen.
+- **Posteingang (adp@)**: Traegt man im Baustein `customer_mailbox` der
+  config.php die Zugangsdaten des ADP-Postfachs ein (Host, Port 995, user,
+  pass - hier ist das Postfach-Passwort noetig, anders als beim reinen
+  Senden), ruft der Cron das Postfach **stuendlich** ab. Antworten werden
+  ueber den Betreff automatisch der passenden Lieferplan-Position zugeordnet
+  und erscheinen als **Posteingang**-Reiter im Kundenbereich sowie direkt in
+  der Kette der Position. Nicht zuordenbare Mails lassen sich von Hand
+  zuordnen oder ignorieren; **Postfach abrufen** holt neue Mails sofort.
+  Die Mails bleiben im Postfach liegen (POP3, ohne Loeschen).
+- **Als bestaetigt erfassen**: Kommt eine Abnahme per Mail oder muendlich
+  statt ueber den Bestaetigungslink, laesst sich die Position mit Name und
+  Vermerk von Hand auf **bestaetigt** setzen - sauber dokumentiert in Kette
+  und Protokoll.
+
+## Absender je Bereich (adp@, fluege@) - und was der Hoster daraus macht
+Das Cockpit sendet aus dem **Kundenbereich** unter `customer_from`
+(z.B. adp@dvi-systems.com) und die **Flugdaten** unter `flight_from`;
+alles andere unter `from_email`. Ob das beim Empfaenger auch so ankommt,
+haengt vom Versandweg ab:
+
+- **`mail_mode = 'mail'`**: Hier entscheidet der Hoster mit. Viele Server
+  tragen ihren eigenen Kontonamen als Absender ein und ueberschreiben dabei
+  das From-Feld - dann kommt die Kundenmail trotz gesetztem `customer_from`
+  unter der Standardadresse an. Das Cockpit gibt den Absender jetzt auch als
+  Envelope-Absender mit (`-f`), was das in vielen Faellen verhindert;
+  zuverlaessig ist aber erst der SMTP-Weg.
+- **`mail_mode = 'smtp'`** (empfohlen): Der Absender geht so raus, wie er
+  gesetzt ist - vorausgesetzt, das SMTP-Konto darf unter dieser Adresse
+  senden. Tut es das nicht, lehnt der Server ab (die Diagnose zeigt dann
+  "Absender abgelehnt" samt Serverantwort).
+- **Eigenes Konto je Adresse**: Hat adp@ (oder fluege@) ein eigenes Postfach,
+  gehoert es in config.php unter `smtp_accounts` - dann meldet sich das
+  Cockpit fuer diese Mails mit genau diesem Konto an:
+  ```php
+  'smtp_accounts' => [
+    'adp@dvi-systems.com' => ['user' => 'adp@dvi-systems.com', 'pass' => 'POSTFACH_PASSWORT'],
+  ],
+  ```
+  Host, Port und Verschluesselung kommen aus dem `smtp`-Block.
+
+Pruefen laesst sich das alles unter **backend/mailtest.php?key=CRON_KEY**:
+Die Karte **Absender je Bereich** zeigt je Bereich die tatsaechliche
+Absenderadresse und das dafuer benutzte SMTP-Konto und weist darauf hin,
+wenn `customer_from` oder `flight_from` in der config.php fehlen. Mit
+`&to=deine@mail.de` kommt ein Testversand dazu, mit `&as=customer` bzw.
+`&as=flight` gezielt unter dem jeweiligen Absender.
+
+## Wochen-Drehbuch (Running Order)
+Im Training oeffnet **Wochen-Drehbuch** den kompletten Ablaufplan der Woche als
+eine Agenda: Wer kommt wann an (aus den Reisedaten der Trainer), Team-Briefing
+am Vorabend, je Trainingstag Shuttle, Treffpunkt mit **Vorlauf** (einstellbar,
+Standard 45 Minuten vor Beginn), die **Sessions aus dem Wochenplan** mit Trainer
+und Sessionmaterial, **Mittagspause** (Uhrzeit und Dauer einstellbar),
+Tagesabschluss und Rueckshuttle sowie am ersten Morgen die komplette
+**Materialliste**. Der Vorschlag kommt per Knopf **Aus Plan neu erzeugen** aus
+den vorhandenen Daten; danach ist jede Zeile im Editor frei anpassbar
+(Uhrzeit, Kategorie, Titel, Details), Zeilen und ganze Tage lassen sich
+ergaenzen. Am Griff (Punkte links) laesst sich jede Zeile **per Ziehen**
+innerhalb des Tages umsortieren oder auf einen anderen Tag ziehen; die
+Knoepfe je Zeile **kopieren** sie (Duplikat darunter - z.B. fuer den
+naechsten Tag), **fuegen eine Leerzeile dazwischen ein** oder loeschen sie.
+Die selbst gewaehlte Reihenfolge bleibt beim Speichern erhalten;
+**nach Uhrzeit** ordnet einen Tag auf Wunsch wieder chronologisch. **Drucken / PDF** erzeugt das mehrseitige Dokument (ueber den
+Druckdialog als PDF speicherbar), **An Orga-Team senden** verschickt den Plan
+huebsch formatiert per E-Mail an einen oder mehrere Empfaenger (werden gemerkt).
+Speichern legt den Stand am Training ab; Aenderungen stehen im Protokoll.
+
+## Automatische Flugvorschläge
+Im Reise-Editor liefert **„Flüge vorschlagen"** aus Heimatregion → Zielflughafen passende
+Verbindungen (z. B. München → Abu Dhabi). Ein Klick auf **Übernehmen** trägt Hin-/Rückflug
+in die Reisedaten ein. Die Vorschläge sind heuristisch (keine Live-Preise) und dienen als
+Ausfüllhilfe — die endgültige Buchung machst du wie gewohnt selbst.
+
+## E-Mail-Protokoll
+Der Menüpunkt **Protokoll** listet alle versendeten E-Mails (Empfänger, Betreff, Sprache,
+Zeitpunkt, Status) — Anfragen, Erinnerungen, Visum-Hinweise und Agenda-Mails an einem Ort.
+Grundlage ist die Tabelle `email_log`, die bei jedem Versand (auch bei `mail_mode='log'`)
+befüllt wird.
+
+## Vorgeladenes Programm (DVI Elite Team 2026–2027)
+Die Standard-Installation legt das reale **Operational DVI Elite Team Programme 2026–2027** an:
+24 Einsätze (W1–W20 mit exakten Datumsbereichen, PM-Modul in Weeze als Kohorte A/B, zwei
+Train-the-Trainer-Blöcke und die Abschluss-Zertifizierung), Kunde **Abu Dhabi Police — DVI**.
+Im **Demo-Modus** wird das Programm beim ersten Laden nach einem Update automatisch übernommen
+(Sprache, Einstellungen, E-Mail-Protokoll & Vorlagen bleiben erhalten). Willst du im Demo-Modus
+ganz neu starten, `localStorage` leeren.
+
+## Mehrere Kunden / Projekte
+Das Tool ist mandantenfähig: jedes Training gehört zu einem **Kunden** mit eigener Farbe. Oben rechts
+schaltest du zwischen **„Alle Kunden"** und einem einzelnen Kunden um; bei „Alle Kunden" zeigt der
+**Leitstand** je Kunde eine Kachel (wo es brennt / in Arbeit / fertig besetzt). Standardmäßig ist nur
+**Abu Dhabi Police — DVI** angelegt; weitere Kunden (z. B. weitere Behörden/Länder) ergänzt du über
+**⚙ Kunden verwalten** (Name, Kürzel, Farbe, Land). Ein Training ordnest du in der Detailansicht per
+Auswahlfeld einem Kunden zu.
+
+## Menue: vier Bloecke, einklappbar
+Die Seitenleiste ist in vier Bloecke gegliedert: **Planung** (Uebersicht, Trainings,
+Wochenplan, Belegung, Trainer, Berichte), **Teilnehmer** (Teilnehmer-Stammdaten als
+eigener Punkt, Zertifizierung), **Kommunikation** (Folien, Rueckmeldungen, Vorlagen)
+und **System** (Automatik, Protokolle, Benutzer). Jede Ueberschrift laesst sich per
+Klick ein- und ausklappen; der Zustand wird im Browser gemerkt. **System** startet
+zugeklappt - da muss man nicht staendig ran. Der Punkt **Protokolle** fasst
+E-Mail-Protokoll und Aenderungsprotokoll unter zwei Reitern zusammen.
+
+## Trainings anlegen & bearbeiten
+Unter **Trainings → + Neues Training** legst du ein Training direkt im Dashboard an (Kunde, Thema,
+Ort, Land, Beginn/Ende als Datum, Schwerpunkt, benötigte Trainer, Teilnehmer). Aus dem Datum werden
+Kalenderwoche und Monat automatisch abgeleitet. Bestehende Trainings öffnest und bearbeitest (oder
+löschst) du über **✎ Bearbeiten** in der Detailansicht.
+
+## Intelligente Materialliste
+Jedes Training hat eine **Materialliste** (Positionen = Material + Anzahl). Die Materialien pflegst
+du zentral über **⚙ Material-Katalog** (DVI-Kits, Leichensäcke, CBRN-Kits, Ante-/Post-Mortem-
+Protokolle, DNA-/Fingerprint-Sets, Schutzanzüge, Verbrauchsmaterial) mit Bezeichnung, Einheit und
+Kategorie. In der Trainingsansicht unter **Material bearbeiten** setzt du Positionen und Mengen.
+
+**Typ-Vorlagen (intelligent):** Über **💾 Als Standard für „<Schwerpunkt>" speichern** hinterlegst du
+die Standard-Materialliste für einen Schwerpunkt (z. B. „Post Mortem" oder „CBRN"). Legst du ein neues
+Training mit demselben Schwerpunkt an, wird diese Liste **automatisch übernommen**. Über
+**🖨 Materialliste** druckst du die Liste als Packliste. (Ausgeliefert sind bereits Vorlagen für
+Post Mortem, Ante Mortem, Scene & Recovery, CBRN und Simulation.)
+
+## Kalender: iCal-Export & Wandkalender
+- **iCal-Datei (.ics)**: Über **⤓ iCal (.ics)** lädst du alle Trainings der aktuellen Kunden-Auswahl
+  als Kalenderdatei herunter (exakte Termine, Farbe/Kategorie pro Kunde) und importierst
+  sie in Google/Apple/Outlook.
+- **Abonnierbarer Link (Live)**: Setze `ics_key` in `config.php` und trage in deinem Kalender
+  „Kalender abonnieren" mit dieser URL ein — er aktualisiert sich automatisch:
+  ```
+  https://cockpit.dvi-systems.com/backend/ics.php?key=DEIN_ICS_KEY
+  ```
+  Optional nur ein Kunde: `…&client=<client_id>` (z. B. `cl-adp`).
+- **Wandkalender (Druck)**: Über **📅 Wandkalender** öffnet sich eine chronologische, farbcodierte
+  Monatsübersicht — im Querformat zum Ausdrucken und An-die-Wand-hängen.
+
+## Was später noch dazukommen könnte
+- KI-Auswertung frei geschriebener E-Mail-Antworten (zusätzlich zu den Magic-Link-Buttons).
+- Anbindung an Airline-Buchung / Visum-Dienstleister, Rollen & Audit-Log.
+- 2-Wege-Kalender-Sync (CalDAV) statt reinem Abo-Feed.

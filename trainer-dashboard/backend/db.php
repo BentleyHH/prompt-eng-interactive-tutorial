@@ -1,0 +1,794 @@
+<?php
+/**
+ * ETAF - Datenschicht (PDO, MySQL + SQLite kompatibel)
+ * Self-provisioning: legt Tabellen bei Bedarf an und seedet Demo-Daten.
+ */
+
+function cfg(): array {
+  static $c=null;
+  if($c===null){
+    $f=__DIR__.'/config.php';
+    $c = is_file($f) ? require $f : require __DIR__.'/config.sample.php';
+  }
+  return $c;
+}
+
+function db(): PDO {
+  static $pdo=null;
+  if($pdo) return $pdo;
+  $c=cfg();
+  if(($c['driver']??'mysql')==='sqlite'){
+    $pdo=new PDO('sqlite:'.$c['sqlite_path']);
+    $pdo->exec('PRAGMA foreign_keys=ON');
+  } else {
+    $dsn=sprintf('mysql:host=%s;dbname=%s;charset=%s',$c['db_host'],$c['db_name'],$c['db_charset']??'utf8mb4');
+    $pdo=new PDO($dsn,$c['db_user'],$c['db_pass']);
+  }
+  $pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
+  $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE,PDO::FETCH_ASSOC);
+  return $pdo;
+}
+
+function is_sqlite(): bool { return (cfg()['driver']??'mysql')==='sqlite'; }
+
+/** Prepared query helper */
+function q(string $sql, array $params=[]): PDOStatement {
+  $st=db()->prepare($sql);
+  $st->execute($params);
+  return $st;
+}
+function now(): string { return gmdate('Y-m-d H:i:s'); }
+/**
+ * Zeitstempel aus der Datenbank in Unix-Zeit umrechnen.
+ * WICHTIG: now() schreibt UTC (gmdate). strtotime() würde den Wert dagegen in der
+ * Zeitzone des Servers lesen - auf einem Server in Europe/Berlin wären alle
+ * Zeitstempel dadurch 1-2 Stunden „zu alt“. Deshalb hier immer explizit als UTC.
+ */
+function ts(?string $s): int {
+  if(!$s) return 0;
+  $t=strtotime($s.' UTC');
+  return $t===false ? 0 : $t;
+}
+function token(int $len=32): string { return bin2hex(random_bytes($len/2)); }
+
+/** Schema anlegen (idempotent) + Seed */
+function ensure_schema(): void {
+  $pk = is_sqlite() ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'INT UNSIGNED AUTO_INCREMENT PRIMARY KEY';
+  $eng = is_sqlite() ? '' : ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+  $d=db();
+
+  $d->exec("CREATE TABLE IF NOT EXISTS app_config (
+    k VARCHAR(64) PRIMARY KEY, v TEXT)$eng");
+
+  $d->exec("CREATE TABLE IF NOT EXISTS sessions (
+    token VARCHAR(64) PRIMARY KEY, created_at VARCHAR(20), last_seen VARCHAR(20))$eng");
+
+  $d->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+    ip VARCHAR(64) PRIMARY KEY, cnt INT, window_start VARCHAR(20))$eng");
+
+  $d->exec("CREATE TABLE IF NOT EXISTS trainers (
+    id $pk,
+    name VARCHAR(160), email VARCHAR(190), phone VARCHAR(64),
+    spec TEXT, region VARCHAR(64), langs TEXT,
+    uae INT DEFAULT 0, load_lvl INT DEFAULT 0,
+    color VARCHAR(16), rating VARCHAR(8),
+    created_at VARCHAR(20))$eng");
+
+  $d->exec("CREATE TABLE IF NOT EXISTS clients (
+    id VARCHAR(24) PRIMARY KEY,
+    name VARCHAR(160), short VARCHAR(24), color VARCHAR(16),
+    cal VARCHAR(24), country VARCHAR(16), sort_order INT DEFAULT 0)$eng");
+
+  $d->exec("CREATE TABLE IF NOT EXISTS trainings (
+    id $pk,
+    client_id VARCHAR(24),
+    topic VARCHAR(190), city VARCHAR(96), country VARCHAR(16),
+    kw VARCHAR(24), month VARCHAR(24), spec VARCHAR(96),
+    start_date VARCHAR(12), end_date VARCHAR(12), code VARCHAR(16),
+    need_cnt INT DEFAULT 5, participants INT DEFAULT 0,
+    venue VARCHAR(255), hotel VARCHAR(190), hotel_addr VARCHAR(255),
+    meeting_point VARCHAR(255), contact_name VARCHAR(160), contact_phone VARCHAR(64),
+    dresscode VARCHAR(160), per_diem VARCHAR(64), travel_notes TEXT, agenda TEXT,
+    created_at VARCHAR(20))$eng");
+
+  // Reisedaten je Trainer (Flug, Zimmer, Visum)
+  $d->exec("CREATE TABLE IF NOT EXISTS travel (
+    id $pk,
+    training_id INT, trainer_id INT,
+    arrival VARCHAR(48), departure VARCHAR(48),
+    flight_out VARCHAR(190), flight_return VARCHAR(190),
+    room VARCHAR(48), notes TEXT,
+    visa_status VARCHAR(16) DEFAULT 'none', passport_expiry VARCHAR(20),
+    visa_notes TEXT, visa_reminded INT DEFAULT 0,
+    updated_at VARCHAR(20))$eng");
+
+  $d->exec("CREATE TABLE IF NOT EXISTS templates (
+    id VARCHAR(16) PRIMARY KEY,
+    de_name VARCHAR(120), de_subject VARCHAR(255), de_body TEXT,
+    en_name VARCHAR(120), en_subject VARCHAR(255), en_body TEXT)$eng");
+
+  $d->exec("CREATE TABLE IF NOT EXISTS requests (
+    id $pk,
+    training_id INT, trainer_id INT,
+    status VARCHAR(16) DEFAULT 'asked',
+    lang VARCHAR(4) DEFAULT 'en',
+    tok VARCHAR(64),
+    note TEXT,
+    created_at VARCHAR(20), responded_at VARCHAR(20))$eng");
+
+  $d->exec("CREATE TABLE IF NOT EXISTS email_log (
+    id $pk,
+    training_id INT, trainer_id INT, to_email VARCHAR(190),
+    subject VARCHAR(255), body TEXT, lang VARCHAR(4),
+    status VARCHAR(16), created_at VARCHAR(20))$eng");
+
+  // Material-Katalog + Positionen je Training + Typ-Vorlagen
+  $d->exec("CREATE TABLE IF NOT EXISTS materials (
+    id VARCHAR(24) PRIMARY KEY,
+    name VARCHAR(160), unit VARCHAR(24), cat VARCHAR(64), sort_order INT DEFAULT 0)$eng");
+  $d->exec("CREATE TABLE IF NOT EXISTS training_materials (
+    id $pk, training_id INT, material_id VARCHAR(24), qty INT DEFAULT 0, ok INT DEFAULT 0)$eng");
+  $d->exec("CREATE TABLE IF NOT EXISTS material_presets (
+    id $pk, spec VARCHAR(96), material_id VARCHAR(24), qty INT DEFAULT 0)$eng");
+
+  // Einsatzübersicht je Trainer: Magic-Token + Gesamtbestätigung des Plans
+  $d->exec("CREATE TABLE IF NOT EXISTS plan_tokens (
+    trainer_id INT PRIMARY KEY,
+    tok VARCHAR(64),
+    created_at VARCHAR(20), sent_at VARCHAR(20),
+    confirmed_at VARCHAR(20), confirm_status VARCHAR(16), note TEXT)$eng");
+
+  // PIN einmalig setzen. Fehlende config-Einträge dürfen den Start nie verhindern -
+  // check.php zeigt sie als klare Liste an, hier greifen sichere Standardwerte.
+  if(!config_get('pin_hash')){
+    config_set('pin_hash', password_hash((string)(cfg()['default_pin'] ?? '481509'), PASSWORD_DEFAULT));
+  }
+  if(!config_get('org_name')) config_set('org_name', (string)(cfg()['org_name'] ?? 'ETAF'));
+
+  // Migrationen (idempotent): Erinnerungs-Spalten für requests
+  try{ db()->exec("ALTER TABLE requests ADD COLUMN reminded_at VARCHAR(20)"); }catch(Throwable $e){}
+  try{ db()->exec("ALTER TABLE requests ADD COLUMN reminder_count INT DEFAULT 0"); }catch(Throwable $e){}
+  // Migrationen (idempotent): Reise-Spalten für trainings
+  foreach([
+    "venue VARCHAR(255)","hotel VARCHAR(190)","hotel_addr VARCHAR(255)",
+    "meeting_point VARCHAR(255)","contact_name VARCHAR(160)","contact_phone VARCHAR(64)",
+    "dresscode VARCHAR(160)","per_diem VARCHAR(64)","travel_notes TEXT","agenda TEXT",
+    "client_id VARCHAR(24)","start_date VARCHAR(12)","end_date VARCHAR(12)","code VARCHAR(16)"
+  ] as $col){ try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Migrationen (idempotent): Visum-Spalten für travel
+  foreach([
+    "visa_status VARCHAR(16) DEFAULT 'none'","passport_expiry VARCHAR(20)",
+    "visa_notes TEXT","visa_reminded INT DEFAULT 0",
+    "dep_airport VARCHAR(96)","ret_airport VARCHAR(96)"
+  ] as $col){ try{ db()->exec("ALTER TABLE travel ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Heimatflughafen als Vorgabe fuer kuenftige Wochen
+  try{ db()->exec("ALTER TABLE trainers ADD COLUMN home_airport VARCHAR(96)"); }catch(Throwable $e){}
+  // Wochen-Drehbuch (Running Order) je Training: JSON {items,cfg,updatedAt,updatedBy}
+  try{ db()->exec("ALTER TABLE trainings ADD COLUMN running TEXT"); }catch(Throwable $e){}
+  // Migrationen (idempotent): Kontakt-Spalten für clients (Transferliste)
+  foreach(["contact_name VARCHAR(160)","contact_email VARCHAR(190)"] as $col){
+    try{ db()->exec("ALTER TABLE clients ADD COLUMN $col"); }catch(Throwable $e){}
+  }
+  // Migrationen (idempotent): Reisepass je Trainer (einmal hinterlegt, mit Verfallsdatum
+  // + optionalem Foto). passport_file speichert das Bild als Data-URI (deshalb LONGTEXT).
+  $longtext = is_sqlite() ? 'TEXT' : 'LONGTEXT';
+  foreach([
+    "passport_number VARCHAR(64)","passport_name VARCHAR(190)","passport_nationality VARCHAR(64)",
+    "passport_birthdate VARCHAR(20)","passport_expiry VARCHAR(20)","passport_file $longtext",
+    "passport_notes TEXT","passport_updated_at VARCHAR(20)","passport_reminded_at VARCHAR(20)"
+  ] as $col){ try{ db()->exec("ALTER TABLE trainers ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Transferliste je Kunde: Magic-Token + Empfangsbestätigung
+  db()->exec("CREATE TABLE IF NOT EXISTS transfer_tokens (
+    client_id VARCHAR(24) PRIMARY KEY,
+    tok VARCHAR(64), sent_at VARCHAR(20), confirmed_at VARCHAR(20), note TEXT)".(is_sqlite()?'':' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'));
+  try{ db()->exec("ALTER TABLE transfer_tokens ADD COLUMN reminded_at VARCHAR(20)"); }catch(Throwable $e){}
+  // Rückmeldungen der Trainer zur Einsatzübersicht: „erledigt“-Markierung im Dashboard
+  try{ db()->exec("ALTER TABLE plan_tokens ADD COLUMN resolved_at VARCHAR(20)"); }catch(Throwable $e){}
+
+  /* ---- Flugpost: abgerufene Mails + Anhänge (E-Tickets), Zuordnungsstatus ---- */
+  $d->exec("CREATE TABLE IF NOT EXISTS travel_mail (
+    id $pk,
+    uid VARCHAR(190), from_addr VARCHAR(190), subject VARCHAR(255), received_at VARCHAR(48),
+    body_text $longtext,
+    status VARCHAR(16) DEFAULT 'new',      -- new | applied | ignored | irrelevant
+    extracted $longtext,                   -- KI-/Fallback-Extrakt als JSON
+    match_trainer_id INT, match_training_id INT, confidence VARCHAR(8),
+    applied_at VARCHAR(20), created_at VARCHAR(20))$eng");
+  try{ $d->exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_travel_mail_uid ON travel_mail(uid)"); }catch(Throwable $e){}
+  $d->exec("CREATE TABLE IF NOT EXISTS travel_mail_att (
+    id $pk, mail_id INT, name VARCHAR(190), mime VARCHAR(96), data $longtext)$eng");
+  // Verknüpfung Reisedaten → Quell-Mail (fürs Anhängen des Tickets an die Agenda)
+  try{ db()->exec("ALTER TABLE travel ADD COLUMN mail_id INT"); }catch(Throwable $e){}
+
+  /* ---- Mehrbenutzer: Konten, Passwort-Zurücksetzen, Änderungsprotokoll ---- */
+  $d->exec("CREATE TABLE IF NOT EXISTS users (
+    id $pk,
+    email VARCHAR(190), name VARCHAR(160), pass_hash VARCHAR(255),
+    role VARCHAR(16) DEFAULT 'editor',            -- 'admin' | 'editor'
+    active INT DEFAULT 1,
+    created_at VARCHAR(20), last_login VARCHAR(20))$eng");
+  // E-Mail eindeutig (getrennt angelegt, damit bestehende Installationen migrieren)
+  try{ $d->exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email ON users(email)"); }catch(Throwable $e){}
+  // Einladungs-/Zurücksetz-Links: einmal verwendbar, mit Ablauf
+  $d->exec("CREATE TABLE IF NOT EXISTS reset_tokens (
+    tok VARCHAR(64) PRIMARY KEY,
+    user_id INT, purpose VARCHAR(16) DEFAULT 'reset',   -- 'reset' | 'invite'
+    created_at VARCHAR(20), used_at VARCHAR(20))$eng");
+  // Wer hat wann was geändert
+  $d->exec("CREATE TABLE IF NOT EXISTS activity (
+    id $pk,
+    user_id INT, user_name VARCHAR(160), action VARCHAR(48),
+    entity VARCHAR(32), entity_id VARCHAR(32), summary VARCHAR(255),
+    created_at VARCHAR(20))$eng");
+  // Rückgängig/Wiederholen: Datenstand vor und nach der Änderung
+  foreach([
+    "undo_before $longtext","undo_after $longtext",
+    "undo_spec TEXT",           // welche Tabellen/Zeilen betroffen sind
+    "undone_at VARCHAR(20)"
+  ] as $col){ try{ db()->exec("ALTER TABLE activity ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Teilnehmer-Stammdaten fuer Zertifikate: getrennter Vor- und Nachname,
+  // Geburtsdatum zur Unterscheidung von Namensgleichen, Herkunft und Kontakt.
+  foreach([
+    "first_name VARCHAR(96)","last_name VARCHAR(96)",
+    "birth_date VARCHAR(12)","birth_place VARCHAR(120)",
+    "nationality VARCHAR(64)","gender VARCHAR(12)","phone VARCHAR(64)",
+    "team VARCHAR(64)","track VARCHAR(64)","cell_role VARCHAR(64)"
+  ] as $col){ try{ db()->exec("ALTER TABLE students ADD COLUMN $col"); }catch(Throwable $e){} }
+
+  // Sitzung kennt den angemeldeten Benutzer
+  try{ db()->exec("ALTER TABLE sessions ADD COLUMN user_id INT"); }catch(Throwable $e){}
+
+  // Zwei-Faktor-Anmeldung (TOTP, z.B. Google Authenticator): Geheimnis je Benutzer,
+  // aktiv erst nach bestaetigtem Einrichtungs-Code.
+  foreach([
+    "totp_secret VARCHAR(64)","totp_on INT DEFAULT 0"
+  ] as $col){ try{ db()->exec("ALTER TABLE users ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Kundenbereich: getrennte Freigaben "darf sehen" und "darf senden"
+  // (Admins haben beides automatisch)
+  foreach([
+    "cust_view INT DEFAULT 0","cust_send INT DEFAULT 0"
+  ] as $col){ try{ db()->exec("ALTER TABLE users ADD COLUMN $col"); }catch(Throwable $e){} }
+
+  // Kundenbereich: Lieferplan-Positionen (Pflichten aus dem Betriebs- und
+  // Pflichtenplan - Wochentakt je Trainingswoche, Fixtermine, Monatsberichte,
+  // freie Positionen) samt kompletter Bestaetigungskette.
+  $d->exec("CREATE TABLE IF NOT EXISTS cust_items (
+    id $pk,
+    auto_key VARCHAR(64),                -- Dedupe-Schluessel des Generators ('' = von Hand)
+    kind VARCHAR(24) DEFAULT 'custom',   -- spec|proforma|confirm4w|attendance|deliverable|monthly|milestone|custom
+    training_id INT,                     -- bei Wochentakt-Positionen
+    title VARCHAR(190), note TEXT,
+    due VARCHAR(12),                     -- Faelligkeit (Datum)
+    critical INT DEFAULT 0,              -- rot hinterlegte Frist (kostet Geld/Vertragsposition)
+    status VARCHAR(16) DEFAULT 'open',   -- open|prepared|sent|reminded|confirmed|deemed|objection|done|dropped
+    confirm_days INT DEFAULT 14,         -- Frist bis zur Erinnerung
+    grace_days INT DEFAULT 7,            -- Nachfrist bis 'gilt als abgenommen'
+    mail_to VARCHAR(255), sent_subject VARCHAR(255),
+    tok VARCHAR(64),                     -- Hash des Bestaetigungs-Links
+    sent_at VARCHAR(20), reminded_at VARCHAR(20),
+    confirmed_at VARCHAR(20), confirmed_by VARCHAR(190),
+    deemed_at VARCHAR(20),
+    objection TEXT, objection_at VARCHAR(20),
+    created_at VARCHAR(20), updated_at VARCHAR(20))$eng");
+  try{ $d->exec("CREATE INDEX idx_cust_due ON cust_items(due)"); }catch(Throwable $e){}
+  try{ $d->exec("CREATE UNIQUE INDEX ux_cust_auto ON cust_items(auto_key)"); }catch(Throwable $e){}
+  // Posteingang des Kunden-Postfachs (z.B. adp@...): das Cockpit liest die
+  // Mails mit und ordnet sie ueber den Betreff der passenden Position zu.
+  $d->exec("CREATE TABLE IF NOT EXISTS cust_mail (
+    id $pk, uid VARCHAR(190),
+    from_addr VARCHAR(190), subject VARCHAR(240), received_at VARCHAR(40),
+    body TEXT, atts TEXT,
+    item_id INT,                          -- verknuepfte Lieferplan-Position
+    status VARCHAR(12) DEFAULT 'open',    -- open|linked|done|ignored
+    created_at VARCHAR(20))$eng");
+  try{ $d->exec("CREATE UNIQUE INDEX ux_custmail_uid ON cust_mail(uid)"); }catch(Throwable $e){}
+  // Offene Zwei-Faktor-Anmeldungen: Passwort war richtig, der Code fehlt noch.
+  // Kurzlebig (5 Minuten), begrenzte Versuche.
+  $d->exec("CREATE TABLE IF NOT EXISTS tfa_challenges (
+    tok VARCHAR(64) PRIMARY KEY, user_id INT, tries INT DEFAULT 0,
+    created_at VARCHAR(20))$eng");
+  // Vertraute Geraete: nach erfolgreichem Zwei-Faktor-Login kann der Browser
+  // fuer tfa_trust_days (Standard 14) gemerkt werden - gespeichert nur als Hash.
+  $d->exec("CREATE TABLE IF NOT EXISTS tfa_trust (
+    tok VARCHAR(64) PRIMARY KEY, user_id INT,
+    created_at VARCHAR(20), last_used VARCHAR(20))$eng");
+  // Info-Mail (Digest) je Benutzer: Häufigkeit, Wochentag, gewählte Inhalte
+  foreach([
+    "digest_freq VARCHAR(12) DEFAULT 'off'",   // off | daily | every2 | weekly
+    "digest_day INT DEFAULT 1",                // 1=Mo … 7=So (nur bei weekly)
+    "digest_parts TEXT",                       // JSON-Liste der Inhalte
+    "digest_last VARCHAR(20)"
+  ] as $col){ try{ db()->exec("ALTER TABLE users ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Versionszähler gegen gegenseitiges Überschreiben (optimistisches Sperren)
+  foreach(['trainings','trainers','clients'] as $tbl){
+    foreach(["version INT DEFAULT 1","updated_at VARCHAR(20)","updated_by VARCHAR(160)"] as $col){
+      try{ db()->exec("ALTER TABLE $tbl ADD COLUMN $col"); }catch(Throwable $e){}
+    }
+    try{ db()->exec("UPDATE $tbl SET version=1 WHERE version IS NULL"); }catch(Throwable $e){}
+  }
+  // Interne Notizen je Trainer (frei fortschreibbar)
+  try{ db()->exec("ALTER TABLE trainers ADD COLUMN notes TEXT"); }catch(Throwable $e){}
+  // Bevorzugte Ansprache-Sprache je Trainer ('de' | 'en', leer = globale Einstellung)
+  try{ db()->exec("ALTER TABLE trainers ADD COLUMN pref_lang VARCHAR(4)"); }catch(Throwable $e){}
+  // Interne Bewertungen je Trainer & Training (5 Sterne + Notiz, nur fürs Team)
+  $d->exec("CREATE TABLE IF NOT EXISTS trainer_reviews (
+    id $pk, trainer_id INT, training_id INT, label VARCHAR(190),
+    stars INT DEFAULT 0, note TEXT, updated_at VARCHAR(20))$eng");
+
+  /* ---- Wochenplan (aus dem ETAF Dashboard zusammengeführt): Sessions je
+         Training, Platzierung Mo-Fr × Vormittag/Nachmittag, Weekly Deliverable.
+         ppt: '' = offen | 'inArbeit' | 'vorhanden'; ppt_by = Trainer-ID;
+         trainer_id an der Session = wer sie hält (aus der Besetzung). ---- */
+  $d->exec("CREATE TABLE IF NOT EXISTS training_sessions (
+    id $pk, training_id INT,
+    title VARCHAR(190), title_en VARCHAR(190),
+    stype VARCHAR(16) DEFAULT 'theorie', dur VARCHAR(8) DEFAULT '1', descr TEXT,
+    trainer_id INT,
+    ppt VARCHAR(12) DEFAULT '', ppt_by INT, ppt_due VARCHAR(12),
+    sort INT DEFAULT 0)$eng");
+  foreach([
+    "stage VARCHAR(8)","star INT DEFAULT 0","deliverable TEXT","deliverable_en TEXT",
+    "plan_slots TEXT"   // JSON: {"mon_am":[ids],…,"fri_pm":[ids],"bench":[ids]}
+  ] as $col){ try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Benötigtes Material je Session (Freitext, z.B. "20× DVI-Kit, Beamer")
+  try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN mat TEXT"); }catch(Throwable $e){}
+  // Co-Teaching: MEHRERE Trainer je Session (JSON-Liste). Alt-Bestand aus der
+  // früheren Einzelspalte trainer_id einmalig übernehmen (nur solange NULL -
+  // eine bewusst geleerte Liste '[]' wird nie wieder überschrieben).
+  try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN trainer_ids TEXT"); }catch(Throwable $e){}
+  try{
+    foreach(q("SELECT id,trainer_id FROM training_sessions WHERE trainer_id IS NOT NULL AND trainer_ids IS NULL")->fetchAll() as $ms){
+      q("UPDATE training_sessions SET trainer_ids=? WHERE id=?",[json_encode([(string)$ms['trainer_id']]),$ms['id']]);
+    }
+  }catch(Throwable $e){}
+  // Einmal-Import der Programm-Inhalte (V3.2) über die Block-Codes (W1…Final)
+  if((int)q("SELECT COUNT(*) c FROM training_sessions")->fetch()['c']===0){
+    try{ import_programme_sessions(); }catch(Throwable $e){}
+  }
+
+  /* ---- PowerPoint-Verfolgung: Datei-Ablage auf dem Webspace (nicht in der
+         Datenbank - sonst wachsen Dump und tägliche Sicherung um Gigabytes),
+         Erinnerungs-Stempel je Session, Basis-Vorlage je Training. ---- */
+  foreach([
+    "ppt_note VARCHAR(255)",
+    "ppt_file VARCHAR(255)","ppt_file_name VARCHAR(190)",
+    "ppt_file_size INT DEFAULT 0","ppt_file_at VARCHAR(20)",
+    "ppt_reminded_at VARCHAR(20)","ppt_remind_count INT DEFAULT 0","ppt_escalated INT DEFAULT 0",
+    "ppt_by_ids VARCHAR(190)"
+  ] as $col){ try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN $col"); }catch(Throwable $e){} }
+  foreach(["ppt_template VARCHAR(255)","ppt_template_name VARCHAR(190)"] as $col){
+    try{ db()->exec("ALTER TABLE trainings ADD COLUMN $col"); }catch(Throwable $e){}
+  }
+  // Material-Haken "vorhanden/gepackt" je Position (für den Material-Ring)
+  try{ db()->exec("ALTER TABLE training_materials ADD COLUMN ok INT DEFAULT 0"); }catch(Throwable $e){}
+
+  /* ---- Folien-Abgabe per Postfach: Woher kam die fertige Datei? Die Datei
+         selbst bleibt im Postfach bzw. in der eigenen Ablage - hier stehen nur
+         Absender, Zeitpunkt und Dateiname, damit im Cockpit nachvollziehbar
+         ist, was wann eingegangen ist. ---- */
+  foreach(["ppt_mail_from VARCHAR(190)","ppt_mail_at VARCHAR(20)","ppt_mail_file VARCHAR(255)"] as $col){
+    try{ db()->exec("ALTER TABLE training_sessions ADD COLUMN $col"); }catch(Throwable $e){}
+  }
+  $d->exec("CREATE TABLE IF NOT EXISTS ppt_mail (
+    id $pk, uid VARCHAR(190), from_addr VARCHAR(190), subject VARCHAR(240),
+    received_at VARCHAR(40), atts TEXT, att_count INT DEFAULT 0, att_bytes INT DEFAULT 0,
+    training_id INT, session_id INT, status VARCHAR(16) DEFAULT 'open',
+    note VARCHAR(255), created_at VARCHAR(20))$eng");
+  /* ============================================================
+     ZERTIFIZIERUNG DER TEILNEHMER
+     Bewertung nach einem Katalog aus Hauptkriterien und Unterkriterien.
+     Der Katalog ist frei änderbar - deshalb hängt jede Bewertung an der
+     Fassung, mit der sie erhoben wurde (crit_snapshot). Ohne das würden
+     spätere Änderungen am Katalog alte Zeugnisse rückwirkend verfälschen.
+     ============================================================ */
+  $d->exec("CREATE TABLE IF NOT EXISTS students (
+    id $pk, client_id VARCHAR(24),
+    name VARCHAR(160), rank_title VARCHAR(96), unit VARCHAR(160),
+    staff_no VARCHAR(64), email VARCHAR(190), cohort VARCHAR(96),
+    note TEXT, active INT DEFAULT 1, created_at VARCHAR(20))$eng");
+
+  // Teilnahme je Block (Anwesenheit in Prozent steuert die Bestehensregel)
+  $d->exec("CREATE TABLE IF NOT EXISTS student_training (
+    id $pk, student_id INT, training_id INT,
+    attendance INT DEFAULT 100, note VARCHAR(255), created_at VARCHAR(20))$eng");
+
+  // Hauptkriterien (Gruppen) und Unterkriterien
+  $d->exec("CREATE TABLE IF NOT EXISTS crit_groups (
+    id $pk, name VARCHAR(160), name_en VARCHAR(160),
+    weight INT DEFAULT 1, sort_order INT DEFAULT 0, active INT DEFAULT 1)$eng");
+  $d->exec("CREATE TABLE IF NOT EXISTS crits (
+    id $pk, group_id INT, name VARCHAR(190), name_en VARCHAR(190),
+    descr TEXT, weight INT DEFAULT 1, sort_order INT DEFAULT 0,
+    ko INT DEFAULT 0,                      -- K.-o.-Kriterium: darunter kein Bestehen
+    active INT DEFAULT 1)$eng");
+
+  // Bewertung eines Teilnehmers in einem Block
+  $d->exec("CREATE TABLE IF NOT EXISTS assessments (
+    id $pk, student_id INT, training_id INT,
+    rater_id INT, rater_name VARCHAR(160),
+    status VARCHAR(16) DEFAULT 'draft',    -- 'draft' | 'final'
+    score REAL DEFAULT 0,                  -- gewichteter Gesamtwert (Skala)
+    pct INT DEFAULT 0,                     -- Prozent der erreichbaren Punkte
+    result VARCHAR(16) DEFAULT '',         -- 'pass' | 'merit' | 'fail'
+    attendance INT DEFAULT 100,
+    comment TEXT, strengths TEXT, todo TEXT,
+    crit_snapshot TEXT,                    -- Katalogfassung zum Zeitpunkt der Erhebung
+    cert_no VARCHAR(32), cert_at VARCHAR(20),
+    created_at VARCHAR(20), updated_at VARCHAR(20))$eng");
+  $d->exec("CREATE TABLE IF NOT EXISTS assessment_scores (
+    id $pk, assessment_id INT, crit_id INT, score REAL, note VARCHAR(255))$eng");
+
+  // Ausgestellte Zeugnisse und Zertifikate. Der Inhalt wird beim Ausstellen
+  // eingefroren - ein spaeter geaenderter Katalog darf ein Papier nicht
+  // nachtraeglich umschreiben.
+  $d->exec("CREATE TABLE IF NOT EXISTS certificates (
+    id $pk, student_id INT, training_id INT DEFAULT 0, kind VARCHAR(16) DEFAULT 'block',
+    cert_no VARCHAR(40), pct INT DEFAULT 0, result VARCHAR(16) DEFAULT '',
+    student_name VARCHAR(160), student_rank VARCHAR(96), student_unit VARCHAR(160),
+    cohort VARCHAR(96), title VARCHAR(190), snapshot TEXT,
+    issued_at VARCHAR(20), issued_by VARCHAR(160),
+    revoked INT DEFAULT 0, revoked_at VARCHAR(20), revoke_reason VARCHAR(255))$eng");
+  try{ $d->exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_certno ON certificates(cert_no)"); }catch(Throwable $e){}
+  try{ $d->exec("CREATE INDEX IF NOT EXISTS ix_cert_stud ON certificates(student_id)"); }catch(Throwable $e){}
+
+  // Schnellzugriff: eine Bewertung je Teilnehmer, Block und Bewerter
+  try{ $d->exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_assess ON assessments(student_id,training_id,rater_id)"); }catch(Throwable $e){}
+  try{ $d->exec("CREATE INDEX IF NOT EXISTS ix_scores ON assessment_scores(assessment_id)"); }catch(Throwable $e){}
+
+  // Kriterienkatalog einmalig fachlich vorbelegen (danach frei änderbar)
+  if((int)q("SELECT COUNT(*) c FROM crit_groups")->fetch()['c']===0) seed_crits();
+  if(config_get('cert_scale')===null)   config_set('cert_scale','5');    // 1..5
+  if(config_get('cert_pass')===null)    config_set('cert_pass','60');    // Prozent
+  if(config_get('cert_merit')===null)   config_set('cert_merit','85');   // mit Auszeichnung
+  if(config_get('cert_ko_min')===null)  config_set('cert_ko_min','3');   // K.-o.-Mindestwert
+  if(config_get('cert_attend')===null)  config_set('cert_attend','80');  // Mindestanwesenheit
+
+  // Ablage-Ordner anlegen und vor direktem Zugriff schützen (Auslieferung
+  // ausschließlich über die API bzw. den Token-Link)
+  $pd=__DIR__.'/uploads/ppt';
+  if(!is_dir($pd)) @mkdir($pd,0755,true);
+  if(is_dir($pd) && !is_file(dirname($pd).'/.htaccess')){
+    @file_put_contents(dirname($pd).'/.htaccess',"Require all denied
+");
+  }
+
+  /* ---- Trainingsbericht (Debrief): eine Bewertung je Training.
+         scores  = JSON {kriterium: 1..5}  - fehlende Schlüssel = „nicht bewertet"
+         trainers= JSON {trainerId: {teaching,behaviour,ppt,punctuality,note}}
+         flags   = JSON [chip-schlüssel] - Vorkommnisse zum Ankreuzen
+         texts   = JSON {wentWell,toImprove,adp,incidents}
+         status  = 'draft' (weiter bearbeitbar) | 'final' (im Bericht gezählt) ---- */
+  $d->exec("CREATE TABLE IF NOT EXISTS debriefs (
+    id $pk, training_id INT, status VARCHAR(8) DEFAULT 'draft',
+    overall INT DEFAULT 0, recommend VARCHAR(8) DEFAULT '',
+    scores TEXT, trainers TEXT, flags TEXT, texts TEXT,
+    author_id INT, author_name VARCHAR(190),
+    created_at VARCHAR(20), updated_at VARCHAR(20), version INT DEFAULT 1)$eng");
+  try{ $d->exec("CREATE INDEX idx_debriefs_tg ON debriefs(training_id)"); }catch(Throwable $e){}
+  // Maßnahmen aus einem Bericht - mit Verantwortlichem und Termin, abhakbar
+  $d->exec("CREATE TABLE IF NOT EXISTS debrief_actions (
+    id $pk, debrief_id INT, training_id INT,
+    text TEXT, owner VARCHAR(190), due VARCHAR(12),
+    done INT DEFAULT 0, created_at VARCHAR(20), sort INT DEFAULT 0)$eng");
+  try{ $d->exec("CREATE INDEX idx_dbact ON debrief_actions(debrief_id)"); }catch(Throwable $e){}
+
+  /* Einmalige Textkorrektur: lange Gedankenstriche in kurze Bindestriche.
+     Die Striche stecken im vorhandenen Datenbestand (Kundenname, Trainings-
+     titel, Sessions, Mailvorlagen) und lassen sich nicht im Quelltext beheben.
+     Nur strukturelle Felder - Freitexte und Notizen bleiben unangetastet. */
+  if(config_get('dash_fix_v1')===null){
+    $fix=[
+      'clients'=>['name','short'],
+      'trainings'=>['topic','spec','city','code'],
+      'training_sessions'=>['title','title_en','descr','mat'],
+      'materials'=>['name','cat'],
+      'templates'=>['de_name','de_subject','de_body','en_name','en_subject','en_body'],
+    ];
+    foreach($fix as $tbl=>$cols){
+      foreach($cols as $c){
+        try{ q("UPDATE $tbl SET $c=REPLACE(REPLACE($c, ?, '-'), ?, '-') WHERE $c LIKE ? OR $c LIKE ?",
+              ["\u{2014}","\u{2013}",'%'."\u{2014}".'%','%'."\u{2013}".'%']); }
+        catch(Throwable $e){ /* Spalte fehlt in aelteren Staenden */ }
+      }
+    }
+    config_set('dash_fix_v1', now());
+  }
+
+  // Automatik-Standardwerte
+  $ac=cfg();
+  if(config_get('reminder_hours')===null) config_set('reminder_hours',(string)($ac['reminder_hours']??48));
+  if(config_get('escalate_hours')===null) config_set('escalate_hours',(string)($ac['escalate_hours']??72));
+  if(config_get('auto_advance')===null)   config_set('auto_advance', !empty($ac['auto_advance'])?'1':'0');
+  if(config_get('passport_lead_days')===null) config_set('passport_lead_days',(string)($ac['passport_lead_days']??180));
+  if(config_get('ppt_lead_days')===null)      config_set('ppt_lead_days','21');
+
+  // Demo-Seed
+  if((cfg()['seed_demo']??false) && (int)q("SELECT COUNT(*) c FROM trainers")->fetch()['c']===0){
+    seed_demo();
+  }
+  // Vorlagen sicherstellen (fügt auch bei bestehenden Installationen fehlende Vorlagen wie t4 nach)
+  seed_templates();
+  // Kunden sicherstellen (auch für bestehende Installationen) + bestehende Trainings zuordnen
+  if((int)q("SELECT COUNT(*) c FROM clients")->fetch()['c']===0){
+    seed_clients();
+    q("UPDATE trainings SET client_id='cl-adp' WHERE (client_id IS NULL OR client_id='')");
+  }
+  // Material-Katalog sicherstellen (auch für bestehende Installationen)
+  if((int)q("SELECT COUNT(*) c FROM materials")->fetch()['c']===0){
+    seed_materials();
+  }
+}
+
+/** Programm-Sessions (Export aus dem früheren ETAF Dashboard) einmalig in die
+ *  Trainings importieren. Zuordnung über den Block-Code (W1, W11-A, TtT-I, …). */
+function import_programme_sessions(): void {
+  $f=__DIR__.'/programme-sessions.json';
+  if(!is_file($f)) return;
+  $prog=json_decode((string)file_get_contents($f), true);
+  if(!is_array($prog)) return;
+  foreach(q("SELECT * FROM trainings WHERE code IS NOT NULL AND code<>''")->fetchAll() as $tg){
+    $code=preg_replace('/[^\w-]/u','',(string)$tg['code']);   // "W9 ★" → "W9"
+    $p=$prog[$code]??null; if(!$p) continue;
+    q("UPDATE trainings SET stage=COALESCE(NULLIF(stage,''),?), star=?,
+        deliverable=COALESCE(NULLIF(deliverable,''),?), deliverable_en=COALESCE(NULLIF(deliverable_en,''),?)
+       WHERE id=?",
+      [$p['stage']??'', !empty($p['star'])?1:0, $p['deliverable']??'', $p['deliverableEn']??'', $tg['id']]);
+    $sort=0;
+    foreach(($p['sessions']??[]) as $s){
+      q("INSERT INTO training_sessions(training_id,title,title_en,stype,dur,descr,ppt,sort)
+         VALUES(?,?,?,?,?,?, '', ?)",
+        [$tg['id'], $s['title']??'', $s['titleEn']??'', $s['type']??'theorie',
+         (string)($s['dur']??'1'), $s['desc']??'', $sort++]);
+    }
+  }
+}
+
+function config_get(string $k){
+  $r=q("SELECT v FROM app_config WHERE k=?",[$k])->fetch();
+  return $r ? $r['v'] : null;
+}
+function config_set(string $k,string $v): void {
+  if(is_sqlite()){
+    q("INSERT INTO app_config(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v",[$k,$v]);
+  } else {
+    q("INSERT INTO app_config(k,v) VALUES(?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)",[$k,$v]);
+  }
+}
+
+function seed_templates(): void {
+  $T=[
+   ['t1',
+    'Verfügbarkeits-Anfrage','Anfrage Verfügbarkeit - {{topic}} ({{city}}, {{kw}})',
+    "Hallo {{firstName}},\n\nwir planen das Training „{{topic}}“ in {{city}} ({{kw}}) und würden dich sehr gern als Trainer dabei haben.\n\n• Training: {{topic}}\n• Ort: {{city}}, {{country}}\n• Zeitraum: {{kw}} / {{month}}\n• Team: {{teamSize}} Trainer\n\nBitte gib uns über die Buttons unten kurz Bescheid, ob du verfügbar bist. Deine Antwort landet automatisch in unserer Planung.\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam",
+    'Availability request','Availability request - {{topic}} ({{city}}, {{kw}})',
+    "Hi {{firstName}},\n\nwe're planning the training \"{{topic}}\" in {{city}} ({{kw}}) and would love to have you on the team.\n\n• Training: {{topic}}\n• Location: {{city}}, {{country}}\n• Period: {{kw}} / {{month}}\n• Team: {{teamSize}} trainers\n\nPlease let us know via the buttons below whether you're available. Your reply lands automatically in our planning.\n\nBest regards\nYour ETAF coordination team"],
+   ['t2',
+    'Zusage-Bestätigung + Reisedaten','Bestätigung & Reisedaten - {{topic}} in {{city}}',
+    "Hallo {{firstName}},\n\nsuper, danke für deine Zusage zu „{{topic}}“ in {{city}}!\n\n• Anreise: 1 Tag vor Trainingsbeginn ({{kw}})\n• Flug/Hotel: Vorschlag folgt separat\n• Ansprechpartner vor Ort: wird nachgereicht\n\nBitte prüfe deine Reisepass-Gültigkeit (mind. 6 Monate) - wichtig für die Einreise UAE.\n\nHerzliche Grüße\nETAF-Koordination",
+    'Confirmation + travel details','Confirmation & travel details - {{topic}} in {{city}}',
+    "Hi {{firstName}},\n\ngreat, thanks for accepting \"{{topic}}\" in {{city}}!\n\n• Arrival: 1 day before the training starts ({{kw}})\n• Flight/hotel: proposal to follow separately\n• On-site contact: to be provided\n\nPlease check your passport validity (min. 6 months) - important for entry to the UAE.\n\nBest regards\nETAF Coordination"],
+   ['t3',
+    'Kurzfristiger Ersatz','Kurzfristig: Einspringen möglich? - {{topic}} ({{city}})',
+    "Hallo {{firstName}},\n\nbei „{{topic}}“ in {{city}} ({{kw}}) ist kurzfristig ein Trainer ausgefallen. Könntest du eventuell einspringen?\n\nWer zuerst zusagt, bekommt den Platz. Jede Rückmeldung hilft uns enorm.\n\nDanke dir!\nETAF-Koordination",
+    'Short-notice replacement','Short notice: able to step in? - {{topic}} ({{city}})',
+    "Hi {{firstName}},\n\na trainer has dropped out of \"{{topic}}\" in {{city}} ({{kw}}) at short notice. Could you possibly step in?\n\nWhoever accepts first gets the slot. Every reply helps us enormously.\n\nThank you!\nETAF Coordination"],
+   ['t4',
+    'Absage / Planänderung','Planänderung - {{topic}} in {{city}} ({{kw}})',
+    "Hallo {{firstName}},\n\nvielen Dank für deine Zusage zu „{{topic}}“ in {{city}} ({{kw}}). Leider müssen wir kurzfristig umplanen und können dich für diesen Einsatz doch nicht einsetzen - die Voraussetzungen haben sich geändert.\n\nDas hat nichts mit dir persönlich zu tun. Wir kommen bei der nächsten passenden Gelegenheit sehr gern wieder auf dich zu. Danke für dein Verständnis!\n\nHerzliche Grüße\nDein ETAF-Koordinationsteam",
+    'Cancellation / change of plan','Change of plan - {{topic}} in {{city}} ({{kw}})',
+    "Hi {{firstName}},\n\nthank you for accepting \"{{topic}}\" in {{city}} ({{kw}}). Unfortunately we have to reschedule at short notice and won't be able to assign you to this session after all - the requirements have changed.\n\nThis is not related to you personally. We'll gladly get back in touch for the next suitable opportunity. Thank you for your understanding!\n\nBest regards\nYour ETAF coordination team"],
+  ];
+  foreach($T as $r){
+    // Nur fehlende Vorlagen anlegen - bestehende (evtl. angepasste) Texte nicht überschreiben.
+    if((int)q("SELECT COUNT(*) c FROM templates WHERE id=?",[$r[0]])->fetch()['c']===0){
+      q("INSERT INTO templates(id,de_name,de_subject,de_body,en_name,en_subject,en_body) VALUES(?,?,?,?,?,?,?)",$r);
+    }
+  }
+}
+
+/** Standard-Kunde: Abu Dhabi Police - DVI (idempotent). */
+function seed_clients(): void {
+  $clients=[
+    ['cl-adp','Abu Dhabi Police - DVI','ADP','#B23A42','firebrick','UAE',1],
+  ];
+  foreach($clients as $c){
+    if((int)q("SELECT COUNT(*) c FROM clients WHERE id=?",[$c[0]])->fetch()['c']===0){
+      q("INSERT INTO clients(id,name,short,color,cal,country,sort_order) VALUES(?,?,?,?,?,?,?)",$c);
+    }
+  }
+}
+
+/** Material-Katalog (DVI/Forensik) anlegen (idempotent). */
+/**
+ * Kriterienkatalog für die Teilnehmer-Zertifizierung (INTERPOL DVI).
+ * Bewusst entlang des Einsatzablaufs gegliedert: erst Grundlagen, dann die
+ * beiden Datenstränge (Post Mortem / Ante Mortem), dann die Zusammenführung,
+ * zuletzt Verhalten im Einsatz. Alles ist im Cockpit änderbar - das hier ist
+ * nur der Startpunkt, damit niemand vor einer leeren Liste sitzt.
+ * ko=1 markiert Kriterien, bei denen ein zu schwacher Wert das Bestehen
+ * verhindert (Sorgfaltspflichten, an denen im echten Einsatz alles hängt).
+ */
+function seed_crits(): void {
+  $groups=[
+    ['Fachliche Grundlagen','Professional foundations',2,[
+      ['INTERPOL DVI: Phasen und Rollen','INTERPOL DVI: phases and roles',
+       'Kennt Ablauf, Zuständigkeiten und Qualitätsprinzipien der vier Phasen.',2,0],
+      ['Rechtsrahmen und Ethik','Legal framework and ethics',
+       'Handelt im rechtlichen Rahmen, wahrt Würde der Verstorbenen und Datenschutz.',2,1],
+      ['Standardformulare und Nomenklatur','Standard forms and nomenclature',
+       'Verwendet AM-/PM-/Reconciliation-Formulare korrekt und einheitlich.',1,0],
+      ['Acht-Zellen-Struktur','Eight-cell structure',
+       'Ordnet die eigene Rolle und Schnittstellen im Zellenmodell richtig ein.',1,0],
+    ]],
+    ['Post Mortem: Fundort und Bergung','Post mortem: scene and recovery',3,[
+      ['Fundortarbeit und Spurensicherung','Scene work and evidence handling',
+       'Sichert Fundort, dokumentiert Lage, vermeidet Spurenverlust.',2,1],
+      ['Kennzeichnung und Chain of Custody','Labelling and chain of custody',
+       'Lückenlose Kennzeichnung und nachvollziehbare Übergaben.',2,1],
+      ['PM-Datenerhebung','PM data collection',
+       'Erhebt körperliche Merkmale, Kleidung und Effekten vollständig.',2,0],
+      ['Umgang mit Fragmentierung','Handling of fragmentation',
+       'Geht mit Teilfunden methodisch und dokumentiert um.',1,0],
+    ]],
+    ['Ante Mortem und Angehörige','Ante mortem and family liaison',3,[
+      ['AM-Datenerhebung','AM data collection',
+       'Erhebt Vermisstendaten strukturiert und belastbar.',2,0],
+      ['Gesprächsführung mit Angehörigen','Family interviews',
+       'Führt Gespräche empathisch, klar und ergebnisorientiert.',2,1],
+      ['Qualität der Referenzproben','Quality of reference samples',
+       'Wählt geeignete Referenzen, dokumentiert Herkunft sauber.',2,0],
+      ['Umgang mit Belastung und Nähe','Handling distress and proximity',
+       'Bleibt professionell distanziert, erkennt eigene Belastungsgrenzen.',1,0],
+    ]],
+    ['Daten, Abgleich und Identifizierung','Data, reconciliation and identification',3,[
+      ['PlassData: Erfassung und Pflege','PlassData: entry and maintenance',
+       'Arbeitet sicher im System, hält Datensätze konsistent.',2,0],
+      ['Abgleich und Hypothesenbildung','Reconciliation and hypotheses',
+       'Bildet und prüft Identifizierungshypothesen nachvollziehbar.',2,0],
+      ['Primärmerkmale bewerten','Assessing primary identifiers',
+       'Bewertet Fingerabdruck, Zahnstatus und DNA sachgerecht.',2,1],
+      ['Qualitätskontrolle und Vier-Augen-Prinzip','Quality control and dual verification',
+       'Prüft Ergebnisse gegen, dokumentiert Freigaben.',2,1],
+      ['Berichte und Dokumentation','Reporting and documentation',
+       'Erstellt vollständige, prüffähige Unterlagen.',1,0],
+    ]],
+    ['Einsatzverhalten und Zusammenarbeit','Conduct and teamwork',2,[
+      ['Teamarbeit in der Zelle','Teamwork within the cell',
+       'Arbeitet zuverlässig zu, teilt Informationen aktiv.',2,0],
+      ['Kommunikation und Übergaben','Communication and handovers',
+       'Übergibt strukturiert, meldet Abweichungen früh.',2,0],
+      ['Belastbarkeit unter Einsatzdruck','Resilience under pressure',
+       'Bleibt bei Zeitdruck und Belastung handlungsfähig.',1,0],
+      ['Sorgfalt und Ausdauer','Diligence and stamina',
+       'Hält Qualität auch in langen Schichten.',1,0],
+      ['Führungs- und Anleitungsfähigkeit','Leadership and instruction',
+       'Leitet andere an, trifft Entscheidungen im Rahmen der Rolle.',1,0],
+    ]],
+  ];
+  $gs=0;
+  foreach($groups as [$de,$en,$gw,$items]){
+    q("INSERT INTO crit_groups(name,name_en,weight,sort_order,active) VALUES(?,?,?,?,1)",
+      [$de,$en,$gw,$gs]);
+    $gid=(int)db()->lastInsertId(); $cs=0;
+    foreach($items as [$cde,$cen,$descr,$cw,$ko]){
+      q("INSERT INTO crits(group_id,name,name_en,descr,weight,sort_order,ko,active)
+         VALUES(?,?,?,?,?,?,?,1)",[$gid,$cde,$cen,$descr,$cw,$cs,$ko]);
+      $cs+=10;
+    }
+    $gs+=10;
+  }
+}
+
+function seed_materials(): void {
+  $M=[
+    ['m-dvi','DVI-Kit (pre-coded)','Set','Kits',1],
+    ['m-bag','Leichensack','Stk','Verbrauch',2],
+    ['m-cbrn','CBRN-Kit','Set','Kits',3],
+    ['m-am','Protokoll - Ante Mortem','Stk','Protokolle',4],
+    ['m-pm','Protokoll - Post Mortem','Stk','Protokolle',5],
+    ['m-dna','DNA-Probenset','Set','Proben',6],
+    ['m-fp','Fingerprint-Set','Set','Proben',7],
+    ['m-dent','Zahnstatus-Formular (Odontologie)','Stk','Protokolle',8],
+    ['m-glove','Einmalhandschuhe','Box','Verbrauch',9],
+    ['m-suit','CBRN-Schutzanzug','Stk','Verbrauch',10],
+  ];
+  foreach($M as $m){
+    if((int)q("SELECT COUNT(*) c FROM materials WHERE id=?",[$m[0]])->fetch()['c']===0){
+      q("INSERT INTO materials(id,name,unit,cat,sort_order) VALUES(?,?,?,?,?)",$m);
+    }
+  }
+}
+
+/** Typ-Vorlagen (Schwerpunkt → Materialliste). */
+function mat_presets(): array {
+  return [
+    "Post Mortem"=>[["m-dvi",8],["m-pm",40],["m-dna",20],["m-fp",20],["m-dent",20],["m-glove",10],["m-bag",20]],
+    "Ante Mortem"=>[["m-am",40],["m-glove",6]],
+    "Scene & Recovery"=>[["m-dvi",8],["m-bag",30],["m-glove",10],["m-am",20]],
+    "CBRN"=>[["m-cbrn",50],["m-suit",40],["m-bag",20],["m-glove",12]],
+    "Simulation"=>[["m-dvi",10],["m-bag",40],["m-am",40],["m-pm",40],["m-glove",15]],
+  ];
+}
+
+function seed_demo(): void {
+  // Internationale DVI-Faculty (Demo-Pool) - Schwerpunkte = INTERPOL-DVI-Phasen
+  $SPEC=["DVI-Grundlagen","Data Management","Ante Mortem","Kommunikation & FCC","Logistik","Post Mortem","Reconciliation","Scene & Recovery","CBRN","Simulation","Site-Folder","Train-the-Trainer","Assessment & Readiness","Zertifizierung"];
+  $REG=["DE-Süd","DE-West","DE-Nord","AT","CH","UAE","UK"];
+  $COL=["#3E4852","#B23A42","#4E6E8E","#6E5A86","#3F7A5E","#A6642E","#557088","#8A5A52"];
+  $first=["Dr. Amir","Dr. Lena","Dr. Youssef","Dr. Marie","Dr. Ben","Dr. Sara","Dr. Tobias","Dr. Nadia","Dr. Felix","Dr. Clara","Dr. Omar","Dr. Ines","Dr. Jan","Dr. Rania"];
+  $last=["Haddad","Vogt","Karim","Petit","Kraus","Mansour","Reuter","El-Sayed","Brandt","Winter","Farouk","Berger","Moeller","Aziz"];
+  foreach($first as $i=>$f){
+    $spec=[$SPEC[$i%count($SPEC)],$SPEC[($i+4)%count($SPEC)]];
+    $langs=$i%3===0?["DE","EN","AR"]:($i%3===1?["DE","EN"]:["EN","AR"]);
+    q("INSERT INTO trainers(name,email,phone,spec,region,langs,uae,load_lvl,color,rating,created_at)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?)",[
+      "$f {$last[$i]}", strtolower(preg_replace('/[^a-z]/','',strtolower($last[$i])))."@example.org",
+      "+49 15".(20+$i)." ".(1000000+$i*13731),
+      json_encode($spec,JSON_UNESCAPED_UNICODE), $REG[$i%count($REG)], json_encode($langs),
+      $i%2===0?1:0, random_int(0,3), $COL[$i%count($COL)], number_format(4+($i%10)/10,1), now()
+    ]);
+  }
+  seed_clients();
+  seed_materials();
+  // Typ-Vorlagen ablegen
+  foreach(mat_presets() as $spec=>$lines){
+    foreach($lines as $l){ q("INSERT INTO material_presets(spec,material_id,qty) VALUES(?,?,?)",[$spec,$l[0],$l[1]]); }
+  }
+
+  // Verbindlicher Programmkalender (ETAF Operational DVI Elite Team Programme 2026-2027, V3.2)
+  $MON=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+  $AD=["Abu Dhabi","UAE"]; $WZ=["Weeze","DE"];
+  $P=[
+    ["W1","2026-09-14","2026-09-18","INTERPOL DVI Principles, Governance & Elite-Team-Struktur",$AD,"DVI-Grundlagen",5,40],
+    ["W2","2026-09-28","2026-10-02","DVI Data Management & Reporting (PlassData)",$AD,"Data Management",5,40],
+    ["W3","2026-10-12","2026-10-16","Ante Mortem - Family Liaison & Informationsgewinnung",$AD,"Ante Mortem",5,40],
+    ["W4","2026-10-26","2026-10-30","Kommunikation: Family Coordination & Media",$AD,"Kommunikation & FCC",5,40],
+    ["W5","2026-11-09","2026-11-13","Logistik & Kapazitätsplanung",$AD,"Logistik",5,40],
+    ["W6","2026-11-23","2026-11-27","Post Mortem - Prozesse & Qualität",$AD,"Post Mortem",5,40],
+    ["W7","2026-12-07","2026-12-11","Reconciliation & Identifizierungs-Entscheidungen",$AD,"Reconciliation",5,40],
+    ["W8","2027-01-11","2027-01-15","Scene Management & Recovery",$AD,"Scene & Recovery",5,40],
+    ["W9 ★","2027-01-25","2027-01-29","Full Simulation I (MCI) - End-to-End",$AD,"Simulation",8,40],
+    ["W10","2027-02-01","2027-02-05","Stage I Final Assessment & Operational Readiness · TtT-Auswahl",$AD,"Assessment & Readiness",5,40],
+    ["W11-A","2027-03-22","2027-03-26","PM Practical Module - Kohorte A (Körperspender)",$WZ,"Post Mortem",8,20],
+    ["W11-B","2027-04-12","2027-04-16","PM Practical Module - Kohorte B (Körperspender)",$WZ,"Post Mortem",8,20],
+    ["W12","2027-04-26","2027-04-30","Public Venues: Shopping Centres",$AD,"Site-Folder",5,40],
+    ["W13","2027-05-10","2027-05-14","Transport Hubs: International Airport",$AD,"Site-Folder",5,40],
+    ["W14","2027-05-24","2027-05-28","Major Events: Circuit / Arena / Events",$AD,"Site-Folder",5,40],
+    ["W15","2027-06-07","2027-06-11","Natural Hazard: Heavy Rainfall / Flooding",$AD,"Site-Folder",5,40],
+    ["TtT-I","2027-06-14","2027-06-16","Instructor Development Block I (TtT-Kandidaten)",$AD,"Train-the-Trainer",2,10],
+    ["W16","2027-06-21","2027-06-25","CBRN / Nuclear: Contaminated Casualty Scenarios",$AD,"CBRN",5,40],
+    ["W17","2027-07-05","2027-07-09","Maritime / Logistik: Port / Industrial Zone",$AD,"Site-Folder",5,40],
+    ["W18","2027-07-19","2027-07-23","Energy & Utilities (Öl/Gas, Strom, Wasser, Entsalzung)",$AD,"Site-Folder",5,40],
+    ["W19","2027-09-06","2027-09-10","Government / Symbolic Targets & Urban Nodes · National Master Folder",$AD,"Site-Folder",5,40],
+    ["TtT-II","2027-10-04","2027-10-06","Instructor Development Block II & Teaching-Assessment",$AD,"Train-the-Trainer",2,10],
+    ["W20 ★","2027-10-18","2027-10-22","Full Simulation II + Folder Drill (Pull-Out-Test)",$AD,"Simulation",8,40],
+    ["Final","2027-11-08","2027-11-12","Final Readiness Review, Team- & National-Instructor-Zertifizierung",$AD,"Zertifizierung",5,40],
+  ];
+  $PRE=mat_presets();
+  foreach($P as $r){
+    [$code,$start,$end,$topic,$loc,$spec,$need,$part]=$r;
+    $ts=strtotime($start); $yy=substr($start,2,2);
+    $kw="KW ".(int)gmdate('W',$ts); $month=$MON[(int)gmdate('n',$ts)-1]." ’".$yy;
+    q("INSERT INTO trainings(client_id,code,topic,city,country,start_date,end_date,kw,month,spec,need_cnt,participants,created_at)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",[
+      'cl-adp',$code,$topic,$loc[0],$loc[1],$start,$end,$kw,$month,$spec,$need,$part,now()
+    ]);
+    $tid=db()->lastInsertId();
+    if(isset($PRE[$spec])){
+      foreach($PRE[$spec] as $l){ q("INSERT INTO training_materials(training_id,material_id,qty) VALUES(?,?,?)",[$tid,$l[0],$l[1]]); }
+    }
+  }
+  // Beispiel-Reisedaten + Agenda für W1
+  $agenda=json_encode([
+    ['day'=>'Tag 1','time'=>'08:30','title'=>'Registrierung & Kick-off'],
+    ['day'=>'Tag 1','time'=>'09:00','title'=>'INTERPOL DVI Principles & Governance'],
+    ['day'=>'Tag 1','time'=>'14:00','title'=>'Elite-Team-Struktur - 8 funktionale Zellen'],
+    ['day'=>'Tag 5','time'=>'11:00','title'=>'Baseline-Competency-Assessment'],
+  ], JSON_UNESCAPED_UNICODE);
+  q("UPDATE trainings SET venue=?,hotel=?,hotel_addr=?,meeting_point=?,contact_name=?,contact_phone=?,dresscode=?,per_diem=?,travel_notes=?,agenda=? WHERE code=?",[
+    'Abu Dhabi Police - DVI Training Facility','Rosewood Abu Dhabi','Al Maryah Island, Abu Dhabi, UAE',
+    'Hotel-Lobby, 07:45 Uhr','Lt. Col. Adil Al Ali (Head of DVI)','+971 2 000 0000','Field/OP-Kleidung wird gestellt',
+    'nach ETAF-Reiserichtlinie','Reisepass mind. 6 Monate gültig. Flughafen-Transfer organisiert.',
+    $agenda,'W1'
+  ]);
+}

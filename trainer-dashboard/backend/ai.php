@@ -1,0 +1,236 @@
+<?php
+/**
+ * ETAF - KI-Profilanlage via Claude API (Messages API, strukturierte JSON-Ausgabe).
+ * Dependency-frei (curl). Modell: claude-opus-4-8.
+ */
+require_once __DIR__.'/lib.php';
+
+/** Extrahiert Trainer-Profile aus freiem Text (CV / Excel-Kopie / Angebot). */
+function ai_extract_profiles(string $text): array {
+  $c=cfg();
+  $key=trim($c['anthropic_key']??'');
+  if($key==='') throw new RuntimeException('KI nicht konfiguriert - trage anthropic_key in config.php ein.');
+  $model=$c['anthropic_model']??'claude-opus-4-8';
+
+  // Strukturierte Ausgabe: garantiert gültiges JSON nach diesem Schema.
+  $schema=[
+    'type'=>'object',
+    'properties'=>[
+      'trainers'=>[
+        'type'=>'array',
+        'items'=>[
+          'type'=>'object',
+          'properties'=>[
+            'name'=>['type'=>'string'],
+            'email'=>['type'=>'string'],
+            'phone'=>['type'=>'string'],
+            'spec'=>['type'=>'array','items'=>['type'=>'string']],
+            'region'=>['type'=>'string'],
+            'langs'=>['type'=>'array','items'=>['type'=>'string']],
+            'uae'=>['type'=>'boolean'],
+            'rating'=>['type'=>'string'],
+          ],
+          'required'=>['name','email','phone','spec','region','langs','uae','rating'],
+          'additionalProperties'=>false,
+        ],
+      ],
+    ],
+    'required'=>['trainers'],
+    'additionalProperties'=>false,
+  ];
+
+  $prompt=
+    "Extrahiere aus dem folgenden Text (Lebenslauf, Excel-Kopie, Angebot o.ä.) alle Trainer-Profile "
+    ."für eine Dental-Trainingsorganisation.\n"
+    ."- 'spec': Fachgebiete wie Implantologie, DNA-Diagnostik, Fingerprint Dental, Prothetik, Chirurgie, "
+    ."Digitale Abformung, Guided Surgery, Parodontologie.\n"
+    ."- 'region': z.B. DE-Süd, DE-West, DE-Nord, AT, CH, UAE, UK.\n"
+    ."- 'langs': Sprachkürzel (DE, EN, AR).\n"
+    ."- 'uae': true, wenn Erfahrung im Nahen Osten / UAE erkennbar ist, sonst false.\n"
+    ."- 'rating': Zahl 4.0-5.0 als Text; wenn unbekannt, \"4.5\".\n"
+    ."Fehlende Felder sinnvoll leer lassen (\"\" bzw. []). Erfinde keine Personen.\n\n"
+    ."=== TEXT ===\n".$text;
+
+  $body=[
+    'model'=>$model,
+    'max_tokens'=>4096,
+    'output_config'=>['format'=>['type'=>'json_schema','schema'=>$schema]],
+    'messages'=>[['role'=>'user','content'=>$prompt]],
+  ];
+
+  $ch=curl_init('https://api.anthropic.com/v1/messages');
+  curl_setopt_array($ch,[
+    CURLOPT_RETURNTRANSFER=>true,
+    CURLOPT_POST=>true,
+    CURLOPT_HTTPHEADER=>[
+      'content-type: application/json',
+      'x-api-key: '.$key,
+      'anthropic-version: 2023-06-01',
+    ],
+    CURLOPT_POSTFIELDS=>json_encode($body,JSON_UNESCAPED_UNICODE),
+    CURLOPT_TIMEOUT=>90,
+  ]);
+  $resp=curl_exec($ch);
+  $code=curl_getinfo($ch,CURLINFO_HTTP_CODE);
+  $err=curl_error($ch);
+  curl_close($ch);
+  if($resp===false) throw new RuntimeException('Netzwerkfehler zur Claude API: '.$err);
+  $data=json_decode($resp,true);
+  if($code>=400) throw new RuntimeException('Claude API ('.$code.'): '.($data['error']['message']??substr($resp,0,300)));
+
+  // Bei output_config.format enthält der erste text-Block gültiges JSON.
+  $out='';
+  foreach(($data['content']??[]) as $b){ if(($b['type']??'')==='text'){ $out=$b['text']; break; } }
+  $parsed=json_decode($out,true);
+  if(!is_array($parsed) || !isset($parsed['trainers']) || !is_array($parsed['trainers']))
+    throw new RuntimeException('Unerwartete KI-Antwort.');
+  return $parsed['trainers'];
+}
+
+/** Gemeinsamer Aufruf der Claude Messages API mit optionalem json_schema. */
+function ai_call(array $content, ?array $schema=null, int $maxTokens=1024): array {
+  $c=cfg();
+  $key=trim($c['anthropic_key']??'');
+  if($key==='') throw new RuntimeException('KI nicht konfiguriert - trage anthropic_key in config.php ein.');
+  $body=[
+    'model'=>$c['anthropic_model']??'claude-opus-4-8',
+    'max_tokens'=>$maxTokens,
+    'messages'=>[['role'=>'user','content'=>$content]],
+  ];
+  if($schema) $body['output_config']=['format'=>['type'=>'json_schema','schema'=>$schema]];
+  // Basis-URL überschreibbar (nur für lokale Tests gedacht)
+  $base=rtrim((string)($c['anthropic_base']??'https://api.anthropic.com'),'/');
+  $ch=curl_init($base.'/v1/messages');
+  curl_setopt_array($ch,[
+    CURLOPT_RETURNTRANSFER=>true, CURLOPT_POST=>true,
+    CURLOPT_HTTPHEADER=>['content-type: application/json','x-api-key: '.$key,'anthropic-version: 2023-06-01'],
+    CURLOPT_POSTFIELDS=>json_encode($body,JSON_UNESCAPED_UNICODE),
+    CURLOPT_TIMEOUT=>90,
+  ]);
+  $resp=curl_exec($ch); $code=curl_getinfo($ch,CURLINFO_HTTP_CODE); $err=curl_error($ch); curl_close($ch);
+  if($resp===false) throw new RuntimeException('Netzwerkfehler zur Claude API: '.$err);
+  $data=json_decode($resp,true);
+  if($code>=400) throw new RuntimeException('Claude API ('.$code.'): '.($data['error']['message']??substr($resp,0,300)));
+  $txt='';
+  foreach(($data['content']??[]) as $b){ if(($b['type']??'')==='text'){ $txt=$b['text']; break; } }
+  return json_decode($txt,true) ?? [];
+}
+
+/**
+ * Liest eine Flugbestätigung (Text und/oder E-Ticket-PDF) strukturiert aus.
+ * Rückgabeform ist identisch mit dem Regex-Fallback in mailfetch.php.
+ */
+function ai_extract_flight(string $text, string $subject, ?array $pdf=null): array {
+  $schema=[
+    'type'=>'object',
+    'properties'=>[
+      'is_flight'=>['type'=>'boolean'],
+      'passengers'=>['type'=>'array','items'=>['type'=>'string']],
+      'booking_ref'=>['type'=>'string'],
+      'airline'=>['type'=>'string'],
+      'segments'=>['type'=>'array','items'=>[
+        'type'=>'object',
+        'properties'=>[
+          'flight_no'=>['type'=>'string'],
+          'dep_airport'=>['type'=>'string'],'arr_airport'=>['type'=>'string'],
+          'dep_time'=>['type'=>'string'],'arr_time'=>['type'=>'string'],
+        ],
+        'required'=>['flight_no','dep_airport','arr_airport','dep_time','arr_time'],
+        'additionalProperties'=>false,
+      ]],
+    ],
+    'required'=>['is_flight','passengers','booking_ref','airline','segments'],
+    'additionalProperties'=>false,
+  ];
+  $prompt=
+    "Dies ist eine E-Mail (ggf. mit E-Ticket-PDF) aus dem Postfach einer Trainings-Organisation. "
+    ."Prüfe, ob es eine Flugbuchungs-/Ticketbestätigung ist, und extrahiere die Daten.\n"
+    ."- 'is_flight': true nur bei einer echten Flugbestätigung (keine Newsletter/Werbung/Rechnungen ohne Flugdaten).\n"
+    ."- 'passengers': vollständige Passagiernamen wie angegeben (z.B. „MUSTER/ANNA DR“ → „Anna Muster“).\n"
+    ."- 'booking_ref': Buchungscode/PNR (z.B. X4Y9ZK). Leer, wenn keiner erkennbar.\n"
+    ."- 'segments': jedes Flugsegment einzeln, dep_time/arr_time strikt als YYYY-MM-DD HH:MM "
+    ."(Datum immer mit Jahr; lokale Abflugs-/Ankunftszeit), Flughäfen als IATA-Code (FRA, AUH …).\n"
+    ."Erfinde nichts - nicht Lesbares leer lassen.\n\n"
+    ."=== BETREFF ===\n".$subject."\n\n=== TEXT ===\n".mb_substr($text,0,14000);
+  $content=[];
+  if($pdf && strlen($pdf['data'])<=6*1024*1024){
+    $content[]=['type'=>'document','source'=>['type'=>'base64','media_type'=>'application/pdf',
+                'data'=>base64_encode($pdf['data'])]];
+  }
+  $content[]=['type'=>'text','text'=>$prompt];
+  $r=ai_call($content,$schema,2048);
+  if(!is_array($r) || !array_key_exists('is_flight',$r)) throw new RuntimeException('Unerwartete KI-Antwort.');
+  $r['method']='ai';
+  return $r;
+}
+
+/**
+ * KI-Wochenrhythmus: verteilt die Sessions einer Trainingswoche didaktisch
+ * sinnvoll auf Mo-Fr (Vormittag/Nachmittag). Gibt {slots:{mon_am:[ids],…}} zurück.
+ */
+function ai_suggest_week(array $sessions, string $topic): array {
+  $keys=['mon_am','mon_pm','tue_am','tue_pm','wed_am','wed_pm','thu_am','thu_pm','fri_am','fri_pm'];
+  $schema=['type'=>'object','properties'=>['slots'=>['type'=>'object',
+    'properties'=>array_fill_keys($keys,['type'=>'array','items'=>['type'=>'string']]),
+    'required'=>$keys,'additionalProperties'=>false]],
+    'required'=>['slots'],'additionalProperties'=>false];
+  $list=implode("\n", array_map(fn($s)=>"- id={$s['id']} | {$s['title']} | Art: {$s['type']} | Dauer: {$s['dur']} h", $sessions));
+  $prompt=
+    "Plane den Wochenrhythmus einer Trainingswoche („$topic“, Montag-Freitag, je Vormittag und Nachmittag).\n"
+    ."Regeln:\n"
+    ."- Jede Session genau EINMAL einplanen (über ihre id), keine ids erfinden.\n"
+    ."- Pro Halbtag höchstens ca. 4 Stunden Summe.\n"
+    ."- Orga/Briefing zuerst (Montag Vormittag), Wochen-Debrief und 'deliverable'-Sessions ans Ende (Freitag).\n"
+    ."- Theorie vor zugehöriger Übung/Praxis; 'assessment' in die zweite Wochenhälfte; "
+    ."'simulation' als zusammenhängende Blöcke.\n"
+    ."- Nachmittage eher praktisch, Vormittage eher Theorie.\n\n"
+    ."Sessions:\n".$list;
+  $r=ai_call([['type'=>'text','text'=>$prompt]], $schema, 2048);
+  if(!is_array($r) || !isset($r['slots']) || !is_array($r['slots'])) throw new RuntimeException('Unerwartete KI-Antwort.');
+  return $r['slots'];
+}
+
+/**
+ * Liest die Passdaten aus einem Foto (Data-URI: data:image/jpeg;base64,….).
+ * Gibt normalisierte Felder zurück; Datumsangaben als YYYY-MM-DD.
+ */
+function ai_extract_passport(string $dataUri): array {
+  // Nur Rasterformate, die die Claude API versteht - kein SVG o.ä.
+  if(!preg_match('#^data:(image/(?:jpe?g|png|gif|webp));base64,(.+)$#s', trim($dataUri), $m))
+    throw new RuntimeException('Bitte ein Foto als JPG/PNG/WebP übergeben.');
+  $media=$m[1]; $b64=$m[2];
+  if($media==='image/jpg') $media='image/jpeg';
+  $schema=[
+    'type'=>'object',
+    'properties'=>[
+      'number'=>['type'=>'string'],
+      'surname'=>['type'=>'string'],
+      'given_names'=>['type'=>'string'],
+      'full_name'=>['type'=>'string'],
+      'nationality'=>['type'=>'string'],
+      'birthdate'=>['type'=>'string'],
+      'expiry'=>['type'=>'string'],
+      'sex'=>['type'=>'string'],
+      'is_passport'=>['type'=>'boolean'],
+    ],
+    'required'=>['number','surname','given_names','full_name','nationality','birthdate','expiry','sex','is_passport'],
+    'additionalProperties'=>false,
+  ];
+  $prompt=
+    "Dies ist das Foto eines Reisepasses oder Ausweisdokuments. Lies die maschinenlesbare Zone (MRZ) "
+    ."und das Datenfeld aus und gib die Daten strukturiert zurück.\n"
+    ."- 'number': Passnummer / Dokumentnummer.\n"
+    ."- 'surname' / 'given_names': Nachname / Vornamen wie im Dokument.\n"
+    ."- 'full_name': vollständiger Name „Vorname Nachname“.\n"
+    ."- 'nationality': Land als Klartext (z.B. Deutschland, United Arab Emirates).\n"
+    ."- 'birthdate' und 'expiry': strikt im Format YYYY-MM-DD. MRZ-Jahr 00-30 → 20xx, 31-99 → 19xx.\n"
+    ."- 'sex': M, F oder X.\n"
+    ."- 'is_passport': true, wenn ein Reise-/Ausweisdokument erkennbar ist, sonst false.\n"
+    ."Wenn ein Feld nicht lesbar ist, leer lassen (\"\"). Erfinde nichts.";
+  $r=ai_call([
+    ['type'=>'image','source'=>['type'=>'base64','media_type'=>$media,'data'=>$b64]],
+    ['type'=>'text','text'=>$prompt],
+  ], $schema, 1024);
+  if(!is_array($r) || !array_key_exists('number',$r)) throw new RuntimeException('Unerwartete KI-Antwort.');
+  return $r;
+}
