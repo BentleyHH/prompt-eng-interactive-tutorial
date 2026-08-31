@@ -243,6 +243,35 @@ function ensure_schema(): void {
   foreach([
     "totp_secret VARCHAR(64)","totp_on INT DEFAULT 0"
   ] as $col){ try{ db()->exec("ALTER TABLE users ADD COLUMN $col"); }catch(Throwable $e){} }
+  // Kundenbereich: getrennte Freigaben "darf sehen" und "darf senden"
+  // (Admins haben beides automatisch)
+  foreach([
+    "cust_view INT DEFAULT 0","cust_send INT DEFAULT 0"
+  ] as $col){ try{ db()->exec("ALTER TABLE users ADD COLUMN $col"); }catch(Throwable $e){} }
+
+  // Kundenbereich: Lieferplan-Positionen (Pflichten aus dem Betriebs- und
+  // Pflichtenplan - Wochentakt je Trainingswoche, Fixtermine, Monatsberichte,
+  // freie Positionen) samt kompletter Bestaetigungskette.
+  $d->exec("CREATE TABLE IF NOT EXISTS cust_items (
+    id $pk,
+    auto_key VARCHAR(64),                -- Dedupe-Schluessel des Generators ('' = von Hand)
+    kind VARCHAR(24) DEFAULT 'custom',   -- spec|proforma|confirm4w|attendance|deliverable|monthly|milestone|custom
+    training_id INT,                     -- bei Wochentakt-Positionen
+    title VARCHAR(190), note TEXT,
+    due VARCHAR(12),                     -- Faelligkeit (Datum)
+    critical INT DEFAULT 0,              -- rot hinterlegte Frist (kostet Geld/Vertragsposition)
+    status VARCHAR(16) DEFAULT 'open',   -- open|prepared|sent|reminded|confirmed|deemed|objection|done|dropped
+    confirm_days INT DEFAULT 14,         -- Frist bis zur Erinnerung
+    grace_days INT DEFAULT 7,            -- Nachfrist bis 'gilt als abgenommen'
+    mail_to VARCHAR(255), sent_subject VARCHAR(255),
+    tok VARCHAR(64),                     -- Hash des Bestaetigungs-Links
+    sent_at VARCHAR(20), reminded_at VARCHAR(20),
+    confirmed_at VARCHAR(20), confirmed_by VARCHAR(190),
+    deemed_at VARCHAR(20),
+    objection TEXT, objection_at VARCHAR(20),
+    created_at VARCHAR(20), updated_at VARCHAR(20))$eng");
+  try{ $d->exec("CREATE INDEX idx_cust_due ON cust_items(due)"); }catch(Throwable $e){}
+  try{ $d->exec("CREATE UNIQUE INDEX ux_cust_auto ON cust_items(auto_key)"); }catch(Throwable $e){}
   // Offene Zwei-Faktor-Anmeldungen: Passwort war richtig, der Code fehlt noch.
   // Kurzlebig (5 Minuten), begrenzte Versuche.
   $d->exec("CREATE TABLE IF NOT EXISTS tfa_challenges (

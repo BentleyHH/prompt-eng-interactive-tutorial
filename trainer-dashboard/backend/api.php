@@ -1866,6 +1866,136 @@ switch($action){
   /* ---- Serienversand: Agenda an alle bestätigten Trainer eines Trainings.
          Betreff und Text kommen aus dem Kontroll-Dialog und dürfen Platzhalter
          wie {{firstName}} enthalten - je Trainer wird individuell gefüllt. ---- */
+  /* ---- Kundenbereich: Freigaben je Benutzer (nur Admin) ---- */
+  case 'user.setCust': {
+    require_admin();
+    $uid=(int)($in['id']??0);
+    if(!q("SELECT id FROM users WHERE id=?",[$uid])->fetch()) fail('Benutzer nicht gefunden.',404);
+    $v=!empty($in['view'])?1:0; $s2=!empty($in['send'])?1:0;
+    if($s2) $v=1;                                   // Senden schliesst Sehen ein
+    q("UPDATE users SET cust_view=?, cust_send=? WHERE id=?",[$v,$s2,$uid]);
+    audit('cust.rights','user',(string)$uid,'Kundenbereich: sehen='.($v?'ja':'nein').', senden='.($s2?'ja':'nein'));
+    out(['ok'=>true]);
+  }
+
+  /* ---- Kundenbereich: Lieferplan ---- */
+  case 'cust.list': {
+    require_cust_view();
+    $made=cust_generate();
+    $rows=q("SELECT * FROM cust_items WHERE status<>'dropped' ORDER BY due, id")->fetchAll();
+    $today=date('Y-m-d');
+    $items=array_map(fn($r)=>[
+      'id'=>(string)$r['id'],'kind'=>$r['kind'],'training'=>$r['training_id']?(string)$r['training_id']:'',
+      'title'=>$r['title'],'note'=>$r['note']??'','due'=>$r['due'],'critical'=>((int)$r['critical'])===1,
+      'status'=>$r['status'],'confirmDays'=>(int)$r['confirm_days'],'graceDays'=>(int)$r['grace_days'],
+      'mailTo'=>$r['mail_to']??'','sentAt'=>$r['sent_at']??'','remindedAt'=>$r['reminded_at']??'',
+      'confirmedAt'=>$r['confirmed_at']??'','confirmedBy'=>$r['confirmed_by']??'',
+      'deemedAt'=>$r['deemed_at']??'','objection'=>$r['objection']??'','objectionAt'=>$r['objection_at']??'',
+      'auto'=>trim((string)($r['auto_key']??''))!==''],$rows);
+    out(['ok'=>true,'items'=>$items,'generated'=>$made,'today'=>$today,
+         'canSend'=>cust_can('send'),
+         'to'=>(string)(config_get('customer_to')??''),
+         'from'=>(string)(cfg()['customer_from']??'')]);
+  }
+  case 'cust.save': {
+    require_cust_send();
+    $id=(int)($in['id']??0);
+    $title=mb_substr(trim((string)($in['title']??'')),0,190);
+    $due=trim((string)($in['due']??''));
+    if($title==='') fail('Bitte einen Titel angeben.');
+    if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$due)) fail('Bitte die Fälligkeit als Datum angeben.');
+    $note=mb_substr(trim((string)($in['note']??'')),0,600);
+    $crit=!empty($in['critical'])?1:0;
+    $cd=max(1,min(60,(int)($in['confirmDays']??14))); $gd=max(1,min(60,(int)($in['graceDays']??7)));
+    if($id){
+      if(!q("SELECT id FROM cust_items WHERE id=?",[$id])->fetch()) fail('Position nicht gefunden.',404);
+      q("UPDATE cust_items SET title=?,due=?,note=?,critical=?,confirm_days=?,grace_days=?,updated_at=? WHERE id=?",
+        [$title,$due,$note,$crit,$cd,$gd,now(),$id]);
+      audit('cust.save','cust',(string)$id,'Position geändert: '.$title);
+    } else {
+      q("INSERT INTO cust_items(auto_key,kind,title,note,due,critical,status,confirm_days,grace_days,created_at,updated_at)
+         VALUES(NULL,'custom',?,?,?,?,'open',?,?,?,?)",[$title,$note,$due,$crit,$cd,$gd,now(),now()]);
+      $id=(int)db()->lastInsertId();
+      audit('cust.save','cust',(string)$id,'Position angelegt: '.$title);
+    }
+    out(['ok'=>true,'id'=>(string)$id]);
+  }
+  case 'cust.setStatus': {
+    require_cust_send();
+    $id=(int)($in['id']??0);
+    $st=(string)($in['status']??'');
+    if(!in_array($st,['open','prepared','done','dropped'],true)) fail('Dieser Status kann nicht von Hand gesetzt werden.');
+    $r=q("SELECT * FROM cust_items WHERE id=?",[$id])->fetch();
+    if(!$r) fail('Position nicht gefunden.',404);
+    q("UPDATE cust_items SET status=?, updated_at=? WHERE id=?",[$st,now(),$id]);
+    audit('cust.status','cust',(string)$id,$r['title'].': Status '.$st);
+    out(['ok'=>true]);
+  }
+  case 'cust.send': {
+    require_cust_send();
+    $id=(int)($in['id']??0);
+    $r=q("SELECT * FROM cust_items WHERE id=?",[$id])->fetch();
+    if(!$r) fail('Position nicht gefunden.',404);
+    $to=trim((string)($in['to']??''));
+    if(!filter_var($to,FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige Empfängeradresse angeben.');
+    config_set('customer_to',$to);
+    $subject=mb_substr(trim((string)($in['subject']??''))?:('ETAF - '.$r['title']),0,255);
+    $note=mb_substr(trim((string)($in['note']??'')),0,2000);
+    // Bestaetigungs-Link: Klartext nur in der Mail, in der Datenbank der Hash
+    $tok=token(48);
+    $link=base_url().'/ack.php?token='.$tok;
+    $cd=(int)$r['confirm_days']; $gd=(int)$r['grace_days'];
+    $body="Dear Sir or Madam,
+
+"
+      ."please find the following ETAF delivery / notification:
+
+"
+      .$r['title'].($r['due']?"
+Due/reference date: ".$r['due']:'')
+      .($note!==''?"
+
+".$note:'')
+      ."
+
+Please confirm receipt/acceptance via the button below. "
+      ."If no confirmation or objection is received within $cd days, a reminder follows; "
+      ."$gd days after the reminder the delivery is deemed accepted in line with the Service Agreement."
+      ."
+
+Kind regards
+ETAF Coordination";
+    $atts=[];
+    if(!empty($in['file'])){
+      $bin=stud_upload_bin($in);
+      $fname=preg_replace('/[^A-Za-z0-9 ._()-]/','',(string)($in['fileName']??'attachment'))?:'attachment';
+      $atts[]=['name'=>mb_substr($fname,0,120),'mime'=>'application/octet-stream','data_b64'=>base64_encode($bin)];
+    }
+    $ok=send_email($to,'',$subject,
+      email_html($body, cta_button($link,'Confirm receipt / acceptance','#2E9E6B')),
+      $atts,(string)(cfg()['customer_from']??''));
+    $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+    q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?)",[(int)($r['training_id']??0),0,$to,$subject,$body,'en',$st,now()]);
+    if(!$ok) fail('Versand fehlgeschlagen: '.($GLOBALS['__mail_err']??''));
+    q("UPDATE cust_items SET status='sent', mail_to=?, sent_subject=?, tok=?, sent_at=?,
+       reminded_at=NULL, confirmed_at=NULL, confirmed_by=NULL, deemed_at=NULL,
+       objection=NULL, objection_at=NULL, updated_at=? WHERE id=?",
+      [$to,$subject,hash('sha256',$tok),now(),now(),$id]);
+    audit('cust.send','cust',(string)$id,$r['title'].' an '.$to.($atts?' (mit Anhang)':''));
+    out(['ok'=>true,'status'=>$st]);
+  }
+  case 'cust.remindNow': {
+    require_cust_send();
+    $id=(int)($in['id']??0);
+    $r=q("SELECT * FROM cust_items WHERE id=?",[$id])->fetch();
+    if(!$r || !in_array($r['status'],['sent','reminded'],true) || empty($r['mail_to']))
+      fail('Erinnern geht nur bei gesendeten, noch unbestätigten Positionen.');
+    $res=cust_send_reminder($r);
+    if(empty($res['ok'])) fail($res['error']??'Erinnerung fehlgeschlagen.');
+    out(['ok'=>true]);
+  }
+
   /* ---- Wochen-Drehbuch (Running Order) ---- */
   case 'running.get': {
     require_auth();

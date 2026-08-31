@@ -570,6 +570,28 @@ function run_automation(): array {
     q("DELETE FROM login_attempts WHERE window_start < ?",[gmdate('Y-m-d H:i:s', $now-86400)]);
     q("DELETE FROM tfa_challenges WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-900)]);
     q("DELETE FROM tfa_trust WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-tfa_trust_days()*86400)]);
+
+    /* Kundenbereich - Fristenwacht:
+       gesendet + confirm_days verstrichen  -> automatische Erinnerung
+       erinnert + grace_days verstrichen    -> Status 'gilt als abgenommen' */
+    $custReminded=0; $custDeemed=0;
+    try{
+      foreach(q("SELECT * FROM cust_items WHERE status='sent' AND COALESCE(mail_to,'')<>''")->fetchAll() as $r){
+        if($now - ts($r['sent_at']) >= ((int)$r['confirm_days'])*86400){
+          $res=cust_send_reminder($r);
+          if(!empty($res['ok'])) $custReminded++;
+        }
+      }
+      foreach(q("SELECT * FROM cust_items WHERE status='reminded'")->fetchAll() as $r){
+        if($now - ts($r['reminded_at']) >= ((int)$r['grace_days'])*86400){
+          q("UPDATE cust_items SET status='deemed', deemed_at=?, updated_at=? WHERE id=?",[now(),now(),$r['id']]);
+          audit_as(['id'=>null,'name'=>'Fristenwacht'],'cust.deemed','cust',(string)$r['id'],
+            $r['title'].' - keine Reaktion: gilt als abgenommen (gesendet '.substr((string)$r['sent_at'],0,10)
+            .', erinnert '.substr((string)$r['reminded_at'],0,10).')');
+          $custDeemed++;
+        }
+      }
+    }catch(Throwable $e){}
     q("DELETE FROM reset_tokens WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-86400)]);
     q("DELETE FROM login_attempts WHERE window_start < ?",[gmdate('Y-m-d H:i:s', $now-3600)]);
     // Rückgängig-Stände nur für die jüngsten 300 Änderungen vorhalten - die
@@ -582,6 +604,7 @@ function run_automation(): array {
   }catch(Throwable $e){}
 
   return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,
+          'cust_reminded'=>$custReminded??0,'cust_deemed'=>$custDeemed??0,
           'passport'=>$passport,'mail_fetched'=>$mailFetched,'mail_flights'=>$mailFlights,
           'digest'=>$digestSent,'debrief_ping'=>$debriefPing,'period_report'=>$periodRep,
           'ppt_reminded'=>$pptRes['reminded'],'ppt_escalated'=>$pptRes['escalated'],

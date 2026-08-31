@@ -345,6 +345,31 @@ tokengebunden, ohne Anmeldung, nur fuer genau diese Woche. Der Abflughafen wird
 als Heimatflughafen gemerkt und in der naechsten Woche vorbelegt. Im Cockpit
 stehen dieselben Felder im Reise-Dialog je Trainer.
 
+## Kundenbereich (ADP): Lieferplan, Fristenwacht, Bestaetigungen
+Der Menuepunkt **Kunde (ADP)** ist nur mit Freigabe sichtbar. Admins haben ihn
+immer; allen anderen erteilt ein Admin unter **Benutzer** (Stern-Knopf je Zeile)
+getrennt **"darf sehen"** und **"darf senden"** - Senden schliesst Sehen ein.
+
+Der Bereich fuehrt den **Lieferplan aus dem Betriebs- und Pflichtenplan**:
+je Trainingswoche automatisch die Wochentakt-Positionen (T-8 Spezifikation,
+T-6 Pro-forma, T-4 Einsatzbestaetigung/Tickets, T-1 Teilnehmerliste,
+T+1 Wochendeliverable), dazu die 15 Monatsberichte und die Fixtermine aus
+Teil D. Kritische (rot hinterlegte) Fristen sind markiert; die Ampel oben
+zeigt Ueberfaelliges sofort. Eigene Positionen lassen sich ergaenzen.
+
+**Senden** verschickt eine Position (optional mit Anhang) an den Kunden -
+Absender ist `customer_from` aus config.php (z.B. adp@dvi-systems.com).
+Die Mail enthaelt einen **Bestaetigungslink** (backend/ack.php, zweistufig
+und scanner-sicher): der Kunde bestaetigt Empfang/Abnahme oder meldet einen
+Einwand. Ohne Reaktion erinnert der Cron nach der eingestellten Frist
+(Standard 14 Tage) automatisch; bleibt auch die Nachfrist (7 Tage) ohne
+Reaktion, setzt er den Status auf **"gilt als abgenommen"** - die komplette
+Kette (gesendet/erinnert/bestaetigt bzw. abgenommen, mit Daten und Namen)
+steht in der Position und im Aenderungsprotokoll. Fristen je Position sind
+einstellbar. Hinweis: die Formulierung der Mail sollte einmal juristisch
+gegen das Service Agreement gelesen werden - das Cockpit dokumentiert,
+die Rechtswirkung kommt aus dem Vertrag.
+
 ## Wochen-Drehbuch (Running Order)
 Im Training oeffnet **Wochen-Drehbuch** den kompletten Ablaufplan der Woche als
 eine Agenda: Wer kommt wann an (aus den Reisedaten der Trainer), Team-Briefing

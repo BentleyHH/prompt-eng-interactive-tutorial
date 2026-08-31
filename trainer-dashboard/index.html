@@ -1278,6 +1278,7 @@
       <section class="view" id="v-transfer"></section>
       <section class="view" id="v-templates"></section>
       <section class="view" id="v-automation"></section>
+      <section class="view" id="v-customer"></section>
       <section class="view" id="v-emails"></section>
       <section class="view" id="v-reports"></section>
       <section class="view" id="v-pptview"></section>
@@ -1899,6 +1900,44 @@ const L={
   wkPrint:"Drucken", wkMat:"Benötigtes Material", wkMatPh:"z.B. 20× DVI-Kit, Beamer, Flipchart",
   wkPrintMat:"Material", wkPrintTrainer:"Trainer",
   nav_users:"Benutzer", nav_activity:"Änderungen", nav_students:"Teilnehmer",
+  nav_customer:"Kunde (ADP)",
+  tp_customer:"Kunde (ADP)", tp_customerSub:"Lieferplan, Fristenwacht und Sendungen mit Bestätigung",
+  cuHeadOk:"Fristenwacht: alles im Takt", cuHeadOver:n=>`${n} Position(en) überfällig`,
+  cuHeadCrit:n=>`Achtung: ${n} kritische Frist(en) überfällig`, cuHeadObj:n=>`${n} Einwand/Einwände offen`,
+  cuFrom:"Absender", cuFromStd:"Standard-Absender (flight_from/from_email)", cuLastTo:"Empfänger",
+  cuNew:"Position", cuEditTitle:"Position bearbeiten",
+  cuKpiSoon:"fällig in 14 Tagen", cuKpiOver:"überfällig", cuKpiWait:"wartet auf Bestätigung",
+  cuKpiObj:"Einwände", cuKpiDone:"erledigt/bestätigt",
+  cuFltDue:"anstehend", cuFltSoon:"bald fällig", cuFltOver:"überfällig", cuFltWait:"wartend",
+  cuFltObj:"Einwände", cuFltDone:"erledigt", cuFltAll:"alle",
+  cuNone:"Keine Positionen in dieser Ansicht.",
+  cuCritT:"kritische Frist (kostet Geld oder Vertragsposition)",
+  cuSentShort:"gesendet", cuRemShort:"erinnert",
+  cuStOpen:"offen", cuStPrepared:"vorbereitet", cuStSent:"gesendet", cuStReminded:"erinnert",
+  cuStConfirmed:"bestätigt", cuStDeemed:"gilt als abgenommen", cuStObjection:"Einwand", cuStDone:"erledigt",
+  cuKind_spec:"Wochenspezifikation (T-8)", cuKind_proforma:"Pro-forma-Rechnung (T-6)",
+  cuKind_confirm4w:"Einsatzbestätigung/Tickets (T-4)", cuKind_attendance:"Teilnehmerliste (T-1)",
+  cuKind_deliverable:"Wochendeliverable (T+1)", cuKind_monthly:"Monatsbericht",
+  cuKind_milestone:"Fixtermin (Teil D)", cuKind_custom:"eigene Position",
+  cuDue:"Fällig am", cuTitle:"Titel", cuNote:"Notiz",
+  cuConfirmDays:"Erinnerung nach (Tagen)", cuGraceDays:"Nachfrist (Tage)",
+  cuYes:"ja", cuNo:"nein",
+  cuChain:"Bestätigungskette",
+  cuSentAt:"Gesendet", cuRemAt:"Erinnert", cuConfAt:"Bestätigt", cuDeemedAt:"Gilt als abgenommen seit",
+  cuObjAt:"Einwand vom", cuNotSent:"Noch nicht an den Kunden gesendet.",
+  cuWindow:(c,g)=>`Frist: Erinnerung nach ${c} Tagen, danach ${g} Tage Nachfrist - dann gilt es als abgenommen.`,
+  cuRemindNow:"Jetzt erinnern", cuMarkDone:"Erledigt (ohne Versand)",
+  cuSend:"Senden", cuSendTitle:"An den Kunden senden",
+  cuSendHint:(c,g)=>`Mit Bestätigungslink. Ohne Reaktion: Erinnerung nach ${c} Tagen, nach weiteren ${g} Tagen gilt es als abgenommen - alles dokumentiert.`,
+  cuTo:"Empfänger", cuSubject:"Betreff", cuMsg:"Nachricht (optional)", cuAttach:"Anhang (optional, max. 8 MB)",
+  cuSent:to=>`Gesendet an ${to} - die Fristenuhr läuft.`, cuSaved:"Gespeichert.", cuReminded:"Erinnerung gesendet.",
+  cuRightsT:"Kundenbereich-Freigaben", cuRightsTitle:n=>`Kundenbereich - Freigaben für ${n}`,
+  cuRightsHint:"Der Bereich Kunde (ADP) ist nur mit Freigabe sichtbar. Senden schließt Sehen ein.",
+  cuRightViewL:"Darf sehen (Lieferplan und Ketten einsehen)",
+  cuRightSendL:"Darf senden (Positionen anlegen, senden, erinnern, erledigen)",
+  cuRightsAdmin:"Administratoren haben immer beide Freigaben - unabhängig von den Häkchen.",
+  cuRightView:"Kunde", cuRightViewT:"Kundenbereich: darf sehen",
+  cuRightSend:"Kunde ✓", cuRightSendT:"Kundenbereich: darf sehen und senden",
   navg_plan:"Planung", navg_part:"Teilnehmer", navg_comm:"Kommunikation", navg_sys:"System",
   ptTabMail:"E-Mail-Protokoll", ptTabAct:"Änderungsprotokoll",
   tp_students:"Teilnehmer", tp_studentsSub:"Stammdaten, Lehrgänge und Zellen der Teilnehmer",
@@ -2739,6 +2778,44 @@ const L={
   wkPrint:"Print", wkMat:"Required material", wkMatPh:"e.g. 20× DVI kit, projector, flip chart",
   wkPrintMat:"Material", wkPrintTrainer:"Trainer",
   nav_users:"Users", nav_activity:"Changes", nav_students:"Participants",
+  nav_customer:"Client (ADP)",
+  tp_customer:"Client (ADP)", tp_customerSub:"Delivery plan, deadline watch and sendings with confirmation",
+  cuHeadOk:"Deadline watch: everything on track", cuHeadOver:n=>`${n} item(s) overdue`,
+  cuHeadCrit:n=>`Attention: ${n} critical deadline(s) overdue`, cuHeadObj:n=>`${n} objection(s) open`,
+  cuFrom:"Sender", cuFromStd:"default sender", cuLastTo:"Recipient",
+  cuNew:"Item", cuEditTitle:"Edit item",
+  cuKpiSoon:"due within 14 days", cuKpiOver:"overdue", cuKpiWait:"awaiting confirmation",
+  cuKpiObj:"objections", cuKpiDone:"done/confirmed",
+  cuFltDue:"upcoming", cuFltSoon:"due soon", cuFltOver:"overdue", cuFltWait:"waiting",
+  cuFltObj:"objections", cuFltDone:"done", cuFltAll:"all",
+  cuNone:"No items in this view.",
+  cuCritT:"critical deadline (costs money or contract position)",
+  cuSentShort:"sent", cuRemShort:"reminded",
+  cuStOpen:"open", cuStPrepared:"prepared", cuStSent:"sent", cuStReminded:"reminded",
+  cuStConfirmed:"confirmed", cuStDeemed:"deemed accepted", cuStObjection:"objection", cuStDone:"done",
+  cuKind_spec:"Week specification (T-8)", cuKind_proforma:"Pro-forma invoice (T-6)",
+  cuKind_confirm4w:"Deployment confirmation/tickets (T-4)", cuKind_attendance:"Participant list (T-1)",
+  cuKind_deliverable:"Weekly deliverable (T+1)", cuKind_monthly:"Monthly report",
+  cuKind_milestone:"Fixed date (Part D)", cuKind_custom:"custom item",
+  cuDue:"Due", cuTitle:"Title", cuNote:"Note",
+  cuConfirmDays:"Reminder after (days)", cuGraceDays:"Grace period (days)",
+  cuYes:"yes", cuNo:"no",
+  cuChain:"Confirmation chain",
+  cuSentAt:"Sent", cuRemAt:"Reminded", cuConfAt:"Confirmed", cuDeemedAt:"Deemed accepted since",
+  cuObjAt:"Objection of", cuNotSent:"Not yet sent to the client.",
+  cuWindow:(c,g)=>`Deadline: reminder after ${c} days, then ${g} days grace - after that it is deemed accepted.`,
+  cuRemindNow:"Remind now", cuMarkDone:"Done (without sending)",
+  cuSend:"Send", cuSendTitle:"Send to the client",
+  cuSendHint:(c,g)=>`With confirmation link. No reaction: reminder after ${c} days, ${g} more days later it is deemed accepted - fully documented.`,
+  cuTo:"Recipient", cuSubject:"Subject", cuMsg:"Message (optional)", cuAttach:"Attachment (optional, max. 8 MB)",
+  cuSent:to=>`Sent to ${to} - the deadline clock is running.`, cuSaved:"Saved.", cuReminded:"Reminder sent.",
+  cuRightsT:"Client-area permissions", cuRightsTitle:n=>`Client area - permissions for ${n}`,
+  cuRightsHint:"The Client (ADP) area is visible only with permission. Send includes view.",
+  cuRightViewL:"May view (see delivery plan and chains)",
+  cuRightSendL:"May send (create items, send, remind, mark done)",
+  cuRightsAdmin:"Administrators always have both permissions - regardless of the checkboxes.",
+  cuRightView:"Client", cuRightViewT:"Client area: may view",
+  cuRightSend:"Client ✓", cuRightSendT:"Client area: may view and send",
   navg_plan:"Planning", navg_part:"Participants", navg_comm:"Communication", navg_sys:"System",
   ptTabMail:"Email log", ptTabAct:"Change log",
   tp_students:"Participants", tp_studentsSub:"Master data, courses and cells of the participants",
@@ -3655,7 +3732,8 @@ const NAV_GROUPS=[
   {key:"plan", items:[{id:"dash",ic:IC.dash},{id:"trainings",ic:IC.cal},{id:"week",ic:IC.week},
                       {id:"bookings",ic:IC.book},{id:"trainers",ic:IC.users},{id:"reports",ic:IC.chart}]},
   {key:"part", items:[{id:"students",ic:IC.id},{id:"cert",ic:IC.cert}]},
-  {key:"comm", items:[{id:"pptview",ic:IC.slides},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail}]},
+  {key:"comm", items:[{id:"customer",ic:IC.star,when:()=>custCan("view")},
+                      {id:"pptview",ic:IC.slides},{id:"inbox",ic:IC.inbox},{id:"templates",ic:IC.mail}]},
   {key:"sys",  items:[{id:"automation",ic:IC.auto},{id:"emails",ic:IC.log},{id:"users",ic:IC.lock}]},
 ];
 const NAV=NAV_GROUPS.flatMap(g=>g.items);
@@ -3699,9 +3777,11 @@ function buildNav(){
     : n.id==="pptview"&&pptDue ? `<span class="badge">${pptDue}</span>` : "";
   const isActive=n=> n.id===route || (n.id==="emails"&&route==="activity");
   $("#nav").innerHTML=NAV_GROUPS.map(g=>{
-    const hasActive=g.items.some(isActive);
+    const items=g.items.filter(n=>!n.when||n.when());
+    if(!items.length) return "";
+    const hasActive=items.some(isActive);
     const open=!navCollapsed[g.key] || hasActive;   // aktive Gruppe nie verstecken
-    const body=open?g.items.map(n=>`
+    const body=open?items.map(n=>`
       <button class="${isActive(n)?'active':''}" onclick="go('${n.id}')">
         ${svg(n.ic)}<span>${t("nav_"+n.id)}</span>
         ${badgeFor(n)}
@@ -3721,7 +3801,7 @@ function buildNav(){
 }
 /* „Mehr“-Blatt: restliche Bereiche + Einstellungen, mit großen Tap-Zielen. */
 function openMoreNav(){
-  const rest=NAV.filter(n=>!NAV_MOBILE.includes(n.id));
+  const rest=NAV.filter(n=>!NAV_MOBILE.includes(n.id)&&(!n.when||n.when()));
   $("#sheetTitle").textContent=t("nav_more");
   $("#sheetBody").innerHTML=rest.map(n=>`
     <button class="morerow ${n.id===route?'on':''}" onclick="closeSheet();go('${n.id}')">
@@ -3740,7 +3820,7 @@ function navIcName(id){
   return {dash:"dash",trainings:"cal",week:"week",bookings:"book",trainers:"users",
           inbox:"inbox",templates:"mail",automation:"auto",emails:"log",
           users:"lock",activity:"log",cert:"cert",reports:"chart",
-          pptview:"slides",students:"id"}[id]||"dash";
+          pptview:"slides",students:"id",customer:"star"}[id]||"dash";
 }
 /* Angemeldeter Benutzer unten in der Seitenleiste. */
 function drawMeBox(){
@@ -3765,7 +3845,8 @@ function titleFor(r){
     automation:["tp_auto","tp_autoSub"],emails:["tp_emails","tp_emailsSub"],
     users:["tp_users","tp_usersSub"],activity:["tp_activity","tp_activitySub"],
     reports:["tp_reports","tp_reportsSub"],pptview:["tp_pptv","tp_pptvSub"],
-    cert:["tp_cert","tp_certSub"],students:["tp_students","tp_studentsSub"]};
+    cert:["tp_cert","tp_certSub"],students:["tp_students","tp_studentsSub"],
+    customer:["tp_customer","tp_customerSub"]};
   const k=m[r]||m.dash; return [t(k[0]),t(k[1])];
 }
 function go(r){
@@ -3787,6 +3868,7 @@ function render(){
   else if(route==="users"){renderUsers();$("#v-users").classList.add("on");}
   else if(route==="activity"){renderActivity();$("#v-activity").classList.add("on");}
   else if(route==="students"){renderCert();$("#v-cert").classList.add("on");}
+  else if(route==="customer"){renderCustomer();$("#v-customer").classList.add("on");}
   else if(route==="transfer"){renderTransfer();$("#v-transfer").classList.add("on");}
   else if(route==="templates"){renderTemplates();$("#v-templates").classList.add("on");}
   else if(route==="automation"){renderAutomation();$("#v-automation").classList.add("on");}
@@ -3983,6 +4065,223 @@ function sysAgo(iso){
   if(h<48) return t("sysAgoH",h);
   return t("sysAgoD",Math.round(h/24));
 }
+/* ============================================================
+   KUNDENBEREICH (ADP) - Lieferplan mit Fristenwacht
+   Sichtbar nur mit Freigabe; Senden nur mit Sende-Freigabe.
+   ============================================================ */
+function custCan(what){
+  const m=S.me;
+  if(!m) return isAdmin();               // Ersteinrichtung
+  if(m.role==="admin") return true;
+  if(what==="send") return !!m.custSend;
+  return !!m.custView||!!m.custSend;
+}
+let custState={items:[],filter:"due",canSend:false,to:"",from:"",today:""};
+const CUST_KINDS=["spec","proforma","confirm4w","attendance","deliverable","monthly","milestone","custom"];
+function custStatusPill(it){
+  const map={open:["neutral","cuStOpen"],prepared:["info","cuStPrepared"],sent:["info","cuStSent"],
+    reminded:["warn","cuStReminded"],confirmed:["good","cuStConfirmed"],deemed:["good","cuStDeemed"],
+    objection:["crit","cuStObjection"],done:["good","cuStDone"]};
+  const [cls,key]=map[it.status]||["neutral","cuStOpen"];
+  return `<span class="pill ${cls}">${esc(t(key))}</span>`;
+}
+function custOverdue(it){
+  return ["open","prepared"].includes(it.status) && it.due && it.due<custState.today;
+}
+async function renderCustomer(){
+  const box=$("#v-customer");
+  if(!LIVE){ box.innerHTML=`<div class="panel"><div class="panel-b empty">${esc(t("ceDemo"))}</div></div>`; return; }
+  let d;
+  try{ d=await apiCall("cust.list"); }
+  catch(e){ box.innerHTML=`<div class="panel"><div class="panel-b meta">${esc(e.message)}</div></div>`; return; }
+  custState.items=d.items||[]; custState.canSend=!!d.canSend;
+  custState.to=d.to||""; custState.from=d.from||""; custState.today=d.today||new Date().toISOString().slice(0,10);
+  const I=custState.items;
+  const overdue=I.filter(custOverdue);
+  const overdueCrit=overdue.filter(x=>x.critical);
+  const soonEnd=new Date(Date.now()+14*86400000).toISOString().slice(0,10);
+  const soon=I.filter(x=>["open","prepared"].includes(x.status)&&x.due>=custState.today&&x.due<=soonEnd);
+  const waiting=I.filter(x=>["sent","reminded"].includes(x.status));
+  const objections=I.filter(x=>x.status==="objection");
+  const lampCls=overdueCrit.length?"crit":(overdue.length||objections.length)?"warn":"good";
+  const kpi=(n,lbl,f,cls)=>`<div class="kpi ${cls||"i"}" style="cursor:pointer" onclick="custFlt('${f}')">
+      <span class="rail"></span><div class="lab">${esc(lbl)}</div><div class="val tnum">${n}</div></div>`;
+  const head=`
+    <div class="ampel a-${lampCls==="crit"?"red":lampCls==="warn"?"amber":"green"} sysbar" style="margin-bottom:14px">
+      <span class="lamp"></span>
+      <div class="rowgrow"><b>${esc(overdueCrit.length?t("cuHeadCrit",overdueCrit.length)
+        :overdue.length?t("cuHeadOver",overdue.length)
+        :objections.length?t("cuHeadObj",objections.length):t("cuHeadOk"))}</b>
+        <div class="sysrows"><span>${esc(t("cuFrom"))}: ${esc(custState.from||t("cuFromStd"))}</span>
+          <span>${esc(t("cuLastTo"))}: ${esc(custState.to||"-")}</span></div></div>
+      ${custState.canSend?`<button class="btn sm" onclick="custEdit(null)">${ic("plus",14)}${esc(t("cuNew"))}</button>`:""}
+    </div>
+    <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      ${kpi(soon.length,t("cuKpiSoon"),"soon","i")}
+      ${kpi(overdue.length,t("cuKpiOver"),"over",overdue.length?"c":"g")}
+      ${kpi(waiting.length,t("cuKpiWait"),"wait","w")}
+      ${kpi(objections.length,t("cuKpiObj"),"obj",objections.length?"c":"g")}
+      ${kpi(I.filter(x=>["confirmed","deemed","done"].includes(x.status)).length,t("cuKpiDone"),"done","g")}
+    </div>`;
+  const chips=`<div class="panel"><div class="panel-b" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <span class="chips rpchips">${[["due","cuFltDue"],["soon","cuFltSoon"],["over","cuFltOver"],
+        ["wait","cuFltWait"],["obj","cuFltObj"],["done","cuFltDone"],["all","cuFltAll"]].map(([k,l])=>
+        `<button${custState.filter===k?' class="on"':""} onclick="custFlt('${k}')">${esc(t(l))}</button>`).join("")}</span>
+    </div></div>`;
+  box.innerHTML=head+chips+`<div id="custBody">${custListHtml()}</div>`;
+}
+function custFlt(f){ custState.filter=f; const el=$("#custBody"); if(el){ renderCustomer(); } }
+function custFiltered(){
+  const I=custState.items, f=custState.filter;
+  const soonEnd=new Date(Date.now()+14*86400000).toISOString().slice(0,10);
+  if(f==="soon") return I.filter(x=>["open","prepared"].includes(x.status)&&x.due>=custState.today&&x.due<=soonEnd);
+  if(f==="over") return I.filter(custOverdue);
+  if(f==="wait") return I.filter(x=>["sent","reminded"].includes(x.status));
+  if(f==="obj")  return I.filter(x=>x.status==="objection");
+  if(f==="done") return I.filter(x=>["confirmed","deemed","done"].includes(x.status));
+  if(f==="all")  return I;
+  // Standard "anstehend": alles Unerledigte
+  return I.filter(x=>!["confirmed","deemed","done"].includes(x.status));
+}
+function custListHtml(){
+  const rows=custFiltered();
+  if(!rows.length) return `<div class="panel"><div class="panel-b empty">${esc(t("cuNone"))}</div></div>`;
+  // nach Monat gruppieren
+  const byM={};
+  rows.forEach(it=>{ const m=(it.due||"").slice(0,7)||"?"; (byM[m]=byM[m]||[]).push(it); });
+  return Object.keys(byM).sort().map(m=>{
+    const mm=m!=="?"?new Date(m+"-15T12:00:00Z"):null;
+    const lbl=mm?mm.toLocaleDateString(S.lang==="en"?"en-GB":"de-DE",{month:"long",year:"numeric"}):"?";
+    return `<div class="panel"><div class="panel-h"><h3>${esc(lbl)}</h3>
+        <span class="meta">${byM[m].length}</span></div>
+      <div class="panel-b" style="padding:4px 16px">
+        ${byM[m].map(it=>`
+          <div class="row hit" onclick="custOpen('${it.id}')" style="${custOverdue(it)?'background:var(--crit-bg);border-radius:9px':''}">
+            <b class="tnum" style="width:78px;flex:none;color:${custOverdue(it)?"var(--crit)":"var(--muted)"}">${esc((it.due||"").slice(8,10)+"."+(it.due||"").slice(5,7)+".")}</b>
+            ${it.critical?`<span class="celamp red" title="${esc(t("cuCritT"))}" style="flex:none"></span>`:""}
+            <div class="rowgrow" style="min-width:0"><div class="nm" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.title)}</div>
+              <div class="meta">${esc(t("cuKind_"+it.kind))}${it.sentAt?` · ${esc(t("cuSentShort"))} ${esc(it.sentAt.slice(0,10))}`:""}${it.remindedAt?` · ${esc(t("cuRemShort"))} ${esc(it.remindedAt.slice(0,10))}`:""}</div></div>
+            ${custStatusPill(it)}
+            ${custState.canSend&&["open","prepared","objection"].includes(it.status)?`
+              <button class="btn sm primary" onclick="event.stopPropagation();custSendDlg('${it.id}')">${ic("send",13)}${esc(t("cuSend"))}</button>`:""}
+          </div>`).join("")}
+      </div></div>`;
+  }).join("");
+}
+function custItem(id){ return custState.items.find(x=>String(x.id)===String(id)); }
+/* Detail: komplette Bestaetigungskette */
+function custOpen(id){
+  const it=custItem(id); if(!it) return;
+  const line=(lbl,val,cls)=>val?`<div class="kv"><span class="k">${esc(lbl)}</span><b${cls?` style="color:var(--${cls})"`:""}>${esc(val)}</b></div>`:"";
+  $("#sheetTitle").textContent=it.title;
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:12px">${esc(t("cuKind_"+it.kind))}${it.critical?` · <b style="color:var(--crit)">${esc(t("cuCritT"))}</b>`:""}</div>
+    ${line(t("cuDue"),(it.due||""))}
+    ${it.note?`<div class="rpnote soft" style="margin:10px 0">${ic("book",15)}<div>${esc(it.note)}</div></div>`:""}
+    <div style="border-top:1px solid var(--line);margin:12px 0;padding-top:12px">
+      <b>${esc(t("cuChain"))}</b>
+      ${line(t("cuSentAt"),it.sentAt?it.sentAt.slice(0,16)+" · "+it.mailTo:"")}
+      ${line(t("cuRemAt"),it.remindedAt?it.remindedAt.slice(0,16):"")}
+      ${line(t("cuConfAt"),it.confirmedAt?it.confirmedAt.slice(0,16)+(it.confirmedBy?" · "+it.confirmedBy:""):"","good")}
+      ${line(t("cuDeemedAt"),it.deemedAt?it.deemedAt.slice(0,16):"","good")}
+      ${it.objection?`<div class="rpnote" style="margin-top:8px">${ic("bell",15)}
+        <div><b>${esc(t("cuObjAt"))} ${esc((it.objectionAt||"").slice(0,16))}</b><br>${esc(it.objection)}</div></div>`:""}
+      ${!it.sentAt?`<div class="meta">${esc(t("cuNotSent"))}</div>`:""}
+      ${["sent","reminded"].includes(it.status)?`<div class="meta" style="margin-top:6px">${esc(t("cuWindow",it.confirmDays,it.graceDays))}</div>`:""}
+    </div>`;
+  const canSend=custState.canSend;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button>
+    ${canSend&&!it.auto&&["open","prepared"].includes(it.status)?`<button class="btn" onclick="closeSheet();custEdit('${it.id}')">${ic("pen",14)}${t("trEdit")}</button>`:""}
+    ${canSend&&it.auto&&["open","prepared"].includes(it.status)?`<button class="btn" onclick="closeSheet();custEdit('${it.id}')">${ic("pen",14)}${t("trEdit")}</button>`:""}
+    ${canSend&&["sent","reminded"].includes(it.status)?`<button class="btn" onclick="custRemind('${it.id}')">${ic("bell",14)}${esc(t("cuRemindNow"))}</button>`:""}
+    ${canSend&&["open","prepared","objection"].includes(it.status)?`<button class="btn" onclick="custMark('${it.id}','done')">${ic("check",14)}${esc(t("cuMarkDone"))}</button>`:""}
+    <div class="spacer"></div>
+    ${canSend&&["open","prepared","objection"].includes(it.status)?`<button class="btn primary" onclick="closeSheet();custSendDlg('${it.id}')">${ic("send",15)}${esc(t("cuSend"))}</button>`:""}`;
+  openSheet();
+}
+/* Anlegen/Bearbeiten */
+function custEdit(id){
+  const it=id?custItem(id):null;
+  $("#sheetTitle").textContent=it?t("cuEditTitle"):t("cuNew");
+  $("#sheetBody").innerHTML=`
+    <label class="fld">${esc(t("cuTitle"))}</label><input class="inp" id="cuTitle" value="${esc(it?it.title:"")}">
+    <div class="fldrow">
+      <div style="flex:1"><label class="fld">${esc(t("cuDue"))}</label>
+        <input class="inp" id="cuDue" type="date" value="${esc(it?it.due:"")}"></div>
+      <div style="flex:1"><label class="fld">${esc(t("cuCritT"))}</label>
+        <select class="inp" id="cuCrit"><option value="0">${esc(t("cuNo"))}</option>
+          <option value="1"${it&&it.critical?" selected":""}>${esc(t("cuYes"))}</option></select></div>
+    </div>
+    <div class="fldrow">
+      <div style="flex:1"><label class="fld">${esc(t("cuConfirmDays"))}</label>
+        <input class="inp" id="cuCd" type="number" min="1" max="60" value="${it?it.confirmDays:14}"></div>
+      <div style="flex:1"><label class="fld">${esc(t("cuGraceDays"))}</label>
+        <input class="inp" id="cuGd" type="number" min="1" max="60" value="${it?it.graceDays:7}"></div>
+    </div>
+    <label class="fld">${esc(t("cuNote"))}</label><textarea id="cuNote" style="min-height:64px">${esc(it?it.note:"")}</textarea>`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="custSave(${it?`'${it.id}'`:"null"})">${ic("check",15)}${t("save")}</button>`;
+  openSheet();
+}
+async function custSave(id){
+  try{
+    await apiCall("cust.save",{id:id||0,title:val("cuTitle"),due:val("cuDue"),
+      note:val("cuNote"),critical:val("cuCrit")==="1"?1:0,
+      confirmDays:parseInt(val("cuCd"),10)||14,graceDays:parseInt(val("cuGd"),10)||7});
+    closeSheet(); toast(t("cuSaved"),"good"); renderCustomer();
+  }catch(e){ toast(e.message,"crit"); }
+}
+async function custMark(id,st){
+  try{ await apiCall("cust.setStatus",{id,status:st}); closeSheet(); toast(t("cuSaved"),"good"); renderCustomer(); }
+  catch(e){ toast(e.message,"crit"); }
+}
+async function custRemind(id){
+  try{ await apiCall("cust.remindNow",{id}); closeSheet(); toast(t("cuReminded"),"good"); renderCustomer(); }
+  catch(e){ toast(e.message,"crit"); }
+}
+/* Senden mit Bestaetigungslink */
+function custSendDlg(id){
+  const it=custItem(id); if(!it) return;
+  $("#sheetTitle").textContent=t("cuSendTitle");
+  $("#sheetBody").innerHTML=`
+    <div class="rpnote soft" style="margin-bottom:12px">${ic("send",15)}
+      <div><b>${esc(it.title)}</b><div class="meta">${esc(t("cuSendHint",it.confirmDays,it.graceDays))}</div></div></div>
+    <label class="fld">${esc(t("cuTo"))}</label>
+    <input class="inp" id="cuTo" type="email" autocapitalize="off" spellcheck="false"
+           value="${esc(custState.to||"")}" placeholder="adp@...">
+    <label class="fld">${esc(t("cuSubject"))}</label>
+    <input class="inp" id="cuSubj" value="${esc("ETAF - "+it.title)}">
+    <label class="fld">${esc(t("cuMsg"))}</label>
+    <textarea id="cuMsg" style="min-height:70px"></textarea>
+    <label class="fld">${esc(t("cuAttach"))}</label>
+    <input type="file" id="cuFile" class="inp" style="padding:9px">
+    ${custState.from?`<div class="meta" style="margin-top:8px">${esc(t("fxFrom",custState.from))}</div>`:""}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <div class="spacer"></div>
+    <button class="btn primary" id="cuSendBtn" onclick="custSendGo('${it.id}')">${ic("send",15)}${esc(t("cuSend"))}</button>`;
+  openSheet();
+}
+async function custSendGo(id){
+  const to=val("cuTo").trim();
+  if(!to){ toast(t("fxToMissing"),"warn"); return; }
+  const b=$("#cuSendBtn"); if(b){b.disabled=true;b.textContent="…";}
+  try{
+    const payload={id,to,subject:val("cuSubj"),note:val("cuMsg")};
+    const f=$("#cuFile")?.files?.[0];
+    if(f){
+      payload.file=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});
+      payload.fileName=f.name;
+    }
+    const d=await apiCall("cust.send",payload);
+    custState.to=to;
+    closeSheet();
+    toast(d.status==="logged"?t("fxLogged"):t("cuSent",to),"good");
+    renderCustomer();
+  }catch(e){ toast("Fehler: "+e.message,"crit"); }
+  finally{ if(b){b.disabled=false;} }
+}
+
 function sysStatusHtml(d){
   if(!d) return "";
   const lvl=d.overall==="green"?"green":d.overall==="amber"?"amber":"red";
@@ -5875,6 +6174,8 @@ async function renderUsers(){
           usrOnline(u) ? `<span><b style="color:var(--good)">● ${esc(t("usrOnline"))}</b></span>` : ""}</div>
       </div>
       <div class="rowacts">
+        ${u.custSend?`<span class="pill info" title="${esc(t("cuRightSendT"))}">${esc(t("cuRightSend"))}</span>`
+          :u.custView?`<span class="pill neutral" title="${esc(t("cuRightViewT"))}">${esc(t("cuRightView"))}</span>`:""}
         ${u.tfaOn?`<span class="pill good" title="${esc(t("tfaOnT"))}">2FA</span>`:""}
         <span class="pill ${u.active?'good':'neutral'}">${u.active?t("usrActive"):t("usrBlocked")}</span>
         <button class="btn sm" onclick="openUserEdit('${u.id}')">${ic("pen",15)}${t("trEdit")}</button>
@@ -5882,6 +6183,7 @@ async function renderUsers(){
         <button class="btn sm" onclick="actShowLogins('${u.id}')" title="${esc(t("usrHistoryT"))}">${ic("log",15)}${t("usrHistory")}</button>
         <button class="btn sm" onclick="resendInvite('${u.id}')" title="${t("usrResend")}">${ic("send",15)}</button>
         ${u.tfaOn?`<button class="btn sm" onclick="tfaAdminReset('${u.id}','${esc(u.name||u.email)}')" title="${esc(t("tfaResetT"))}">${ic("id",15)}</button>`:""}
+        <button class="btn sm" onclick="custRightsDlg('${u.id}')" title="${esc(t("cuRightsT"))}">${ic("star",15)}</button>
         <button class="btn sm" onclick="toggleUser('${u.id}',${u.active?0:1})" ${me&&me.id===u.id?'disabled style="opacity:.4"':''}>
           ${u.active?t("usrBlock"):t("usrUnblock")}</button>
       </div>
@@ -6003,6 +6305,26 @@ async function tfaAdminReset(uid,name){
   if(!confirm(t("tfaResetAsk",name))) return;
   try{ await apiCall("user.tfaReset",{id:uid}); toast(t("tfaResetDone",name),"good"); renderUsers(); }
   catch(e){ toast(e.message,"crit"); }
+}
+/* Kundenbereich-Freigaben eines Benutzers (nur Admin) */
+function custRightsDlg(uid){
+  const u=usersCache.find(x=>x.id===uid); if(!u) return;
+  $("#sheetTitle").textContent=t("cuRightsTitle",u.name||u.email);
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:14px">${esc(t("cuRightsHint"))}</div>
+    <label class="pptownrow"><input type="checkbox" id="cuRV" ${u.custView||u.custSend?"checked":""}> ${esc(t("cuRightViewL"))}</label>
+    <label class="pptownrow"><input type="checkbox" id="cuRS" ${u.custSend?"checked":""}> ${esc(t("cuRightSendL"))}</label>
+    ${u.role==="admin"?`<div class="meta" style="margin-top:10px">${esc(t("cuRightsAdmin"))}</div>`:""}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="custRightsSave('${u.id}')">${ic("check",15)}${t("save")}</button>`;
+  openSheet();
+}
+async function custRightsSave(uid){
+  try{
+    await apiCall("user.setCust",{id:uid,view:$("#cuRV").checked?1:0,send:$("#cuRS").checked?1:0});
+    closeSheet(); toast(t("cuSaved"),"good"); renderUsers();
+  }catch(e){ toast(e.message,"crit"); }
 }
 async function changeOwnPassword(){
   const cur=val("pwCur"), nw=val("pwNew");

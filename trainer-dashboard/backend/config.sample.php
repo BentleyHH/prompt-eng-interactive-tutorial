@@ -116,4 +116,8 @@ return [
   // Zwei-Faktor: wie viele Tage ein Geraet nach erfolgreichem Code-Login
   // gemerkt wird ("Dieses Geraet merken"). Standard 14, hoechstens 90.
   'tfa_trust_days' => 14,
+
+  // Absender fuer den Kundenbereich (Lieferplan-Sendungen an ADP),
+  // z.B. adp@dvi-systems.com. Leer = normaler Absender (from_email).
+  'customer_from' => 'adp@dvi-systems.com',
 ];

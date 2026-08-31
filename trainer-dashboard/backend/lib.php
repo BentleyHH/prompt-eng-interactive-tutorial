@@ -187,6 +187,8 @@ function user_public(array $u): array {
   return ['id'=>(string)$u['id'],'email'=>$u['email'],'name'=>$u['name'],
           'role'=>$u['role']??'editor','active'=>((int)($u['active']??1))===1,
           'tfaOn'=>((int)($u['totp_on']??0))===1,
+          'custView'=>((int)($u['cust_view']??0))===1,
+          'custSend'=>((int)($u['cust_send']??0))===1,
           'lastLogin'=>$u['last_login']??'',
           'digestFreq'=>$u['digest_freq']??'off','digestDay'=>(int)($u['digest_day']??1),
           'digestParts'=>json_decode(($u['digest_parts']??'')?:'[]',true)?:[]];
@@ -1995,6 +1997,142 @@ function xlsx_rows(string $bin, int $maxRows=5000): array {
 }
 
 /** Eine xlsx-Datei bauen. $sheets = ['Blattname'=>[[zelle,…],…], …] */
+/* ============================================================
+   KUNDENBEREICH (ADP)
+   Lieferplan mit Fristenwacht aus dem Betriebs- und Pflichtenplan:
+   Wochentakt je Trainingswoche, Fixtermine, Monatsberichte - plus
+   Versand mit Bestaetigungslink und "gilt als abgenommen"-Kette.
+   Zugriff nur mit Freigabe: "darf sehen" bzw. "darf senden".
+   ============================================================ */
+function cust_can(string $what): bool {
+  $u=current_user();
+  if(!$u) return user_count()===0;              // Ersteinrichtung
+  if(($u['role']??'')==='admin') return true;   // Admins immer beides
+  if($what==='send') return ((int)($u['cust_send']??0))===1;
+  return ((int)($u['cust_view']??0))===1 || ((int)($u['cust_send']??0))===1;
+}
+function require_cust_view(): void { require_auth(); if(!cust_can('view')) fail('Dafür fehlt die Freigabe für den Kundenbereich.',403); }
+function require_cust_send(): void { require_auth(); if(!cust_can('send')) fail('Dafür fehlt die Freigabe "Senden" im Kundenbereich.',403); }
+
+/** Standard-Fristen je Positionsart: [Erinnerung nach Tagen, Nachfrist]. */
+function cust_kind_windows(string $kind): array {
+  // Wochendeliverable: 14 Tage Einwandfrist + 7 Tage nach Erinnerung (Vertrag).
+  // Alles andere bekommt dieselbe bewaehrte Kette als Vorgabe.
+  return ['deliverable'=>[14,7]][$kind] ?? [14,7];
+}
+
+/** Idempotenter Generator: legt fehlende Pflicht-Positionen an (nie doppelt,
+ *  nie ueberschreibend - vorhandene Positionen bleiben unangetastet). */
+function cust_generate(): int {
+  $made=0;
+  $put=function(string $key,string $kind,?int $tgId,string $title,string $due,int $crit,string $note='') use (&$made){
+    if($due==='') return;
+    if(q("SELECT id FROM cust_items WHERE auto_key=?",[$key])->fetch()) return;
+    [$cd,$gd]=cust_kind_windows($kind);
+    q("INSERT INTO cust_items(auto_key,kind,training_id,title,note,due,critical,status,confirm_days,grace_days,created_at,updated_at)
+       VALUES(?,?,?,?,?,?,?,'open',?,?,?,?)",
+      [$key,$kind,$tgId,mb_substr($title,0,190),$note,$due,$crit,$cd,$gd,now(),now()]);
+    $made++;
+  };
+  $shift=function(?string $d,int $days){ $t=$d?strtotime($d):0; return $t?date('Y-m-d',$t+$days*86400):''; };
+
+  /* Wochentakt je Trainingswoche (Teil B) */
+  foreach(q("SELECT id,code,topic,start_date,end_date FROM trainings")->fetchAll() as $tg){
+    if(trim((string)($tg['start_date']??''))==='') continue;
+    $c=trim((string)($tg['code']??''))?:('#'.$tg['id']);
+    $s=$tg['start_date']; $e=$tg['end_date']?:$tg['start_date'];
+    $put("spec:{$tg['id']}",'spec',(int)$tg['id'],"Wochenspezifikationsblatt $c",$shift($s,-56),0,
+      '8 Felder final mit ADP freigeben (T minus 8 Wochen)');
+    $put("proforma:{$tg['id']}",'proforma',(int)$tg['id'],"Pro-forma-Rechnung variable Kosten $c",$shift($s,-42),1,
+      'Ohne Zahlungseingang findet die Woche nicht statt (T minus 6 Wochen)');
+    $put("confirm4w:{$tg['id']}",'confirm4w',(int)$tg['id'],"Einsatzbestätigung + Ticketstand $c",$shift($s,-28),1,
+      'ADP-Tickets bestätigt? Gegencheck mit dem Flugdaten-Export (T minus 4 Wochen)');
+    $put("attend:{$tg['id']}",'attendance',(int)$tg['id'],"Teilnehmerliste / Reiseplan $c",$shift($s,-7),0,
+      '75-Prozent-Schwelle im Blick behalten (T minus 1 Woche)');
+    $put("deliv:{$tg['id']}",'deliverable',(int)$tg['id'],"Wochendeliverable $c übergeben",$shift($e,7),1,
+      '14 Tage Einwandfrist ab Übergabe, danach Erinnerung + 7 Tage (T plus 1 Woche)');
+  }
+
+  /* Monatliche Fortschrittsberichte (Teil C5: 15 Stueck, Vertragspflicht) */
+  $first=q("SELECT MIN(start_date) m FROM trainings WHERE COALESCE(start_date,'')<>''")->fetch();
+  if($first && $first['m']){
+    $t=strtotime(substr((string)$first['m'],0,7).'-01');
+    for($i=1;$i<=15;$i++){
+      $t2=strtotime('+'.$i.' month',$t);
+      $due=date('Y-m-05',$t2);
+      $lbl=date('m/Y',strtotime('-1 month',$t2));
+      $put("monthly:".date('Y-m',$t2),'monthly',null,"Monatlicher Fortschrittsbericht $lbl",$due,1,
+        'Vertragliche Pflicht (15 Monatsberichte an das ADP-Kommando)');
+    }
+  }
+
+  /* Fixtermine aus Teil D (Terminkalender mit Fristenwacht) */
+  foreach([
+    ['d:sign',      '2026-08-21',1,'Vertragsunterzeichnung V3.0 + Addendum, Optionswahl'],
+    ['d:mobil',     '2026-08-28',1,'Eingang Mobilisierungszahlung'],
+    ['d:kickoff',   '2026-08-31',0,'Kick-off: Nominierung der 40, POC-Liste je Standort'],
+    ['d:mile2',     '2026-09-21',1,'Eingang Meilenstein 2'],
+    ['d:w1',        '2026-09-28',1,'Programmstart Woche 1 - Baseline-Kompetenzfeststellung'],
+    ['d:scope',     '2026-10-09',1,'KMD-ETAF-ADP-Scope-Matrix fertig'],
+    ['d:kits',      '2027-01-31',1,'Erste Kit- und Materialtranche vor Ort (W8/W9)'],
+    ['d:stage1',    '2027-02-05',1,'Woche 10: Stage-I-Abschluss, Readiness Review, TtT-Nominierungen'],
+    ['d:ramadan',   '2027-02-08',0,'Ramadan-Pause bis 11.03. (Fixpunkt, keine Trainings)'],
+    ['d:weezeA',    '2027-03-22',1,'Weeze Kohorte A (22.-26.03.)'],
+    ['d:mile3inv',  '2027-03-22',1,'Rechnung Meilenstein 3 stellen'],
+    ['d:weezeB',    '2027-04-12',1,'Weeze Kohorte B (12.-16.04.)'],
+    ['d:mile3',     '2027-04-21',1,'Eingang Meilenstein 3 - Beginn Stage III daran gebunden'],
+    ['d:stage3',    '2027-04-26',0,'Woche 12: Stage III beginnt - Folderproduktion + Co-Teaching'],
+    ['d:idb1',      '2027-06-14',0,'Instructor Development Block I (14.-16.06.)'],
+    ['d:cbrn',      '2027-06-21',1,'Woche 16: CBRN - ATLAS im Einsatz (21.-25.06.)'],
+    ['d:gov',       '2027-09-06',1,'Woche 19: National Master Folder + Übergabe Governance-Handbuch'],
+    ['d:idb2',      '2027-10-04',0,'Instructor Development Block II (04.-06.10.)'],
+    ['d:fullsim2',  '2027-10-18',1,'Woche 20: Full Simulation II, Pull-Out-Test, Lehrprüfung'],
+    ['d:finalrev',  '2027-11-08',1,'Final Readiness Review, Team- und Zellzertifizierung (08.-12.11.)'],
+    ['d:abnahme',   '2027-12-01',1,'Förmliche Abnahme der sechs Großergebnisse, danach Schlussrechnung'],
+    ['d:transition','2028-05-31',0,'Transition Assurance Visit (binnen 6 Monaten nach Programmende)'],
+  ] as [$key,$due,$crit,$title]){
+    $put($key,'milestone',null,$title,$due,$crit,'Fixtermin aus Teil D des Betriebs- und Pflichtenplans');
+  }
+  return $made;
+}
+
+/** Erinnerung zu einer gesendeten Position - neuer Link, gleiche Kette. */
+function cust_send_reminder(array $r): array {
+  $tok=token(48);
+  $link=base_url().'/ack.php?token='.$tok;
+  $gd=(int)$r['grace_days'];
+  $subject='Reminder: '.((string)($r['sent_subject']?:('ETAF - '.$r['title'])));
+  $body="Dear Sir or Madam,
+
+"
+    ."this is a friendly reminder regarding the following ETAF delivery / notification:
+
+"
+    .$r['title']."
+Sent on: ".substr((string)$r['sent_at'],0,10)
+    ."
+
+Please confirm receipt/acceptance via the button below. "
+    ."If no confirmation or objection is received within $gd days from this reminder, "
+    ."the delivery is deemed accepted in line with the Service Agreement."
+    ."
+
+Kind regards
+ETAF Coordination";
+  $ok=send_email((string)$r['mail_to'],'',$subject,
+    email_html($body, cta_button($link,'Confirm receipt / acceptance','#2E9E6B')),
+    [],(string)(cfg()['customer_from']??''));
+  $st=(cfg()['mail_mode']??'mail')==='log' ? 'logged' : ($ok?'sent':'failed');
+  q("INSERT INTO email_log(training_id,trainer_id,to_email,subject,body,lang,status,created_at)
+     VALUES(?,?,?,?,?,?,?,?)",[(int)($r['training_id']??0),0,$r['mail_to'],$subject,$body,'en',$st,now()]);
+  if(!$ok) return ['ok'=>false,'error'=>$GLOBALS['__mail_err']??''];
+  q("UPDATE cust_items SET status='reminded', tok=?, reminded_at=?, updated_at=? WHERE id=?",
+    [hash('sha256',$tok),now(),now(),$r['id']]);
+  audit_as(['id'=>null,'name'=>'Fristenwacht'],'cust.remind','cust',(string)$r['id'],
+    $r['title'].' - Erinnerung an '.$r['mail_to']);
+  return ['ok'=>true];
+}
+
 /* ============================================================
    WOCHEN-DREHBUCH (RUNNING ORDER)
    Eine Agenda fuer die ganze Trainingswoche: Ankuenfte, Shuttle,
