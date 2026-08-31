@@ -1936,6 +1936,22 @@ const L={
   cuRightViewL:"Darf sehen (Lieferplan und Ketten einsehen)",
   cuRightSendL:"Darf senden (Positionen anlegen, senden, erinnern, erledigen)",
   cuRightsAdmin:"Administratoren haben immer beide Freigaben - unabhängig von den Häkchen.",
+  cuDlRegister:"Nachweisregister", cuDlRegisterT:"Nachweisregister als Excel herunterladen (komplette Lieferkette)",
+  cuDlStudents:"Teilnehmerstand", cuDlCerts:"Zertifikatsregister",
+  cuGenAttach:"Berichte automatisch anhängen", cuGenHint:"Das Cockpit erzeugt die gewählten Excel-Berichte beim Senden frisch aus den aktuellen Daten.",
+  cuGenWeek:"Wochenpaket (Plan, Anwesenheit, Bewertungen)", cuGenFlight:"Flugdaten der Trainer",
+  cuFltMail:"Posteingang", cuMailPoll:"Postfach abrufen",
+  cuMailPolled:(n,l)=>`Abruf fertig: ${n} neue Mail(s), ${l} automatisch zugeordnet.`,
+  cuMailNoCfg:"Das Kundenpostfach ist noch nicht eingerichtet. Bitte den Baustein customer_mailbox in der config.php ausfüllen - danach ruft das Cockpit die Mails stündlich automatisch ab.",
+  cuMailNone:"Noch keine Mails im Kundenpostfach.",
+  cuMailTitle:"Antwort des Kunden", cuMailHint:"Antworten an das ADP-Postfach werden stündlich automatisch abgerufen und wenn möglich der passenden Position zugeordnet.",
+  cuMailAtts:"Anhänge", cuMailLinked:"Zugeordnet", cuMailIgnored:"Ignoriert",
+  cuMailIgnore:"Ignorieren", cuMailUnignore:"Wieder öffnen",
+  cuMailLinkLbl:"Zu welcher Position gehört diese Mail?", cuMailIn:"Antwort",
+  cuConfirmManual:"Als bestätigt erfassen",
+  cuConfirmHint:"Für Bestätigungen, die per Mail oder mündlich kamen - statt über den Link. Wird mit Name und Vermerk dokumentiert.",
+  cuConfirmWho:"Wer hat bestätigt?", cuConfirmNote:"Vermerk (optional)",
+  cuConfirmNotePh:"z. B. per Mail vom 12.03. bestätigt",
   cuRightView:"Kunde", cuRightViewT:"Kundenbereich: darf sehen",
   cuRightSend:"Kunde ✓", cuRightSendT:"Kundenbereich: darf sehen und senden",
   navg_plan:"Planung", navg_part:"Teilnehmer", navg_comm:"Kommunikation", navg_sys:"System",
@@ -2814,6 +2830,22 @@ const L={
   cuRightViewL:"May view (see delivery plan and chains)",
   cuRightSendL:"May send (create items, send, remind, mark done)",
   cuRightsAdmin:"Administrators always have both permissions - regardless of the checkboxes.",
+  cuDlRegister:"Evidence register", cuDlRegisterT:"Download the evidence register as Excel (full delivery chain)",
+  cuDlStudents:"Student status", cuDlCerts:"Certificate register",
+  cuGenAttach:"Attach reports automatically", cuGenHint:"The cockpit generates the selected Excel reports fresh from current data when sending.",
+  cuGenWeek:"Weekly package (plan, attendance, assessments)", cuGenFlight:"Trainer flight data",
+  cuFltMail:"Inbox", cuMailPoll:"Fetch mailbox",
+  cuMailPolled:(n,l)=>`Fetch done: ${n} new mail(s), ${l} linked automatically.`,
+  cuMailNoCfg:"The client mailbox is not set up yet. Please fill in the customer_mailbox block in config.php - the cockpit then fetches mails automatically every hour.",
+  cuMailNone:"No mails in the client mailbox yet.",
+  cuMailTitle:"Client reply", cuMailHint:"Replies to the ADP mailbox are fetched automatically every hour and linked to the matching item where possible.",
+  cuMailAtts:"Attachments", cuMailLinked:"Linked", cuMailIgnored:"Ignored",
+  cuMailIgnore:"Ignore", cuMailUnignore:"Reopen",
+  cuMailLinkLbl:"Which item does this mail belong to?", cuMailIn:"Reply",
+  cuConfirmManual:"Record as confirmed",
+  cuConfirmHint:"For confirmations that came by mail or verbally - instead of via the link. Documented with name and note.",
+  cuConfirmWho:"Who confirmed?", cuConfirmNote:"Note (optional)",
+  cuConfirmNotePh:"e.g. confirmed by mail on 12 Mar",
   cuRightView:"Client", cuRightViewT:"Client area: may view",
   cuRightSend:"Client ✓", cuRightSendT:"Client area: may view and send",
   navg_plan:"Planning", navg_part:"Participants", navg_comm:"Communication", navg_sys:"System",
@@ -4091,10 +4123,11 @@ function custOverdue(it){
 async function renderCustomer(){
   const box=$("#v-customer");
   if(!LIVE){ box.innerHTML=`<div class="panel"><div class="panel-b empty">${esc(t("ceDemo"))}</div></div>`; return; }
-  let d;
-  try{ d=await apiCall("cust.list"); }
+  let d,dm;
+  try{ [d,dm]=await Promise.all([apiCall("cust.list"),apiCall("cust.mail.list")]); }
   catch(e){ box.innerHTML=`<div class="panel"><div class="panel-b meta">${esc(e.message)}</div></div>`; return; }
   custState.items=d.items||[]; custState.canSend=!!d.canSend;
+  custState.mails=dm.mails||[]; custState.mailReady=!!dm.ready;
   custState.to=d.to||""; custState.from=d.from||""; custState.today=d.today||new Date().toISOString().slice(0,10);
   const I=custState.items;
   const overdue=I.filter(custOverdue);
@@ -4114,6 +4147,7 @@ async function renderCustomer(){
         :objections.length?t("cuHeadObj",objections.length):t("cuHeadOk"))}</b>
         <div class="sysrows"><span>${esc(t("cuFrom"))}: ${esc(custState.from||t("cuFromStd"))}</span>
           <span>${esc(t("cuLastTo"))}: ${esc(custState.to||"-")}</span></div></div>
+      <button class="btn sm" onclick="custDl('register')" title="${esc(t("cuDlRegisterT"))}">${ic("down",14)}${esc(t("cuDlRegister"))}</button>
       ${custState.canSend?`<button class="btn sm" onclick="custEdit(null)">${ic("plus",14)}${esc(t("cuNew"))}</button>`:""}
     </div>
     <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
@@ -4126,9 +4160,15 @@ async function renderCustomer(){
   const chips=`<div class="panel"><div class="panel-b" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <span class="chips rpchips">${[["due","cuFltDue"],["soon","cuFltSoon"],["over","cuFltOver"],
         ["wait","cuFltWait"],["obj","cuFltObj"],["done","cuFltDone"],["all","cuFltAll"]].map(([k,l])=>
-        `<button${custState.filter===k?' class="on"':""} onclick="custFlt('${k}')">${esc(t(l))}</button>`).join("")}</span>
+        `<button${custState.filter===k?' class="on"':""} onclick="custFlt('${k}')">${esc(t(l))}</button>`).join("")}
+        <button${custState.filter==="mail"?' class="on"':""} onclick="custFlt('mail')">${esc(t("cuFltMail"))}${
+          custState.mails.filter(m=>m.status==="open"||m.status==="linked").length?` (${custState.mails.filter(m=>m.status==="open"||m.status==="linked").length})`:""}</button></span>
+      <div class="spacer"></div>
+      <button class="btn sm" onclick="custDl('students')">${ic("down",13)}${esc(t("cuDlStudents"))}</button>
+      <button class="btn sm" onclick="custDl('certs')">${ic("down",13)}${esc(t("cuDlCerts"))}</button>
+      ${custState.canSend&&custState.mailReady?`<button class="btn sm" id="cuPollBtn" onclick="custMailPoll()">${ic("sync",13)}${esc(t("cuMailPoll"))}</button>`:""}
     </div></div>`;
-  box.innerHTML=head+chips+`<div id="custBody">${custListHtml()}</div>`;
+  box.innerHTML=head+chips+`<div id="custBody">${custState.filter==="mail"?custMailHtml():custListHtml()}</div>`;
 }
 function custFlt(f){ custState.filter=f; const el=$("#custBody"); if(el){ renderCustomer(); } }
 function custFiltered(){
@@ -4188,6 +4228,9 @@ function custOpen(id){
         <div><b>${esc(t("cuObjAt"))} ${esc((it.objectionAt||"").slice(0,16))}</b><br>${esc(it.objection)}</div></div>`:""}
       ${!it.sentAt?`<div class="meta">${esc(t("cuNotSent"))}</div>`:""}
       ${["sent","reminded"].includes(it.status)?`<div class="meta" style="margin-top:6px">${esc(t("cuWindow",it.confirmDays,it.graceDays))}</div>`:""}
+      ${(custState.mails||[]).filter(m=>String(m.item)===String(it.id)).map(m=>`
+        <div class="kv"><span class="k">${esc(t("cuMailIn"))}</span>
+          <b><a href="#" onclick="event.preventDefault();closeSheet();custMailOpen('${m.id}')">${esc((m.at||"").slice(0,16))} · ${esc(m.subject||"")}</a></b></div>`).join("")}
     </div>`;
   const canSend=custState.canSend;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button>
@@ -4195,6 +4238,7 @@ function custOpen(id){
     ${canSend&&it.auto&&["open","prepared"].includes(it.status)?`<button class="btn" onclick="closeSheet();custEdit('${it.id}')">${ic("pen",14)}${t("trEdit")}</button>`:""}
     ${canSend&&["sent","reminded"].includes(it.status)?`<button class="btn" onclick="custRemind('${it.id}')">${ic("bell",14)}${esc(t("cuRemindNow"))}</button>`:""}
     ${canSend&&["open","prepared","objection"].includes(it.status)?`<button class="btn" onclick="custMark('${it.id}','done')">${ic("check",14)}${esc(t("cuMarkDone"))}</button>`:""}
+    ${canSend&&["sent","reminded","objection","deemed"].includes(it.status)?`<button class="btn" onclick="closeSheet();custConfirmDlg('${it.id}')">${ic("check",14)}${esc(t("cuConfirmManual"))}</button>`:""}
     <div class="spacer"></div>
     ${canSend&&["open","prepared","objection"].includes(it.status)?`<button class="btn primary" onclick="closeSheet();custSendDlg('${it.id}')">${ic("send",15)}${esc(t("cuSend"))}</button>`:""}`;
   openSheet();
@@ -4256,6 +4300,11 @@ function custSendDlg(id){
     <textarea id="cuMsg" style="min-height:70px"></textarea>
     <label class="fld">${esc(t("cuAttach"))}</label>
     <input type="file" id="cuFile" class="inp" style="padding:9px">
+    <label class="fld">${esc(t("cuGenAttach"))}</label>
+    <div class="meta" style="margin-bottom:4px">${esc(t("cuGenHint"))}</div>
+    ${[["students",t("cuDlStudents")],["certs",t("cuDlCerts")],["register",t("cuDlRegister")]]
+      .concat(it.training?[["week",t("cuGenWeek")],["flight",t("cuGenFlight")]]:[])
+      .map(g=>`<label class="pptownrow"><input type="checkbox" class="cuGen" value="${g[0]}"> ${esc(g[1])}</label>`).join("")}
     ${custState.from?`<div class="meta" style="margin-top:8px">${esc(t("fxFrom",custState.from))}</div>`:""}`;
   $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
     <div class="spacer"></div>
@@ -4268,6 +4317,8 @@ async function custSendGo(id){
   const b=$("#cuSendBtn"); if(b){b.disabled=true;b.textContent="…";}
   try{
     const payload={id,to,subject:val("cuSubj"),note:val("cuMsg")};
+    const gen=[...document.querySelectorAll(".cuGen:checked")].map(x=>x.value);
+    if(gen.length) payload.gen=gen;
     const f=$("#cuFile")?.files?.[0];
     if(f){
       payload.file=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});
@@ -4280,6 +4331,110 @@ async function custSendGo(id){
     renderCustomer();
   }catch(e){ toast("Fehler: "+e.message,"crit"); }
   finally{ if(b){b.disabled=false;} }
+}
+
+/* Stufe 2: Excel-Downloads aus dem Kundenbereich */
+async function custDl(type,tgId){
+  try{
+    const base=(window.ETAF&&ETAF.apiBase)||"backend";
+    const r=await fetch(base+"/customer-export.php?type="+encodeURIComponent(type)
+      +(tgId?"&training="+encodeURIComponent(tgId):""),{headers:{"X-Auth-Token":AUTH||""}});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const blob=await r.blob();
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+    const cd=r.headers.get("Content-Disposition")||"", m=cd.match(/filename="([^"]+)"/);
+    a.download=m?m[1]:"ETAF-Export.xlsx";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  }catch(e){ toast("Download fehlgeschlagen: "+e.message,"crit"); }
+}
+/* Stufe 2: Posteingang des Kunden-Postfachs */
+function custMailHtml(){
+  const M=custState.mails;
+  if(!custState.mailReady && !M.length)
+    return `<div class="panel"><div class="panel-b empty">${esc(t("cuMailNoCfg"))}</div></div>`;
+  if(!M.length) return `<div class="panel"><div class="panel-b empty">${esc(t("cuMailNone"))}</div></div>`;
+  const itemTitle=id=>{const it=custItem(id);return it?it.title:"";};
+  return `<div class="panel"><div class="panel-h"><h3>${esc(t("cuMailTitle"))}</h3>
+      <span class="meta">${esc(t("cuMailHint"))}</span></div>
+    <div class="panel-b" style="padding:4px 16px">
+      ${M.map(m=>`
+        <div class="row hit" onclick="custMailOpen('${m.id}')" style="${m.status==='ignored'?'opacity:.55':''}">
+          <b class="tnum" style="width:86px;flex:none;color:var(--muted)">${esc((m.at||"").slice(0,16).replace("T"," "))}</b>
+          <div class="rowgrow" style="min-width:0">
+            <div class="nm" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.subject||"-")}</div>
+            <div class="meta">${esc(m.from)}${m.atts.length?` · ${m.atts.length} ${esc(t("cuMailAtts"))}`:""}${
+              m.item?` · <b>${esc(itemTitle(m.item).slice(0,44))}</b>`:""}</div></div>
+          ${m.item?`<span class="pill info">${esc(t("cuMailLinked"))}</span>`
+            :m.status==="done"?`<span class="pill good">${esc(t("cuStDone"))}</span>`
+            :m.status==="ignored"?`<span class="pill neutral">${esc(t("cuMailIgnored"))}</span>`
+            :`<span class="pill warn">${esc(t("cuStOpen"))}</span>`}
+        </div>`).join("")}
+    </div></div>`;
+}
+async function custMailPoll(){
+  const b=$("#cuPollBtn"); if(b){b.disabled=true;b.textContent="…";}
+  try{
+    const d=await apiCall("cust.mail.poll",{});
+    toast(t("cuMailPolled",d.fetched,d.linked),"good");
+    renderCustomer();
+  }catch(e){ toast(e.message,"crit"); }
+}
+function custMailOpen(id){
+  const m=custState.mails.find(x=>String(x.id)===String(id)); if(!m) return;
+  const openItems=custState.items.filter(x=>["sent","reminded","objection","deemed","confirmed"].includes(x.status));
+  $("#sheetTitle").textContent=m.subject||t("cuMailTitle");
+  $("#sheetBody").innerHTML=`
+    <div class="meta" style="margin-bottom:10px">${esc(m.from)} · ${esc((m.at||"").slice(0,16))}</div>
+    ${m.atts.length?`<div class="meta" style="margin-bottom:8px">${esc(t("cuMailAtts"))}: ${esc(m.atts.map(a=>a.name).join(", "))}</div>`:""}
+    <div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;white-space:pre-wrap;
+      font-size:13.5px;max-height:44vh;overflow:auto">${esc(m.body||"-")}</div>
+    ${custState.canSend?`
+      <label class="fld" style="margin-top:14px">${esc(t("cuMailLinkLbl"))}</label>
+      <select class="inp" id="cuMailItem">
+        <option value="">-</option>
+        ${openItems.map(it=>`<option value="${it.id}"${String(m.item)===String(it.id)?" selected":""}>${esc(it.title.slice(0,70))}</option>`).join("")}
+      </select>`:""}`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("close")}</button>
+    ${custState.canSend?`
+      <button class="btn" onclick="custMailMark('${m.id}','${m.status==="ignored"?"open":"ignored"}')">${esc(m.status==="ignored"?t("cuMailUnignore"):t("cuMailIgnore"))}</button>
+      ${m.item?`<button class="btn" onclick="closeSheet();custConfirmDlg('${m.item}','${esc((m.from||"").replace(/'/g,""))}')">${ic("check",14)}${esc(t("cuConfirmManual"))}</button>`:""}
+      <div class="spacer"></div>
+      <button class="btn primary" onclick="custMailLink('${m.id}')">${ic("check",15)}${t("save")}</button>`
+    :`<div class="spacer"></div>`}`;
+  openSheet();
+}
+async function custMailLink(id){
+  try{
+    await apiCall("cust.mail.link",{mail:id,item:val("cuMailItem")||0});
+    closeSheet(); toast(t("cuSaved"),"good"); renderCustomer();
+  }catch(e){ toast(e.message,"crit"); }
+}
+async function custMailMark(id,st){
+  try{ await apiCall("cust.mail.setStatus",{id,status:st}); closeSheet(); renderCustomer(); }
+  catch(e){ toast(e.message,"crit"); }
+}
+/* Stufe 2: Empfang/Abnahme von Hand erfassen (z.B. Antwort kam per Mail) */
+function custConfirmDlg(itemId,prefName){
+  const it=custItem(itemId); if(!it) return;
+  $("#sheetTitle").textContent=t("cuConfirmManual");
+  $("#sheetBody").innerHTML=`
+    <div class="rpnote soft" style="margin-bottom:12px">${ic("check",15)}<div><b>${esc(it.title)}</b>
+      <div class="meta">${esc(t("cuConfirmHint"))}</div></div></div>
+    <label class="fld">${esc(t("cuConfirmWho"))}</label>
+    <input class="inp" id="cuCfName" value="${esc(prefName||"")}">
+    <label class="fld">${esc(t("cuConfirmNote"))}</label>
+    <input class="inp" id="cuCfNote" placeholder="${esc(t("cuConfirmNotePh"))}">`;
+  $("#sheetFoot").innerHTML=`<button class="btn" onclick="closeSheet()">${t("cancel")}</button>
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="custConfirmGo('${it.id}')">${ic("check",15)}${esc(t("cuConfirmManual"))}</button>`;
+  openSheet();
+}
+async function custConfirmGo(id){
+  try{
+    await apiCall("cust.confirmManual",{id,name:val("cuCfName"),note:val("cuCfNote")});
+    closeSheet(); toast(t("cuSaved"),"good"); renderCustomer();
+  }catch(e){ toast(e.message,"crit"); }
 }
 
 function sysStatusHtml(d){

@@ -2096,6 +2096,156 @@ function cust_generate(): int {
   return $made;
 }
 
+/* ---------- Stufe 2: Excel-Anhaenge direkt aus den Cockpit-Daten ---------- */
+/** Teilnehmer-Stand: eine Zeile je Teilnehmer mit Bewertungsstand. */
+function cust_students_xlsx(): array {
+  $rows=[]; $i=0;
+  $agg=[];
+  foreach(q("SELECT student_id, COUNT(*) n, AVG(pct) p,
+             SUM(CASE WHEN result='merit' THEN 1 ELSE 0 END) m,
+             SUM(CASE WHEN result='pass' THEN 1 ELSE 0 END) ps,
+             SUM(CASE WHEN result='fail' THEN 1 ELSE 0 END) f
+             FROM assessments WHERE status='final' GROUP BY student_id")->fetchAll() as $r)
+    $agg[(string)$r['student_id']]=$r;
+  foreach(q("SELECT * FROM students WHERE active=1 ORDER BY name")->fetchAll() as $s){
+    $a=$agg[(string)$s['id']]??null;
+    $rows[]=[(string)(++$i),(string)$s['name'],(string)($s['rank_title']??''),(string)($s['unit']??''),
+      (string)($s['team']??''),(string)($s['cell_role']??''),(string)($s['track']??''),
+      $a?(string)(int)$a['n']:'0', $a?((string)round((float)$a['p']))." %":'-',
+      $a?(string)(int)$a['m']:'0', $a?(string)(int)$a['ps']:'0', $a?(string)(int)$a['f']:'0'];
+  }
+  $head=['Nr','Name','Dienstgrad','Einheit','Zelle','Position','Gruppe',
+         'Blöcke bewertet','Ø Erfüllung','mit Auszeichnung','bestanden','nicht bestanden'];
+  $sheet=[[['ETAF - Teilnehmer-Stand',1]],[('Stand: '.date('d.m.Y'))],[],array_map(fn($h)=>[$h,1],$head)];
+  foreach($rows as $r) $sheet[]=$r;
+  return ['ETAF-Teilnehmerstand-'.date('Ymd').'.xlsx',
+    xlsx_build(['Teilnehmer'=>$sheet],['Teilnehmer'=>[5,28,16,20,10,18,16,14,12,14,12,14]])];
+}
+/** Zertifikatsregister: alle ausgestellten Zertifikate mit Pruefnummer. */
+function cust_certs_xlsx(): array {
+  $sheet=[[['ETAF - Zertifikatsregister',1]],[('Stand: '.date('d.m.Y'))],
+    ['Echtheitsprüfung: '.base_url().'/verify.php'],[],
+    array_map(fn($h)=>[$h,1],['Prüfnummer','Teilnehmer','Dienstgrad','Art','Titel','Ergebnis','Erfüllung','Ausgestellt am','Status'])];
+  foreach(q("SELECT * FROM certificates ORDER BY issued_at")->fetchAll() as $c){
+    $sheet[]=[(string)$c['cert_no'],(string)$c['student_name'],(string)($c['student_rank']??''),
+      $c['kind']==='programme'?'Programm':'Block',(string)($c['title']??''),
+      (string)($c['result']??''),$c['pct']?((string)$c['pct']).' %':'',
+      substr((string)$c['issued_at'],0,10),((int)$c['revoked'])===1?'WIDERRUFEN':'gültig'];
+  }
+  return ['ETAF-Zertifikatsregister-'.date('Ymd').'.xlsx',
+    xlsx_build(['Zertifikate'=>$sheet],['Zertifikate'=>[22,26,16,10,30,12,10,14,12]])];
+}
+/** Wochendeliverable-Paket: Woche, Sessions, Anwesenheit, Bewertungen. */
+function cust_week_xlsx(int $tgId): array {
+  $tg=q("SELECT * FROM trainings WHERE id=?",[$tgId])->fetch();
+  if(!$tg) fail('Training nicht gefunden.',404);
+  $code=trim((string)($tg['code']??''))?:('#'.$tgId);
+  $head1=[[['ETAF - Wochendeliverable '.$code,1]],
+    [trim((($tg['code']??'')!==''?$tg['code'].' - ':'').(string)($tg['topic']??''))],
+    [trim((string)($tg['start_date']??'').' - '.(string)($tg['end_date']??''),' -').' · '.(string)($tg['city']??'')],
+    [('Erstellt: '.date('d.m.Y'))],[]];
+  // Sessions der Woche (aus dem Wochenplan)
+  $trName=[]; foreach(q("SELECT id,name FROM trainers")->fetchAll() as $r) $trName[(string)$r['id']]=$r['name'];
+  $s1=array_merge($head1,[array_map(fn($h)=>[$h,1],['Session','Typ','Dauer (h)','Trainer','Material'])]);
+  foreach(q("SELECT * FROM training_sessions WHERE training_id=? ORDER BY sort,id",[$tgId])->fetchAll() as $x)
+    $s1[]=[(string)$x['title'],(string)$x['stype'],(string)$x['dur'],
+      $trName[(string)($x['trainer_id']??'')]??'',(string)($x['mat']??'')];
+  // Anwesenheit
+  $s2=[array_map(fn($h)=>[$h,1],['Teilnehmer','Zelle','Anwesenheit','Notiz'])];
+  foreach(q("SELECT st.attendance,st.note,s.name,s.team FROM student_training st
+             JOIN students s ON s.id=st.student_id WHERE st.training_id=? ORDER BY s.name",[$tgId])->fetchAll() as $x)
+    $s2[]=[(string)$x['name'],(string)($x['team']??''),((string)(int)$x['attendance']).' %',(string)($x['note']??'')];
+  // Bewertungen
+  $s3=[array_map(fn($h)=>[$h,1],['Teilnehmer','Erfüllung','Ergebnis','Anwesenheit','Stand'])];
+  foreach(q("SELECT a.*,s.name FROM assessments a JOIN students s ON s.id=a.student_id
+             WHERE a.training_id=? AND a.status='final' ORDER BY s.name",[$tgId])->fetchAll() as $x)
+    $s3[]=[(string)$x['name'],((string)(int)$x['pct']).' %',(string)($x['result']??''),
+      ((string)(int)$x['attendance']).' %',substr((string)$x['updated_at'],0,10)];
+  return ['ETAF-Wochendeliverable-'.preg_replace('/[^A-Za-z0-9_-]/','',$code).'.xlsx',
+    xlsx_build(['Woche'=>$s1,'Anwesenheit'=>$s2,'Bewertungen'=>$s3],
+      ['Woche'=>[44,10,10,24,30],'Anwesenheit'=>[28,10,12,30],'Bewertungen'=>[28,10,12,12,12]])];
+}
+/** Nachweisregister (Teil F, pragmatisch): Lieferkette + Register auf Knopfdruck. */
+function cust_register_xlsx(): array {
+  $st=['open'=>'offen','prepared'=>'vorbereitet','sent'=>'gesendet','reminded'=>'erinnert',
+       'confirmed'=>'bestätigt','deemed'=>'gilt als abgenommen','objection'=>'Einwand','done'=>'erledigt'];
+  $s1=[[['ETAF - Nachweisregister (Lieferkette)',1]],[('Stand: '.date('d.m.Y H:i'))],[],
+    array_map(fn($h)=>[$h,1],['Fällig','Art','Position','Status','Gesendet an','Gesendet am','Erinnert am','Bestätigt von','Bestätigt am','Gilt als abgenommen seit','Einwand'])];
+  foreach(q("SELECT * FROM cust_items WHERE status<>'dropped' ORDER BY due,id")->fetchAll() as $r)
+    $s1[]=[(string)$r['due'],(string)$r['kind'],(string)$r['title'],$st[$r['status']]??$r['status'],
+      (string)($r['mail_to']??''),substr((string)($r['sent_at']??''),0,10),substr((string)($r['reminded_at']??''),0,10),
+      (string)($r['confirmed_by']??''),substr((string)($r['confirmed_at']??''),0,10),
+      substr((string)($r['deemed_at']??''),0,10),mb_substr((string)($r['objection']??''),0,120)];
+  $s2=[array_map(fn($h)=>[$h,1],['Woche','Zeitraum','Teilnahmen','Bewertungen final','Zertifikate'])];
+  foreach(q("SELECT t.id,t.code,t.start_date,t.end_date,
+             (SELECT COUNT(*) FROM student_training st WHERE st.training_id=t.id) n1,
+             (SELECT COUNT(*) FROM assessments a WHERE a.training_id=t.id AND a.status='final') n2,
+             (SELECT COUNT(*) FROM certificates c WHERE c.training_id=t.id) n3
+             FROM trainings t ORDER BY t.start_date")->fetchAll() as $r)
+    $s2[]=[(string)($r['code']?:('#'.$r['id'])),trim((string)($r['start_date']??'').' - '.(string)($r['end_date']??''),' -'),
+      (string)(int)$r['n1'],(string)(int)$r['n2'],(string)(int)$r['n3']];
+  return ['ETAF-Nachweisregister-'.date('Ymd').'.xlsx',
+    xlsx_build(['Lieferkette'=>$s1,'Wochen'=>$s2],
+      ['Lieferkette'=>[11,13,42,16,26,12,12,20,12,14,34],'Wochen'=>[10,24,12,14,12]])];
+}
+/** Angeforderter Anhang je Kennung - eine Stelle fuer Versand UND Download. */
+function cust_gen_attachment(string $gen, int $tgId=0): array {
+  switch($gen){
+    case 'students': return cust_students_xlsx();
+    case 'certs':    return cust_certs_xlsx();
+    case 'register': return cust_register_xlsx();
+    case 'week':     if(!$tgId) fail('Für das Wochenpaket fehlt das Training.'); return cust_week_xlsx($tgId);
+    case 'flight':   if(!$tgId) fail('Für die Flugdaten fehlt das Training.');
+                     $r=flight_xlsx($tgId,'de'); return [$r[0],$r[1]];
+  }
+  fail('Unbekannter Anhang: '.$gen);
+}
+
+/* ---------- Stufe 2: Kunden-Postfach (z.B. adp@...) einlesen ---------- */
+function cust_mailbox_cfg(): array { return (array)(cfg()['customer_mailbox']??[]); }
+function cust_mailbox_ready(): bool {
+  $c=cust_mailbox_cfg();
+  return trim((string)($c['user']??''))!=='' && trim((string)($c['pass']??''))!=='';
+}
+function cust_mail_poll(int $limit=25): array {
+  require_once __DIR__.'/mailfetch.php';
+  if(!cust_mailbox_ready())
+    return ['ok'=>false,'error'=>'Kunden-Postfach nicht konfiguriert (customer_mailbox in config.php).','fetched'=>0,'linked'=>0];
+  $r=pop3_fetch_new(cust_mailbox_cfg(), $limit,
+       fn($uid)=>(bool)q("SELECT id FROM cust_mail WHERE uid=?",[$uid])->fetch());
+  if(empty($r['ok'])) return ['ok'=>false,'error'=>$r['error']??'Abruf fehlgeschlagen.','fetched'=>0,'linked'=>0];
+  $fetched=0; $linked=0;
+  foreach($r['mails'] as $m){
+    $p=mime_parse($m['raw']);
+    $subj=mb_substr((string)$p['subject'],0,240);
+    $text=trim((string)($p['text']??''));
+    if($text==='' && trim((string)($p['html']??''))!=='') $text=trim(strip_tags((string)$p['html']));
+    $atts=array_map(fn($a)=>['name'=>$a['name'],'size'=>strlen((string)($a['data']??''))],(array)($p['atts']??[]));
+    // Auto-Zuordnung: Antwortbetreff enthaelt unseren Sendebetreff oder den Titel
+    $itemId=null;
+    foreach(q("SELECT id,title,sent_subject FROM cust_items
+               WHERE status IN('sent','reminded','objection','confirmed','deemed')
+               ORDER BY sent_at DESC LIMIT 200")->fetchAll() as $it){
+      $ss=trim((string)($it['sent_subject']??''));
+      if(($ss!=='' && mb_stripos($subj,$ss)!==false) || mb_stripos($subj,(string)$it['title'])!==false){
+        $itemId=(int)$it['id']; break;
+      }
+    }
+    q("INSERT INTO cust_mail(uid,from_addr,subject,received_at,body,atts,item_id,status,created_at)
+       VALUES(?,?,?,?,?,?,?,?,?)",
+      [$m['uid'], mb_substr(mime_decode_header((string)$p['from']),0,190), $subj,
+       mb_substr((string)$p['date'],0,40), mb_substr($text,0,8000),
+       json_encode($atts,JSON_UNESCAPED_UNICODE), $itemId, $itemId?'linked':'open', now()]);
+    $fetched++;
+    if($itemId){
+      $linked++;
+      audit_as(['id'=>null,'name'=>'Kunden-Postfach'],'cust.mailin','cust',(string)$itemId,
+        'Antwort eingegangen: '.mb_substr($subj,0,100));
+    }
+  }
+  return ['ok'=>true,'fetched'=>$fetched,'linked'=>$linked];
+}
+
 /** Erinnerung zu einer gesendeten Position - neuer Link, gleiche Kette. */
 function cust_send_reminder(array $r): array {
   $tok=token(48);

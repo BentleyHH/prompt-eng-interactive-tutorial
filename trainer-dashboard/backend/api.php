@@ -1966,6 +1966,13 @@ Please confirm receipt/acceptance via the button below. "
 Kind regards
 ETAF Coordination";
     $atts=[];
+    // Stufe 2: Anhaenge direkt aus den Cockpit-Daten erzeugen
+    foreach(array_slice(array_values(array_unique((array)($in['gen']??[]))),0,4) as $g){
+      [$gname,$gbin]=cust_gen_attachment((string)$g,(int)($r['training_id']??0));
+      $atts[]=['name'=>$gname,
+        'mime'=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'data_b64'=>base64_encode($gbin)];
+    }
     if(!empty($in['file'])){
       $bin=stud_upload_bin($in);
       $fname=preg_replace('/[^A-Za-z0-9 ._()-]/','',(string)($in['fileName']??'attachment'))?:'attachment';
@@ -1982,9 +1989,59 @@ ETAF Coordination";
        reminded_at=NULL, confirmed_at=NULL, confirmed_by=NULL, deemed_at=NULL,
        objection=NULL, objection_at=NULL, updated_at=? WHERE id=?",
       [$to,$subject,hash('sha256',$tok),now(),now(),$id]);
-    audit('cust.send','cust',(string)$id,$r['title'].' an '.$to.($atts?' (mit Anhang)':''));
+    audit('cust.send','cust',(string)$id,$r['title'].' an '.$to
+      .($atts?' ('.count($atts).' Anhänge: '.implode(', ',array_map(fn($a)=>$a['name'],$atts)).')':''));
     out(['ok'=>true,'status'=>$st]);
   }
+  /* ---- Stufe 2: Posteingang des Kunden-Postfachs ---- */
+  case 'cust.mail.list': {
+    require_cust_view();
+    $rows=q("SELECT * FROM cust_mail ORDER BY id DESC LIMIT 200")->fetchAll();
+    out(['ok'=>true,'ready'=>cust_mailbox_ready(),
+      'mails'=>array_map(fn($m)=>[
+        'id'=>(string)$m['id'],'from'=>$m['from_addr'],'subject'=>$m['subject'],
+        'at'=>$m['received_at'],'body'=>$m['body']??'',
+        'atts'=>json_decode($m['atts']?:'[]',true)?:[],
+        'item'=>$m['item_id']?(string)$m['item_id']:'','status'=>$m['status']],$rows)]);
+  }
+  case 'cust.mail.poll': {
+    require_cust_send();
+    $r=cust_mail_poll();
+    if(empty($r['ok'])) fail($r['error']??'Abruf fehlgeschlagen.');
+    out(['ok'=>true,'fetched'=>$r['fetched'],'linked'=>$r['linked']]);
+  }
+  case 'cust.mail.link': {
+    require_cust_send();
+    $mid=(int)($in['mail']??0); $iid=(int)($in['item']??0);
+    $m=q("SELECT * FROM cust_mail WHERE id=?",[$mid])->fetch();
+    if(!$m) fail('Mail nicht gefunden.',404);
+    if($iid && !q("SELECT id FROM cust_items WHERE id=?",[$iid])->fetch()) fail('Position nicht gefunden.',404);
+    q("UPDATE cust_mail SET item_id=?, status=? WHERE id=?",[$iid?:null,$iid?'linked':'open',$mid]);
+    if($iid) audit('cust.mailin','cust',(string)$iid,'Antwort zugeordnet: '.mb_substr((string)$m['subject'],0,100));
+    out(['ok'=>true]);
+  }
+  case 'cust.mail.setStatus': {
+    require_cust_send();
+    $mid=(int)($in['id']??0); $st=(string)($in['status']??'');
+    if(!in_array($st,['open','done','ignored'],true)) fail('Ungültiger Status.');
+    q("UPDATE cust_mail SET status=? WHERE id=?",[$st,$mid]);
+    out(['ok'=>true]);
+  }
+  /* ---- Stufe 2: Empfang/Abnahme von Hand erfassen (z.B. aus einer Mail) ---- */
+  case 'cust.confirmManual': {
+    require_cust_send();
+    $id=(int)($in['id']??0);
+    $r=q("SELECT * FROM cust_items WHERE id=?",[$id])->fetch();
+    if(!$r || !in_array($r['status'],['sent','reminded','objection','deemed'],true))
+      fail('Von Hand bestätigen geht nur bei gesendeten Positionen.');
+    $name=mb_substr(trim((string)($in['name']??'')),0,160)?:'Kunde';
+    $note=mb_substr(trim((string)($in['note']??'')),0,190);
+    q("UPDATE cust_items SET status='confirmed', confirmed_at=?, confirmed_by=?, updated_at=? WHERE id=?",
+      [now(), $name.' (manuell erfasst'.($note!==''?': '.$note:'').')', now(), $id]);
+    audit('cust.confirmed','cust',(string)$id,$r['title'].' - von Hand als bestätigt erfasst ('.$name.')');
+    out(['ok'=>true]);
+  }
+
   case 'cust.remindNow': {
     require_cust_send();
     $id=(int)($in['id']??0);

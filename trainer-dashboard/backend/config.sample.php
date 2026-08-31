@@ -120,4 +120,16 @@ return [
   // Absender fuer den Kundenbereich (Lieferplan-Sendungen an ADP),
   // z.B. adp@dvi-systems.com. Leer = normaler Absender (from_email).
   'customer_from' => 'adp@dvi-systems.com',
+
+  // ---- Kunden-Postfach (z.B. adp@dvi-systems.com) ------------------
+  // Das Cockpit liest dieses Postfach stuendlich mit und ordnet Antworten
+  // ueber den Betreff der passenden Lieferplan-Position zu (Bereich Kunde).
+  // Leer lassen = Funktion aus. Die Mails bleiben im Postfach liegen.
+  'customer_mailbox' => [
+    'host' => 'pop3.artfiles.de',
+    'port' => 995,
+    'secure' => 'ssl',
+    'user' => '',                  // z.B. adp@dvi-systems.com
+    'pass' => '',
+  ],
 ];

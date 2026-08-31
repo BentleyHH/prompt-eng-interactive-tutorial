@@ -272,6 +272,16 @@ function ensure_schema(): void {
     created_at VARCHAR(20), updated_at VARCHAR(20))$eng");
   try{ $d->exec("CREATE INDEX idx_cust_due ON cust_items(due)"); }catch(Throwable $e){}
   try{ $d->exec("CREATE UNIQUE INDEX ux_cust_auto ON cust_items(auto_key)"); }catch(Throwable $e){}
+  // Posteingang des Kunden-Postfachs (z.B. adp@...): das Cockpit liest die
+  // Mails mit und ordnet sie ueber den Betreff der passenden Position zu.
+  $d->exec("CREATE TABLE IF NOT EXISTS cust_mail (
+    id $pk, uid VARCHAR(190),
+    from_addr VARCHAR(190), subject VARCHAR(240), received_at VARCHAR(40),
+    body TEXT, atts TEXT,
+    item_id INT,                          -- verknuepfte Lieferplan-Position
+    status VARCHAR(12) DEFAULT 'open',    -- open|linked|done|ignored
+    created_at VARCHAR(20))$eng");
+  try{ $d->exec("CREATE UNIQUE INDEX ux_custmail_uid ON cust_mail(uid)"); }catch(Throwable $e){}
   // Offene Zwei-Faktor-Anmeldungen: Passwort war richtig, der Code fehlt noch.
   // Kurzlebig (5 Minuten), begrenzte Versuche.
   $d->exec("CREATE TABLE IF NOT EXISTS tfa_challenges (

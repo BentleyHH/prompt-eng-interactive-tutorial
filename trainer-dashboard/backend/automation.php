@@ -592,6 +592,15 @@ function run_automation(): array {
         }
       }
     }catch(Throwable $e){}
+    /* Kunden-Postfach (z.B. adp@...) einlesen und Antworten zuordnen */
+    $custMailFetched=0; $custMailLinked=0;
+    try{
+      if(cust_mailbox_ready()){
+        $cm=cust_mail_poll();
+        $custMailFetched=(int)($cm['fetched']??0);
+        $custMailLinked=(int)($cm['linked']??0);
+      }
+    }catch(Throwable $e){}
     q("DELETE FROM reset_tokens WHERE created_at < ?",[gmdate('Y-m-d H:i:s', $now-86400)]);
     q("DELETE FROM login_attempts WHERE window_start < ?",[gmdate('Y-m-d H:i:s', $now-3600)]);
     // Rückgängig-Stände nur für die jüngsten 300 Änderungen vorhalten - die
@@ -605,6 +614,7 @@ function run_automation(): array {
 
   return ['ok'=>true,'reminded'=>$reminded,'advanced'=>$advanced,'visa'=>$visa,'transfer'=>$transfer,
           'cust_reminded'=>$custReminded??0,'cust_deemed'=>$custDeemed??0,
+          'cust_mail_fetched'=>$custMailFetched??0,'cust_mail_linked'=>$custMailLinked??0,
           'passport'=>$passport,'mail_fetched'=>$mailFetched,'mail_flights'=>$mailFlights,
           'digest'=>$digestSent,'debrief_ping'=>$debriefPing,'period_report'=>$periodRep,
           'ppt_reminded'=>$pptRes['reminded'],'ppt_escalated'=>$pptRes['escalated'],

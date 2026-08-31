@@ -370,6 +370,36 @@ einstellbar. Hinweis: die Formulierung der Mail sollte einmal juristisch
 gegen das Service Agreement gelesen werden - das Cockpit dokumentiert,
 die Rechtswirkung kommt aus dem Vertrag.
 
+## Kundenbereich Stufe 2: Berichte, Wochenpaket, Posteingang
+Aufbauend auf dem Lieferplan kann der Bereich **Kunde (ADP)** jetzt auch liefern
+und empfangen:
+
+- **Excel-Berichte per Klick**: Oben im Bereich stehen **Nachweisregister**
+  (komplette Lieferkette aller Positionen plus Wochenuebersicht - der
+  Pruefnachweis fuer Teil F des Pflichtenplans), **Teilnehmerstand** (alle
+  aktiven Teilnehmer mit Zelle, Position und Bewertungsstand) und
+  **Zertifikatsregister** (alle Zertifikate mit Pruefnummer und Pruef-Link)
+  als Download bereit. Jeder Download wird im Protokoll vermerkt.
+- **Berichte automatisch anhaengen**: Im Sende-Dialog laesst sich per Haekchen
+  waehlen, welche Berichte die Mail mitbekommt - bei Positionen mit
+  Trainingsbezug zusaetzlich das **Wochenpaket** (Wochenplan, Anwesenheit,
+  Endbewertungen in einer Datei - das Wochendeliverable T+1) und die
+  **Flugdaten der Trainer**. Das Cockpit erzeugt die Dateien beim Senden
+  frisch aus den aktuellen Daten; im Protokoll stehen die Dateinamen.
+- **Posteingang (adp@)**: Traegt man im Baustein `customer_mailbox` der
+  config.php die Zugangsdaten des ADP-Postfachs ein (Host, Port 995, user,
+  pass - hier ist das Postfach-Passwort noetig, anders als beim reinen
+  Senden), ruft der Cron das Postfach **stuendlich** ab. Antworten werden
+  ueber den Betreff automatisch der passenden Lieferplan-Position zugeordnet
+  und erscheinen als **Posteingang**-Reiter im Kundenbereich sowie direkt in
+  der Kette der Position. Nicht zuordenbare Mails lassen sich von Hand
+  zuordnen oder ignorieren; **Postfach abrufen** holt neue Mails sofort.
+  Die Mails bleiben im Postfach liegen (POP3, ohne Loeschen).
+- **Als bestaetigt erfassen**: Kommt eine Abnahme per Mail oder muendlich
+  statt ueber den Bestaetigungslink, laesst sich die Position mit Name und
+  Vermerk von Hand auf **bestaetigt** setzen - sauber dokumentiert in Kette
+  und Protokoll.
+
 ## Wochen-Drehbuch (Running Order)
 Im Training oeffnet **Wochen-Drehbuch** den kompletten Ablaufplan der Woche als
 eine Agenda: Wer kommt wann an (aus den Reisedaten der Trainer), Team-Briefing
