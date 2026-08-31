@@ -270,7 +270,7 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
   $from=$c['from_email']; $fromName=$c['from_name']??'ETAF';
   // Eigener Absender fuer besondere Postfaecher (z.B. fluege@...), nur wenn gueltig
   if($fromOverride!=='' && filter_var($fromOverride,FILTER_VALIDATE_EMAIL)) $from=$fromOverride;
-  if($mode==='smtp') return smtp_send($toEmail,$subject,$html,$c['smtp']??[],$from,$fromName,$atts);
+  if($mode==='smtp') return smtp_send($toEmail,$subject,$html,smtp_account_for($from),$from,$fromName,$atts);
 
   // PHP mail()
   $ctype='';
@@ -280,7 +280,13 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
     .'From: '.mb_encode_mimeheader($fromName).' <'.$from.'>'."\r\n"
     .'Reply-To: '.$from."\r\n"
     .mail_std_headers($from);
-  $ok=@mail($toEmail, mb_encode_mimeheader($subject), $body, $headers);
+  // Envelope-Absender mitgeben: ohne "-f" traegt der Server seinen eigenen
+  // Kontonamen ein und schreibt haeufig auch das From-Feld darauf um - dann
+  // kaeme z.B. der Kundenbereich trotz customer_from beim Empfaenger als
+  // trainer@... an. Klappt "-f" nicht (manche Hoster verbieten es), wird
+  // ohne den Parameter erneut versendet.
+  $ok=@mail($toEmail, mb_encode_mimeheader($subject), $body, $headers, '-f'.$from);
+  if(!$ok) $ok=@mail($toEmail, mb_encode_mimeheader($subject), $body, $headers);
   if(!$ok) $GLOBALS['__mail_err']="PHP mail() hat false zurückgegeben. Auf artfiles ist für die eigene Domain oft mail_mode='smtp' zuverlässiger.";
   return $ok;
 }
@@ -292,6 +298,25 @@ function mail_std_headers(string $from): string {
   $dom=substr(strrchr($from,'@')?:'@localhost',1);
   return 'Date: '.gmdate('D, d M Y H:i:s').' +0000'."\r\n"
     .'Message-ID: <'.bin2hex(random_bytes(12)).'.'.gmdate('YmdHis').'@'.$dom.'>'."\r\n";
+}
+
+/**
+ * SMTP-Zugang zu einer Absenderadresse.
+ * Auf gemeinsam genutztem Hosting darf ein SMTP-Konto meist nur unter der
+ * eigenen Adresse senden - andere Absender werden abgelehnt oder stillschweigend
+ * umgeschrieben. Wer fuer adp@ oder fluege@ ein eigenes Postfach hat, hinterlegt
+ * es in config.php unter 'smtp_accounts' (Adresse => Zugangsdaten); fehlt ein
+ * Eintrag, gilt der Standardzugang aus 'smtp'.
+ */
+function smtp_account_for(string $from): array {
+  $c=cfg();
+  $acc=(array)($c['smtp_accounts']??[]);
+  foreach($acc as $addr=>$set){
+    if(strcasecmp(trim((string)$addr),$from)===0 && !empty($set['user'])){
+      return array_merge((array)($c['smtp']??[]), (array)$set);
+    }
+  }
+  return (array)($c['smtp']??[]);
 }
 
 /** Letzter Versand-Fehler / SMTP-Mitschnitt (für backend/mailtest.php). */

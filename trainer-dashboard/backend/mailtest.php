@@ -58,6 +58,14 @@ $as=$_GET['as']??'';
 $fromOv = $as==='customer' ? (string)($c['customer_from']??'')
         : ($as==='flight'  ? (string)($c['flight_from']??'') : '');
 
+/* Welche Absenderadresse geht je Bereich wirklich raus - und ueber welches
+   SMTP-Konto? Genau hier sieht man, ob customer_from ueberhaupt ankommt. */
+$senders=[
+  'Standard (Trainer, System)' => (string)($c['from_email']??''),
+  'Kundenbereich (ADP)'        => (string)($c['customer_from']??'')!=='' ? (string)$c['customer_from'] : (string)($c['from_email']??'').'  ← customer_from fehlt in config.php',
+  'Flugdaten'                  => (string)($c['flight_from']??'')!=='' ? (string)$c['flight_from'] : (string)($c['from_email']??'').'  ← flight_from fehlt in config.php',
+];
+
 /* Optional: Test-Mail verschicken */
 $did=false; $ok=false; $err=''; $trace=[];
 if($to!==''){
@@ -103,6 +111,43 @@ catch(Throwable $e){ $log=[]; }
         In <code>config.php</code> auf <code>'smtp'</code> stellen.</p>
    <?php elseif($mode==='smtp' && empty($smtp['pass'])): ?>
      <p class="hint" style="margin-top:12px">⚠ <b>SMTP-Passwort ist leer.</b> Trage in <code>config.php</code> unter <code>'smtp' =&gt; ['pass' =&gt; '…']</code> das Passwort des Postfachs <code><?=esc($smtp['user']??'')?></code> ein.</p>
+   <?php endif; ?>
+ </div>
+
+ <div class="card">
+   <h3 style="margin:0 0 8px">Absender je Bereich</h3>
+   <table>
+     <?php foreach($senders as $lbl=>$addr):
+       $plain=trim(explode(' ',$addr)[0]);
+       $accs=(array)($c['smtp_accounts']??[]);
+       $own=false; foreach($accs as $a=>$set){ if(strcasecmp(trim((string)$a),$plain)===0 && !empty($set['user'])) $own=true; }
+     ?>
+     <tr><td><?=esc($lbl)?></td><td>
+       <?php if(strpos($addr,'←')!==false): ?><span class="warn"><?=esc($addr)?></span>
+       <?php else: ?><b><?=esc($addr)?></b>
+         <?php if($mode==='smtp'): ?>
+           <span class="sub">· SMTP-Konto: <?= $own ? esc($plain).' (eigenes)' : esc($smtp['user']??'(Standard)') ?></span>
+         <?php endif; ?>
+       <?php endif; ?>
+     </td></tr>
+     <?php endforeach; ?>
+   </table>
+   <?php if($mode==='mail'): ?>
+     <p class="sub" style="margin-top:10px"><b>Hinweis zu mail_mode = "mail":</b> Beim Versand ueber die
+     PHP-Funktion <code>mail()</code> entscheidet der Hoster mit - viele Server tragen ihren eigenen
+     Kontonamen als Absender ein und ueberschreiben dabei auch das From-Feld. Kommt die Mail des
+     Kundenbereichs trotz gesetztem <code>customer_from</code> unter der Standardadresse an, ist das
+     der Grund. Abhilfe: auf <code>'mail_mode' =&gt; 'smtp'</code> umstellen und - falls das
+     SMTP-Konto nicht unter adp@ senden darf - unten ein eigenes Konto hinterlegen.</p>
+   <?php endif; ?>
+   <?php if($mode==='smtp' && empty($c['smtp_accounts'])): ?>
+     <p class="sub" style="margin-top:10px">Alle Adressen laufen ueber das eine SMTP-Konto
+     <b><?=esc($smtp['user']??'')?></b>. Darf dieses Konto nicht unter adp@ senden, lehnt der Server
+     ab oder schreibt den Absender um. Dann in config.php ein eigenes Konto hinterlegen:</p>
+     <pre>'smtp_accounts' =&gt; [
+  'adp@dvi-systems.com' =&gt; ['user' =&gt; 'adp@dvi-systems.com', 'pass' =&gt; 'POSTFACH_PASSWORT'],
+],</pre>
+     <p class="sub">Host/Port/Verschluesselung werden aus dem <code>smtp</code>-Block uebernommen.</p>
    <?php endif; ?>
  </div>
 

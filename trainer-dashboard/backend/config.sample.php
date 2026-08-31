@@ -121,6 +121,17 @@ return [
   // z.B. adp@dvi-systems.com. Leer = normaler Absender (from_email).
   'customer_from' => 'adp@dvi-systems.com',
 
+  // ---- Eigene SMTP-Konten je Absenderadresse -----------------------
+  // Auf gemeinsam genutztem Hosting darf ein SMTP-Konto meist nur unter der
+  // eigenen Adresse senden. Hat adp@ (oder fluege@) ein eigenes Postfach,
+  // hier die Zugangsdaten hinterlegen - dann geht die Mail wirklich unter
+  // dieser Adresse raus. Host/Port/Verschluesselung kommen aus 'smtp'.
+  // Leer lassen = alles laeuft ueber das Standard-SMTP-Konto.
+  'smtp_accounts' => [
+    // 'adp@dvi-systems.com'    => ['user' => 'adp@dvi-systems.com',    'pass' => ''],
+    // 'fluege@dvi-systems.com' => ['user' => 'fluege@dvi-systems.com', 'pass' => ''],
+  ],
+
   // ---- Kunden-Postfach (z.B. adp@dvi-systems.com) ------------------
   // Das Cockpit liest dieses Postfach stuendlich mit und ordnet Antworten
   // ueber den Betreff der passenden Lieferplan-Position zu (Bereich Kunde).

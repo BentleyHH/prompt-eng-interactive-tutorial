@@ -400,6 +400,39 @@ und empfangen:
   Vermerk von Hand auf **bestaetigt** setzen - sauber dokumentiert in Kette
   und Protokoll.
 
+## Absender je Bereich (adp@, fluege@) - und was der Hoster daraus macht
+Das Cockpit sendet aus dem **Kundenbereich** unter `customer_from`
+(z.B. adp@dvi-systems.com) und die **Flugdaten** unter `flight_from`;
+alles andere unter `from_email`. Ob das beim Empfaenger auch so ankommt,
+haengt vom Versandweg ab:
+
+- **`mail_mode = 'mail'`**: Hier entscheidet der Hoster mit. Viele Server
+  tragen ihren eigenen Kontonamen als Absender ein und ueberschreiben dabei
+  das From-Feld - dann kommt die Kundenmail trotz gesetztem `customer_from`
+  unter der Standardadresse an. Das Cockpit gibt den Absender jetzt auch als
+  Envelope-Absender mit (`-f`), was das in vielen Faellen verhindert;
+  zuverlaessig ist aber erst der SMTP-Weg.
+- **`mail_mode = 'smtp'`** (empfohlen): Der Absender geht so raus, wie er
+  gesetzt ist - vorausgesetzt, das SMTP-Konto darf unter dieser Adresse
+  senden. Tut es das nicht, lehnt der Server ab (die Diagnose zeigt dann
+  "Absender abgelehnt" samt Serverantwort).
+- **Eigenes Konto je Adresse**: Hat adp@ (oder fluege@) ein eigenes Postfach,
+  gehoert es in config.php unter `smtp_accounts` - dann meldet sich das
+  Cockpit fuer diese Mails mit genau diesem Konto an:
+  ```php
+  'smtp_accounts' => [
+    'adp@dvi-systems.com' => ['user' => 'adp@dvi-systems.com', 'pass' => 'POSTFACH_PASSWORT'],
+  ],
+  ```
+  Host, Port und Verschluesselung kommen aus dem `smtp`-Block.
+
+Pruefen laesst sich das alles unter **backend/mailtest.php?key=CRON_KEY**:
+Die Karte **Absender je Bereich** zeigt je Bereich die tatsaechliche
+Absenderadresse und das dafuer benutzte SMTP-Konto und weist darauf hin,
+wenn `customer_from` oder `flight_from` in der config.php fehlen. Mit
+`&to=deine@mail.de` kommt ein Testversand dazu, mit `&as=customer` bzw.
+`&as=flight` gezielt unter dem jeweiligen Absender.
+
 ## Wochen-Drehbuch (Running Order)
 Im Training oeffnet **Wochen-Drehbuch** den kompletten Ablaufplan der Woche als
 eine Agenda: Wer kommt wann an (aus den Reisedaten der Trainer), Team-Briefing
